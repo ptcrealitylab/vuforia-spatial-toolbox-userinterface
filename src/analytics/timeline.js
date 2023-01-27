@@ -486,6 +486,10 @@ export class Timeline {
 
     setHighlightRegion(highlightRegion) {
         this.highlightRegion = highlightRegion;
+        if (!this.highlightRegion) {
+            return;
+        }
+
         if (this.highlightRegion.endTime < this.timeMin ||
             this.highlightRegion.startTime > this.timeMin + this.widthMs) {
             // Center on new highlight region
