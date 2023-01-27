@@ -126,7 +126,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     
     let finalPosX = 0, finalPosY = 0;
     
-    function determineObjectScreenPosition() {
+    function drawArrowsAtIndicatorScreenPositions() {
         
         let worldPos = new THREE.Vector3();
         let screenX, screenY;
@@ -209,9 +209,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     
     function drawIndicatorArrows() {
         searchForIndicators();
-        determineObjectScreenPosition();
-        // draw a single test arrow at the screen center
-        
+        drawArrowsAtIndicatorScreenPositions();
     }
 
     function update() {
