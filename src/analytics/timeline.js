@@ -1,4 +1,4 @@
-import {RegionCard} from './regionCard.js';
+import {RegionCard, RegionCardState} from './regionCard.js';
 import {
     getHistoryPointsInTimeInterval,
 } from '../humanPose/draw.js';
@@ -15,6 +15,8 @@ const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
+
+const defaultMinPixelsPerMs = 0.00004;
 
 const DragMode = {
     NONE: 'none',
@@ -56,11 +58,13 @@ export class Timeline {
         this.gfx = this.canvas.getContext('2d');
         this.pixelsPerMs = 0.01; // 1024 * 100 / (24 * 60 * 60 * 1000);
         this.timeMin = -1;
+        this.resetBounds();
         this.widthMs = -1;
         this.scrolled = true;
         container.appendChild(this.canvas);
         this.poses = [];
         this.width = -1;
+        this.displayRegion = null;
         this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
         this.regionCard = null;
@@ -197,7 +201,7 @@ export class Timeline {
     updateRegionCard() {
         if (!this.highlightRegion) {
             if (this.regionCard) {
-                if (!this.regionCard.pinned) {
+                if (this.regionCard.state !== RegionCardState.Pinned) {
                     this.regionCard.remove();
                 }
                 this.regionCard = null;
@@ -218,7 +222,7 @@ export class Timeline {
         this.lastRegionCardCacheKey = cacheKey;
 
         if (this.regionCard) {
-            if (!this.regionCard.pinned) {
+            if (this.regionCard.state !== RegionCardState.Pinned) {
                 this.regionCard.remove();
             }
             this.regionCard = null;
@@ -478,6 +482,22 @@ export class Timeline {
         this.canvas.style.cursor = 'move';
         let dTime = event.movementX / this.pixelsPerMs;
         this.timeMin -= dTime;
+        this.limitTimeMin();
+    }
+
+    /**
+     * Restricts timeMin based on current zoom level, minTimeMin, and
+     * maxTimeMax.
+     */
+    limitTimeMin() {
+        if (this.timeMin < this.minTimeMin) {
+            this.timeMin = this.minTimeMin;
+            return;
+        }
+        if (this.timeMin + this.widthMs > this.maxTimeMax) {
+            this.timeMin = this.maxTimeMax - this.widthMs;
+            return;
+        }
     }
 
     setCursorTime(cursorTime) {
@@ -495,6 +515,28 @@ export class Timeline {
             // Center on new highlight region
             this.timeMin = (this.highlightRegion.startTime + this.highlightRegion.endTime) / 2 - this.widthMs / 2;
         }
+    }
+
+    setDisplayRegion(displayRegion) {
+        this.displayRegion = displayRegion;
+        if (!this.displayRegion) {
+            this.resetBounds();
+            return;
+        }
+        // Snap zoom to equal entire displayRegion
+        let newWidthMs = this.displayRegion.endTime - this.displayRegion.startTime;
+        this.timeMin = this.displayRegion.startTime;
+        this.widthMs = newWidthMs;
+        this.pixelsPerMs = this.width / this.widthMs;
+        this.minPixelsPerMs = this.pixelsPerMs;
+        this.minTimeMin = this.timeMin;
+        this.maxTimeMax = this.timeMin + this.widthMs;
+    }
+
+    resetBounds() {
+        this.minPixelsPerMs = defaultMinPixelsPerMs;
+        this.minTimeMin = 0;
+        this.maxTimeMax = Number.MAX_VALUE;
     }
 
     onPointerUp(event) {
@@ -533,8 +575,8 @@ export class Timeline {
             this.pixelsPerMs *= factor;
             if (this.pixelsPerMs > 0.12) {
                 this.pixelsPerMs = 0.12;
-            } else if (this.pixelsPerMs < 0.0001) {
-                this.pixelsPerMs = 0.0001;
+            } else if (this.pixelsPerMs < this.minPixelsPerMs) {
+                this.pixelsPerMs = this.minPixelsPerMs;
             }
 
             // let timeCenter = this.timeMin + this.widthMs / 2;
@@ -547,6 +589,8 @@ export class Timeline {
             let dTime = event.deltaX / this.pixelsPerMs;
             this.timeMin -= dTime;
         }
+
+        this.limitTimeMin();
 
         event.preventDefault();
         event.stopPropagation();

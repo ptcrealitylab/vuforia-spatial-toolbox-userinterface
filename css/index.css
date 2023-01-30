@@ -1901,3 +1901,12 @@ Logic Interface CSS
 
 .analytics-region-card-graph-section-value {
 }
+
+.analytics-region-card-pin, .analytics-region-card-enter {
+    grid-column: 1;
+    text-decoration: none;
+    color: white;
+}
+.analytics-region-card-pin:visited, .analytics-region-card-enter:visited {
+    color: white;
+}

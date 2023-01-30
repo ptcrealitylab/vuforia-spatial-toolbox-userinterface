@@ -8,6 +8,11 @@ const svgNS = 'http://www.w3.org/2000/svg';
 const pinnedRegionCards = [];
 let pinnedRegionCardsContainer;
 
+export const RegionCardState = {
+    Tooltip: 'Tooltip', // an ephemeral tooltip on the timeline
+    Pinned: 'Pinned', // a regioncard displayed with statistics
+};
+
 /**
  * A Region Card contains a full summary of a given [start time, end time]
  * region on the timeline
@@ -35,10 +40,14 @@ export class RegionCard {
             timeStyle: 'medium',
             hour12: false,
         });
-        this.pinned = false;
+        this.state = RegionCardState.Tooltip;
+        // If a region card has control over the timeline's displayed points
+        this.displayActive = false;
         this.onPointerOver = this.onPointerOver.bind(this);
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
+        this.onClickPin = this.onClickPin.bind(this);
+        this.onClickEnter = this.onClickEnter.bind(this);
 
         this.createCard();
 
@@ -57,39 +66,66 @@ export class RegionCard {
 
     onPointerOver() {
         this.element.classList.remove('minimized');
+        // if (this.state === RegionCardState.Pinned) {
+        //     realityEditor.analytics.setHighlightRegion({
+        //         startTime: this.startTime,
+        //         endTime: this.endTime,
+        //     });
+        // }
     }
 
     onPointerOut() {
         this.element.classList.add('minimized');
     }
 
-    onPointerDown(event) {
-        if (!this.pinned) {
-            this.pin();
-            return;
-        }
+    onPointerDown() {
+    }
 
-        realityEditor.analytics.setHighlightRegion({
-            startTime: this.startTime,
-            endTime: this.endTime,
-        });
+    onClickPin() {
+        switch (this.state) {
+        case RegionCardState.Tooltip:
+            this.pin();
+            break;
+        case RegionCardState.Pinned:
+            this.unpin();
+            break;
+        }
 
         event.stopPropagation();
     }
 
+    onClickEnter() {
+        switch (this.state) {
+        case RegionCardState.Tooltip:
+            this.pin();
+            break;
+        case RegionCardState.Pinned:
+            if (this.displayActive) {
+                realityEditor.analytics.setDisplayRegion(null);
+            } else {
+                realityEditor.analytics.setDisplayRegion({
+                    startTime: this.startTime,
+                    endTime: this.endTime,
+                });
+            }
+            this.displayActive = !this.displayActive;
+            break;
+        }
+    }
+
     pin() {
-        this.pinned = true;
+        this.state = RegionCardState.Pinned;
         const rect = this.element.getBoundingClientRect();
 
         this.switchContainer(document.body);
 
         this.element.style.bottom = 'auto';
         this.moveTo(rect.left, rect.top);
-        this.element.classList.add('pinAnimation');
+        this.element.classList.add('pinAnimation', 'minimized');
         setTimeout(() => {
             this.moveTo(35, 120 + (14 + 14 * 2 + 10) * pinnedRegionCards.length);
-            this.element.classList.add('minimized');
-        }, 0);
+            // this.element.classList.add('minimized');
+        }, 10);
 
         setTimeout(() => {
             this.element.classList.remove('pinAnimation');
@@ -100,6 +136,14 @@ export class RegionCard {
 
             this.switchContainer(pinnedRegionCardsContainer);
         }, 750);
+    }
+
+    unpin() {
+        console.log('unpin');
+        this.remove();
+        if (this.displayActive) {
+            realityEditor.analytics.setDisplayRegion(null);
+        }
     }
 
     createCard() {
@@ -127,6 +171,19 @@ export class RegionCard {
 
         this.createGraphSection('REBA', 'overallRebaScore');
 
+        const pinButton = document.createElement('a');
+        pinButton.href = '#';
+        pinButton.classList.add('analytics-region-card-pin');
+        pinButton.textContent = 'Pin';
+        pinButton.addEventListener('click', this.onClickPin);
+        this.element.appendChild(pinButton);
+
+        const enterButton = document.createElement('a');
+        enterButton.href = '#';
+        enterButton.classList.add('analytics-region-card-enter');
+        enterButton.textContent = 'Enter';
+        enterButton.addEventListener('click', this.onClickEnter);
+        this.element.appendChild(enterButton);
     }
 
     getMotionSummaryText() {
@@ -248,7 +305,7 @@ export class RegionCard {
 
     moveTo(x, y) {
         this.element.style.left = x + 'px';
-        if (this.pinned) {
+        if (this.state === RegionCardState.Pinned) {
             this.element.style.top = y + 'px';
         } else {
             this.element.style.bottom = y + 'px';
