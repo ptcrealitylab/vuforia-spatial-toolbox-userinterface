@@ -262,13 +262,13 @@ import * as utils from './utils.js'
                 console.warn('couldn\'t find frame for joint ' + jointName + ' (' + index + ')');
                 return;
             }
-            const SCALE = 1000;
+
             // set position of jointFrame
             let positionMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                jointInfo.x * SCALE, jointInfo.y * SCALE, jointInfo.z * SCALE, 1,
+                jointInfo.x, jointInfo.y, jointInfo.z, 1,
             ];
 
             // updating scene graph with new pose
