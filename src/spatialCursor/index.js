@@ -4,10 +4,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
 
-    const SNAP_CURSOR_TO_TOOLS = true;
-    const DEFAULT_SPATIAL_CURSOR_ON = true;
+    const SNAP_CURSOR_TO_TOOLS = false; // the snapping doesn't do anything yet, so turn off for now
+    const DEFAULT_SPATIAL_CURSOR_ON = true; // applied after we localize within a target / download occlusion mesh
 
-    let isCursorEnabled = DEFAULT_SPATIAL_CURSOR_ON;
+    let isCursorEnabled = false; // always starts off, turns on after localize
     let isUpdateLoopRunning = false;
     let occlusionDownloadInterval = null;
     let cachedOcclusionObject = null;
@@ -76,6 +76,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gl_FragColor = vec4(r, g, b, 1.0);
     }
     `;
+    // remember to set depthTest=false and depthWrite=false after creating the material, to prevent visual glitches
     const normalCursorMaterial = new THREE.ShaderMaterial({
         vertexShader: vertexShader,
         fragmentShader: normalFragmentShader,
@@ -88,8 +89,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         fragmentShader: colorFragmentShader,
         uniforms: uniforms,
         transparent: true,
-        // todo: depthTest not showing any difference turned off / on
-        depthTest: false,
         side: THREE.DoubleSide,
     });
 
@@ -178,17 +177,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
+
+            if (DEFAULT_SPATIAL_CURSOR_ON) {
+                toggleDisplaySpatialCursor(true);
+            }
         });
         
         addSpatialCursor();
         addTestSpatialCursor();
-        toggleDisplaySpatialCursor(DEFAULT_SPATIAL_CURSOR_ON);
+        toggleDisplaySpatialCursor(false);
 
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
-
-        // begin update loop
-        // update();
 
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
 
@@ -293,12 +293,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function addSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
+        indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
+        indicator1.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator1);
     }
     
     function addTestSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator2 = new THREE.Mesh(geometry, testCursorMaterial);
+        indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
+        indicator2.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
     
