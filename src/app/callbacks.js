@@ -239,67 +239,8 @@ createNameSpace('realityEditor.app.callbacks');
     function receivePoses(pose, timestamp, imageSize) {
 
         let poseInWorld = [];
-        /*
-        let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (!worldObject) {
-            console.warn('Could not find world object.');
-            return;
-        }
-        let worldObjectId = worldObject.objectId;
-        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
-        if (!gpNode) {
-             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
-        }
-        let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
-
-        // TODO: MK - is sceneNode necessary?
-        let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
-        sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
-
-        let basisNode = worldNode; // gpNode;
-        basisNode.updateWorldMatrix();
-        cameraNode.updateWorldMatrix();
-        */
 
         for (let point of pose) {
-            // place it in front of the camera, facing towards the camera
-            // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
-
-            /*
-            // * 1000 - convert from m to mm
-            let initialVehicleMatrix = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                point.x * 1000, point.y * 1000, point.z * 1000, 1
-            ];
-
-            // needs to be flipped in some environments with different camera systems
-            // TODO: MK - is this necessary?
-            if (realityEditor.device.environment.isCameraOrientationFlipped()) {
-                initialVehicleMatrix[0] *= -1;
-                initialVehicleMatrix[5] *= -1;
-                initialVehicleMatrix[10] *= -1;
-            }
-
-            sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-            sceneNode.updateWorldMatrix();
-
-            let mat = sceneNode.getMatrixRelativeTo(basisNode);
-
-            let worldX = mat[12];
-            let worldY = mat[13];
-            let worldZ = mat[14];
-
-            poseInWorld.push({
-                x: worldX / 1000,
-                y: worldY / 1000,
-                z: worldZ / 1000,
-                confidence: point.score,
-            });
-            */
-           
             poseInWorld.push({
                 x: point.x,
                 y: point.y,
@@ -307,18 +248,6 @@ createNameSpace('realityEditor.app.callbacks');
                 confidence: point.score,
             });
         }
-
-        /*
-        let initialVehicleMatrix = [
-            -1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, -1, 0,
-            0, 0, 0, 1
-        ];
-
-        sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-        sceneNode.updateWorldMatrix();
-        */
 
         realityEditor.gui.poses.drawPoses(pose, imageSize);
 
