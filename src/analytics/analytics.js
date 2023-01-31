@@ -86,4 +86,38 @@ export class Analytics {
         }
     }
 
+    /**
+     * @param {'reba'|'motion'} lens
+     */
+    setLens(lens) {
+        console.error('setLens unimplemented', lens);
+    }
+
+    /**
+     * @param {'bone'|'pose'} lensDetail
+     */
+    setLensDetail(lensDetail) {
+        console.error('setLensDetail unimplemented', lensDetail);
+    }
+
+    /**
+     * @param {string} spaghettiAttachPoint
+     */
+    setSpaghettiAttachPoint(spaghettiAttachPoint) {
+        console.error('setSpaghettiAttachPoint unimplemented', spaghettiAttachPoint);
+    }
+
+    /**
+     * @param {string} spaghettiVisible
+     */
+    setSpaghettiVisible(spaghettiVisible) {
+        console.error('setSpaghettiVisible unimplemented', spaghettiVisible);
+    }
+
+    /**
+     * @param {string} allClonesVisible
+     */
+    setAllClonesVisible(allClonesVisible) {
+        console.error('setAllClonesVisible unimplemented', allClonesVisible);
+    }
 }
