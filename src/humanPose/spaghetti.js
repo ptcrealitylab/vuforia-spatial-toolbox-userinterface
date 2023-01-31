@@ -196,17 +196,27 @@ export class SpaghettiMeshPath extends MeshPath {
 
         this.selectSecondPathPoint(e.pageX, e.pageY, snapIndex);
     }
-    
+
+    isVisible() {
+        return this.visible && this.parent.visible;
+    }
+
     setupPointerEvents() {
         document.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) {
                 this.getMeasurementLabel().requestVisible(false, this.pathId);
                 return;
             }
+            if (!this.isVisible()) {
+                return;
+            }
             this.onPointerDown(e);
         });
         document.addEventListener('pointermove', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            if (!this.isVisible()) {
+                return;
+            }
             this.onPointerMove(e);
         });
     }
