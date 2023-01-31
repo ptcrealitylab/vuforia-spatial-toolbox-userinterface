@@ -70,7 +70,7 @@ createNameSpace("realityEditor.network.realtime");
         if (PROXY) {
             desktopSocket = io.connect();
         } else {
-            desktopSocket = window._oldIo.connect();
+            desktopSocket = window._oldIo.connect('localhost:8081');
         }
     }
 
