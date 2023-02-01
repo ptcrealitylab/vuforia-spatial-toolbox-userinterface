@@ -371,7 +371,10 @@ realityEditor.device.onload = function () {
     // realityEditor.device.multiclientUI.initService();
     realityEditor.avatar.initService();
     realityEditor.humanPose.initService();
+    realityEditor.analytics.initService();
     realityEditor.spatialCursor.initService();
+    realityEditor.gui.spatialIndicator.initService();
+    realityEditor.gui.spatialArrow.initService();
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
         globalStates.device = deviceName;

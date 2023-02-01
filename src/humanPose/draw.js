@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS} from './utils.js';
+import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} from './utils.js';
 import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 
@@ -7,9 +7,10 @@ let poseRenderers = {};
 let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
+const RENDER_CONFIDENCE_COLOR = false;
 
 /**
- * Renders COCO-pose keypoints
+ * Renders 3D skeleton
  */
 export class HumanPoseRenderer {
     /**
@@ -114,40 +115,9 @@ export class HumanPoseRenderer {
 
     /**
      * Updates bone (stick between joints) positions based on this.spheres'
-     * positions. Notably synthesizes a straight spine based on existing
-     * COCO keypoints
+     * positions. 
      */
     updateBonePositions() {
-        // Add synthetic joint positions expected by REBA
-        this.setJointPosition(JOINTS.HEAD, this.averageJointPositions([
-            JOINTS.LEFT_EAR,
-            JOINTS.RIGHT_EAR
-        ]));
-        this.setJointPosition(JOINTS.NECK, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-        ]));
-        this.setJointPosition(JOINTS.CHEST, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.NAVEL, this.averageJointPositions([
-            JOINTS.LEFT_SHOULDER,
-            JOINTS.RIGHT_SHOULDER,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-        this.setJointPosition(JOINTS.PELVIS, this.averageJointPositions([
-            JOINTS.LEFT_HIP,
-            JOINTS.RIGHT_HIP,
-        ]));
-
 
         for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
             const boneIndex = this.bones[boneName];
@@ -177,7 +147,9 @@ export class HumanPoseRenderer {
             this.bonesMesh.setMatrixAt(boneIndex, mat);
         }
 
-        annotateHumanPoseRenderer(this);
+        if (!RENDER_CONFIDENCE_COLOR) {
+            annotateHumanPoseRenderer(this);
+        }
 
         this.spheresMesh.instanceMatrix.needsUpdate = true;
         this.spheresMesh.instanceColor.needsUpdate = true;
@@ -214,6 +186,25 @@ export class HumanPoseRenderer {
             this.bonesMesh.setColorAt(boneIndex, this.redColor);
             this.spheresMesh.setColorAt(jointIndex, this.redColor);
         }
+    }
+    /**
+     * @param {number} confidence in range [0,1]
+     */
+    setJointConfidenceColor(jointId, confidence) {
+        if (typeof this.spheres[jointId] === 'undefined') {
+            return;
+        }
+        const jointIndex = this.spheres[jointId];
+
+        let baseColorHSL = {};
+        this.baseColor.getHSL(baseColorHSL);
+
+        baseColorHSL.l = baseColorHSL.l * confidence;
+
+        let color = new THREE.Color();
+        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
+
+        this.spheresMesh.setColorAt(jointIndex, color);
     }
 
     addToScene(container) {
@@ -286,29 +277,27 @@ export class HumanPoseAnalyzer {
     }
 
     update() {
-        let firstTimestamp = -1;
-        let secondTimestamp = -1;
+        let minTimestamp = -1;
+        let maxTimestamp = -1;
         for (let spaghettiMesh of Object.values(this.historyMeshesAll)) {
             let comparer = spaghettiMesh.comparer;
             let points = spaghettiMesh.currentPoints;
-            if (!comparer.firstPointIndex) {
+            if (comparer.firstPointIndex === null) {
                 continue;
             }
-            firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            secondTimestamp = firstTimestamp + 1;
+            let firstTimestamp = points[comparer.firstPointIndex].timestamp;
+            let secondTimestamp = firstTimestamp + 1;
             if (comparer.secondPointIndex) {
                 secondTimestamp = points[comparer.secondPointIndex].timestamp;
             }
+            if (minTimestamp < 0) {
+                minTimestamp = firstTimestamp;
+            }
+            minTimestamp = Math.min(minTimestamp, firstTimestamp, secondTimestamp);
+            maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
         }
 
-        // Swap so the animation is always from low to high
-        if (firstTimestamp > secondTimestamp) {
-            let t = firstTimestamp;
-            firstTimestamp = secondTimestamp;
-            secondTimestamp = t;
-        }
-
-        this.setAnimation(firstTimestamp, secondTimestamp);
+        this.setAnimation(minTimestamp, maxTimestamp);
         this.updateAnimation();
 
         window.requestAnimationFrame(this.update);
@@ -325,7 +314,7 @@ export class HumanPoseAnalyzer {
             this.historyCloneContainer.add(obj);
         }
 
-        let newPoint = poseRenderer.getJointPosition(JOINTS.HEAD).clone();
+        let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
         newPoint.y += 400;
 
         if (!this.historyMeshesAll.hasOwnProperty(poseRenderer.id)) {
@@ -345,15 +334,16 @@ export class HumanPoseAnalyzer {
             }
         }
 
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer);
+        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
         let colorRGB = new THREE.Color();
-        colorRGB.setHSL(hueReba / 360, 0.8, 0.5);
+        colorRGB.setHSL(hueReba / 360, 0.8, 0.3);
 
         let nextHistoryPoint = {
             x: newPoint.x,
             y: newPoint.y,
             z: newPoint.z,
             color: [colorRGB.r * 255, colorRGB.g * 255, colorRGB.b * 255],
+            overallRebaScore: poseRenderer.overallRebaScore,
             timestamp,
         };
 
@@ -426,7 +416,6 @@ export class HumanPoseAnalyzer {
         this.historyMeshesAll[poseRenderer.id] = historyMesh;
     }
 
-
     resetHistoryLines() {
         for (let key of Object.keys(this.historyMeshesAll)) {
             let historyMesh = this.historyMeshesAll[key];
@@ -446,6 +435,73 @@ export class HumanPoseAnalyzer {
             }
             this.historyCloneContainer.remove(child);
         }
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     */
+    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+        }
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     */
+    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
+                mesh.visible = false;
+                continue;
+            }
+            mesh.visible = true;
+            mesh.setDisplayTimeInterval(firstTimestamp, secondTimestamp);
+        }
+    }
+
+    /**
+     * @param {number} timestamp - time to hover in ms
+     */
+    setHoverTime(timestamp) {
+        if (timestamp < 0) {
+            return;
+        }
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
+                continue;
+            }
+            mesh.setHoverTime(timestamp);
+        }
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     * @return {Array<SpaghettiMeshPathPoint>}
+     */
+    getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
+        // TODO: perf can be improved through creating historyPointsAll and
+        // binary search for indices
+        let allPoints = [];
+        for (const mesh of Object.values(this.historyMeshesAll)) {
+            for (const point of mesh.currentPoints) {
+                if (point.timestamp < firstTimestamp) {
+                    continue;
+                }
+                if (point.timestamp > secondTimestamp) {
+                    // Assume sorted
+                    break;
+                }
+                allPoints.push(point);
+            }
+        }
+        allPoints.sort((a, b) => {
+            return a.timestamp - b.timestamp;
+        });
+        return allPoints;
     }
 
     /**
@@ -538,7 +594,7 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
 
     if (!humanPoseAnalyzer) {
         const historyMeshContainer = new THREE.Group();
-        historyMeshContainer.visible = true;
+        historyMeshContainer.visible = false;
         if (container) {
             container.add(historyMeshContainer);
         } else {
@@ -612,6 +668,11 @@ function updatePoseRenderer(poseObject, timestamp, container, historical) {
     poseRenderer.updateBonePositions();
 
     humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
+    if (realityEditor.analytics) {
+        realityEditor.analytics.appendPose({
+            time: timestamp,
+        });
+    }
 }
 
 function getGroundPlaneRelativeMatrix() {
@@ -627,6 +688,9 @@ function updateJointsHistorical(poseRenderer, poseObject) {
 
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
+        if (!frame.ar.matrix) {
+            continue;
+        }
 
         // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
@@ -649,7 +713,7 @@ function updateJoints(poseRenderer, poseObject) {
         groundPlaneRelativeMatrix.multiply(objectRootMatrix);
     }
 
-    for (let jointId of Object.values(JOINTS)) {
+    for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
 
@@ -662,6 +726,19 @@ function updateJoints(poseRenderer, poseObject) {
         jointPosition.setFromMatrixPosition(jointMatrixThree);
 
         poseRenderer.setJointPosition(jointId, jointPosition);
+
+        if (RENDER_CONFIDENCE_COLOR) {
+            let keys = getJointNodeInfo(poseObject, i);
+            // zero confidence if node's public data are not available 
+            let confidence = 0.0; 
+            if (keys) {
+                const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) { 
+                    confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
+                }
+            }
+            poseRenderer.setJointConfidenceColor(jointId, confidence);
+        }
     }
 }
 
@@ -674,9 +751,29 @@ function resetHistoryClones() {
 }
 
 /**
+ * @param {number} firstTimestamp - start of time interval in ms
+ * @param {number} secondTimestamp - end of time interval in ms
+ */
+function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    humanPoseAnalyzer.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+}
+
+/**
+ * @param {number} firstTimestamp - start of time interval in ms
+ * @param {number} secondTimestamp - end of time interval in ms
+ * @return {Array<SpaghettiMeshPathPoint>}
+ */
+function getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
+    return humanPoseAnalyzer.getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp);
+}
+
+/**
  * @param {boolean} visible
  */
 function setHistoryLinesVisible(visible) {
+    if (!humanPoseAnalyzer) {
+        return;
+    }
     humanPoseAnalyzer.setHistoryLinesVisible(visible);
 }
 
@@ -691,11 +788,30 @@ function advanceCloneMaterial() {
     humanPoseAnalyzer.advanceCloneMaterial();
 }
 
+/**
+ * @param {number} time - ms
+ */
+function setHoverTime(time) {
+    humanPoseAnalyzer.setHoverTime(time);
+}
+
+/**
+ * @param {number} startTime - ms
+ * @param {number} endTime - ms
+ */
+function setDisplayTimeInterval(startTime, endTime) {
+    humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
+}
+
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
     resetHistoryClones,
+    setHoverTime,
+    setHighlightTimeInterval,
+    setDisplayTimeInterval,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,
+    getHistoryPointsInTimeInterval,
 };
