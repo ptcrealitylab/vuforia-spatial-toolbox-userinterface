@@ -7,7 +7,7 @@ let poseRenderers = {};
 let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
-const RENDER_CONFIDENCE_COLOR = false;
+const RENDER_CONFIDENCE_COLOR = true;
 
 /**
  * Renders 3D skeleton
@@ -758,6 +758,16 @@ function advanceCloneMaterial() {
     humanPoseAnalyzer.advanceCloneMaterial();
 }
 
+/**
+ * @param {boolean} visible
+ */
+function setHumanPosesVisible(visible) {
+    
+    for (let id in poseRenderers) {
+        poseRenderers[id].container.visible = visible;
+    }
+}
+
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
@@ -767,4 +777,5 @@ export {
     setRecordingClonesEnabled,
     advanceCloneMaterial,
     getHistoryPointsInTimeInterval,
+    setHumanPosesVisible
 };
