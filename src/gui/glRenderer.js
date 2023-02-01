@@ -38,8 +38,9 @@ class Command {
      * @param {string} name 
      * @param {any[]} args 
      * @param {number} handle
+     * @param {SharedArrayBuffer} responseBuffer
      */
-    constructor(name, args, handle) {
+    constructor(name, args, handle, responseBuffer) {
         /**
          * @type {string}
          */
@@ -54,6 +55,11 @@ class Command {
          * @type {number}
          */
         this.handle = handle;
+
+        /**
+         * @type {SharedArrayBuffer}
+         */
+        this.responseBuffer = responseBuffer;
     }
 }
 
@@ -96,11 +102,12 @@ class CommandBufferManager {
 
     /**
      * 
-     * @param {CommandBuffer} commandBuffer 
+     * @param {Message} commandBuffer 
      */
     onCommandBufferReceived(commandBuffer) {
         console.log(`cmd(${commandBuffer.workerId}): received buffer[${commandBuffer.commands.length}]`);
         this.commandBuffers.push(commandBuffer);
+    
     }
 
     /**
@@ -108,8 +115,7 @@ class CommandBufferManager {
      * @returns {CommandBuffer} the newest commandbuffer marked for rendering for which all resources have been loaded
      */
     getRenderCommandBuffer() {
-        // current code does not conform to the specs, let's process each buffer sequentially
-        /*while (this.commandBuffers.length > 0) {
+        while (this.commandBuffers.length > 0) {
             const commandBuffer = this.commandBuffers[0];
             if (commandBuffer.isRendering) {
                 // the command buffer was marked for rendering, remove it from the list and store it as the last known rendering command buffer 
@@ -120,16 +126,6 @@ class CommandBufferManager {
                 return this.renderCommandBuffer;
             }
         }
-        return this.renderCommandBuffer;*/
-        if (this.commandBuffers.length > 0) {
-            const commandBuffer = this.commandBuffers[0];
-            this.commandBuffers.shift();
-            if (commandBuffer.isRendering) {
-                // render buffers can be repeated
-                this.renderCommandBuffer = commandBuffer;
-            }
-            return commandBuffer;
-        }
         return this.renderCommandBuffer;
     }
 
@@ -138,8 +134,7 @@ class CommandBufferManager {
      * @returns {CommandBuffer | null} the next resource commandbuffer if it exists
      */
     getResourceCommandBuffer() {
-        // current code does not conform to the specs, let's process each buffer sequentially
-        /*while (this.commandBuffers.length > 0) {
+        while (this.commandBuffers.length > 0) {
             const commandBuffer = this.commandBuffers[0];
             this.commandBuffers.shift();
             if (commandBuffer.isRendering) {
@@ -149,8 +144,7 @@ class CommandBufferManager {
                 // the command buffer was marked for resource loading, return it
                 return commandBuffer;
             }
-        } */
-        console.log(`cmd(${this.renderCommandBuffer.workerId}) no resource buffer`)
+        }
         return null;
     }
 }
@@ -224,6 +218,11 @@ class CommandBufferManager {
             window.addEventListener('message', this.onMessage);
 
             this.frameEndListener = null;
+
+            /**
+             * @type {Int32Array} if this is not null, the worker thread is locked until it receives a response on the last comitted resource Command List
+             */
+            this.syncLock = null;
         }
 
         /**
@@ -242,6 +241,10 @@ class CommandBufferManager {
                 return;
             }
 
+            if ((this.syncLock === null) && (message.hasOwnProperty("syncLock"))) {
+                this.syncLock = new Int32Array(message.syncLock);
+            }
+
             this.buffer.onCommandBufferReceived(message)
         }
 
@@ -255,7 +258,7 @@ class CommandBufferManager {
             if (command.args.length == undefined) {
                 console.log("no length!");
             }
-            //console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
+            console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
             
             
             /**
@@ -308,17 +311,14 @@ class CommandBufferManager {
 
             this.lastState.postProcessOneCommand(command);
 
-            if (typeof res === 'object') {
+            if (localCommand.handle !== null) {
 
                 this.unclonables.set(localCommand.handle, res);
                 res = new Handle(localCommand.handle);
             }
             
             if (localCommand.name === "getProgramParameter") {
-                this.worker.postMessage({
-                    id: id,
-                    result: res,
-                }, '*')
+                new Int32Array(localCommand.responseBuffer)[0] = res;
             }
         }
 
@@ -373,7 +373,12 @@ class CommandBufferManager {
                 for (let command of localCommandBuffer.commands) {
                     const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
                     let res = this.executeOneCommand(command, id);
-                }            
+                } 
+                if (this.syncLock !== null) {
+                    // if worker thread was locked, we can unlock it now that we have written all requested results
+                    Atomics.notify(this.syncLock, 0, 1);
+                    this.syncLock = null;
+                }           
             } else {
                 localCommandBuffer = this.buffer.getRenderCommandBuffer();
                 let commandId = 1;
@@ -387,7 +392,7 @@ class CommandBufferManager {
         }
 
         getFrameCommands() {
-            this.worker.postMessage({name: 'frame', time: Date.now()}, '*');
+            this.worker.postMessage({name: 'frame', time: Date.now(), workerId: this.workerId}, '*');
             return new Promise((res) => {
                 this.frameEndListener = res;
             });
@@ -418,6 +423,7 @@ class CommandBufferManager {
     let defaultGLState = null;
 
     function initService() {
+        console.log("renderer is in a secure context: " + isSecureContext + " and isolated: " + crossOriginIsolated);
         // canvas = globalCanvas.canvas;
         canvas = document.querySelector('#glcanvas');
         if (canvas !== null) {
@@ -425,8 +431,8 @@ class CommandBufferManager {
             canvas.height = globalStates.width;
             canvas.style.width = canvas.width + 'px';
             canvas.style.height = canvas.height + 'px';
+            //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
             gl = canvas.getContext('webgl2');
-            const ext = gl?.getExtension('GMAN_debug_helper');
            
             // If we don't have a GL context, give up now
 
@@ -511,7 +517,7 @@ class CommandBufferManager {
         let proxiesToConsider = [];
         function makeWatchdog() {
             return new Promise((res) => {
-                setTimeout(res, 1000000, false);
+                setTimeout(res, 100000, false);
             });
         }
         proxies.forEach(function(thisProxy) {
@@ -604,11 +610,13 @@ class CommandBufferManager {
         const {width, height} = globalStates;
 
         // create gl context
+        // we repeat the workerId for the graphics subsytem to receive all information in one message
         setTimeout(() => {
             worker.postMessage({
                 name: 'bootstrap',
                 functions,
                 constants,
+                workerId: workerIds[toolId],
                 width: height,
                 height: width,
                 glState: JSON.stringify(defaultGLState),

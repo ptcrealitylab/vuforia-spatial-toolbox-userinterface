@@ -8,5 +8,6 @@
             "es2016",
             "dom"
         ]
-    }
+    },
+    "exclude": ["node_modules"]
 }
