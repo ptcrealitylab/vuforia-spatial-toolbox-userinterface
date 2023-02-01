@@ -4,6 +4,7 @@ createNameSpace("realityEditor.network.discovery");
 
     // discoveryMap[serverIp][objectId] = { heartbeat: { id, ip, port, vn, tcs }, metadata: { name, type } }
     let discoveryMap = {};
+    let serverServices = {};
 
     // Allows us to pause object discovery from the time the app loads until we have finished scanning
     let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
@@ -78,6 +79,7 @@ createNameSpace("realityEditor.network.discovery");
     }
 
     // This should be directly triggered by whatever is listening for UDP messages
+    // These are the per-object heartbeats
     function processHeartbeat(message) {
         // upon a new object discovery message, add the object and download its target files
         if (typeof message.id === 'undefined' || typeof message.ip === 'undefined') {
@@ -101,6 +103,23 @@ createNameSpace("realityEditor.network.discovery");
             } else if (!realityEditor.gui.settings.toggleStates.zoneState) {
                 realityEditor.network.addHeartbeatObject(message);
             }
+        }
+    }
+
+    // These are the per-server heartbeats
+    // They include a list of services, and get sent even if no objects exist yet on that server
+    function processServerBeat(message) {
+        if (typeof message.ip === 'undefined') {
+            return;
+        }
+
+        if (typeof discoveryMap[message.ip] === 'undefined') {
+            discoveryMap[message.ip] = {};
+            callbacks.onServerDetected.forEach(cb => cb(message.ip));
+        }
+
+        if (typeof message.services !== 'undefined') {
+            serverServices[message.ip] = message.services;
         }
     }
 
@@ -144,7 +163,19 @@ createNameSpace("realityEditor.network.discovery");
         callbacks.onObjectDetected.push(callback);
     }
 
-    exports.getDetectedServerIPs = () => {
+    exports.getDetectedServerIPs = ({limitToWorldService = false} = {}) => {
+        if (!limitToWorldService) return Object.keys(discoveryMap);
+
+        // if limitToWorldService, and at least one server demands services=world, only return servers with the demand
+        let serversWithWorldService = Object.keys(discoveryMap).filter(serverIp => {
+            return serverServices[serverIp] && serverServices[serverIp].includes('world');
+        });
+
+        if (serversWithWorldService.length > 0) {
+            return serversWithWorldService;
+        }
+
+        // if no servers demand the world, return all servers
         return Object.keys(discoveryMap);
     }
 
@@ -168,5 +199,6 @@ createNameSpace("realityEditor.network.discovery");
 
     exports.initService = initService;
     exports.processHeartbeat = processHeartbeat;
+    exports.processServerBeat = processServerBeat;
 
 })(realityEditor.network.discovery);

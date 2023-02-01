@@ -88,7 +88,8 @@ var realityEditor = realityEditor || {
             meshLine: {},
             moveabilityOverlay: {},
             positioning: {},
-            utilities: {}
+            utilities: {},
+            videoPlayback: {}
         },
         spatial: {
             whereIs: {},
@@ -121,6 +122,8 @@ var realityEditor = realityEditor || {
         pocket: {},
         screenExtension : {},
         threejsScene: {},
+        spatialIndicator: {},
+        spatialArrow: {},
         utilities: {}
     },
     network: {

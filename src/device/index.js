@@ -928,7 +928,7 @@ realityEditor.device.onElementMultiTouchEnd = function(event) {
     var activeVehicle = this.getEditingVehicle();
     
     var isOverTrash = false;
-    if (event.pageX >= this.layout.getTrashThresholdX()) {
+    if (this.isPointerInTrashZone(event.pageX, event.pageY)) {
         if (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global") {
             isOverTrash = true;
         } else if (activeVehicle && activeVehicle.type === "logic") {
@@ -1133,8 +1133,14 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     cout("onDocumentPointerUp");
 };
 
-realityEditor.device.isPointerInTrashZone = function(pointerX, _pointerY) {
-    return pointerX > realityEditor.device.layout.getTrashThresholdX();
+realityEditor.device.isPointerInTrashZone = function(x, y) {
+    let customTrashZone = realityEditor.device.layout.getCustomTrashZone();
+    if (customTrashZone) {
+        return (x > customTrashZone.x && x < (customTrashZone.x + customTrashZone.width) &&
+            y > customTrashZone.y && y < (customTrashZone.y + customTrashZone.height));
+    } else {
+        return x > realityEditor.device.layout.getTrashThresholdX(); // by default, just uses right edge of screen
+    }
 };
 
 realityEditor.device.tryToDeleteSelectedVehicle = function() {
@@ -1261,8 +1267,10 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
                             this.isDoubleTap = false;
                         }.bind(this), 300);
                     } else { // registered double tap and create memory
-                        realityEditor.gui.menus.switchToMenu("bigPocket");
-                        realityEditor.gui.memory.createMemory();
+                        if (realityEditor.device.environment.variables.supportsMemoryCreation) {
+                            realityEditor.gui.menus.switchToMenu("bigPocket");
+                            realityEditor.gui.memory.createMemory();
+                        }
                     }
 
                 }
@@ -1404,7 +1412,7 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             var isDeletableVehicle = activeVehicle.type === 'logic' || (globalStates.guiState === "ui" && activeVehicle && activeVehicle.location === "global");
             
             // visual feedback if you move over the trash
-            if (event.pageX >= this.layout.getTrashThresholdX() && isDeletableVehicle) {
+            if (this.isPointerInTrashZone(event.pageX, event.pageY) && isDeletableVehicle) {
                 overlayDiv.classList.add('overlayNegative');
             } else {
                 overlayDiv.classList.remove('overlayNegative');

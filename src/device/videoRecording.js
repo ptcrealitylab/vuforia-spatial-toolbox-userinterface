@@ -14,7 +14,8 @@ createNameSpace("realityEditor.device.videoRecording");
         isRecording: false,
         visibleObjects: {},
         recordingObjectKey: null,
-        startMatrix: null
+        startMatrix: null,
+        virtualizerCallback: null
     };
 
     /**
@@ -294,6 +295,51 @@ createNameSpace("realityEditor.device.videoRecording");
     }
 
     //////////////////////////////////////////
+    //         Virtualizer Recording        //
+    //////////////////////////////////////////
+
+    // Captures color, depth, and pose data.
+    function startVirtualizerRecording() {
+        const bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
+        const onSettings = (networkId, networkSecret) => {
+            privateState.virtualizerData = {
+                networkId,
+                networkSecret
+            }
+            console.log(`Starting virtualizer recording on ${bestWorldObject.ip} with ${networkId} and ${networkSecret}`);
+            realityEditor.app.appFunctionCall("enablePoseTracking", {
+                ip: bestWorldObject.ip,
+                networkId,
+                networkSecret,
+            });
+            setTimeout(() => {
+                realityEditor.app.appFunctionCall('startVirtualizerRecording', {});
+            }, 1000);
+        }
+
+        const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+        if (window.location.host.split(':')[0] !== localSettingsHost.split(':')[0]) {
+            const networkId = /\/n\/([^/]+)/.exec(window.location.pathname)[1];
+            const networkSecret = /\/s\/([^/]+)/.exec(window.location.pathname)[1];
+            onSettings(networkId, networkSecret);
+        } else {
+            fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
+                onSettings(settings.networkUUID, settings.networkSecret);
+            });
+        }
+    }
+
+    function stopVirtualizerRecording(callback) {
+        realityEditor.app.appFunctionCall('stopVirtualizerRecording', {}, 'realityEditor.device.videoRecording.onStopVirtualizerRecording("__ARG1__", "__ARG2__");');
+        privateState.virtualizerCallback = callback;
+    }
+    
+    function onStopVirtualizerRecording(recordingId, deviceId) {
+        const baseUrl = `https://toolboxedge.net/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
+        privateState.virtualizerCallback(baseUrl, recordingId, deviceId);
+    }
+
+    //////////////////////////////////////////
 
     exports.initService = initService;
     exports.toggleRecording = toggleRecording;
@@ -305,5 +351,9 @@ createNameSpace("realityEditor.device.videoRecording");
 
     exports.start3DVideoRecording = start3DVideoRecording;
     exports.stop3DVideoRecording = stop3DVideoRecording;
+
+    exports.startVirtualizerRecording = startVirtualizerRecording;
+    exports.stopVirtualizerRecording = stopVirtualizerRecording;
+    exports.onStopVirtualizerRecording = onStopVirtualizerRecording;
     
 }(realityEditor.device.videoRecording));

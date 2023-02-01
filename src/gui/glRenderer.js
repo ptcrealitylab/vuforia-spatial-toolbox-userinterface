@@ -105,7 +105,7 @@ class CommandBufferManager {
      * @param {Message} commandBuffer 
      */
     onCommandBufferReceived(commandBuffer) {
-        console.log(`cmd(${commandBuffer.workerId}): received buffer[${commandBuffer.commands.length}]`);
+        //console.log(`cmd(${commandBuffer.workerId}): received buffer[${commandBuffer.commands.length}]`);
         this.commandBuffers.push(commandBuffer);
     
     }
@@ -258,7 +258,7 @@ class CommandBufferManager {
             if (command.args.length == undefined) {
                 console.log("no length!");
             }
-            console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
+            //console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
             
             
             /**
@@ -466,6 +466,14 @@ class CommandBufferManager {
                 realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
             }
         }
+
+        setTimeout(() => {
+            requestAnimationFrameIfNotPending();
+        }, 500);
+        setInterval(watchpuppy, 1000);
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
     }
 
     /**
@@ -535,7 +543,7 @@ class CommandBufferManager {
         let res = await Promise.all(prommies);
         if (!res) {
             console.warn('glRenderer watchdog is barking');
-            requestAnimationFrame(renderFrame);
+            requestAnimationFrameIfNotPending();
             return;
         }
 
@@ -562,14 +570,23 @@ class CommandBufferManager {
             }
         }
 
-        requestAnimationFrame(renderFrame);
         lastRender = Date.now();
         rendering = false;
+        animationFrameRequest = null;
+        requestAnimationFrameIfNotPending();
+    }
+
+    let animationFrameRequest = null;
+    function requestAnimationFrameIfNotPending() {
+        if (animationFrameRequest) {
+            return;
+        }
+        animationFrameRequest = requestAnimationFrame(renderFrame);
     }
 
     function watchpuppy() {
         if (lastRender + 3000 < Date.now()) {
-            renderFrame();
+            requestAnimationFrameIfNotPending();
         }
     }
 
