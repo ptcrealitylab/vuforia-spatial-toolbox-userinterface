@@ -13,10 +13,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let cachedOcclusionObject = null;
     let cachedWorldObject = null;
     
-    let worldIntersectPoint = {};
     let indicator1;
     let indicator2;
     let overlapped = false;
+    let isMyColorDetermined = false;
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -104,6 +104,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let uniforms2 = {
         'EPSILON': {value: Number.EPSILON},
         'avatarColor': {value: finalColor},
+        'alpha': {value: 0.5}
     };
     const testCursorFragmentShader = `
     ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
@@ -115,11 +116,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         vec3 colorLighter;
     };
     uniform AvatarColor avatarColor[1];
+    uniform float alpha;
     
     void main(void) {
         ${THREE.ShaderChunk.logdepthbuf_fragment}
         vec3 color = avatarColor[0].color;
-        gl_FragColor = vec4(color, 0.5);
+        gl_FragColor = vec4(color, alpha); // alpha = 0.5 is a good default
     }
     `;
     const testCursorMaterial = new THREE.ShaderMaterial({
@@ -151,6 +153,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             color: new THREE.Color(color),
             colorLighter: new THREE.Color(colorLighter)
         };
+
+        // show the cursor if it was hidden while this function resolves
+        isMyColorDetermined = true;
+        if (isCursorEnabled && !isUpdateLoopRunning) {
+            update(); // restart the update loop
+        }
     }
 
     function onLoadOcclusionObject(callback) {
@@ -240,8 +248,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function update() {
-        if (!isCursorEnabled) {
+        if (!isCursorEnabled || !isMyColorDetermined) {
             isUpdateLoopRunning = false;
+            indicator1.visible = false;
+            indicator2.visible = false;
             return; // need to call update() again when isCursorEnabled gets toggled on again
         }
         isUpdateLoopRunning = true;
@@ -255,9 +265,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 screenX = mousePosition.x;
                 screenY = mousePosition.y;
             }
-            worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
-            updateSpatialCursor();
-            updateTestSpatialCursor();
+            let worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+            updateSpatialCursor(worldIntersectPoint);
+            updateTestSpatialCursor(worldIntersectPoint);
             uniforms['time'].value = clock.getElapsedTime() * 10;
 
             if (SNAP_CURSOR_TO_TOOLS) {
@@ -296,17 +306,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      * Creates the spatial cursor if it doesn't exist yet.
      * @param {string} objectKey
      * @param {number[]} cursorMatrix
+     * @param {string} cursorColorHSL - hsl string of color
      * @param {string} relativeToWorldId
      */
-    function renderOtherSpatialCursor(objectKey, cursorMatrix, relativeToWorldId) {
+    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId) {
         if (relativeToWorldId !== realityEditor.sceneGraph.getWorldId()) return; // ignore cursors in other worlds
+        if (typeof cursorColorHSL !== 'string') return; // color is required to initialize the material
 
         if (typeof otherSpatialCursors[objectKey] === 'undefined') {
-            let cursorGroup = addOtherSpatialCursor();
+            let cursorGroup = addOtherSpatialCursor(cursorColorHSL);
             otherSpatialCursors[objectKey] = {
                 object3d: cursorGroup,
                 worldId: relativeToWorldId,
-                matrix: cursorMatrix
+                matrix: cursorMatrix,
+                coloredMesh: cursorGroup.children.find(elt => elt.name === 'coloredCursorMesh')
             }
             realityEditor.gui.threejsScene.addToScene(cursorGroup);
         }
@@ -321,16 +334,32 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     /**
      * Helper function to create and return the THREE.Object3D for another client's cursor
+     * The material is more transparent than your own cursor.
      * @returns {Group}
      */
-    function addOtherSpatialCursor() {
-        const geometryLength = 50;
+    function addOtherSpatialCursor(cursorColorHSL) {
         const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial);
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
-        const material2 = new THREE.MeshBasicMaterial({color: new THREE.Color(0x6f6f6f)});
+        const material2 = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: testCursorFragmentShader,
+            uniforms: {
+                'EPSILON': {value: Number.EPSILON},
+                'avatarColor': {value: [{
+                        color: new THREE.Color(cursorColorHSL),
+                        colorLighter: new THREE.Color(cursorColorHSL)
+                    }]
+                },
+                'alpha': {value: 0.2}
+            },
+            transparent: true,
+            side: THREE.DoubleSide,
+        });
+
         const indicator2 = new THREE.Mesh(geometry2, material2);
+        indicator2.name = 'coloredCursorMesh';
 
         const cursorGroup = new THREE.Group();
         cursorGroup.add(indicator1);
@@ -366,23 +395,29 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
     
-    function updateSpatialCursor() {
-        if (typeof worldIntersectPoint.point !== 'undefined') {
+    function updateSpatialCursor(worldIntersectPoint) {
+        if (worldIntersectPoint) {
+            if (!indicator1.visible || !indicator2.visible) {
+                indicator1.visible = true;
+                indicator2.visible = true;
+            }
             indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
             let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(topCursorOffset);
             indicator1.position.add(offset);
             indicator1.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
+        } else {
+            indicator1.visible = false;
+            indicator2.visible = false;
         }
         indicator1.material = overlapped ? colorCursorMaterial : normalCursorMaterial;
     }
 
-    function updateTestSpatialCursor() {
-        if (typeof worldIntersectPoint.point !== 'undefined') {
-            indicator2.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
-            let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(bottomCursorOffset);
-            indicator2.position.add(offset);
-            indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
-        }
+    function updateTestSpatialCursor(worldIntersectPoint) {
+        if (!worldIntersectPoint) return;
+        indicator2.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
+        let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(bottomCursorOffset);
+        indicator2.position.add(offset);
+        indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
     }
 
     function toggleDisplaySpatialCursor(newValue) {
@@ -396,7 +431,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function getRaycastCoordinates(screenX, screenY) {
-
+        let worldIntersectPoint = null;
         let objectsToCheck = [];
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);

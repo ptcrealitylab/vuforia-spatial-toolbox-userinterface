@@ -223,6 +223,8 @@ createNameSpace("realityEditor.avatar");
     }
     
     function sendMySpatialCursorPosition() {
+        if (!myAvatarObject) return;
+
         let avatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(myAvatarId);
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
         if (!avatarSceneNode || !cameraNode) { return; }
@@ -234,6 +236,7 @@ createNameSpace("realityEditor.avatar");
         
         let cursorState = {
             matrix: spatialCursorMatrix,
+            colorHSL: utils.getColor(myAvatarObject),
             worldId: worldId
         }
 

@@ -348,9 +348,10 @@ createNameSpace("realityEditor.avatar.draw");
     
     function renderSpatialCursor(objectKey, cursorState) {
         let cursorMatrix = cursorState.matrix;
+        let cursorColorHSL = cursorState.colorHSL;
         let relativeToWorldId = cursorState.worldId;
         
-        realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey, cursorMatrix, relativeToWorldId);
+        realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId);
     }
 
     // helper to create a box mesh
