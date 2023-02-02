@@ -316,10 +316,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (typeof otherSpatialCursors[objectKey] === 'undefined') {
             let cursorGroup = addOtherSpatialCursor(cursorColorHSL);
             otherSpatialCursors[objectKey] = {
-                object3d: cursorGroup,
+                group: cursorGroup,
                 worldId: relativeToWorldId,
-                matrix: cursorMatrix,
-                coloredMesh: cursorGroup.children.find(elt => elt.name === 'coloredCursorMesh')
+                matrix: cursorMatrix
             }
             realityEditor.gui.threejsScene.addToScene(cursorGroup);
         }
@@ -329,11 +328,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         if (!worldSceneNode || !groundPlaneSceneNode) return;
 
-        otherSpatialCursors[objectKey].object3d.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+        otherSpatialCursors[objectKey].group.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(
+            cursorMatrix, worldSceneNode, groundPlaneSceneNode);
     }
 
     /**
-     * Helper function to create and return the THREE.Object3D for another client's cursor
+     * Helper function to create and return the THREE.Group for another client's cursor
      * The material is more transparent than your own cursor.
      * @returns {Group}
      */
@@ -372,7 +372,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function deleteOtherSpatialCursor(objectKey) {
         if (typeof otherSpatialCursors[objectKey] !== 'undefined') {
-            realityEditor.gui.threejsScene.removeFromScene(otherSpatialCursors[objectKey].object3d);
+            realityEditor.gui.threejsScene.removeFromScene(otherSpatialCursors[objectKey].group);
             delete otherSpatialCursors[objectKey];
         }
     }

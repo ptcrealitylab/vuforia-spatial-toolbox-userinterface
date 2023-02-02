@@ -27,7 +27,8 @@ createNameSpace("realityEditor.avatar.draw");
                 renderAvatar(objectKey, avatarTouchState, avatarNames[objectKey]);
             }
             for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
-                renderSpatialCursor(objectKey, avatarCursorState);
+                realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);
@@ -344,14 +345,6 @@ createNameSpace("realityEditor.avatar.draw");
         avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
-    }
-    
-    function renderSpatialCursor(objectKey, cursorState) {
-        let cursorMatrix = cursorState.matrix;
-        let cursorColorHSL = cursorState.colorHSL;
-        let relativeToWorldId = cursorState.worldId;
-        
-        realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId);
     }
 
     // helper to create a box mesh
