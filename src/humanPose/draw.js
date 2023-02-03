@@ -707,12 +707,6 @@ function updateJointsHistorical(poseRenderer, poseObject) {
 function updateJoints(poseRenderer, poseObject) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
-    if (poseObject.matrix && poseObject.matrix.length > 0) {
-        let objectRootMatrix = new THREE.Matrix4();
-        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
-        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
-    }
-
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
