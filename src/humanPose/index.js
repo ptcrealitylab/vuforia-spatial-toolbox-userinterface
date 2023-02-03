@@ -253,6 +253,26 @@ import * as utils from './utils.js'
         // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
         humanPoseObject.lastUpdateDataTS = pose.timestamp;
         
+        // update overall object position (currently defined by 1. joint - nose)
+        var objPosition = {
+            x: pose.joints[0].x,
+            y: pose.joints[0].y,
+            z: pose.joints[0].z
+        };
+
+        humanPoseObject.matrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            objPosition.x, objPosition.y, objPosition.z, 1
+        ];
+        
+        // updating scene graph with new pose
+        let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(humanPoseObject.objectId);
+        objectSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
+        objectSceneNode.setLocalMatrix(humanPoseObject.matrix);
+        
+        // update relative positions of all joints/frames wrt. object positions
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
@@ -268,7 +288,7 @@ import * as utils from './utils.js'
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                jointInfo.x, jointInfo.y, jointInfo.z, 1,
+                jointInfo.x - objPosition.x, jointInfo.y - objPosition.y, jointInfo.z - objPosition.z, 1,
             ];
 
             // updating scene graph with new pose
