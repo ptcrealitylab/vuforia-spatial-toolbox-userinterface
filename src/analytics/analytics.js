@@ -5,6 +5,9 @@ import {
     setHoverTime,
     setHistoryLinesVisible,
 } from '../humanPose/draw.js';
+import {
+    loadHistory
+} from '../humanPose/index.js';
 
 export class Analytics {
     constructor() {
@@ -79,7 +82,8 @@ export class Analytics {
      * @param {boolean} fromSpaghetti - prevents infinite recursion from
      *                  modifying human pose spaghetti which calls this function
      */
-    setDisplayRegion(region, fromSpaghetti) {
+    async setDisplayRegion(region, fromSpaghetti) {
+        await loadHistory(region);
         this.timeline.setDisplayRegion(region);
         if (region && !fromSpaghetti) {
             setDisplayTimeInterval(region.startTime, region.endTime);

@@ -26,8 +26,6 @@ import * as utils from './utils.js'
     function initService() {
         console.log('init humanPose module', network, draw, utils);
 
-        loadHistory();
-
         realityEditor.app.callbacks.subscribeToPoses((poseJoints, timestamp) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints, timestamp);
             let poseObjectName = utils.getPoseObjectName(pose);
@@ -112,15 +110,36 @@ import * as utils from './utils.js'
         });
     }
 
-    async function loadHistory() {
+    /**
+     * @param {TimeRegion} historyRegion
+     */
+    async function loadHistory(historyRegion) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
             setTimeout(loadHistory, 500);
             return;
         }
+        const regionStartTime = historyRegion.startTime;
+        const regionEndTime = historyRegion.endTime;
+
         try {
             const resLogs = await fetch('http://localhost:8080/history/logs');
             const logs = await resLogs.json();
             for (const logName of logs) {
+                let matches = logName.match(/objects_(\d+)-(\d+)/);
+                if (!matches) {
+                    continue;
+                }
+                let logStartTime = parseInt(matches[1]);
+                let logEndTime = parseInt(matches[2]);
+                if (isNaN(logStartTime) || isNaN(logEndTime)) {
+                    continue;
+                }
+                if (logEndTime < regionStartTime) {
+                    continue;
+                }
+                if (logStartTime > regionEndTime && regionEndTime >= 0) {
+                    continue;
+                }
                 const resLog = await fetch(`http://localhost:8080/history/logs/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
@@ -393,6 +412,8 @@ import * as utils from './utils.js'
     }
 
     exports.initService = initService;
+    exports.loadHistory = loadHistory;
 }(realityEditor.humanPose));
 
 export const initService = realityEditor.humanPose.initService;
+export const loadHistory = realityEditor.humanPose.loadHistory;
