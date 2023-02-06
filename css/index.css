@@ -1707,11 +1707,6 @@ Logic Interface CSS
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     font-size: 24px;
     background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 22px;
-    height: 44px;
-    text-align: center;
-    vertical-align: middle;
-    line-height: 44px;
     z-index: 3000;
     transform-style: preserve-3d;
     /* translateZ puts it above web interfaces, below side buttons */
@@ -1725,20 +1720,20 @@ Logic Interface CSS
     pointer-events: none;
     color: white;
     width: 44px;
+    height: 44px;
+    line-height: 44px;
+    border-radius: 22px;
+    text-align: center;
+    vertical-align: middle;
 }
 
 .timelineBoardLabel {
     width: auto;
-    padding: 0 14px;
     font-size: 14px;
-    transform: translate3d(-50%, 0, 3000px);
-    opacity: 0;
+    padding: 0px 10px;
+    transform: translate3d(0, 0, 3000px);
     transition: opacity 0.5s;
     white-space: nowrap;
-}
-
-.timelineBoardLabel.shown {
-    opacity: 1;
 }
 
 .topLeftInfoText {

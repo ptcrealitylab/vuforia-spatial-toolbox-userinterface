@@ -26,31 +26,6 @@ const DragMode = {
 
 const DEFAULT_WIDTH_MS = 60 * 1000;
 
-class TextLabel {
-    constructor(container) {
-        this.element = document.createElement('div');
-        this.element.classList.add('timelineBoardLabel');
-        container.appendChild(this.element);
-    }
-
-    show() {
-        this.element.classList.add('shown');
-    }
-
-    hide() {
-        this.element.classList.remove('shown');
-    }
-
-    setText(text) {
-        this.element.textContent = text;
-    }
-
-    moveTo(x, y) {
-        this.element.style.left = x + 'px';
-        this.element.style.bottom = y + 'px';
-    }
-}
-
 export class Timeline {
     constructor(container) {
         this.container = container;
@@ -76,8 +51,13 @@ export class Timeline {
         this.mouseX = -1;
         this.mouseY = -1;
 
-        this.boardLabelLeft = new TextLabel(container);
-        this.boardLabelRight = new TextLabel(container);
+        this.boardLabelLeft = document.createElement('div');
+        this.boardLabelLeft.classList.add('timelineBoardLabel');
+        container.appendChild(this.boardLabelLeft);
+
+        this.boardLabelRight = document.createElement('div');
+        this.boardLabelRight.classList.add('timelineBoardLabel');
+        container.appendChild(this.boardLabelRight);
 
         this.dateFormat = new Intl.DateTimeFormat('default', {
             dateStyle: 'short',
@@ -196,14 +176,13 @@ export class Timeline {
             new Date(this.timeMin),
             new Date(this.timeMin + this.widthMs)
         );
-        this.boardLabelLeft.setText(startLabel);
-        this.boardLabelRight.setText(endLabel);
+        this.boardLabelLeft.textContent = startLabel;
+        this.boardLabelRight.textContent = endLabel;
 
-        this.boardLabelLeft.moveTo(0, this.height + labelPad - boardStart);
-        this.boardLabelRight.moveTo(this.width, this.height + labelPad - boardStart);
-
-        this.boardLabelLeft.show();
-        this.boardLabelRight.show();
+        this.boardLabelLeft.style.left = '0px';
+        this.boardLabelLeft.style.bottom = `${this.height + labelPad - boardStart}px`;
+        this.boardLabelRight.style.right = '0px';
+        this.boardLabelRight.style.bottom = `${this.height + labelPad - boardStart}px`;
     }
 
     updateRegionCard() {
