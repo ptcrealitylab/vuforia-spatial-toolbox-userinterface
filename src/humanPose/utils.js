@@ -118,6 +118,14 @@ function getJointNodeInfo(humanObject, jointIndex) {
     }
 }
 
+// returns a random but consistent color for a provided avatar object's editorId
+function getColor(object) {
+    if (!isHumanPoseObject(object)) { return null; }
+    let editorId = object.objectId.split(HUMAN_POSE_ID_PREFIX)[1].split('_')[0];
+    let id = Math.abs(realityEditor.avatar.utils.hashCode(editorId));
+    return `hsl(${(id % Math.PI) * 360 / Math.PI}, 100%, 50%)`;
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
@@ -129,5 +137,6 @@ export {
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
     indexOfMin,
-    getJointNodeInfo
+    getJointNodeInfo,
+    getColor
 };

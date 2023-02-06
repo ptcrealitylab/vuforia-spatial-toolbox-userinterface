@@ -1,9 +1,10 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} from './utils.js';
+import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo, getColor} from './utils.js';
 import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 
 let poseRenderers = {};
+let poseBaseColors = {};
 let humanPoseAnalyzer;
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
@@ -66,6 +67,13 @@ export class HumanPoseRenderer {
 
         this.spheresMesh.material = new THREE.MeshBasicMaterial();
         this.bonesMesh.material = new THREE.MeshBasicMaterial();
+    }
+    
+    /**
+    * @param {THREE.Color} new color
+    */
+    setBaseColor(color) {
+        this.baseColor = color;
     }
 
     /**
@@ -145,6 +153,7 @@ export class HumanPoseRenderer {
             mat.compose(pos, rot, scale);
 
             this.bonesMesh.setMatrixAt(boneIndex, mat);
+            this.bonesMesh.setColorAt(boneIndex, this.baseColor);
         }
 
         if (!RENDER_CONFIDENCE_COLOR) {
@@ -622,8 +631,19 @@ function renderHistoricalPose(poseObject, timestamp, container) {
 }
 
 function updatePoseRenderer(poseObject, timestamp, container, historical) {
+    
+    // create per-device body pose base color
+    let end = poseObject.uuid.indexOf('pose1')
+    let poseDeviceId = poseObject.uuid.substring(0, end)
+
+    if (!poseBaseColors[poseDeviceId]) {
+        let baseColor = new THREE.Color(getColor(poseObject))
+        poseBaseColors[poseDeviceId] = baseColor;
+    }
+
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
+        poseRenderers[poseObject.uuid].setBaseColor(poseBaseColors[poseDeviceId]);
         poseRenderers[poseObject.uuid].addToScene(container);
     }
     let poseRenderer = poseRenderers[poseObject.uuid];
