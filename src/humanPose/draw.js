@@ -686,6 +686,12 @@ function getGroundPlaneRelativeMatrix() {
 function updateJointsHistorical(poseRenderer, poseObject) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
+    if (poseObject.matrix && poseObject.matrix.length > 0) {
+        let objectRootMatrix = new THREE.Matrix4();
+        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+    }
+
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
         if (!frame.ar.matrix) {
