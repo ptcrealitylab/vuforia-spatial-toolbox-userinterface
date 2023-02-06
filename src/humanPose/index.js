@@ -12,7 +12,7 @@ import * as utils from './utils.js'
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
-    const SHOW_PLAYBACK = false;
+    const SHOW_PLAYBACK = true;
 
     let myHumanPoseId = null;  // objectId
 
@@ -168,7 +168,7 @@ import * as utils from './utils.js'
             }
             draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
             if (SHOW_PLAYBACK) {
-                await sleep(10);
+                await sleep(0);
             }
         }
         inHistoryPlayback = false;
