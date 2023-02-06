@@ -16,13 +16,15 @@ const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
 
-const defaultMinPixelsPerMs = 0.00004;
+const DEFAULT_MIN_PIXELS_PER_MS = 0.00004;
 
 const DragMode = {
     NONE: 'none',
     SELECT: 'select',
     PAN: 'pan',
 };
+
+const DEFAULT_WIDTH_MS = 60 * 1000;
 
 class TextLabel {
     constructor(container) {
@@ -57,10 +59,10 @@ export class Timeline {
         this.canvas.classList.add('analytics-timeline');
         this.gfx = this.canvas.getContext('2d');
         this.pixelsPerMs = 0.01; // 1024 * 100 / (24 * 60 * 60 * 1000);
-        this.timeMin = -1;
+        this.timeMin = Date.now() - DEFAULT_WIDTH_MS;
         this.resetBounds();
-        this.widthMs = -1;
-        this.scrolled = true;
+        this.widthMs = DEFAULT_WIDTH_MS;
+        this.scrolled = false;
         container.appendChild(this.canvas);
         this.poses = [];
         this.width = -1;
@@ -111,14 +113,20 @@ export class Timeline {
             }
 
             this.width = rect.width;
-            this.widthMs = this.width / this.pixelsPerMs;
+            this.pixelsPerMs = this.width / this.widthMs;
+            if (this.minPixelsPerMs < 0) {
+                this.minPixelsPerMs = this.pixelsPerMs;
+            }
             this.canvas.width = this.width;
             this.canvas.height = this.height;
             this.gfx.width = this.width;
             this.gfx.height = this.height;
         }
         if (this.timeMin > 0 && !this.scrolled) {
-            this.timeMin = Date.now() - this.widthMs / 2;
+            this.timeMin = Date.now() - this.widthMs;
+            if (this.timeMin + this.widthMs > this.maxTimeMax) {
+                this.timeMin = this.maxTimeMax - this.widthMs;
+            }
         }
 
         this.gfx.clearRect(0, 0, this.width, this.height);
@@ -483,6 +491,8 @@ export class Timeline {
         let dTime = event.movementX / this.pixelsPerMs;
         this.timeMin -= dTime;
         this.limitTimeMin();
+
+        this.scrolled = true;
     }
 
     /**
@@ -517,24 +527,52 @@ export class Timeline {
         }
     }
 
+    /**
+     * @param {TimeRegion} displayRegion
+     */
     setDisplayRegion(displayRegion) {
         this.displayRegion = displayRegion;
         if (!this.displayRegion) {
             this.resetBounds();
             return;
         }
+
+        let {startTime, endTime} = this.displayRegion;
+        let unbounded = endTime <= 0;
+
+        if (!unbounded) {
+            // Pin timeline to the bounds being set
+            this.scrolled = true;
+        }
+
+        if (startTime <= 0) {
+            startTime = Date.now();
+            this.displayRegion.startTime = startTime;
+        }
+        if (endTime <= 0) {
+            endTime = startTime + DEFAULT_WIDTH_MS;
+            this.displayRegion.endTime = endTime;
+        }
+
         // Snap zoom to equal entire displayRegion
-        let newWidthMs = this.displayRegion.endTime - this.displayRegion.startTime;
-        this.timeMin = this.displayRegion.startTime;
+        let newWidthMs = endTime - startTime;
+        this.timeMin = startTime;
         this.widthMs = newWidthMs;
-        this.pixelsPerMs = this.width / this.widthMs;
-        this.minPixelsPerMs = this.pixelsPerMs;
+        if (this.width <= 0) {
+            this.pixelsPerMs = -1;
+        }
         this.minTimeMin = this.timeMin;
-        this.maxTimeMax = this.timeMin + this.widthMs;
+        if (unbounded) {
+            this.maxTimeMax = Number.MAX_VALUE;
+            this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
+        } else {
+            this.maxTimeMax = this.timeMin + this.widthMs;
+            this.minPixelsPerMs = this.pixelsPerMs;
+        }
     }
 
     resetBounds() {
-        this.minPixelsPerMs = defaultMinPixelsPerMs;
+        this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
         this.minTimeMin = 0;
         this.maxTimeMax = Number.MAX_VALUE;
     }
@@ -591,6 +629,8 @@ export class Timeline {
         }
 
         this.limitTimeMin();
+
+        this.scrolled = true;
 
         event.preventDefault();
         event.stopPropagation();
