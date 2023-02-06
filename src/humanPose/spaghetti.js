@@ -198,7 +198,7 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     isVisible() {
-        return this.visible && this.parent.visible;
+        return this.visible && this.parent && this.parent.visible;
     }
 
     setupPointerEvents() {
