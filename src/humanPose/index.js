@@ -115,7 +115,9 @@ import * as utils from './utils.js'
      */
     async function loadHistory(historyRegion) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
-            setTimeout(loadHistory, 500);
+            setTimeout(() => {
+                loadHistory(historyRegion);
+            }, 500);
             return;
         }
         const regionStartTime = historyRegion.startTime;
