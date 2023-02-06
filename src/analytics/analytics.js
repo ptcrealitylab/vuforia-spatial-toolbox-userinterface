@@ -83,8 +83,8 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     async setDisplayRegion(region, fromSpaghetti) {
-        await loadHistory(region);
         this.timeline.setDisplayRegion(region);
+        await loadHistory(region);
         if (region && !fromSpaghetti) {
             setDisplayTimeInterval(region.startTime, region.endTime);
         }
