@@ -7,7 +7,7 @@ const needleTopPad = 4;
 const needleTipWidth = 12;
 const needlePad = 12;
 const needleWidth = 3;
-const needleDragWidth = 8;
+const needleDragWidth = 12;
 
 const rowPad = 4;
 const rowHeight = 10;
@@ -415,7 +415,13 @@ export class Timeline {
 
         if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
-            this.highlightStartX = event.offsetX;
+            if (this.isPointerOnStartNeedle()) {
+                this.highlightStartX = this.timeToX(this.highlightRegion.endTime);
+            } else if (this.isPointerOnEndNeedle()) {
+                this.highlightStartX = this.timeToX(this.highlightRegion.startTime);
+            } else {
+                this.highlightStartX = event.offsetX;
+            }
         } else {
             this.dragMode = DragMode.PAN;
         }
@@ -443,7 +449,9 @@ export class Timeline {
 
     onPointerMoveDragModeNone(_event) {
         let cursor = 'default';
-        if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnNeedle()) {
+            cursor = 'grab';
+        } else if (this.isPointerOnActiveRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
             cursor = 'move';
