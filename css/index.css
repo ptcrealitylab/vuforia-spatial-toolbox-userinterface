@@ -1730,7 +1730,7 @@ Logic Interface CSS
 .timelineBoardLabel {
     width: auto;
     font-size: 14px;
-    padding: 0px 10px;
+    padding: 0 4px;
     transform: translate3d(0, 0, 3000px);
     transition: opacity 0.5s;
     white-space: nowrap;
