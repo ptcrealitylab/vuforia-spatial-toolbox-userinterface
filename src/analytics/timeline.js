@@ -103,9 +103,12 @@ export class Timeline {
             this.gfx.height = this.height;
         }
         if (this.timeMin > 0 && !this.scrolled) {
-            this.timeMin = Date.now() - this.widthMs;
-            if (this.timeMin + this.widthMs > this.maxTimeMax) {
-                this.timeMin = this.maxTimeMax - this.widthMs;
+            const newTimeMin = Date.now() - this.widthMs;
+            if (newTimeMin > this.timeMin) {
+                this.timeMin = newTimeMin;
+                if (this.timeMin + this.widthMs > this.maxTimeMax) {
+                    this.timeMin = this.maxTimeMax - this.widthMs;
+                }
             }
         }
 
