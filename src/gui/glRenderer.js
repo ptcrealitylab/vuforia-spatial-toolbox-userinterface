@@ -209,10 +209,11 @@ class CommandBufferManager {
              */
             this.buffer = new CommandBufferManager(workerId);
 
+            const viewport = this.gl.getParameter(this.gl.VIEWPORT);
             /**
              * @type {GLState}
              */
-            this.lastState = new realityEditor.gui.glState.GLState(this.gl, this.unclonables);
+            this.lastState = new realityEditor.gui.glState.GLState(this.gl, this.unclonables, viewport);
 
             this.onMessage = this.onMessage.bind(this);
             window.addEventListener('message', this.onMessage);
@@ -222,7 +223,8 @@ class CommandBufferManager {
             /**
              * @type {Int32Array} if this is not null, the worker thread is locked until it receives a response on the last comitted resource Command List
              */
-            this.syncLock = null;
+            this.synclock = new Int32Array(new SharedArrayBuffer(4));
+            Atomics.store(this.synclock, 0, 1);
         }
 
         /**
@@ -239,10 +241,6 @@ class CommandBufferManager {
             if (this.frameEndListener && message.isFrameEnd) {
                 this.frameEndListener(true);
                 return;
-            }
-
-            if ((this.syncLock === null) && (message.hasOwnProperty("syncLock"))) {
-                this.syncLock = new Int32Array(message.syncLock);
             }
 
             this.buffer.onCommandBufferReceived(message)
@@ -370,15 +368,25 @@ class CommandBufferManager {
 
             if ((localCommandBuffer !== null) && (localCommandBuffer.commands.length !== 0)) {
                 let commandId = 1;
-                for (let command of localCommandBuffer.commands) {
-                    const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
-                    let res = this.executeOneCommand(command, id);
-                } 
-                if (this.syncLock !== null) {
+                if (Atomics.load(this.synclock, 0) === 1) {
+                    for (let command of localCommandBuffer.commands) {
+                        const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
+                        this.executeOneCommand(command, id);
+                    } 
+                } else {
+                    // the worker is locked and can't send additional buffers
+                    // loop all resource command buffers
+                    while (localCommandBuffer !== null) {
+                        for (let command of localCommandBuffer.commands) {
+                            const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
+                            this.executeOneCommand(command, id);
+                        } 
+                        localCommandBuffer = this.buffer.getResourceCommandBuffer();
+                    }
                     // if worker thread was locked, we can unlock it now that we have written all requested results
-                    Atomics.notify(this.syncLock, 0, 1);
-                    this.syncLock = null;
-                }           
+                    Atomics.store(this.synclock, 0, 1);
+                    Atomics.notify(this.synclock, 0, 1);
+                }        
             } else {
                 localCommandBuffer = this.buffer.getRenderCommandBuffer();
                 let commandId = 1;
@@ -548,10 +556,13 @@ class CommandBufferManager {
         }
 
         if (gl !== null) {
-            gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
-            gl.clearDepth(1.0);                 // Clear everything
             gl.enable(gl.DEPTH_TEST);           // Enable depth testing
             gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+            gl.enable(gl.CULL_FACE);
+            gl.cullFace(gl.BACK);
+            gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
+            gl.clearDepth(1.0);                 // Clear everything
+           
 
             // Clear the canvas before we start drawing on it.
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -637,7 +648,8 @@ class CommandBufferManager {
                 width: height,
                 height: width,
                 glState: JSON.stringify(defaultGLState),
-                deviceDesc: JSON.stringify(new DeviceDescription(gl))
+                deviceDesc: JSON.stringify(new DeviceDescription(gl)),
+                synclock: proxy.synclock
             }, '*');
         }, 200);
     }
