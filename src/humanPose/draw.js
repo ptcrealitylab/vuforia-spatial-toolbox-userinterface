@@ -229,6 +229,11 @@ export class HumanPoseRenderer {
     }
 }
 
+const AnimationMode = {
+    ONE: 'one',
+    ALL: 'all',
+};
+
 export class HumanPoseAnalyzer {
     /**
      * @param {THREE.Object3D} historyMeshContainer - THREE container for
@@ -248,6 +253,7 @@ export class HumanPoseAnalyzer {
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
+        this.animationMode = AnimationMode.ONE;
         this.lastAnimationUpdate = Date.now();
 
         this.update = this.update.bind(this);
@@ -310,7 +316,7 @@ export class HumanPoseAnalyzer {
                 timestamp,
                 poseObject: obj,
             })
-            obj.visible = false;
+            obj.visible = this.animationMode === AnimationMode.ALL;
             this.historyCloneContainer.add(obj);
         }
 
@@ -512,10 +518,19 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {boolean} enabled
+     * @param {AnimationMode} animationMode
      */
-    setRecordingClonesEnabled(enabled) {
-        this.recordingClones = enabled;
+    setAnimationMode(animationMode) {
+        this.animationMode = animationMode;
+        if (this.animationMode === AnimationMode.ALL) {
+            for (let clone of this.clonesAll) {
+                clone.poseObject.visible = true;
+            }
+        } else {
+            for (let clone of this.clonesAll) {
+                clone.poseObject.visible = false;
+            }
+        }
     }
 
     advanceCloneMaterial() {
@@ -781,7 +796,11 @@ function setHistoryLinesVisible(visible) {
  * @param {boolean} enabled
  */
 function setRecordingClonesEnabled(enabled) {
-    humanPoseAnalyzer.setRecordingClonesEnabled(enabled);
+    if (enabled) {
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.ALL);
+    } else {
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.ONE);
+    }
 }
 
 function advanceCloneMaterial() {
