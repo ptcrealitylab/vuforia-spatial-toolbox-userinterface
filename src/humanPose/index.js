@@ -124,7 +124,9 @@ import * as utils from './utils.js'
         const regionEndTime = historyRegion.endTime;
 
         try {
-            const resLogs = await fetch('http://localhost:8080/history/logs');
+            const worldObject = realityEditor.worldObjects.getBestWorldObject();
+            const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
+            const resLogs = await fetch(historyLogsUrl);
             const logs = await resLogs.json();
             for (const logName of logs) {
                 let matches = logName.match(/objects_(\d+)-(\d+)/);
@@ -142,7 +144,7 @@ import * as utils from './utils.js'
                 if (logStartTime > regionEndTime && regionEndTime >= 0) {
                     continue;
                 }
-                const resLog = await fetch(`http://localhost:8080/history/logs/${logName}`);
+                const resLog = await fetch(`${historyLogsUrl}/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
             }
