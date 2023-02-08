@@ -115,7 +115,7 @@ export class HumanPoseRenderer {
 
     /**
      * Updates bone (stick between joints) positions based on this.spheres'
-     * positions. 
+     * positions.
      */
     updateBonePositions() {
 
