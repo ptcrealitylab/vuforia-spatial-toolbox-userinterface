@@ -434,13 +434,12 @@ export class HumanPoseAnalyzer {
     resetHistoryClones() {
         // Loop over copy of children to remove all
         for (let child of this.historyCloneContainer.children.concat()) {
-            child.geometry.dispose();
-            child.material.dispose();
             if (child.dispose) {
                 child.dispose();
             }
             this.historyCloneContainer.remove(child);
         }
+        this.clonesAll = [];
     }
 
     /**
