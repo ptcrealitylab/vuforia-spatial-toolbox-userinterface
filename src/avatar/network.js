@@ -13,6 +13,7 @@ createNameSpace("realityEditor.avatar.network");
     let cachedWorldObject = null;
     let lastBroadcastPositionTimestamp = Date.now();
     let lastWritePublicDataTimestamp = Date.now();
+    let lastWriteSpatialCursorTimestamp = Date.now();
     let pendingAvatarInitializations = {};
 
     // Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
@@ -111,6 +112,15 @@ createNameSpace("realityEditor.avatar.network");
             lastWritePublicDataTimestamp = Date.now();
         }
     }
+    
+    // write the cursorState to the avatar object's storage node
+    function sendSpatialCursorState(keys, cursorState, options) {
+        let sendData = !(options && options.limitToFps) || !isCursorStateFpsLimited();
+        if (sendData) {
+            realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.cursorState, cursorState);
+            lastWriteSpatialCursorTimestamp = Date.now();
+        }
+    }
 
     /**
      * Helper function to provide insight into the fps limiter
@@ -118,6 +128,11 @@ createNameSpace("realityEditor.avatar.network");
      */
     function isTouchStateFpsLimited() {
         return Date.now() - lastWritePublicDataTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
+    }
+
+    // same as isTouchStateFpsLimited, but to limit the FPS of the spatial cursor data sending
+    function isCursorStateFpsLimited() {
+        return Date.now() - lastWriteSpatialCursorTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
     }
 
     // write the username into the avatar object's storage node
@@ -186,6 +201,7 @@ createNameSpace("realityEditor.avatar.network");
     exports.realtimeSendAvatarPosition = realtimeSendAvatarPosition;
     exports.isTouchStateFpsLimited = isTouchStateFpsLimited;
     exports.sendTouchState = sendTouchState;
+    exports.sendSpatialCursorState = sendSpatialCursorState;
     exports.sendUserProfile = sendUserProfile;
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
     exports.addPendingAvatarInitialization = addPendingAvatarInitialization;

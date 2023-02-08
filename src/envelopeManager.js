@@ -10,6 +10,9 @@ createNameSpace("realityEditor.envelopeManager");
 
 (function(exports) {
 
+    // in addition to the X button, adds another button next to it (purpose not fully determined)
+    const INCLUDE_MINIMIZE_BUTTON = false;
+
     /**
      * @typedef {Object} Envelope
      * @property {string} object
@@ -235,6 +238,11 @@ createNameSpace("realityEditor.envelopeManager");
                 });
             }
             exitButton.style.display = 'inline';
+
+            if (!INCLUDE_MINIMIZE_BUTTON) {
+                callbacks.onExitButtonShown.forEach(cb => cb(exitButton, null));
+                return;
+            }
 
             let minimizeButton = document.getElementById('minimizeEnvelopeButton');
             if (!minimizeButton) {

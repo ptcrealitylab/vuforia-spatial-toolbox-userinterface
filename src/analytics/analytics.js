@@ -1,6 +1,8 @@
 import {Timeline} from './timeline.js';
 import {
-    setHistoryTimeInterval,
+    setHighlightTimeInterval,
+    setDisplayTimeInterval,
+    setHoverTime,
     setHistoryLinesVisible,
 } from '../humanPose/draw.js';
 
@@ -56,7 +58,7 @@ export class Analytics {
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         if (time > 0 && !fromSpaghetti) {
-            // setHistoryTimeInterval(time, -1);
+            setHoverTime(time);
         }
     }
 
@@ -68,7 +70,54 @@ export class Analytics {
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         this.timeline.setHighlightRegion(highlightRegion);
         if (highlightRegion && !fromSpaghetti) {
-            setHistoryTimeInterval(highlightRegion.startTime, highlightRegion.endTime);
+            setHighlightTimeInterval(highlightRegion.startTime, highlightRegion.endTime);
         }
+    }
+
+    /**
+     * @param {{startTime: number, endTime: number}} region
+     * @param {boolean} fromSpaghetti - prevents infinite recursion from
+     *                  modifying human pose spaghetti which calls this function
+     */
+    setDisplayRegion(region, fromSpaghetti) {
+        this.timeline.setDisplayRegion(region);
+        if (region && !fromSpaghetti) {
+            setDisplayTimeInterval(region.startTime, region.endTime);
+        }
+    }
+
+    /**
+     * @param {'reba'|'motion'} lens
+     */
+    setLens(lens) {
+        console.error('setLens unimplemented', lens);
+    }
+
+    /**
+     * @param {'bone'|'pose'} lensDetail
+     */
+    setLensDetail(lensDetail) {
+        console.error('setLensDetail unimplemented', lensDetail);
+    }
+
+    /**
+     * @param {string} spaghettiAttachPoint
+     */
+    setSpaghettiAttachPoint(spaghettiAttachPoint) {
+        console.error('setSpaghettiAttachPoint unimplemented', spaghettiAttachPoint);
+    }
+
+    /**
+     * @param {string} spaghettiVisible
+     */
+    setSpaghettiVisible(spaghettiVisible) {
+        console.error('setSpaghettiVisible unimplemented', spaghettiVisible);
+    }
+
+    /**
+     * @param {string} allClonesVisible
+     */
+    setAllClonesVisible(allClonesVisible) {
+        console.error('setAllClonesVisible unimplemented', allClonesVisible);
     }
 }

@@ -1516,12 +1516,12 @@ Logic Interface CSS
 }
 
 #exitEnvelopeButton {
-    left: 10px;
+    left: 30px;
     top: 0;
 }
 
 #minimizeEnvelopeButton {
-    left: 70px;
+    left: 90px;
     top: 0;
 }
 
@@ -1900,4 +1900,13 @@ Logic Interface CSS
 }
 
 .analytics-region-card-graph-section-value {
+}
+
+.analytics-region-card-pin, .analytics-region-card-enter {
+    grid-column: 1;
+    text-decoration: none;
+    color: white;
+}
+.analytics-region-card-pin:visited, .analytics-region-card-enter:visited {
+    color: white;
 }
