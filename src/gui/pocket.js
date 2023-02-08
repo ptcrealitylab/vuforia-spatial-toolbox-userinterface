@@ -330,7 +330,18 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
             
             if (selectedElement && selectedElement.dataset.name === evt.target.dataset.name) {
-                createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
+                // createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
+                
+                let dataset = evt.target.dataset;
+
+                createFrame(dataset.name, {
+                    startPositionOffset: dataset.startPositionOffset,
+                    width: dataset.width,
+                    height: dataset.height,
+                    pageX: evt.pageX,
+                    pageY: evt.pageY
+                });
+                
                 deselectElement(evt.target);
                 selectedElement = null;
                 pocketHide();
@@ -967,205 +978,133 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * @param {string} objectKey - object to add the tutorial to (should be the _WORLD_local object)
      */
     function addTutorialFrame(objectKey) {
-        // TODO: ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
-        let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, objectKey);
-        console.log('added tutorial frame', addedElement);
+        // let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, objectKey);
+        
+        try {
+            let addedElement = createFrame('uiTutorial', {
+                startPositionOffset: JSON.stringify({x: 0, y: 0}),
+                width: '568',
+                height: '420',
+                pageX: window.innerWidth / 2,
+                pageY: window.innerHeight / 2,
+                objectKey: objectKey
+            });
+
+            console.log('added tutorial frame', addedElement);
+
+        } catch (e) {
+            // TODO: ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
+            console.warn(e);
+        }
     }
 
     /**
-     * Uses information from the pocket representation of a frame, to create and add a new frame to the scene.
-     * Also posts the frame to the server. And begins touch interaction to drag the frame around (unless noUserInteraction=true)
-     * Most parameters are stringified. // todo: parse them outside of function and pass in values of correct type
-     * @param {string} name
-     * @param {string} startPositionOffset - stringified object with x and y property
-     * @param {string} width - stringified frame width
-     * @param {string} height - stringified frame height
-     * @param {string} nodesList - stringified array of JSON data, one per node, with properties for name, type, etc
-     * @param {number} x - where to center the frame (touch x position)
-     * @param {number} y - where to center the frame (touch y position)
-     * @param {boolean|undefined} noUserInteraction
-     * @param {string|undefined} objectKeyToAddTo - if undefined, attaches frame to closest object. otherwise attaches to specified object
-     * @return {Frame}
+     * Creates a new frame with the specified options, and uploads it to the server
+     * @param name
+     * @param {object} options
+     * @param {string} options.objectKey
+     * @param {string} options.startPositionOffset
+     * @param {number} options.width
+     * @param {number} options.height
+     * @param {number[]} options.initialMatrix
+     * @param {boolean} options.noUserInteraction
+     * @param {number} options.pageX
+     * @param {number} options.pageY
+     * @param {function} options.onUploadComplete - callback function when network finishes posting frame to server
+     * @returns {Frame}
      */
-    function createFrame(name, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo) {
+    function createFrame(name, options) {
+        const utils = realityEditor.gui.ar.utilities;
 
-        // TODO: only attach to closest object when you release - until then store in pocket and render with identity matrix
-        // TODO: this would make it easier to drop exactly on the the object you want
-        
-        var closestObjectKey;
-        
-        if (typeof objectKeyToAddTo !== 'undefined') {
-            closestObjectKey = objectKeyToAddTo;
-        
-        } else {
-            closestObjectKey = realityEditor.network.availableFrames.getBestObjectInfoForFrame(name); // TODO: use this method to find best destination when you move a frame between objects, too
+        const closestObjectKey = options.objectKey ? options.objectKey : realityEditor.network.availableFrames.getBestObjectInfoForFrame(name);
+        if (!closestObjectKey) return;
+
+        const closestObject = realityEditor.getObject(closestObjectKey);
+        if (!closestObject) return;
+
+        if (closestObject.integerVersion && closestObject.integerVersion <= 165) return; // before version 165, objects don't have frames
+
+        const frame = new Frame();
+        frame.objectId = closestObjectKey;
+
+        // name the frame "gauge1xyz", "gauge2asd", "gauge3qwe", etc... 
+        let numberOfSameFrames = Object.keys(closestObject.frames).map(existingFrameKey => {
+            return closestObject.frames[existingFrameKey].src;
+        }).filter(src => {
+            return src === name;
+        }).length;
+        let frameUniqueName = name + (numberOfSameFrames+1) + realityEditor.device.utilities.uuidTime();
+
+        // set the essential properties
+        frame.name = frameUniqueName;
+        frame.uuid = frame.objectId + frameUniqueName;
+        frame.location = 'global';
+        frame.src = name;
+
+        console.log('created frame with name ' + frame.name);
+
+        // add the frame to the object
+        closestObject.frames[frame.uuid] = frame;
+
+        // set position and scale
+        if (options.startPositionOffset) {
+            frame.startPositionOffset = options.startPositionOffset;
         }
-        
-        console.log('add frame to ' + closestObjectKey);
-        var closestObject = realityEditor.getObject(closestObjectKey);
+        frame.ar.scale = globalStates.defaultScale;
 
-        if (closestObject.isWorldObject) {
-            console.log('adding new frame to a world object...');
-            // realityEditor.worldObjects.addFrameToWorldObject({test: 1234});
-        }
-
-        // make sure that the frames only sticks to 2.0 server version
-        if (closestObject && closestObject.integerVersion > 165) {
-
-            var frame = new Frame();
-
-            frame.objectId = closestObjectKey;
-
-            // name the frame "gauge", "gauge2", "gauge3", etc... 
-            frame.name = name;
-            var existingFrameSrcs = Object.keys(closestObject.frames).map(function(existingFrameKey){
-                return closestObject.frames[existingFrameKey].src;
-            });
-            var numberOfSameFrames = existingFrameSrcs.filter(function(src){
-                return src === name;
-            }).length;
-            if (numberOfSameFrames > 0) {
-                frame.name = name + (numberOfSameFrames+1);
-            }
-
-            console.log('created frame with name ' + frame.name);
-            var frameName = frame.name + realityEditor.device.utilities.uuidTime();
-            var frameID = frame.objectId + frameName;
-            frame.uuid = frameID;
-            frame.name = frameName;
-
-            frame.ar.x = 0;
-            frame.ar.y = 0;
-            if (startPositionOffset) {
-                var startOffset = JSON.parse(startPositionOffset);
-                frame.startPositionOffset = startOffset;
-                // frame.ar.x = startOffset.x;
-                // frame.ar.y = startOffset.y;
-                console.log('frame offset = ', startOffset);
-            }
-
-            frame.ar.scale = globalStates.defaultScale; //closestObject.averageScale;
-            if (width !== 'undefined') {
-                frame.frameSizeX = width;
-                frame.width = frame.frameSizeX;
-            }
-            if (height !== 'undefined') {
-                frame.frameSizeY = height;
-                frame.height = frame.frameSizeY;
-            }
-
-            // console.log("closest Frame", closestObject.averageScale);
-
-            frame.location = 'global';
-            frame.src = name;
-
-            // set other properties
-
-            frame.animationScale = 0;
-            frame.begin = realityEditor.gui.ar.utilities.newIdentityMatrix();
-            console.log('created pocket frame with width/height' + frame.width + '/' + frame.height);
-            frame.loaded = false;
-            // frame.objectVisible = true;
-            frame.screen = {
-                x: frame.ar.x,
-                y: frame.ar.y,
-                scale: frame.ar.scale
-            };
-            // frame.screenX = 0;
-            // frame.screenY = 0;
-            frame.screenZ = 1000;
-            frame.temp = realityEditor.gui.ar.utilities.newIdentityMatrix();
-
-            // thisFrame.objectVisible = false; // gets set to false in draw.setObjectVisible function
-            frame.fullScreen = false;
-            frame.sendMatrix = false;
-            frame.sendMatrices = {
-                model: false,
-                view: false,
-                modelView : false,
-                devicePose : false,
-                groundPlane : false,
-                allObjects : false
-            };
-            frame.sendAcceleration = false;
-            frame.integerVersion = 300; //parseInt(objects[objectKey].version.replace(/\./g, ""));
-            // thisFrame.visible = false;
-
-            // add each node with a non-empty name
-            var LOAD_NODES_FROM_SERVER = true;
-            if (!LOAD_NODES_FROM_SERVER) {
-
-                var nodes = JSON.parse(nodesList);
-                var hasMultipleNodes = nodes.length > 1;
-                nodes.forEach(function (node) {
-
-                    if (typeof node !== "object") return;
-                    var nodeUuid = frameID + node.name;
-                    frame.nodes[nodeUuid] = new Node();
-                    var addedNode = frame.nodes[nodeUuid];
-                    addedNode.objectId = closestObjectKey;
-                    addedNode.frameId = frameID;
-                    addedNode.name = node.name;
-                    addedNode.text = undefined;
-                    addedNode.type = node.type;
-                    if (typeof node.x !== 'undefined') {
-                        addedNode.x = node.x; // use specified position if provided
-                    } else {
-                        addedNode.x = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0; // center if only one, random otherwise
-                    }
-                    if (typeof node.y !== 'undefined') {
-                        addedNode.y = node.y;
-                    } else {
-                        addedNode.y = hasMultipleNodes ? realityEditor.device.utilities.randomIntInc(0, 200) - 100 : 0;
-                    }
-                    addedNode.frameSizeX = 220;
-                    addedNode.frameSizeY = 220;
-                    var scaleFactor = 1;
-                    if (typeof node.scaleFactor !== 'undefined') {
-                        scaleFactor = node.scaleFactor;
-                    }
-                    addedNode.scale = globalStates.defaultScale * scaleFactor;
-
-                    if (typeof node.defaultValue !== 'undefined') {
-                        addedNode.data.value = node.defaultValue;
-                    }
-                });
-            }
-
-            // // set the eventObject so that the frame can interact with screens as soon as you add it
-            realityEditor.device.eventObject.object = closestObjectKey;
-            realityEditor.device.eventObject.frame = frameID;
-            realityEditor.device.eventObject.node = null;
-
-            closestObject.frames[frameID] = frame;
-
-            realityEditor.network.toBeInitialized[frameID] = true;
-
-            let spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
-            if (spatialCursorMatrix) {
-                frame.ar.matrix = spatialCursorMatrix;
-            }
-
-            realityEditor.sceneGraph.addFrame(frame.objectId, frameID, frame, frame.ar.matrix);
-            realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(frame.objectId, frameID, frame, frame.ar.matrix);
-
-            console.log(frame);
-            // send it to the server
-            // realityEditor.network.postNewLogicNode(closestObject.ip, closestObjectKey, closestFrameKey, logicKey, addedLogic);
-            realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame);
-
-            if (!noUserInteraction) {
-                realityEditor.gui.pocket.setPocketFrame(frame, {pageX: x, pageY: y}, closestObjectKey);
-            }
-
-            realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {objectKey: closestObjectKey, frameKey: frameID, frameType: frame.src});
-
-            return frame;
-            
-        } else {
-            console.warn('there aren\'t any visible objects to place this frame on!');
+        if (typeof options.width !== 'undefined') {
+            frame.frameSizeX = options.width;
+            frame.width = options.width;
         }
 
+        if (typeof options.height !== 'undefined') {
+            frame.frameSizeY = options.height;
+            frame.height = options.height;
+        }
+        
+        // populate properties not contained on server (not in constructor)
+        frame.begin = utils.newIdentityMatrix(); // TODO: try removing this
+        frame.loaded = false;
+        frame.screenZ = 1000;
+        frame.temp = utils.newIdentityMatrix(); // TODO: remove this?
+        frame.fullScreen = false;
+        frame.sendMatrix = false;
+        frame.sendMatrices = {}; // todo: can this be unpopulated like this?
+        // todo: fully remove sendAcceleration, or implement it
+        frame.sendAcceleration = false;
+        frame.integerVersion = 300;
+
+        // set the eventObject so that the frame can interact with screens as soon as you add it
+        realityEditor.device.eventObject.object = closestObjectKey;
+        realityEditor.device.eventObject.frame = frame.uuid;
+        realityEditor.device.eventObject.node = null;
+        
+        // tell the iframe that it was just created, not reloaded
+        realityEditor.network.toBeInitialized[frame.uuid] = true;
+        
+        if (options.initialMatrix) {
+            frame.ar.matrix = options.initialMatrix;
+        }
+        
+        realityEditor.sceneGraph.addFrame(frame.objectId, frame.uuid, frame, frame.ar.matrix);
+        realityEditor.gui.ar.groundPlaneAnchors.sceneNodeAdded(frame.objectId, frame.uuid, frame, frame.ar.matrix);
+        realityEditor.network.postNewFrame(closestObject.ip, closestObjectKey, frame, options.onUploadComplete);
+        
+        if (!options.noUserInteraction) {
+            // allows you to drag the frame around as soon as it loads
+            realityEditor.gui.pocket.setPocketFrame(frame, {
+                pageX: options.pageX || 0,
+                pageY: options.pageY || 0
+            }, closestObjectKey);
+        }
+        
+        realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', {
+            objectKey: closestObjectKey,
+            frameKey: frame.uuid,
+            frameType: frame.src
+        });
+        
+        return frame;
     }
 
     function addMenuButtonActions() {
@@ -1270,7 +1209,13 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
                         
                         if (envelopeData) {
-                            let addedElement = createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y);
+                            let addedElement = createFrame(envelopeData.name, {
+                                startPositionOffset: envelopeData.startPositionOffset,
+                                width: envelopeData.width,
+                                height: envelopeData.height,
+                                pageX: touchPosition.x,
+                                pageY: touchPosition.y,
+                            });
                             
                             if (addedElement) {
                                 realityEditor.device.editingState.touchOffset = {

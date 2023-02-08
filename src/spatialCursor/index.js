@@ -201,7 +201,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
 
-        const ADD_SEARCH_TOOL_WITH_CURSOR = false;
+        const ADD_SEARCH_TOOL_WITH_CURSOR = true;
 
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {
@@ -212,39 +212,36 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 // raycast against the spatial cursor
                 let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, [indicator2]);
                 if (intersects.length > 0) {
-                    addToolAtScreenCenter('searchDigitalThread');
+                    addToolAtScreenCenter('searchDigitalThread', { moveToCursor: true });
                 }
             });
         }
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName) {
-        let touchPosition = {
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2
-        };
-
-        // parameters for createFrame function. all can be undefined except name, x, y, noUserInteraction
-        let startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo;
-        x = touchPosition.x;
-        y = touchPosition.y;
-        noUserInteraction = true;
-
-        // automatically adds the tool at the spatial cursor, if the cursor is active
-        let addedElement = realityEditor.gui.pocket.createFrame(toolName, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo);
-
-        if (getOrientedCursorRelativeToWorldObject()) {
-            realityEditor.device.resetEditingState(); // make sure we don't drag the tool after adding
+    function addToolAtScreenCenter(toolName, { moveToCursor = false } = {}) {
+        
+        let spatialCursorMatrix = null;
+        if (moveToCursor) {
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else {
-            // if cursor isn't active, default move the tool to be floating .4m in front of the camera
-            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 400);
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedScreenCenterCoordinate();
         }
 
-        // make sure tool is created and uploaded before we send the position, otherwise it won't save
-        setTimeout(function() {
-            realityEditor.network.postVehiclePosition(addedElement);
-        }, 1000);
+        let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
+            noUserInteraction: true,
+            pageX: window.innerWidth / 2,
+            pageY: window.innerHeight / 2,
+            initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
+            onUploadComplete: () => {
+                realityEditor.network.postVehiclePosition(addedElement);
+            }
+        });
+
+        if (!moveToCursor && !spatialCursorMatrix) {
+            let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
+            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
+        }
     }
 
     function update() {
@@ -466,6 +463,27 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
     }
 
+    function getOrientedScreenCenterCoordinate() {
+        // move cursor to center, then add the tool, then move the cursor back to where it was
+        let worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        updateSpatialCursor(worldIntersectPoint);
+        updateTestSpatialCursor(worldIntersectPoint);
+        
+        // update immediately move it to do the calculations
+        indicator1.updateMatrixWorld();
+
+        let result = getOrientedCursorRelativeToWorldObject();
+
+        // move it back
+        let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        let prevWorldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        updateSpatialCursor(prevWorldIntersectPoint);
+        updateTestSpatialCursor(prevWorldIntersectPoint);
+        indicator1.updateMatrixWorld();
+
+        return result;
+    }
+
     // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is
     // best aligned with the global up, it faces towards the camera rather than away, and if it's on a
     // horizontal surface, it rotates so that its local up vector is in line with the camera forward vector
@@ -526,6 +544,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.initService = initService;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
+    exports.getOrientedScreenCenterCoordinate = getOrientedScreenCenterCoordinate;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.addToolAtScreenCenter = addToolAtScreenCenter;

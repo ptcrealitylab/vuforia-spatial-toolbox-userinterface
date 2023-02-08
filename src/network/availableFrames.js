@@ -181,17 +181,20 @@ createNameSpace("realityEditor.network.availableFrames");
      * @return {string|null}
      */
     function getBestObjectInfoForFrame(frameName) {
-        var possibleObjectKeys = getPossibleObjectsForFrame(frameName);
-        
+        let possibleObjectKeys = getPossibleObjectsForFrame(frameName);
+
+        if (possibleObjectKeys.length === 0) return null;
+
         // this works now that world objects have a sense of distance just like regular objects
         return realityEditor.gui.ar.getClosestObject(function(objectKey) {
             return possibleObjectKeys.indexOf(objectKey) > -1;
-        })[0];
+        })[0]; // getClosestObject returns [objectKey, frameKey, nodeKey], so result[0] is the objectKey
     }
 
     /**
      * Out of the current visible objects, figures out which subset of them could support having this type of frame attached.
      * @param {string} frameName - the type of the frame (e.g. graphUI, slider, switch)
+     * @param {boolean?} useAttachesTo - if true, filter down possible object based on frame's attachesTo property
      * @return {Array.<string>} - list of compatible objectKeys
      */
     function getPossibleObjectsForFrame(frameName, useAttachesTo) {

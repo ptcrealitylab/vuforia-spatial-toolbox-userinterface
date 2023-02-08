@@ -460,7 +460,14 @@ createNameSpace("realityEditor.envelopeManager");
                 };
 
                 if (envelopeData) {
-                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y, true);
+                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, {
+                        startPositionOffset: envelopeData.startPositionOffset,
+                        width: envelopeData.width,
+                        height: envelopeData.height,
+                        pageX: touchPosition.x,
+                        pageY: touchPosition.y,
+                        noUserInteraction: true
+                    });
 
                     console.log('added an envelope (maybe in time?)', addedElement);
 
