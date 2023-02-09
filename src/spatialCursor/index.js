@@ -6,6 +6,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     const SNAP_CURSOR_TO_TOOLS = false; // the snapping doesn't do anything yet, so turn off for now
     const DEFAULT_SPATIAL_CURSOR_ON = true; // applied after we localize within a target / download occlusion mesh
+    const ADD_SEARCH_TOOL_WITH_CURSOR = true;
+    let equalsPressed = false;
 
     let isCursorEnabled = false; // always starts off, turns on after localize
     let isUpdateLoopRunning = false;
@@ -201,13 +203,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
 
-        const ADD_SEARCH_TOOL_WITH_CURSOR = false;
-
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {
                 if (!indicator2 || !indicator2.visible) return;
                 if (realityEditor.device.isMouseEventCameraControl(e)) return;
                 if (!realityEditor.device.utilities.isEventHittingBackground(e)) return; // if clicking on a button, etc, don't trigger this
+
+                if (!equalsPressed) return;
 
                 // raycast against the spatial cursor
                 let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, [indicator2]);
@@ -216,6 +218,22 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 }
             });
         }
+
+        document.addEventListener('keydown', (e) => {
+            let code = e.keyCode ? e.keyCode : e.which;
+            console.log(code + ' down');
+            if (code === 187) { // plus/equals button
+                equalsPressed = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            let code = e.keyCode ? e.keyCode : e.which;
+            console.log(code + ' up');
+            if (code === 187) {
+                equalsPressed = false;
+            }
+        });
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
