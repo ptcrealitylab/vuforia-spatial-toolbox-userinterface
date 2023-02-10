@@ -318,8 +318,10 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (!evt.target.classList.contains('element-template')) {
                 return;
             }
-            
-            if (evt.target.dataset.src === '_PLACEHOLDER_') {
+
+            let dataset = evt.target.dataset;
+
+            if (dataset.src === '_PLACEHOLDER_') {
                 console.log('dont add frame from placeholder!');
                 return;
             }
@@ -329,10 +331,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 return;
             }
             
-            if (selectedElement && selectedElement.dataset.name === evt.target.dataset.name) {
-                // createFrame(evt.target.dataset.name, evt.target.dataset.startPositionOffset, evt.target.dataset.width, evt.target.dataset.height, evt.target.dataset.nodes, evt.pageX, evt.pageY);
-                
-                let dataset = evt.target.dataset;
+            if (selectedElement && selectedElement.dataset.name === dataset.name) {
 
                 createFrame(dataset.name, {
                     startPositionOffset: dataset.startPositionOffset,
@@ -347,7 +346,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 pocketHide();
             } else {
                 pointerDownOnElement = evt.target;
-                console.log('target = ' + evt.target.dataset.name);
+                console.log('target = ' + dataset.name);
                 evt.target.classList.add('hoverPocketElement');
                 if (selectedElement) {
                     deselectElement(selectedElement);
@@ -978,8 +977,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * @param {string} objectKey - object to add the tutorial to (should be the _WORLD_local object)
      */
     function addTutorialFrame(objectKey) {
-        // let addedElement = createFrame('uiTutorial', JSON.stringify({x: 0, y: 0}), JSON.stringify(568), JSON.stringify(420), JSON.stringify([]), globalStates.height/2, globalStates.width/2, undefined, objectKey);
-        
         try {
             let addedElement = createFrame('uiTutorial', {
                 startPositionOffset: JSON.stringify({x: 0, y: 0}),
@@ -989,11 +986,9 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 pageY: window.innerHeight / 2,
                 objectKey: objectKey
             });
-
             console.log('added tutorial frame', addedElement);
-
         } catch (e) {
-            // TODO: ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
+            // ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
             console.warn(e);
         }
     }

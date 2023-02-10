@@ -201,7 +201,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
 
-        const ADD_SEARCH_TOOL_WITH_CURSOR = true;
+        const ADD_SEARCH_TOOL_WITH_CURSOR = false;
 
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {
@@ -225,7 +225,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (moveToCursor) {
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else {
-            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedScreenCenterCoordinate();
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
         }
 
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
@@ -463,14 +463,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
     }
 
-    function getOrientedScreenCenterCoordinate() {
-        // move cursor to center, then add the tool, then move the cursor back to where it was
+    function getOrientedCursorIfItWereAtScreenCenter() {
+        // move cursor to center, then get the matrix, then move the cursor back to where it was
         let worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
         updateSpatialCursor(worldIntersectPoint);
         updateTestSpatialCursor(worldIntersectPoint);
-        
-        // update immediately move it to do the calculations
-        indicator1.updateMatrixWorld();
+        indicator1.updateMatrixWorld(); // update immediately before doing the calculations
 
         let result = getOrientedCursorRelativeToWorldObject();
 
@@ -544,7 +542,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.initService = initService;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
-    exports.getOrientedScreenCenterCoordinate = getOrientedScreenCenterCoordinate;
+    exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
