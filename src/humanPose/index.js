@@ -12,7 +12,7 @@ import * as utils from './utils.js'
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
-    const SHOW_PLAYBACK = false;
+    const SHOW_PLAYBACK = true;
 
     let myHumanPoseId = null;  // objectId
 
@@ -25,8 +25,6 @@ import * as utils from './utils.js'
 
     function initService() {
         console.log('init humanPose module', network, draw, utils);
-
-        loadHistory();
 
         realityEditor.app.callbacks.subscribeToPoses((poseJoints, timestamp) => {
             let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints, timestamp);
@@ -112,16 +110,41 @@ import * as utils from './utils.js'
         });
     }
 
-    async function loadHistory() {
+    /**
+     * @param {TimeRegion} historyRegion
+     */
+    async function loadHistory(historyRegion) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
-            setTimeout(loadHistory, 500);
+            setTimeout(() => {
+                loadHistory(historyRegion);
+            }, 500);
             return;
         }
+        const regionStartTime = historyRegion.startTime;
+        const regionEndTime = historyRegion.endTime;
+
         try {
-            const resLogs = await fetch('http://localhost:8080/history/logs');
+            const worldObject = realityEditor.worldObjects.getBestWorldObject();
+            const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
+            const resLogs = await fetch(historyLogsUrl);
             const logs = await resLogs.json();
             for (const logName of logs) {
-                const resLog = await fetch(`http://localhost:8080/history/logs/${logName}`);
+                let matches = logName.match(/objects_(\d+)-(\d+)/);
+                if (!matches) {
+                    continue;
+                }
+                let logStartTime = parseInt(matches[1]);
+                let logEndTime = parseInt(matches[2]);
+                if (isNaN(logStartTime) || isNaN(logEndTime)) {
+                    continue;
+                }
+                if (logEndTime < regionStartTime) {
+                    continue;
+                }
+                if (logStartTime > regionEndTime && regionEndTime >= 0) {
+                    continue;
+                }
+                const resLog = await fetch(`${historyLogsUrl}/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
             }
@@ -147,7 +170,7 @@ import * as utils from './utils.js'
             }
             draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
             if (SHOW_PLAYBACK) {
-                await sleep(10);
+                await sleep(0);
             }
         }
         inHistoryPlayback = false;
@@ -253,6 +276,26 @@ import * as utils from './utils.js'
         // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
         humanPoseObject.lastUpdateDataTS = pose.timestamp;
         
+        // update overall object position (currently defined by 1. joint - nose)
+        var objPosition = {
+            x: pose.joints[0].x,
+            y: pose.joints[0].y,
+            z: pose.joints[0].z
+        };
+
+        humanPoseObject.matrix = [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            objPosition.x, objPosition.y, objPosition.z, 1
+        ];
+        
+        // updating scene graph with new pose
+        let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(humanPoseObject.objectId);
+        objectSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
+        objectSceneNode.setLocalMatrix(humanPoseObject.matrix);
+        
+        // update relative positions of all joints/frames wrt. object positions
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(utils.JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
@@ -262,13 +305,13 @@ import * as utils from './utils.js'
                 console.warn('couldn\'t find frame for joint ' + jointName + ' (' + index + ')');
                 return;
             }
-            const SCALE = 1000;
+
             // set position of jointFrame
             let positionMatrix = [
                 1, 0, 0, 0,
                 0, 1, 0, 0,
                 0, 0, 1, 0,
-                jointInfo.x * SCALE, jointInfo.y * SCALE, jointInfo.z * SCALE, 1,
+                jointInfo.x - objPosition.x, jointInfo.y - objPosition.y, jointInfo.z - objPosition.z, 1,
             ];
 
             // updating scene graph with new pose
@@ -373,6 +416,8 @@ import * as utils from './utils.js'
     }
 
     exports.initService = initService;
+    exports.loadHistory = loadHistory;
 }(realityEditor.humanPose));
 
 export const initService = realityEditor.humanPose.initService;
+export const loadHistory = realityEditor.humanPose.loadHistory;

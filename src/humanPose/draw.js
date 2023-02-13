@@ -115,7 +115,7 @@ export class HumanPoseRenderer {
 
     /**
      * Updates bone (stick between joints) positions based on this.spheres'
-     * positions. 
+     * positions.
      */
     updateBonePositions() {
 
@@ -229,6 +229,11 @@ export class HumanPoseRenderer {
     }
 }
 
+const AnimationMode = {
+    ONE: 'one',
+    ALL: 'all',
+};
+
 export class HumanPoseAnalyzer {
     /**
      * @param {THREE.Object3D} historyMeshContainer - THREE container for
@@ -248,6 +253,7 @@ export class HumanPoseAnalyzer {
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
+        this.animationMode = AnimationMode.ONE;
         this.lastAnimationUpdate = Date.now();
 
         this.update = this.update.bind(this);
@@ -310,7 +316,7 @@ export class HumanPoseAnalyzer {
                 timestamp,
                 poseObject: obj,
             })
-            obj.visible = false;
+            obj.visible = this.animationMode === AnimationMode.ALL;
             this.historyCloneContainer.add(obj);
         }
 
@@ -428,12 +434,21 @@ export class HumanPoseAnalyzer {
     resetHistoryClones() {
         // Loop over copy of children to remove all
         for (let child of this.historyCloneContainer.children.concat()) {
-            child.geometry.dispose();
-            child.material.dispose();
             if (child.dispose) {
                 child.dispose();
             }
             this.historyCloneContainer.remove(child);
+        }
+        this.clonesAll = [];
+    }
+
+    /**
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
+     */
+    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
         }
     }
 
@@ -441,9 +456,29 @@ export class HumanPoseAnalyzer {
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
      */
-    setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
+    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
         for (let mesh of Object.values(this.historyMeshesAll)) {
-            mesh.setTimeInterval(firstTimestamp, secondTimestamp);
+            if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
+                mesh.visible = false;
+                continue;
+            }
+            mesh.visible = true;
+            mesh.setDisplayTimeInterval(firstTimestamp, secondTimestamp);
+        }
+    }
+
+    /**
+     * @param {number} timestamp - time to hover in ms
+     */
+    setHoverTime(timestamp) {
+        if (timestamp < 0) {
+            return;
+        }
+        for (let mesh of Object.values(this.historyMeshesAll)) {
+            if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
+                continue;
+            }
+            mesh.setHoverTime(timestamp);
         }
     }
 
@@ -482,10 +517,19 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {boolean} enabled
+     * @param {AnimationMode} animationMode
      */
-    setRecordingClonesEnabled(enabled) {
-        this.recordingClones = enabled;
+    setAnimationMode(animationMode) {
+        this.animationMode = animationMode;
+        if (this.animationMode === AnimationMode.ALL) {
+            for (let clone of this.clonesAll) {
+                clone.poseObject.visible = true;
+            }
+        } else {
+            for (let clone of this.clonesAll) {
+                clone.poseObject.visible = false;
+            }
+        }
     }
 
     advanceCloneMaterial() {
@@ -656,6 +700,12 @@ function getGroundPlaneRelativeMatrix() {
 function updateJointsHistorical(poseRenderer, poseObject) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
+    if (poseObject.matrix && poseObject.matrix.length > 0) {
+        let objectRootMatrix = new THREE.Matrix4();
+        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+    }
+
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
         if (!frame.ar.matrix) {
@@ -676,12 +726,6 @@ function updateJointsHistorical(poseRenderer, poseObject) {
 
 function updateJoints(poseRenderer, poseObject) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
-
-    if (poseObject.matrix && poseObject.matrix.length > 0) {
-        let objectRootMatrix = new THREE.Matrix4();
-        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
-        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
-    }
 
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
@@ -724,8 +768,8 @@ function resetHistoryClones() {
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
  */
-function setHistoryTimeInterval(firstTimestamp, secondTimestamp) {
-    humanPoseAnalyzer.setHistoryTimeInterval(firstTimestamp, secondTimestamp);
+function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    humanPoseAnalyzer.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
 }
 
 /**
@@ -751,18 +795,39 @@ function setHistoryLinesVisible(visible) {
  * @param {boolean} enabled
  */
 function setRecordingClonesEnabled(enabled) {
-    humanPoseAnalyzer.setRecordingClonesEnabled(enabled);
+    if (enabled) {
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.ALL);
+    } else {
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.ONE);
+    }
 }
 
 function advanceCloneMaterial() {
     humanPoseAnalyzer.advanceCloneMaterial();
 }
 
+/**
+ * @param {number} time - ms
+ */
+function setHoverTime(time) {
+    humanPoseAnalyzer.setHoverTime(time);
+}
+
+/**
+ * @param {number} startTime - ms
+ * @param {number} endTime - ms
+ */
+function setDisplayTimeInterval(startTime, endTime) {
+    humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
+}
+
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
     resetHistoryClones,
-    setHistoryTimeInterval,
+    setHoverTime,
+    setHighlightTimeInterval,
+    setDisplayTimeInterval,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,

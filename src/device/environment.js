@@ -17,6 +17,9 @@ createNameSpace("realityEditor.device.environment");
 
     exports.initService = function() {
         console.log('Default environment initialized');
+        realityEditor.network.addPostMessageHandler('getEnvironmentVariables', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {environmentVariables: variables});
+        });
     };
 
     function isDesktop() {

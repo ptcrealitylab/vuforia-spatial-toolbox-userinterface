@@ -229,10 +229,15 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         if (isProjectionMatrixSet) {
             renderer.clear();
             if (hasGltfScene) {
+                // Set rendered layer to 1: only the background, i.e. the
+                // static gltf mesh
                 camera.layers.set(1);
                 renderer.render(scene, camera);
+                // Leaves only the color from the render, discarding depth and
+                // stencil
                 renderer.clear(false, true, true);
             }
+            // Set layer to 0: everything but the background
             camera.layers.set(0);
             renderer.render(scene, camera);
         }
