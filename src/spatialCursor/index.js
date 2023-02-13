@@ -13,6 +13,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let cachedOcclusionObject = null;
     let cachedWorldObject = null;
     
+    let opacityFactor = 1;
     let indicator1;
     let indicator2;
     let overlapped = false;
@@ -25,6 +26,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let uniforms = {
         'EPSILON': {value: Number.EPSILON},
         'time': {value: 0},
+        'opacityFactor': {value: opacityFactor},
     };
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
@@ -53,6 +55,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     const normalFragmentShader = `
     ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
     varying vec2 vUv;
+    uniform float opacityFactor;
     
     void main(void) {
         ${THREE.ShaderChunk.logdepthbuf_fragment}
@@ -60,7 +63,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         vec2 origin = vec2(0.0);
         float color = distance(position, origin) > 0.9 || distance(position, origin) < 0.1 ? 1.0 : 0.0;
         float alpha = distance(position, origin) > 0.9 || distance(position, origin) < 0.1 ? 1.0 : 0.0;
-        gl_FragColor = vec4(color, color, color, alpha);
+        gl_FragColor = vec4(color, color, color, alpha * opacityFactor);
     }
     `;
     const colorFragmentShader = `
@@ -104,11 +107,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let uniforms2 = {
         'EPSILON': {value: Number.EPSILON},
         'avatarColor': {value: finalColor},
-        'alpha': {value: 0.5}
+        'opacityFactor': {value: opacityFactor},
     };
     const testCursorFragmentShader = `
     ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
     varying vec2 vUv;
+    uniform float opacityFactor;
     
     // set up color uniforms
     struct AvatarColor {
@@ -116,12 +120,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         vec3 colorLighter;
     };
     uniform AvatarColor avatarColor[1];
-    uniform float alpha;
     
     void main(void) {
         ${THREE.ShaderChunk.logdepthbuf_fragment}
         vec3 color = avatarColor[0].color;
-        gl_FragColor = vec4(color, alpha); // alpha = 0.5 is a good default
+        gl_FragColor = vec4(color, 0.5 * opacityFactor);
     }
     `;
     const testCursorMaterial = new THREE.ShaderMaterial({
@@ -129,11 +132,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         fragmentShader: testCursorFragmentShader,
         uniforms: uniforms2,
         transparent: true,
-        opacity: 0.7,
-        blending: THREE.CustomBlending,
-        blendEquation: THREE.AddEquation,
-        blendSrc: THREE.SrcColorFactor,
-        blendDst: THREE.OneMinusSrcAlphaFactor,
+        // blending: THREE.CustomBlending,
+        // blendEquation: THREE.AddEquation,
+        // blendSrc: THREE.SrcColorFactor,
+        // blendDst: THREE.OneMinusSrcAlphaFactor,
         side: THREE.DoubleSide,
     });
     // const testCursorMaterial = new THREE.ShaderMaterial({
@@ -144,6 +146,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     //     blending: THREE.AdditiveBlending,
     //     side: THREE.DoubleSide,
     // });
+
+    const clamp = (x, low, high) => {
+        return Math.min(Math.max(x, low), high);
+    }
+
+    const remap01 = (x, low, high) => {
+        return clamp((x - low) / (high - low), 0, 1);
+    }
+
+    const remap = (x, lowIn, highIn, lowOut, highOut) => {
+        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
+    }
 
     async function getMyAvatarColor() {
         let myAvatarColor = await realityEditor.avatar.getMyAvatarColor();
@@ -263,6 +277,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 screenY = mousePosition.y;
             }
             let worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+            updateOpacityFactor(worldIntersectPoint);
             updateSpatialCursor(worldIntersectPoint);
             updateTestSpatialCursor(worldIntersectPoint);
             uniforms['time'].value = clock.getElapsedTime() * 10;
@@ -349,7 +364,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                         colorLighter: new THREE.Color(cursorColorHSL)
                     }]
                 },
-                'alpha': {value: 0.2}
+                'opacityFactor': { value: 0.4 } // alpha = 0.5 * opacityFactor
             },
             transparent: true,
             side: THREE.DoubleSide,
@@ -391,6 +406,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicator2.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
+
+    let fadeOutDistance = 500, maxOpacityDistance = 1000;
+    let opacityLow = 0.1, opacityHigh = 1;
+    
+    function updateOpacityFactor(worldIntersectPoint) {
+        opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
+    }
     
     function updateSpatialCursor(worldIntersectPoint) {
         if (worldIntersectPoint) {
@@ -407,6 +429,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             indicator2.visible = false;
         }
         indicator1.material = overlapped ? colorCursorMaterial : normalCursorMaterial;
+        indicator1.material.uniforms.opacityFactor.value = opacityFactor;
     }
 
     function updateTestSpatialCursor(worldIntersectPoint) {
@@ -415,6 +438,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(bottomCursorOffset);
         indicator2.position.add(offset);
         indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
+        indicator2.material.uniforms.opacityFactor.value = opacityFactor;
     }
 
     function toggleDisplaySpatialCursor(newValue) {
@@ -449,6 +473,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 worldIntersectPoint = {
                     point: raycastIntersects[0].point,
                     normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
+                    distance: raycastIntersects[0].distance,
                 }
             }
         }
