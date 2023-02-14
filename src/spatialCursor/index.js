@@ -322,7 +322,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let fadeOutDistance = 500, maxOpacityDistance = 1000;
     let opacityLow = 0.1, opacityHigh = 1;
     function updateOpacityFactor() {
-        opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
+        if (typeof worldIntersectPoint.distance !== 'undefined') {
+            opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
+        }
     }
     
     function updateSpatialCursor() {
