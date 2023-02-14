@@ -411,7 +411,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let opacityLow = 0.1, opacityHigh = 1;
     
     function updateOpacityFactor(worldIntersectPoint) {
-        opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
+        if (worldIntersectPoint && typeof worldIntersectPoint.distance !== 'undefined') {
+            opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
+        }
     }
     
     function updateSpatialCursor(worldIntersectPoint) {
