@@ -1,7 +1,14 @@
 import {GLState, Handle, DeviceDescription} from "/objectDefaultFiles/glState.js"
-import {CommandId, Command, CommandBuffer, CommandBufferManager} from "/objectDefaultFiles/glCommandBuffer.js"
+import {CommandId, Command, CommandBufferManager} from "/objectDefaultFiles/glCommandBuffer.js"
 
 createNameSpace("realityEditor.gui.glRenderer");
+
+const debug_glRenderer = false;
+
+/**
+ * @typedef {WebGLRenderingContext | WebGL2RenderingContext} WebGL
+ * @typedef {GLuint} HandleObj
+ */
 
 /**
  * @type {Object.<string, number>}
@@ -26,8 +33,8 @@ const MAX_PROXIES = 32; // maximum number that can be safely rendered each frame
  */
 class WorkerGLProxy {
     /**
-     * @param {Window} worker - worker iframe
-     * @param {WebGL} gl
+     * @param {Window} worker - worker iframe contentWindow
+     * @param {WebGL} gl webGL rendering context used for excuting the received webgl commands
      * @param {number} workerId - unique identifier of worker
      * @param {string} toolId - unique identifier of associated tool
      */
@@ -53,66 +60,80 @@ class WorkerGLProxy {
         this.toolId = toolId;
 
         /**
+         * list of handles opened by the client and used for argument resolution
+         * contains objects that are not transferable over the message system
          * @type {Map<number, HandleObj>}
          */
         this.unclonables = new Map();
 
         /**
+         * manages the received command buffer and the execution policy/strategy
          * @type {CommandBufferManager}
          */
         this.buffer = new CommandBufferManager(workerId);
 
-        const viewport = this.gl.getParameter(this.gl.VIEWPORT);
         /**
+         * current viewport of the webgl context
+         */
+        const viewport = this.gl.getParameter(this.gl.VIEWPORT);
+        
+        /**
+         * the last known webgl state before yielding control to the server
          * @type {GLState}
          */
         this.lastState = new GLState(this.gl, this.unclonables, viewport);
 
+        // bind message handler for client messages
         this.onMessage = this.onMessage.bind(this);
         window.addEventListener('message', this.onMessage);
 
+        // we're not awaiting an end of frame
         this.frameEndListener = null;
 
         /**
-         * @type {Int32Array} if this is not null, the worker thread is locked until it receives a response on the last comitted resource Command List
+         * @type {Int32Array} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
          */
         this.synclock = new Int32Array(new SharedArrayBuffer(4));
         Atomics.store(this.synclock, 0, 1);
     }
 
     /**
-     * 
+     * Receives messages from the client
      * @param {MessageEvent<any>} e 
-     * @returns 
      */
     onMessage(e) {
         const message = e.data;
+        // check if the worker id matches
         if (message.workerId !== this.workerId) {
             return;
         }
 
+        // make sure we stop waiting form more command buffers when the client indicates the work for this frame is done
         if (this.frameEndListener && message.isFrameEnd) {
             this.frameEndListener(true);
             return;
         }
 
+        // if the message is none of the above, it's a command buffer. notify the commandbuffermanager about the received command buffer.
         this.buffer.onCommandBufferReceived(message)
     }
 
     /**
-     * 
-     * @param {string} name 
-     * @param {Array<any>} args 
-     * @param {Array<any>} displayArgs // contains the handles instead of the internal objects
+     * Executes an WebGL command on the server context and does basi error checking when debugging is enabled
+     * @param {string} name The function to call
+     * @param {Array<any>} args contains the internal arguments used by the WebGL instance (Handles translated to internal objects)
+     * @param {Array<any>} displayArgs contains the arguments received from the client (Handles etc...)
      * @returns {any}
      */
     executeGL(name, args, displayArgs) {
         let res = null;
         try {
             res = this.gl[name].apply(this.gl, args);
-            const err = this.gl.getError();
-            if (err !== 0) {
-                console.error("glError: " + err + ", " + name + "(" + displayArgs + ")");
+            if (debug_glRenderer) {
+                const err = this.gl.getError();
+                if (err !== 0) {
+                    console.error("glError: " + err + ", " + name + "(" + displayArgs + ")");
+                }
             }
         } catch (e) {
             console.error(e);
@@ -121,27 +142,28 @@ class WorkerGLProxy {
     }
 
     /**
-     * 
-     * @param {Command} command 
-     * @param {CommandId} id 
-     * @returns 
+     * Processes an entry from the command buffer, by resolving the input arguments, executing the command and processing the optional results 
+     * @param {Command} command The entry from the command buffer to execute
+     * @param {CommandId} id The command id
      */
     executeOneCommand(command, id) {
-        if (command.args.length == undefined) {
-            console.log("no length!");
+        if (debug_glRenderer) {
+            console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
         }
-        console.log(`command (${id.worker}, ${id.buffer}, ${id.command}) ${command.name}`);
-        
         
         /**
+         * We make a copy of the command, so we can translate the arguments without changeing the original received input, that we can use for debugging
          * @type {Command}
          */
         let localCommand = structuredClone(command);
+        // resolve arguments
         for (let i = 0; i < localCommand.args.length; i++) {
             let arg = localCommand.args[i];
+            // resolve Handles
             if (arg && arg.hasOwnProperty("handle")) {
                 localCommand.args[i] = this.unclonables.get(arg.handle);
             }
+            // resolve arrays
             if (arg && arg.hasOwnProperty("type") && arg.hasOwnProperty("data")) {
                 if (arg.type === "Float32Array") {
                     localCommand.args[i] = new Float32Array(arg.data);
@@ -153,35 +175,47 @@ class WorkerGLProxy {
             }
         }
 
+        // validate gl command is executable
         if (!this.gl[localCommand.name] && !localCommand.name.startsWith('extVao-') && !localCommand.name.endsWith("_bufferSize")) {
             return;
         }
 
+        // don't allow clear, ever
         if (localCommand.name === 'clear') {
             return;
         }
 
-       this.lastState.preProcessOneCommand(localCommand);
+        // update gl state so it matches the state after execution
+        this.lastState.preProcessOneCommand(localCommand);
 
         let res;
-
+        // filter vertex array extension
         if (localCommand.name.startsWith('extVao-')) {
             let fnName = localCommand.name.split('-')[1]; // e.g. createVertexArrayOES
             fnName = fnName.replace(/OES$/, '');
             res = this.gl[fnName].apply(this.gl, localCommand.args);
         } else {
+            // execute command
+            // we filter the _bufferSize postfix. This postFix informs us to return the size of the result in the responseBuffer, rather than the real result of the executed command.
+            // this is used if we want to return a variable length string in a shared buffer, but we don't know it's size.
+            // for example, the getActiveUniform returns the name of the uniform, before we can send back the name of the uniform, we need to know it's length
+            // the second call wil, be without the _bufferSize postfix and will indicate that the buffer is big enough to fit the result
             res = this.executeGL(localCommand.name.endsWith("_bufferSize") ? localCommand.name.substring(0, localCommand.name.length - 11) : localCommand.name, localCommand.args, command.args);
         }
 
+        // some state changes can only be done after execution
         this.lastState.postProcessOneCommand(command);
 
+        // if a command has a handle assigned to a command, the resulting internal object should be stored in the uncloneables list, so it can be resolved to the correct object next time it is referenced.
         if (localCommand.handle !== null) {
-
             this.unclonables.set(localCommand.handle, res);
-            res = new Handle(localCommand.handle);
         }
         
+        // some commands have a responsebuffer assigned to them, these are blocking commands, where the client awaits a response form the server on the send commandbuffer
+        // we translate the result into bytes and store them in the SharedArrayBuffer, unblocking the thread happens after the buffer has been processed.
+        // in theory we can execute several commands in succession and fill the assigned SharedArrayBuffer responseBuffers and then unlock the client.
         if (localCommand.name === "getActiveAttrib_bufferSize") {
+            // send the size of the required buffer instead of the struct itself
             new Int32Array(localCommand.responseBuffer)[0] = res.name.length + 9;   
         } else if (localCommand.name === "getActiveAttrib") {
             let utf8TextEncoder = new TextEncoder();
@@ -192,6 +226,7 @@ class WorkerGLProxy {
             sizeTypeBuf[1] = res.type;
             new Uint8Array(localCommand.responseBuffer, res.name.length + 1, 8).set(new Uint8Array(sizeTypeBufMem));   
         } else if (localCommand.name === "getActiveUniform_bufferSize") {
+            // send the size of the required buffer instead of the struct itself
             new Int32Array(localCommand.responseBuffer)[0] = res.name.length + 9;   
         } else if (localCommand.name === "getActiveUniform") {
             let utf8TextEncoder = new TextEncoder();
@@ -208,55 +243,25 @@ class WorkerGLProxy {
         }
     }
 
-    logCommandBuffer() {
-        let program = [];
-        for (let command of this.debug) {
-            let messages = command.messages || [command];
-            for (let message of messages) {
-                let args = message.args.map(arg => {
-                    // if (arg.hasOwnProperty('0') && typeof arg !== 'string') {}
-                    if (typeof arg === 'object' && arg) {
-                        // let arrayArg = [];
-                        // for (let a of Array.from(arg)) {
-                        //   arrayArg.push(typeof a);
-                        // }
-                        if (arg.length || arg[0]) {
-                            arg = [(typeof arg[0]) || 'object', arg.length || Object.keys(arg).length];
-                        } else {
-                            return arg.toString();
-                        }
-                    }
-                    return JSON.stringify(arg);
-                });
-                program.push(`gl.${message.name}(${args.join(', ')})`);
-            }
-        }
-        let frame = program.join('\n');
-        if (!window.lastFrames) {
-            window.lastFrames = {};
-        }
-        if (!window.lastFrames[frame]) {
-            window.lastFrames[frame] = true;
-
-            console.log(`frame workerId=${this.workerId}`);
-            console.log(frame);
-        }
-    }
-
     /**
-     * 
-     * @param {GLState} glState 
-     * @returns 
+     * Executes a frame for the proxy, it will try to collect the first available resource command buffer and execute it, after that it will execute the latest render command buffer to render
+     * resource command buffers contain run once instruction, render command buffers contain repeatable instruction that can be repeated to draw frames
+     * @param {GLState} glState The current state of the WebGL context
+     * @returns {GLState} The of the WebGL context after execution
      */
     executeFrameCommands(glState) {
-        //this.lastState.applyDiff(glState);
+        // restore the opengl state to the last known state of this proxy
+        this.lastState.applyDiff(glState);
 
-        // execute resources command buffer or rendering command buffer but never both during a frame
+        // get the resource command buffer for this frame if there is one
         let localCommandBuffer = this.buffer.getResourceCommandBuffer();
-
         if ((localCommandBuffer !== null) && (localCommandBuffer.commands.length !== 0)) {
+            // execute the resource commandbuffer
             let commandId = 1;
+            // is the client locked and awaiting a response
             if (Atomics.load(this.synclock, 0) === 1) {
+                // normal unlocked execution of the resource command buffer
+                // itterate the commandbuffer and execute each command, generating an id for tracing
                 for (let command of localCommandBuffer.commands) {
                     const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
                     this.executeOneCommand(command, id);
@@ -264,29 +269,40 @@ class WorkerGLProxy {
             } else {
                 // the worker is locked and can't send additional buffers
                 // loop all resource command buffers
+                // if we don;t do this the client will stay locked and unresponsive
                 while (localCommandBuffer !== null) {
+                    // itterate the commandbuffer and execute each command, generating an id for tracing
                     for (let command of localCommandBuffer.commands) {
                         const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
                         this.executeOneCommand(command, id);
                     } 
+                    // get next resource commandbuffer form the manager
                     localCommandBuffer = this.buffer.getResourceCommandBuffer();
                 }
-                // if worker thread was locked, we can unlock it now that we have written all requested results
+                // unlock the thread to signal that all responsebuffers have been filled
                 Atomics.store(this.synclock, 0, 1);
                 Atomics.notify(this.synclock, 0, 1);
             }        
         } else {
+            // render command buffers are repeatable and can't contain commands that block the client
+            // unlocking the client is not a repeatable command
+            // get the latest render command buffer
             localCommandBuffer = this.buffer.getRenderCommandBuffer();
             let commandId = 1;
+            // itterate the commandbuffer and execute each command, generating an id for tracing
             for (let command of localCommandBuffer.commands) {
                 const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
-                let res = this.executeOneCommand(command, id);
+                this.executeOneCommand(command, id);
             }
         }
-        // this.logCommandBuffer();
+        // the current WebGL state after executing one or more command buffers
         return this.lastState;
     }
 
+    // requests a new frame from the client
+    // the client is able to create one or more resource command buffers and/or one render commandbuffer.
+    // incase the client generates a command which locks the client for a response, all scheduled resource command buffers will be executed immediatly, to unlock the client and progress the frame rendering.
+    // when the client has send all the command buffers it wants to schedule it will end the frame with an endframe message, for which we schedule a Promise to wait for that message
     getFrameCommands() {
         this.worker.postMessage({name: 'frame', time: Date.now(), workerId: this.workerId}, '*');
         return new Promise((res) => {
@@ -294,6 +310,10 @@ class WorkerGLProxy {
         });
     }
 
+    /**
+     * Releases resources when we remove a proxy
+     * we can stop waiting for a end frame message and we can remove our message event listener
+     */
     remove() {
         this.frameEndListener = null;
         window.removeEventListener('message', this.onMessage);
@@ -458,7 +478,7 @@ async function renderFrame() {
 
     let glState = defaultGLState;
     if (glState !== null) {
-        //glState.applyAll();
+        glState.applyAll();
         // Execute all pending commands for this frame
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
