@@ -508,7 +508,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
     
-    let curQuaternion, destQuaternion = null;
     function updateSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
             indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
