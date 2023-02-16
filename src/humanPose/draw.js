@@ -3,69 +3,365 @@ import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} fro
 import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 
-let poseRenderers = {};
 let humanPoseAnalyzer;
+let poseRendererLive;
+let poseRendererHistorical;
+let poseRenderers = {};
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 const RENDER_CONFIDENCE_COLOR = false;
 
+const COLOR_BASE = new THREE.Color(0, 0.5, 1);
+const COLOR_RED = new THREE.Color(1, 0, 0);
+const COLOR_YELLOW = new THREE.Color(1, 1, 0);
+const COLOR_GREEN = new THREE.Color(0, 1, 0);
+
+const MAX_POSE_INSTANCES = 1024 * 2;
+const JOINTS_PER_POSE = Object.keys(JOINTS).length;
+const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
+
+const JOINT_TO_INDEX = {};
+for (const [i, jointId] of Object.values(JOINTS).entries()) {
+    JOINT_TO_INDEX[jointId] = i;
+}
+
+const BONE_TO_INDEX = {};
+for (const [i, boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
+    BONE_TO_INDEX[boneName] = i;
+}
+
 /**
- * Renders 3D skeleton
+ * @param {THREE.InstancedBufferAttribute} instancedBufferAttribute
+ * @param {number} slot - offset within iba in units of slots
+ * @param {number} slotWidth - width of each slot in units of iba's item size
+ * @return {TypedArray} array of length `slotWidth * itemSize`
  */
-export class HumanPoseRenderer {
+function getSliceSlot(instancedBufferAttribute, slot, slotWidth) {
+    const itemSize = instancedBufferAttribute.itemSize;
+    const start = slot * slotWidth * itemSize;
+    return instancedBufferAttribute.array.slice(start, start + slotWidth * itemSize);
+}
+
+function setSliceSlot(instancedBufferAttribute, slot, slotWidth, items) {
+    const itemSize = instancedBufferAttribute.itemSize;
+    const start = slot * slotWidth * itemSize;
+
+    unionUpdateRange(instancedBufferAttribute, start, slotWidth * itemSize);
+
+    for (let i = 0; i < slotWidth * itemSize; i++) {
+        instancedBufferAttribute.array[start + i] = items[i];
+    }
+}
+
+function unionUpdateRange(instancedBufferAttribute, offset, count) {
+    if (instancedBufferAttribute.updateRange.count === -1) {
+        instancedBufferAttribute.updateRange.offset = offset;
+        instancedBufferAttribute.updateRange.count = count;
+        return;
+    }
+    let curMin = instancedBufferAttribute.updateRange.offset;
+    let curMax = curMin + instancedBufferAttribute.updateRange.count;
+    let plusMin = offset;
+    let plusMax = offset + count;
+    let newMin = Math.min(curMin, plusMin);
+    let newMax = Math.max(curMax, plusMax);
+    instancedBufferAttribute.updateRange.offset = newMin;
+    instancedBufferAttribute.updateRange.count = newMax - newMin;
+}
+
+/**
+ * Manager of multiple HumanPoseRenderInstances within two instanced meshes
+ */
+class HumanPoseRenderer {
     /**
-     * @param {string} id - Unique identifier of human pose being rendered
+     * @param {THREE.Material} material - Material for all instanced meshes
      */
-    constructor(id) {
-        this.id = id;
-        this.spheres = {};
+    constructor(material) {
         this.container = new THREE.Group();
-        this.bones = {};
-        this.overallRebaScore = 1;
-        this.createSpheres();
+        // A stack of free instance slots (indices) that a PoseRenderInstance
+        // can reuse
+        this.freeInstanceSlots = [];
+        this.nextInstanceSlot = 0;
+        this.createMeshes(material);
     }
 
     /**
      * Creates all THREE.Meshes representing the spheres/joint balls of the
      * pose
+     * @param {THREE.Material} material - Material for all instanced meshes
      */
-    createSpheres() {
+    createMeshes(material) {
         const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
-        const mat = new THREE.MeshLambertMaterial();
 
-        this.baseColor = new THREE.Color(0, 0.5, 1);
-        this.redColor = new THREE.Color(1, 0, 0);
-        this.yellowColor = new THREE.Color(1, 1, 0);
-        this.greenColor = new THREE.Color(0, 1, 0);
-
-        this.spheresMesh = new THREE.InstancedMesh(
+        this.jointsMesh = new THREE.InstancedMesh(
             geo,
-            mat,
-            Object.values(JOINTS).length,
+            material,
+            JOINTS_PER_POSE * MAX_POSE_INSTANCES,
         );
-        this.spheresMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        // Initialize instanceColor
+        this.jointsMesh.setColorAt(0, COLOR_BASE);
+        this.jointsMesh.count = 0;
+        this.jointsMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.jointsMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
 
-        for (const [i, jointId] of Object.values(JOINTS).entries()) {
-            this.spheres[jointId] = i;
-            this.spheresMesh.setColorAt(i, this.baseColor);
-        }
-        this.container.add(this.spheresMesh);
+        this.container.add(this.jointsMesh);
 
         const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
         this.bonesMesh = new THREE.InstancedMesh(
             geoCyl,
-            mat,
-            Object.keys(JOINT_CONNECTIONS).length,
+            material,
+            BONES_PER_POSE * MAX_POSE_INSTANCES,
         );
-        this.container.add(this.bonesMesh);
+        // Initialize instanceColor
+        this.bonesMesh.setColorAt(0, COLOR_BASE);
+        this.bonesMesh.count = 0;
+        this.bonesMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.bonesMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
 
-        for (const [i, boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
-            this.bones[boneName] = i;
-            this.bonesMesh.setColorAt(i, this.baseColor);
+        this.container.add(this.bonesMesh);
+    }
+
+    /**
+     * @return {number} index of the taken slot
+     */
+    takeSlot() {
+        if (this.freeInstanceSlots.length > 0) {
+            return this.freeInstanceSlots.pop();
+        }
+        if (this.nextInstanceSlot >= MAX_POSE_INSTANCES) {
+            console.error('out of instances');
+            return 0;
+        }
+        const takenSlot = this.nextInstanceSlot;
+        this.nextInstanceSlot += 1;
+
+        this.jointsMesh.count = JOINTS_PER_POSE * this.nextInstanceSlot;
+        this.bonesMesh.count = BONES_PER_POSE * this.nextInstanceSlot;
+
+        return takenSlot;
+    }
+
+    hideSlot(slot) {
+        let zeros = new THREE.Matrix4().set(
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 1,
+        );
+        for (let i = 0; i < JOINTS_PER_POSE; i++) {
+            this.setJointMatrixAt(slot, i, zeros);
+        }
+        for (let i = 0; i < BONES_PER_POSE; i++) {
+            this.setBoneMatrixAt(slot, i, zeros);
+        }
+    }
+
+    /**
+     * Hides `slot` and adds it to the free list for reuse
+     * @param {number} slot to free up
+     */
+    leaveSlot(slot) {
+        this.freeInstanceSlots.push(slot);
+        this.hideSlot(slot);
+    }
+
+    /**
+     * @param {number} slot - assigned rendering slot
+     * @param {number} index - index of joint within slot
+     * @param {THREE.Vector3} position
+     */
+    setJointMatrixAt(slot, index, matrix) {
+        const offset = slot * JOINTS_PER_POSE + index;
+        this.jointsMesh.setMatrixAt(
+            offset,
+            matrix,
+        );
+        unionUpdateRange(this.jointsMesh.instanceMatrix, offset, 1);
+    }
+
+    /**
+     * @param {number} slot - assigned rendering slot
+     * @param {number} index - index of bone within slot
+     * @param {THREE.Vector3} position
+     */
+    setBoneMatrixAt(slot, index, matrix) {
+        const offset = slot * BONES_PER_POSE + index;
+        this.bonesMesh.setMatrixAt(
+            offset,
+            matrix,
+        );
+        unionUpdateRange(this.bonesMesh.instanceMatrix, offset, 1);
+    }
+
+    /**
+     * @param {number} slot - assigned rendering slot
+     * @param {number} index - index of joint within slot
+     * @param {THREE.Color} color
+     */
+    setJointColorAt(slot, index, color) {
+        this.jointsMesh.setColorAt(
+            slot * JOINTS_PER_POSE + index,
+            color,
+        );
+    }
+
+    /**
+     * @param {number} slot - assigned rendering slot
+     * @param {number} index - index of bone within slot
+     * @param {THREE.Color} color
+     */
+    setBoneColorAt(slot, index, color) {
+        this.bonesMesh.setColorAt(
+            slot * BONES_PER_POSE + index,
+            color,
+        );
+    }
+
+    /**
+     * @param {number} slot
+     * @return {Float32Array}
+     */
+    getSlotJointMatrices(slot) {
+        return getSliceSlot(this.jointsMesh.instanceMatrix, slot, JOINTS_PER_POSE);
+    }
+
+    /**
+     * @param {number} slot
+     * @return {Float32Array}
+     */
+    getSlotBoneMatrices(slot) {
+        return getSliceSlot(this.bonesMesh.instanceMatrix, slot, BONES_PER_POSE);
+    }
+
+    /**
+     * @param {number} slot
+     * @param {Float32Array} matrices
+     */
+    setSlotJointMatrices(slot, matrices) {
+        setSliceSlot(this.jointsMesh.instanceMatrix, slot, JOINTS_PER_POSE, matrices);
+    }
+
+    /**
+     * @param {number} slot
+     * @param {Float32Array} matrices
+     */
+    setSlotBoneMatrices(slot, matrices) {
+        setSliceSlot(this.bonesMesh.instanceMatrix, slot, BONES_PER_POSE, matrices);
+    }
+
+
+    /**
+     * @param {number} slot
+     * @return {Float32Array}
+     */
+    getSlotJointColors(slot) {
+        return getSliceSlot(this.jointsMesh.instanceColor, slot, JOINTS_PER_POSE);
+    }
+
+    /**
+     * @param {number} slot
+     * @return {Float32Array}
+     */
+    getSlotBoneColors(slot) {
+        return getSliceSlot(this.bonesMesh.instanceColor, slot, BONES_PER_POSE);
+    }
+
+    /**
+     * @param {number} slot
+     * @param {Float32Array} colors
+     */
+    setSlotJointColors(slot, colors) {
+        setSliceSlot(this.jointsMesh.instanceColor, slot, JOINTS_PER_POSE, colors);
+    }
+
+    /**
+     * @param {number} slot
+     * @param {Float32Array} colors
+     */
+    setSlotBoneColors(slot, colors) {
+        setSliceSlot(this.bonesMesh.instanceColor, slot, BONES_PER_POSE, colors);
+    }
+
+    addToScene(container) {
+        if (container) {
+            container.add(this.container);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.container);
+        }
+    }
+
+    /**
+     * Removes from container and disposes resources
+     */
+    removeFromScene(container) {
+        if (container) {
+            container.remove(this.container);
+        } else {
+            realityEditor.gui.threejsScene.removeFromScene(this.container);
+        }
+        this.bonesMesh.dispose();
+        this.jointsMesh.dispose();
+    }
+
+    markNeedsUpdate() {
+        this.markMatrixNeedsUpdate();
+        this.markColorNeedsUpdate();
+    }
+
+    markMatrixNeedsUpdate() {
+        this.jointsMesh.instanceMatrix.needsUpdate = true;
+        this.bonesMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    markColorNeedsUpdate() {
+        this.jointsMesh.instanceColor.needsUpdate = true;
+        this.bonesMesh.instanceColor.needsUpdate = true;
+    }
+}
+
+/**
+ * A single 3d skeleton rendered in a HumanPoseRenderer's slot
+ */
+class HumanPoseRenderInstance {
+    /**
+     * @param {HumanPoseRenderer} renderer
+     * @param {string} id - Unique identifier of human pose being rendered
+     */
+    constructor(renderer, id) {
+        this.renderer = renderer;
+        this.id = id;
+        this.updated = true;
+        this.visible = true;
+        this.jointPositions = [];
+        for (let i = 0; i < JOINTS_PER_POSE; i++) {
+            this.jointPositions.push(new THREE.Vector3(0, 0, 0));
+        }
+        this.previousMatrices = null;
+        this.overallRebaScore = 1;
+        this.colorOptions = [];
+        this.slot = -1;
+        this.add();
+    }
+
+    /**
+     * Occupies a slot on the renderer, uploading initial values
+     * @param {number?} slot - manually assigned slot, taken from renderer
+     * otherwise
+     */
+    add(slot) {
+        if (typeof slot === 'number') {
+            this.slot = slot;
+        } else {
+            this.slot = this.renderer.takeSlot();
         }
 
-        this.spheresMesh.material = new THREE.MeshBasicMaterial();
-        this.bonesMesh.material = new THREE.MeshBasicMaterial();
+        for (const [i, _jointId] of Object.values(JOINTS).entries()) {
+            this.renderer.setJointColorAt(this.slot, i, COLOR_BASE);
+        }
+
+        for (const [i, _boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
+            this.renderer.setBoneColorAt(this.slot, i, COLOR_BASE);
+        }
     }
 
     /**
@@ -73,8 +369,11 @@ export class HumanPoseRenderer {
      * @param {THREE.Vector3} position
      */
     setJointPosition(jointId, position) {
-        const index = this.spheres[jointId];
-        this.spheresMesh.setMatrixAt(
+        const index = JOINT_TO_INDEX[jointId];
+        this.jointPositions[index] = position;
+
+        this.renderer.setJointMatrixAt(
+            this.slot,
             index,
             new THREE.Matrix4().makeTranslation(
                 position.x,
@@ -88,10 +387,8 @@ export class HumanPoseRenderer {
      * @return {THREE.Vector3}
      */
     getJointPosition(jointId) {
-        const index = this.spheres[jointId];
-        const mat = new THREE.Matrix4();
-        this.spheresMesh.getMatrixAt(index, mat);
-        return new THREE.Vector3().setFromMatrixPosition(mat);
+        const index = JOINT_TO_INDEX[jointId];
+        return this.jointPositions[index];
     }
 
     /**
@@ -114,13 +411,33 @@ export class HumanPoseRenderer {
     }
 
     /**
-     * Updates bone (stick between joints) positions based on this.spheres'
+     * Sets all matrices in our assigned renderer slot based on the current
+     * state of this instance
+     */
+    setAllMatrices() {
+        for (let i = 0; i < this.jointPositions.length; i++) {
+            let position = this.jointPositions[i];
+            this.renderer.setJointMatrixAt(
+                this.slot,
+                i,
+                new THREE.Matrix4().makeTranslation(
+                    position.x,
+                    position.y,
+                    position.z,
+                ),
+            );
+        }
+
+        this.updateBonePositions();
+    }
+
+    /**
+     * Updates bone (stick between joints) positions based on joint
      * positions.
      */
     updateBonePositions() {
-
         for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
-            const boneIndex = this.bones[boneName];
+            const boneIndex = BONE_TO_INDEX[boneName];
             let jointA = this.getJointPosition(JOINT_CONNECTIONS[boneName][0]);
             let jointB = this.getJointPosition(JOINT_CONNECTIONS[boneName][1]);
 
@@ -144,19 +461,13 @@ export class HumanPoseRenderer {
             let mat = new THREE.Matrix4();
             mat.compose(pos, rot, scale);
 
-            this.bonesMesh.setMatrixAt(boneIndex, mat);
+            this.renderer.setBoneMatrixAt(this.slot, boneIndex, mat);
         }
 
         if (!RENDER_CONFIDENCE_COLOR) {
             annotateHumanPoseRenderer(this);
         }
-
-        this.spheresMesh.instanceMatrix.needsUpdate = true;
-        this.spheresMesh.instanceColor.needsUpdate = true;
-        this.bonesMesh.instanceMatrix.needsUpdate = true;
-        this.bonesMesh.instanceColor.needsUpdate = true;
     }
-
 
     setOverallRebaScore(score) {
         this.overallRebaScore = score;
@@ -168,33 +479,34 @@ export class HumanPoseRenderer {
      * @param {number} boneColor
      */
     setBoneRebaColor(boneName, boneColor) {
-        if (typeof this.bones[boneName] === 'undefined') {
+        if (typeof BONE_TO_INDEX[boneName] === 'undefined') {
             return;
         }
 
-        const boneIndex = this.bones[boneName];
+        const boneIndex = BONE_TO_INDEX[boneName];
         const joint = JOINT_CONNECTIONS[boneName][1];
-        const jointIndex = this.spheres[joint];
+        const jointIndex = JOINT_TO_INDEX[joint];
 
+        let color = COLOR_BASE;
         if (boneColor === 0) {
-            this.bonesMesh.setColorAt(boneIndex, this.greenColor);
-            this.spheresMesh.setColorAt(jointIndex, this.greenColor);
+            color = COLOR_GREEN;
         } else if (boneColor === 1) {
-            this.bonesMesh.setColorAt(boneIndex, this.yellowColor);
-            this.spheresMesh.setColorAt(jointIndex, this.yellowColor);
+            color = COLOR_YELLOW;
         } else if (boneColor === 2) {
-            this.bonesMesh.setColorAt(boneIndex, this.redColor);
-            this.spheresMesh.setColorAt(jointIndex, this.redColor);
+            color = COLOR_RED;
         }
+        this.renderer.setBoneColorAt(this.slot, boneIndex, color);
+        this.renderer.setJointColorAt(this.slot, jointIndex, color);
     }
+
     /**
      * @param {number} confidence in range [0,1]
      */
     setJointConfidenceColor(jointId, confidence) {
-        if (typeof this.spheres[jointId] === 'undefined') {
+        if (typeof JOINT_TO_INDEX[jointId] === 'undefined') {
             return;
         }
-        const jointIndex = this.spheres[jointId];
+        const jointIndex = JOINT_TO_INDEX[jointId];
 
         let baseColorHSL = {};
         this.baseColor.getHSL(baseColorHSL);
@@ -204,28 +516,103 @@ export class HumanPoseRenderer {
         let color = new THREE.Color();
         color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
 
-        this.spheresMesh.setColorAt(jointIndex, color);
+        this.renderer.setJointColorAt(this.slot, jointIndex, color);
     }
 
-    addToScene(container) {
-        if (container) {
-            container.add(this.container);
-        } else {
-            realityEditor.gui.threejsScene.addToScene(this.container);
+    setColorOption(colorOptionIndex) {
+        this.renderer.setSlotBoneColors(this.slot, this.colorOptions[colorOptionIndex].boneColors);
+        this.renderer.setSlotJointColors(this.slot, this.colorOptions[colorOptionIndex].jointColors);
+    }
+
+    setVisible(visible) {
+        if (this.visible === visible) {
+            return;
         }
+
+        if (this.visible) {
+            if (!this.previousMatrices) {
+                this.previousMatrices = {
+                    boneMatrices: this.renderer.getSlotBoneMatrices(this.slot),
+                    jointMatrices: this.renderer.getSlotJointMatrices(this.slot),
+                };
+            }
+            this.renderer.hideSlot(this.slot);
+        } else {
+            this.renderer.setSlotBoneMatrices(this.slot, this.previousMatrices.boneMatrices);
+            this.renderer.setSlotJointMatrices(this.slot, this.previousMatrices.jointMatrices);
+        }
+        this.visible = visible;
+    }
+
+    getOverallRebaScoreHue() {
+        let hueReba = 140 - (this.overallRebaScore - 1) * 240 / 11;
+        if (isNaN(hueReba)) {
+            hueReba = 120;
+        }
+        hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
+        return hueReba;
+    }
+
+    cloneToRenderer(newRenderer, startingColorOption) {
+        let clone = new HumanPoseRenderInstance(newRenderer, this.id);
+
+        for (const jointId of Object.keys(JOINT_TO_INDEX)) {
+            clone.setJointPosition(jointId, this.getJointPosition(jointId));
+        }
+        // TODO would be significantly faster to use the bulk set methods
+        clone.updateBonePositions();
+
+        let colorRainbow = new THREE.Color();
+        colorRainbow.setHSL(((Date.now() / 5) % 360) / 360, 1, 0.5);
+
+        let hueReba = this.getOverallRebaScoreHue();
+        // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
+        let colorReba = new THREE.Color();
+        colorReba.setHSL(hueReba / 360, 1, 0.5);
+
+        let boneColors = this.renderer.getSlotBoneColors(this.slot);
+        let jointColors = this.renderer.getSlotJointColors(this.slot);
+
+        let boneColorsRainbow = boneColors.slice(0);
+        let jointColorsRainbow = jointColors.slice(0);
+
+        let boneColorsReba = boneColors.slice(0);
+        let jointColorsReba = jointColors.slice(0);
+
+        for (let i = 0; i < boneColors.length / 3; i++) {
+            colorRainbow.toArray(boneColorsRainbow, i * 3);
+            colorReba.toArray(boneColorsReba, i * 3);
+        }
+        for (let i = 0; i < jointColors.length / 3; i++) {
+            colorRainbow.toArray(jointColorsRainbow, i * 3);
+            colorReba.toArray(jointColorsReba, i * 3);
+        }
+
+        clone.colorOptions.push({
+            boneColors: boneColorsReba,
+            jointColors: jointColorsReba,
+        });
+
+        clone.colorOptions.push({
+            boneColors,
+            jointColors,
+        });
+
+        clone.colorOptions.push({
+            boneColors: boneColorsRainbow,
+            jointColors: jointColorsRainbow,
+        });
+
+        clone.setColorOption(startingColorOption);
+
+        return clone;
     }
 
     /**
      * Removes from container and disposes resources
      */
-    removeFromScene(container) {
-        if (container) {
-            container.remove(this.container);
-        } else {
-            realityEditor.gui.threejsScene.removeFromScene(this.container);
-        }
-        this.bonesMesh.dispose();
-        this.spheresMesh.dispose();
+    remove() {
+        this.renderer.leaveSlot(this.slot);
     }
 }
 
@@ -257,27 +644,6 @@ export class HumanPoseAnalyzer {
         this.lastAnimationUpdate = Date.now();
 
         this.update = this.update.bind(this);
-
-        this.baseMaterial = new THREE.MeshBasicMaterial({
-            color: 0x0077ff,
-            transparent: true,
-            opacity: 0.5,
-        });
-        this.redMaterial = new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
-            transparent: true,
-            opacity: 0.5,
-        });
-        this.yellowMaterial = new THREE.MeshBasicMaterial({
-            color: 0xFFFF00,
-            transparent: true,
-            opacity: 0.5,
-        });
-        this.greenMaterial = new THREE.MeshBasicMaterial({
-            color: 0x00ff00,
-            transparent: true,
-            opacity: 0.5,
-        });
 
         window.requestAnimationFrame(this.update);
     }
@@ -311,13 +677,12 @@ export class HumanPoseAnalyzer {
 
     poseRendererUpdated(poseRenderer, timestamp) {
         if (this.recordingClones) {
-            const obj = this.clone(poseRenderer);
+            const obj = poseRenderer.cloneToRenderer(poseRendererHistorical, this.cloneMaterialIndex);
             this.clonesAll.push({
                 timestamp,
                 poseObject: obj,
             })
-            obj.visible = this.animationMode === AnimationMode.ALL;
-            this.historyCloneContainer.add(obj);
+            obj.setVisible(this.animationMode === AnimationMode.ALL);
         }
 
         let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
@@ -340,7 +705,7 @@ export class HumanPoseAnalyzer {
             }
         }
 
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
+        let hueReba = poseRenderer.getOverallRebaScoreHue();
         let colorRGB = new THREE.Color();
         colorRGB.setHSL(hueReba / 360, 0.8, 0.3);
 
@@ -355,54 +720,6 @@ export class HumanPoseAnalyzer {
 
         historyMesh.currentPoints.push(nextHistoryPoint);
         this.historyMeshesAll[poseRenderer.id].setPoints(historyMesh.currentPoints);
-    }
-
-    getOverallRebaScoreHue(overallRebaScore) {
-        let hueReba = 140 - (overallRebaScore - 1) * 240 / 11;
-        if (isNaN(hueReba)) {
-            hueReba = 120;
-        }
-        hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
-        return hueReba;
-    }
-
-    clone(poseRenderer) {
-        let colorRainbow = new THREE.Color();
-        colorRainbow.setHSL(((Date.now() / 5) % 360) / 360, 1, 0.5);
-
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
-        // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
-        let colorReba = new THREE.Color();
-        colorReba.setHSL(hueReba / 360, 1, 0.5);
-
-        let newContainer = poseRenderer.container.clone();
-        let matBase = new THREE.MeshBasicMaterial({
-            transparent: true,
-            opacity: 0.5,
-        });
-
-        newContainer.children.forEach((obj) => {
-            if (obj.instanceColor) {
-                // Make the material transparent
-
-                let attrBase = obj.instanceColor;
-                let attrReba = obj.instanceColor.clone();
-                let attrRainbow = obj.instanceColor.clone();
-                for (let i = 0; i < attrReba.count; i++) {
-                    colorReba.toArray(attrReba.array, i * 3);
-                    colorRainbow.toArray(attrRainbow.array, i * 3);
-                }
-                obj.__cloneColors = [
-                    attrReba,
-                    attrBase,
-                    attrRainbow,
-                ];
-                obj.instanceColor = obj.__cloneColors[this.cloneMaterialIndex % obj.__cloneColors.length];
-                obj.material = matBase;
-                obj.instanceColor.needsUpdate = true;
-            }
-        });
-        return newContainer;
     }
 
     /**
@@ -432,13 +749,10 @@ export class HumanPoseAnalyzer {
     }
 
     resetHistoryClones() {
-        // Loop over copy of children to remove all
-        for (let child of this.historyCloneContainer.children.concat()) {
-            if (child.dispose) {
-                child.dispose();
-            }
-            this.historyCloneContainer.remove(child);
+        for (let clone of this.clonesAll) {
+            clone.poseObject.remove();
         }
+        poseRendererHistorical.markMatrixNeedsUpdate();
         this.clonesAll = [];
     }
 
@@ -523,39 +837,49 @@ export class HumanPoseAnalyzer {
         this.animationMode = animationMode;
         if (this.animationMode === AnimationMode.ALL) {
             for (let clone of this.clonesAll) {
-                clone.poseObject.visible = true;
+                clone.poseObject.setVisible(true);
             }
         } else {
             for (let clone of this.clonesAll) {
-                clone.poseObject.visible = false;
+                clone.poseObject.setVisible(false);
             }
         }
+        poseRendererHistorical.markMatrixNeedsUpdate();
     }
 
     advanceCloneMaterial() {
-        this.cloneMaterialIndex += 1;
+        this.cloneMaterialIndex = (this.cloneMaterialIndex + 1) % 3;
 
-        this.historyCloneContainer.traverse((obj) => {
-            if (obj.__cloneColors) {
-                let index = this.cloneMaterialIndex % obj.__cloneColors.length;
-                obj.instanceColor = obj.__cloneColors[index];
-                obj.instanceColor.needsUpdate = true;
-            }
+        this.clonesAll.forEach(clone => {
+            clone.poseObject.setColorOption(this.cloneMaterialIndex);
         });
+        poseRendererHistorical.markColorNeedsUpdate();
     }
 
     setAnimation(start, end) {
+        if (this.animationStart === start && this.animationEnd === end) {
+            return;
+        }
+
         this.animationStart = start;
         this.animationEnd = end;
+
+        // Fully reset the animation when changing
+        this.hideLastDisplayedClone();
+        this.lastDisplayedCloneIndex = -1;
     }
 
     updateAnimation() {
         let dt = Date.now() - this.lastAnimationUpdate;
         this.lastAnimationUpdate += dt;
+
         if (this.animationStart < 0 || this.animationEnd < 0) {
-            this.hideLastDisplayedClone(-1);
+            this.hideLastDisplayedClone();
             return;
         }
+
+        poseRendererHistorical.markMatrixNeedsUpdate();
+
         this.animationPosition += dt;
         let offset = this.animationPosition - this.animationStart;
         let duration = this.animationEnd - this.animationStart;
@@ -564,26 +888,27 @@ export class HumanPoseAnalyzer {
         this.displayNearestClone(this.animationPosition);
     }
 
-    hideLastDisplayedClone(timestamp) {
+    hideLastDisplayedClone() {
         if (this.lastDisplayedCloneIndex >= 0) {
             let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
             if (lastClone) {
-                lastClone.poseObject.visible = false;
-            }
-            if (timestamp >= 0 && lastClone.timestamp > timestamp) {
-                this.lastDisplayedCloneIndex = 0;
+                lastClone.poseObject.setVisible(false);
             }
         }
     }
 
     displayNearestClone(timestamp) {
-        this.hideLastDisplayedClone(timestamp);
-
         if (this.clonesAll.length < 2) {
             return;
         }
+
         let bestClone = null;
-        for (let i = this.lastDisplayedCloneIndex; i < this.clonesAll.length; i++) {
+        let bestCloneIndex = -1;
+        let start = Math.max(this.lastDisplayedCloneIndex, 0);
+        if (this.clonesAll[start].timestamp > timestamp) {
+            start = 0;
+        }
+        for (let i = start; i < this.clonesAll.length; i++) {
             let clone = this.clonesAll[i];
             let cloneNext = this.clonesAll[i + 1];
             if (clone.timestamp > timestamp) {
@@ -591,20 +916,28 @@ export class HumanPoseAnalyzer {
             }
             if (!cloneNext || cloneNext.timestamp > timestamp) {
                 bestClone = clone;
-                this.lastDisplayedCloneIndex = i;
+                bestCloneIndex = i;
                 break;
             }
         }
         if (bestClone) {
-            bestClone.poseObject.visible = true;
+            if (this.lastDisplayedCloneIndex !== bestCloneIndex) {
+                this.hideLastDisplayedClone();
+                this.lastDisplayedCloneIndex = bestCloneIndex;
+                bestClone.poseObject.setVisible(true);
+            }
+        } else {
+            this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = -1;
         }
     }
 }
 
+let prevHistorical = false;
+
 function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
 
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
-
 
     if (!humanPoseAnalyzer) {
         const historyMeshContainer = new THREE.Group();
@@ -624,6 +957,18 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
         }
 
         humanPoseAnalyzer = new HumanPoseAnalyzer(historyMeshContainer, historyCloneContainer);
+
+        poseRendererLive = new HumanPoseRenderer(new THREE.MeshBasicMaterial());
+        poseRendererLive.addToScene(container);
+
+        poseRendererHistorical = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0.5,
+        }));
+        poseRendererHistorical.addToScene(container);
+
+        window.poseRendererLive = poseRendererLive;
+        window.poseRendererHistorical = poseRendererHistorical;
     }
 
     for (let id in poseRenderers) {
@@ -638,10 +983,20 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     }
     for (let id of Object.keys(poseRenderers)) {
         if (!poseRenderers[id].updated) {
-            poseRenderers[id].removeFromScene(container);
+            poseRenderers[id].remove();
             delete poseRenderers[id];
         }
     }
+
+    if (!historical) {
+        poseRendererLive.markNeedsUpdate();
+
+        if (prevHistorical) {
+            poseRendererHistorical.markNeedsUpdate();
+        }
+    }
+
+    prevHistorical = historical;
 }
 
 function setMatrixFromArray(matrix, array) {
@@ -666,12 +1021,11 @@ function renderHistoricalPose(poseObject, timestamp, container) {
 }
 
 function updatePoseRenderer(poseObject, timestamp, container, historical) {
+    let renderer = historical ? poseRendererHistorical : poseRendererLive;
     if (!poseRenderers[poseObject.uuid]) {
-        poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
-        poseRenderers[poseObject.uuid].addToScene(container);
+        poseRenderers[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid);
     }
     let poseRenderer = poseRenderers[poseObject.uuid];
-    poseRenderer.updated = true;
 
     if (historical) {
         updateJointsHistorical(poseRenderer, poseObject);
@@ -743,11 +1097,11 @@ function updateJoints(poseRenderer, poseObject) {
 
         if (RENDER_CONFIDENCE_COLOR) {
             let keys = getJointNodeInfo(poseObject, i);
-            // zero confidence if node's public data are not available 
-            let confidence = 0.0; 
+            // zero confidence if node's public data are not available
+            let confidence = 0.0;
             if (keys) {
                 const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
-                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) { 
+                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
                     confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
                 }
             }
