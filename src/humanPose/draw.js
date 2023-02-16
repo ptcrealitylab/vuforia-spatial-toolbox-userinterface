@@ -51,6 +51,8 @@ function setSliceSlot(instancedBufferAttribute, slot, slotWidth, items) {
     for (let i = 0; i < slotWidth * itemSize; i++) {
         instancedBufferAttribute.array[start + i] = items[i];
     }
+
+    instancedBufferAttribute.needsUpdate = true;
 }
 
 function unionUpdateRange(instancedBufferAttribute, offset, count) {
@@ -154,6 +156,7 @@ class HumanPoseRenderer {
         for (let i = 0; i < BONES_PER_POSE; i++) {
             this.setBoneMatrixAt(slot, i, zeros);
         }
+        this.markMatrixNeedsUpdate();
     }
 
     /**
@@ -176,7 +179,9 @@ class HumanPoseRenderer {
             offset,
             matrix,
         );
-        unionUpdateRange(this.jointsMesh.instanceMatrix, offset, 1);
+        const itemSize = this.jointsMesh.instanceMatrix.itemSize;
+        const updateOffset = offset * itemSize;
+        unionUpdateRange(this.jointsMesh.instanceMatrix, updateOffset, itemSize);
     }
 
     /**
@@ -190,7 +195,10 @@ class HumanPoseRenderer {
             offset,
             matrix,
         );
-        unionUpdateRange(this.bonesMesh.instanceMatrix, offset, 1);
+
+        const itemSize = this.bonesMesh.instanceMatrix.itemSize;
+        const updateOffset = offset * itemSize;
+        unionUpdateRange(this.bonesMesh.instanceMatrix, updateOffset, itemSize);
     }
 
     /**
@@ -875,6 +883,7 @@ export class HumanPoseAnalyzer {
 
         if (this.animationStart < 0 || this.animationEnd < 0) {
             this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = -1;
             return;
         }
 
