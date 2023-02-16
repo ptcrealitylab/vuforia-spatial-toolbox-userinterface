@@ -173,6 +173,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // show the cursor if it was hidden while this function resolves
         isMyColorDetermined = true;
         if (isCursorEnabled && !isUpdateLoopRunning) {
+            indicator1.visible = true;
+            indicator2.visible = true;
             update(); // restart the update loop
         }
     }
@@ -665,6 +667,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
+    exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
