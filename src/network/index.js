@@ -523,23 +523,26 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
     if (beat && beat.id) {
         if (!objects[beat.id]) {
+
+            // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
+            // we make sure to ignore it before triggering the GET request, otherwise we might overload the network
+            let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
+            let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
+            let isWorldBeat = realityEditor.worldObjects.isWorldObjectKey(beat.id);
+            if (primaryWorldInfo && isWorldBeat && !isLocalWorld) {
+                let hasIpInfo = primaryWorldInfo.ip;
+                if (beat.id !== primaryWorldInfo.id || (hasIpInfo && beat.ip !== primaryWorldInfo.ip)) {
+                    // console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match primary world ' + primaryWorldInfo.id);
+                    return;
+                }
+            }
+
             console.log('got heartbeat for new object ' + beat.id);
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
-
-                    // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
-                    let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
-                    let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
-                    if (primaryWorldInfo && (msg.isWorldObject || msg.type === 'world') && !isLocalWorld) {
-                        let hasIpInfo = primaryWorldInfo.ip;
-                        if (beat.id !== primaryWorldInfo.id || (hasIpInfo && beat.ip !== primaryWorldInfo.ip)) {
-                            console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match primary world ' + primaryWorldInfo.id);
-                            return;
-                        }
-                    }
 
                     console.log('instantiating new object with server data' + beat.id, msg);
                     
