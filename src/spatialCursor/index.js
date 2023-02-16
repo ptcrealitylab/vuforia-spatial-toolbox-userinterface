@@ -15,6 +15,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     
     let worldIntersectPoint = {};
     let opacityFactor = 1;
+    let scaleFactor = 0;
     let indicator1;
     let indicator2;
     let overlapped = false;
@@ -199,6 +200,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         addSpatialCursor();
         addTestSpatialCursor();
         toggleDisplaySpatialCursor(DEFAULT_SPATIAL_CURSOR_ON);
+        updateCursorDirection();
+
+        registerKeyboardFlyMode();
 
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
@@ -239,6 +243,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // automatically adds the tool at the spatial cursor, if the cursor is active
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo);
 
+        // todo: ask Ben: now I cannot drag tools from the pocket during normal / fly mode
         if (getOrientedCursorRelativeToWorldObject()) {
             realityEditor.device.resetEditingState(); // make sure we don't drag the tool after adding
         } else {
@@ -252,7 +257,35 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }, 1000);
     }
 
+    let screenX, screenY;
+    let lastScreenX, lastScreenY;
+    let isFlying = false;
+    function registerKeyboardFlyMode() {
+        realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
+            isFlying = params.isFlying;
+            let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            lastScreenX = mousePosition.x;
+            lastScreenY = mousePosition.y;
+            screenX = window.innerWidth / 2;
+            screenY = window.innerHeight / 2;
+        });
+
+        realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
+            isFlying = params.isFlying;
+            screenX = lastScreenX;
+            screenY = lastScreenY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isFlying) {
+                screenX = e.pageX;
+                screenY = e.pageY;
+            }
+        });
+    }
+
     function update() {
+        window.requestAnimationFrame(update);
         if (!isCursorEnabled) {
             isUpdateLoopRunning = false;
             return; // need to call update() again when isCursorEnabled gets toggled on again
@@ -261,17 +294,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         try {
             // for iPhone usage, keep spatial cursor at the center of the screen
-            let screenX = window.innerWidth / 2;
-            let screenY = window.innerHeight / 2;
-            if (realityEditor.device.environment.requiresMouseEvents()) {
-                let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-                screenX = mousePosition.x;
-                screenY = mousePosition.y;
+            if (!realityEditor.device.environment.isDesktop()) {
+                screenX = window.innerWidth / 2;
+                screenY = window.innerHeight / 2;
             }
             worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+            updateScaleFactor();
             updateOpacityFactor();
             updateSpatialCursor();
             updateTestSpatialCursor();
+            tweenCursorDirection();
             uniforms['time'].value = clock.getElapsedTime() * 10;
 
             if (SNAP_CURSOR_TO_TOOLS) {
@@ -280,7 +312,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         } catch (e) {
             console.warn('error in spatialCursor', e);
         }
-        window.requestAnimationFrame(update);
     }
 
     function trySnappingCursorToTools(screenX, screenY) {
@@ -319,6 +350,35 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
     
+    let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
+    function updateScaleFactor() {
+        if (Object.keys(worldIntersectPoint).length === 0) {
+            // if doesn't intersect any point in world
+            if (scaleFactor === 0) return;
+            if (scaleAcceleration === scaleAccelerationFactor) {
+                // if previously, intersects with some point in world
+                scaleAcceleration = -scaleAccelerationFactor;
+                scaleSpeed = 0;
+            }
+            scaleSpeed += scaleAcceleration;
+            scaleFactor += scaleSpeed;
+            scaleFactor = clamp(scaleFactor, 0, 1);
+            indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        } else {
+            // if intersects with some point in world
+            if (scaleFactor === 1) return;
+            if (scaleAcceleration === -scaleAccelerationFactor) {
+                // if previously, doesn't intersect with some point in world
+                scaleAcceleration = scaleAccelerationFactor;
+                scaleSpeed = 0;
+            }
+            scaleSpeed += scaleAcceleration;
+            scaleFactor += scaleSpeed;
+            scaleFactor = clamp(scaleFactor, 0, 1);
+            indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        }
+    }
+    
     let fadeOutDistance = 500, maxOpacityDistance = 1000;
     let opacityLow = 0.1, opacityHigh = 1;
     function updateOpacityFactor() {
@@ -327,12 +387,45 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
     
+    let cursorDirections = [];
+    let clock2 = new THREE.Clock(false);
+    let updateInterval = 200;
+    function updateCursorDirection() {
+        setInterval(() => {
+            if (Object.keys(worldIntersectPoint).length === 0) return;
+            if (cursorDirections.length < 2) {
+                cursorDirections.push(worldIntersectPoint.normalVector.clone());
+                return;
+            }
+            cursorDirections.push(worldIntersectPoint.normalVector.clone());
+            cursorDirections.shift();
+            clock2.start();
+        }, updateInterval);
+    }
+    
+    function tweenCursorDirection() {
+        if (typeof worldIntersectPoint.point === 'undefined') return;
+        // if cursorDirections[] has 1 entry, set indicator quaternion to that direction
+        if (cursorDirections.length === 1) {
+            indicator1.quaternion.setFromUnitVectors(indicatorAxis, cursorDirections[0]);
+            return;
+        }
+        // if cursorDirections[] has 2 entries, interpolate between the two quaternions in the cursorDirections[] array every frame
+        if (cursorDirections.length === 2) {
+            let oldQuaternion = new THREE.Quaternion().setFromUnitVectors(indicatorAxis, cursorDirections[0]);
+            let desQuaternion = new THREE.Quaternion().setFromUnitVectors(indicatorAxis, cursorDirections[1]);
+            let percentage = clock2.getElapsedTime() * 1000 / updateInterval;
+            indicator1.quaternion.slerpQuaternions(oldQuaternion, desQuaternion, percentage);
+            indicator2.quaternion.slerpQuaternions(oldQuaternion, desQuaternion, percentage);
+        }
+    }
+    
+    let curQuaternion, destQuaternion = null;
     function updateSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
             indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
             let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(topCursorOffset);
             indicator1.position.add(offset);
-            indicator1.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
         indicator1.material = overlapped ? colorCursorMaterial : normalCursorMaterial;
         indicator1.material.uniforms.opacityFactor.value = opacityFactor;
@@ -343,7 +436,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             indicator2.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
             let offset = worldIntersectPoint.normalVector.clone().multiplyScalar(bottomCursorOffset);
             indicator2.position.add(offset);
-            indicator2.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
         }
         indicator2.material.uniforms.opacityFactor.value = opacityFactor;
     }
@@ -377,14 +469,23 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 inverseGroundPlaneMatrix.invert();
                 raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
                 let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+                // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
+                let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
+                let cameraDirection = new THREE.Vector3();
+                realityEditor.gui.threejsScene.getInternals().camera.getWorldDirection(cameraDirection);
+                if (cameraDirection.dot(normalVector) > 0) {
+                    normalVector.negate();
+                }
                 worldIntersectPoint = {
                     point: raycastIntersects[0].point,
-                    normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
+                    normalVector: normalVector,
                     distance: raycastIntersects[0].distance,
                 }
+                return worldIntersectPoint; // these are relative to the world object
             }
         }
-        return worldIntersectPoint; // these are relative to the world object
+        worldIntersectPoint = {};
+        return worldIntersectPoint;
     }
 
     function getCursorRelativeToWorldObject() {
