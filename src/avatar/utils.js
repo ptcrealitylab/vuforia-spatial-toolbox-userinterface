@@ -11,6 +11,7 @@ createNameSpace("realityEditor.avatar.utils");
     exports.NODE_NAME = 'storage';
     exports.PUBLIC_DATA_KEYS = {
         touchState: 'touchState',
+        cursorState: 'cursorState',
         userProfile: 'userProfile'
     };
 

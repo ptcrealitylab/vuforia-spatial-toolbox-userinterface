@@ -10,6 +10,9 @@ createNameSpace("realityEditor.envelopeManager");
 
 (function(exports) {
 
+    // in addition to the X button, adds another button next to it (purpose not fully determined)
+    const INCLUDE_MINIMIZE_BUTTON = false;
+
     /**
      * @typedef {Object} Envelope
      * @property {string} object
@@ -236,6 +239,11 @@ createNameSpace("realityEditor.envelopeManager");
             }
             exitButton.style.display = 'inline';
 
+            if (!INCLUDE_MINIMIZE_BUTTON) {
+                callbacks.onExitButtonShown.forEach(cb => cb(exitButton, null));
+                return;
+            }
+
             let minimizeButton = document.getElementById('minimizeEnvelopeButton');
             if (!minimizeButton) {
                 minimizeButton = document.createElement('img');
@@ -452,7 +460,14 @@ createNameSpace("realityEditor.envelopeManager");
                 };
 
                 if (envelopeData) {
-                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y, true);
+                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, {
+                        startPositionOffset: envelopeData.startPositionOffset,
+                        width: envelopeData.width,
+                        height: envelopeData.height,
+                        pageX: touchPosition.x,
+                        pageY: touchPosition.y,
+                        noUserInteraction: true
+                    });
 
                     console.log('added an envelope (maybe in time?)', addedElement);
 

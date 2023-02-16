@@ -176,6 +176,7 @@ createNameSpace("realityEditor.device.tracking");
         // show and populate with message
         trackingStatusUI.classList.add('statusBar');
         trackingStatusUI.classList.remove('statusBarHidden');
+        trackingStatusUI.style.paddingTop = (10 + realityEditor.device.environment.variables.screenTopOffset) + 'px';
         textContainer.innerHTML = readableStatus;
         
         if (isLongMessage) {

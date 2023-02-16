@@ -1,4 +1,4 @@
-import {RegionCard} from './regionCard.js';
+import {RegionCard, RegionCardState} from './regionCard.js';
 import {
     getHistoryPointsInTimeInterval,
 } from '../humanPose/draw.js';
@@ -7,7 +7,7 @@ const needleTopPad = 4;
 const needleTipWidth = 12;
 const needlePad = 12;
 const needleWidth = 3;
-const needleDragWidth = 8;
+const needleDragWidth = 12;
 
 const rowPad = 4;
 const rowHeight = 10;
@@ -16,36 +16,15 @@ const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
 
+const DEFAULT_MIN_PIXELS_PER_MS = 0.00004;
+
 const DragMode = {
     NONE: 'none',
     SELECT: 'select',
     PAN: 'pan',
 };
 
-class TextLabel {
-    constructor(container) {
-        this.element = document.createElement('div');
-        this.element.classList.add('timelineBoardLabel');
-        container.appendChild(this.element);
-    }
-
-    show() {
-        this.element.classList.add('shown');
-    }
-
-    hide() {
-        this.element.classList.remove('shown');
-    }
-
-    setText(text) {
-        this.element.textContent = text;
-    }
-
-    moveTo(x, y) {
-        this.element.style.left = x + 'px';
-        this.element.style.bottom = y + 'px';
-    }
-}
+const DEFAULT_WIDTH_MS = 60 * 1000;
 
 export class Timeline {
     constructor(container) {
@@ -55,12 +34,14 @@ export class Timeline {
         this.canvas.classList.add('analytics-timeline');
         this.gfx = this.canvas.getContext('2d');
         this.pixelsPerMs = 0.01; // 1024 * 100 / (24 * 60 * 60 * 1000);
-        this.timeMin = -1;
-        this.widthMs = -1;
-        this.scrolled = true;
+        this.timeMin = Date.now() - DEFAULT_WIDTH_MS;
+        this.resetBounds();
+        this.widthMs = DEFAULT_WIDTH_MS;
+        this.scrolled = false;
         container.appendChild(this.canvas);
         this.poses = [];
         this.width = -1;
+        this.displayRegion = null;
         this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
         this.regionCard = null;
@@ -70,8 +51,13 @@ export class Timeline {
         this.mouseX = -1;
         this.mouseY = -1;
 
-        this.boardLabelLeft = new TextLabel(container);
-        this.boardLabelRight = new TextLabel(container);
+        this.boardLabelLeft = document.createElement('div');
+        this.boardLabelLeft.classList.add('timelineBoardLabel');
+        container.appendChild(this.boardLabelLeft);
+
+        this.boardLabelRight = document.createElement('div');
+        this.boardLabelRight.classList.add('timelineBoardLabel');
+        container.appendChild(this.boardLabelRight);
 
         this.dateFormat = new Intl.DateTimeFormat('default', {
             dateStyle: 'short',
@@ -107,14 +93,23 @@ export class Timeline {
             }
 
             this.width = rect.width;
-            this.widthMs = this.width / this.pixelsPerMs;
+            this.pixelsPerMs = this.width / this.widthMs;
+            if (this.minPixelsPerMs < 0) {
+                this.minPixelsPerMs = this.pixelsPerMs;
+            }
             this.canvas.width = this.width;
             this.canvas.height = this.height;
             this.gfx.width = this.width;
             this.gfx.height = this.height;
         }
         if (this.timeMin > 0 && !this.scrolled) {
-            this.timeMin = Date.now() - this.widthMs / 2;
+            const newTimeMin = Date.now() - this.widthMs;
+            if (newTimeMin > this.timeMin) {
+                this.timeMin = newTimeMin;
+                if (this.timeMin + this.widthMs > this.maxTimeMax) {
+                    this.timeMin = this.maxTimeMax - this.widthMs;
+                }
+            }
         }
 
         this.gfx.clearRect(0, 0, this.width, this.height);
@@ -184,20 +179,19 @@ export class Timeline {
             new Date(this.timeMin),
             new Date(this.timeMin + this.widthMs)
         );
-        this.boardLabelLeft.setText(startLabel);
-        this.boardLabelRight.setText(endLabel);
+        this.boardLabelLeft.textContent = startLabel;
+        this.boardLabelRight.textContent = endLabel;
 
-        this.boardLabelLeft.moveTo(0, this.height + labelPad - boardStart);
-        this.boardLabelRight.moveTo(this.width, this.height + labelPad - boardStart);
-
-        this.boardLabelLeft.show();
-        this.boardLabelRight.show();
+        this.boardLabelLeft.style.left = '0px';
+        this.boardLabelLeft.style.bottom = `${this.height + labelPad - boardStart}px`;
+        this.boardLabelRight.style.right = '0px';
+        this.boardLabelRight.style.bottom = `${this.height + labelPad - boardStart}px`;
     }
 
     updateRegionCard() {
         if (!this.highlightRegion) {
             if (this.regionCard) {
-                if (!this.regionCard.pinned) {
+                if (this.regionCard.state !== RegionCardState.Pinned) {
                     this.regionCard.remove();
                 }
                 this.regionCard = null;
@@ -218,7 +212,7 @@ export class Timeline {
         this.lastRegionCardCacheKey = cacheKey;
 
         if (this.regionCard) {
-            if (!this.regionCard.pinned) {
+            if (this.regionCard.state !== RegionCardState.Pinned) {
                 this.regionCard.remove();
             }
             this.regionCard = null;
@@ -424,7 +418,13 @@ export class Timeline {
 
         if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
-            this.highlightStartX = event.offsetX;
+            if (this.isPointerOnStartNeedle()) {
+                this.highlightStartX = this.timeToX(this.highlightRegion.endTime);
+            } else if (this.isPointerOnEndNeedle()) {
+                this.highlightStartX = this.timeToX(this.highlightRegion.startTime);
+            } else {
+                this.highlightStartX = event.offsetX;
+            }
         } else {
             this.dragMode = DragMode.PAN;
         }
@@ -452,7 +452,9 @@ export class Timeline {
 
     onPointerMoveDragModeNone(_event) {
         let cursor = 'default';
-        if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnNeedle()) {
+            cursor = 'grab';
+        } else if (this.isPointerOnActiveRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
             cursor = 'move';
@@ -478,6 +480,24 @@ export class Timeline {
         this.canvas.style.cursor = 'move';
         let dTime = event.movementX / this.pixelsPerMs;
         this.timeMin -= dTime;
+        this.limitTimeMin();
+
+        this.scrolled = true;
+    }
+
+    /**
+     * Restricts timeMin based on current zoom level, minTimeMin, and
+     * maxTimeMax.
+     */
+    limitTimeMin() {
+        if (this.timeMin < this.minTimeMin) {
+            this.timeMin = this.minTimeMin;
+            return;
+        }
+        if (this.timeMin + this.widthMs > this.maxTimeMax) {
+            this.timeMin = this.maxTimeMax - this.widthMs;
+            return;
+        }
     }
 
     setCursorTime(cursorTime) {
@@ -486,11 +506,65 @@ export class Timeline {
 
     setHighlightRegion(highlightRegion) {
         this.highlightRegion = highlightRegion;
+        if (!this.highlightRegion) {
+            return;
+        }
+
         if (this.highlightRegion.endTime < this.timeMin ||
             this.highlightRegion.startTime > this.timeMin + this.widthMs) {
             // Center on new highlight region
             this.timeMin = (this.highlightRegion.startTime + this.highlightRegion.endTime) / 2 - this.widthMs / 2;
         }
+    }
+
+    /**
+     * @param {TimeRegion} displayRegion
+     */
+    setDisplayRegion(displayRegion) {
+        this.displayRegion = displayRegion;
+        if (!this.displayRegion) {
+            this.resetBounds();
+            return;
+        }
+
+        let {startTime, endTime} = this.displayRegion;
+        let unbounded = endTime <= 0;
+
+        if (!unbounded) {
+            // Pin timeline to the bounds being set
+            this.scrolled = true;
+        }
+
+        if (startTime <= 0) {
+            startTime = Date.now();
+            this.displayRegion.startTime = startTime;
+        }
+        if (endTime <= 0) {
+            endTime = startTime + DEFAULT_WIDTH_MS;
+            this.displayRegion.endTime = endTime;
+        }
+
+        // Snap zoom to equal entire displayRegion
+        let newWidthMs = endTime - startTime;
+        this.timeMin = startTime;
+        this.widthMs = newWidthMs;
+        if (this.width <= 0) {
+            this.pixelsPerMs = -1;
+        }
+        this.minTimeMin = this.timeMin;
+        if (unbounded) {
+            this.maxTimeMax = Number.MAX_VALUE;
+            this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
+        } else {
+            this.maxTimeMax = this.timeMin + this.widthMs;
+            this.minPixelsPerMs = this.pixelsPerMs;
+        }
+    }
+
+    resetBounds() {
+        this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
+        this.minTimeMin = 0;
+        this.maxTimeMax = Number.MAX_VALUE;
     }
 
     onPointerUp(event) {
@@ -529,8 +603,8 @@ export class Timeline {
             this.pixelsPerMs *= factor;
             if (this.pixelsPerMs > 0.12) {
                 this.pixelsPerMs = 0.12;
-            } else if (this.pixelsPerMs < 0.0001) {
-                this.pixelsPerMs = 0.0001;
+            } else if (this.pixelsPerMs < this.minPixelsPerMs) {
+                this.pixelsPerMs = this.minPixelsPerMs;
             }
 
             // let timeCenter = this.timeMin + this.widthMs / 2;
@@ -543,6 +617,10 @@ export class Timeline {
             let dTime = event.deltaX / this.pixelsPerMs;
             this.timeMin -= dTime;
         }
+
+        this.limitTimeMin();
+
+        this.scrolled = true;
 
         event.preventDefault();
         event.stopPropagation();

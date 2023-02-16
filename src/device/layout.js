@@ -70,6 +70,9 @@ createNameSpace('realityEditor.device.layout');
 
     let knownDeviceName;
 
+    // by default, trash is by right edge of screen, but you can use setTrashZoneRect to define different bounds
+    let customTrashZone = null;
+
     /**
      * Center the menu buttons vertically on screens taller than MENU_HEIGHT.
      * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board)
@@ -170,6 +173,15 @@ createNameSpace('realityEditor.device.layout');
         }
     }
 
+    function setTrashZoneRect(x, y, width, height) {
+        customTrashZone = {
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        };
+    }
+
     /**
      * Returns the x-coordinate of the edge of the trash drop-zone, adjusted for different screen sizes.
      * @return {number}
@@ -215,5 +227,7 @@ createNameSpace('realityEditor.device.layout');
     exports.getTrashThresholdX = getTrashThresholdX;
     exports.onOrientationChanged = onOrientationChanged;
     exports.adjustForDevice = adjustForDevice;
+    exports.setTrashZoneRect = setTrashZoneRect;
+    exports.getCustomTrashZone = () => { return customTrashZone; }
 
 })(realityEditor.device.layout);

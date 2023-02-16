@@ -43,6 +43,7 @@ export class MeshPath extends THREE.Group
         this.wallColorsBuffer = [];
 
         this.setPoints(path);
+        this.allPoints = this.currentPoints;
     }
 
     resetPoints() {

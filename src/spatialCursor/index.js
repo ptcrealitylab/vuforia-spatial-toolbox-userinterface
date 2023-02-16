@@ -4,21 +4,25 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
 
-    const SNAP_CURSOR_TO_TOOLS = true;
-    const DEFAULT_SPATIAL_CURSOR_ON = true;
+    const SNAP_CURSOR_TO_TOOLS = false; // the snapping doesn't do anything yet, so turn off for now
+    const DEFAULT_SPATIAL_CURSOR_ON = true; // applied after we localize within a target / download occlusion mesh
 
-    let isCursorEnabled = DEFAULT_SPATIAL_CURSOR_ON;
+    let isCursorEnabled = false; // always starts off, turns on after localize
     let isUpdateLoopRunning = false;
     let occlusionDownloadInterval = null;
     let cachedOcclusionObject = null;
     let cachedWorldObject = null;
-    
+
     let worldIntersectPoint = {};
     let opacityFactor = 1;
     let scaleFactor = 0;
     let indicator1;
     let indicator2;
     let overlapped = false;
+    let isMyColorDetermined = false;
+
+    // contains spatial cursors of other users – updated by their avatar's publicData
+    let otherSpatialCursors = {};
 
     let clock = new THREE.Clock();
     let uniforms = {
@@ -80,6 +84,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gl_FragColor = vec4(r, g, b, 1.0);
     }
     `;
+    // remember to set depthTest=false and depthWrite=false after creating the material, to prevent visual glitches
     const normalCursorMaterial = new THREE.ShaderMaterial({
         vertexShader: vertexShader,
         fragmentShader: normalFragmentShader,
@@ -92,8 +97,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         fragmentShader: colorFragmentShader,
         uniforms: uniforms,
         transparent: true,
-        // todo: depthTest not showing any difference turned off / on
-        depthTest: false,
         side: THREE.DoubleSide,
     });
 
@@ -166,6 +169,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             color: new THREE.Color(color),
             colorLighter: new THREE.Color(colorLighter)
         };
+
+        // show the cursor if it was hidden while this function resolves
+        isMyColorDetermined = true;
+        if (isCursorEnabled && !isUpdateLoopRunning) {
+            update(); // restart the update loop
+        }
     }
 
     function onLoadOcclusionObject(callback) {
@@ -195,20 +204,21 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
+
+            if (DEFAULT_SPATIAL_CURSOR_ON) {
+                toggleDisplaySpatialCursor(true);
+            }
         });
         
         addSpatialCursor();
         addTestSpatialCursor();
-        toggleDisplaySpatialCursor(DEFAULT_SPATIAL_CURSOR_ON);
+        toggleDisplaySpatialCursor(false);
         updateCursorDirection();
 
         registerKeyboardFlyMode();
-
+        
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
-
-        // begin update loop
-        // update();
 
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
 
@@ -221,40 +231,36 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 // raycast against the spatial cursor
                 let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.clientX, e.clientY, [indicator2]);
                 if (intersects.length > 0) {
-                    addToolAtScreenCenter('searchDigitalThread');
+                    addToolAtScreenCenter('searchDigitalThread', { moveToCursor: true });
                 }
             });
         }
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName) {
-        let touchPosition = {
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2
-        };
-
-        // parameters for createFrame function. all can be undefined except name, x, y, noUserInteraction
-        let startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo;
-        x = touchPosition.x;
-        y = touchPosition.y;
-        noUserInteraction = true;
-
-        // automatically adds the tool at the spatial cursor, if the cursor is active
-        let addedElement = realityEditor.gui.pocket.createFrame(toolName, startPositionOffset, width, height, nodesList, x, y, noUserInteraction, objectKeyToAddTo);
-
-        // todo: ask Ben: now I cannot drag tools from the pocket during normal / fly mode
-        if (getOrientedCursorRelativeToWorldObject()) {
-            realityEditor.device.resetEditingState(); // make sure we don't drag the tool after adding
+    function addToolAtScreenCenter(toolName, { moveToCursor = false } = {}) {
+        
+        let spatialCursorMatrix = null;
+        if (moveToCursor) {
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else {
-            // if cursor isn't active, default move the tool to be floating .4m in front of the camera
-            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 400);
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
         }
 
-        // make sure tool is created and uploaded before we send the position, otherwise it won't save
-        setTimeout(function() {
-            realityEditor.network.postVehiclePosition(addedElement);
-        }, 1000);
+        let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
+            noUserInteraction: true,
+            pageX: window.innerWidth / 2,
+            pageY: window.innerHeight / 2,
+            initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
+            onUploadComplete: () => {
+                realityEditor.network.postVehiclePosition(addedElement);
+            }
+        });
+
+        if (!moveToCursor && !spatialCursorMatrix) {
+            let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
+            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
+        }
     }
 
     let screenX, screenY;
@@ -286,8 +292,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function update() {
         window.requestAnimationFrame(update);
-        if (!isCursorEnabled) {
+        if (!isCursorEnabled || !isMyColorDetermined) {
             isUpdateLoopRunning = false;
+            indicator1.visible = false;
+            indicator2.visible = false;
             return; // need to call update() again when isCursorEnabled gets toggled on again
         }
         isUpdateLoopRunning = true;
@@ -336,20 +344,100 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
+    /**
+     * Moves the spatial cursor for this avatar to the specified position.
+     * Creates the spatial cursor if it doesn't exist yet.
+     * @param {string} objectKey
+     * @param {number[]} cursorMatrix
+     * @param {string} cursorColorHSL - hsl string of color
+     * @param {string} relativeToWorldId
+     */
+    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId) {
+        if (relativeToWorldId !== realityEditor.sceneGraph.getWorldId()) return; // ignore cursors in other worlds
+        if (typeof cursorColorHSL !== 'string') return; // color is required to initialize the material
+
+        if (typeof otherSpatialCursors[objectKey] === 'undefined') {
+            let cursorGroup = addOtherSpatialCursor(cursorColorHSL);
+            otherSpatialCursors[objectKey] = {
+                group: cursorGroup,
+                worldId: relativeToWorldId,
+                matrix: cursorMatrix
+            }
+            realityEditor.gui.threejsScene.addToScene(cursorGroup);
+        }
+
+        let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(relativeToWorldId);
+        let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+
+        if (!worldSceneNode || !groundPlaneSceneNode) return;
+
+        otherSpatialCursors[objectKey].group.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(
+            cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+    }
+
+    /**
+     * Helper function to create and return the THREE.Group for another client's cursor
+     * The material is more transparent than your own cursor.
+     * @returns {Group}
+     */
+    function addOtherSpatialCursor(cursorColorHSL) {
+        const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
+        const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial);
+
+        const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
+        const material2 = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: testCursorFragmentShader,
+            uniforms: {
+                'EPSILON': {value: Number.EPSILON},
+                'avatarColor': {value: [{
+                        color: new THREE.Color(cursorColorHSL),
+                        colorLighter: new THREE.Color(cursorColorHSL)
+                    }]
+                },
+                'opacityFactor': { value: 0.4 } // alpha = 0.5 * opacityFactor
+            },
+            transparent: true,
+            side: THREE.DoubleSide,
+        });
+
+        const indicator2 = new THREE.Mesh(geometry2, material2);
+        indicator2.name = 'coloredCursorMesh';
+
+        const cursorGroup = new THREE.Group();
+        cursorGroup.add(indicator1);
+        cursorGroup.add(indicator2);
+
+        cursorGroup.matrixAutoUpdate = false;
+
+        return cursorGroup;
+    }
+
+    function deleteOtherSpatialCursor(objectKey) {
+        if (typeof otherSpatialCursors[objectKey] !== 'undefined') {
+            realityEditor.gui.threejsScene.removeFromScene(otherSpatialCursors[objectKey].group);
+            delete otherSpatialCursors[objectKey];
+        }
+    }
+
     const geometryLength = 50;
     
     function addSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
+        indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
+        indicator1.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator1);
     }
     
     function addTestSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator2 = new THREE.Mesh(geometry, testCursorMaterial);
+        indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
+        indicator2.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
-    
+
     let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
     function updateScaleFactor() {
         if (Object.keys(worldIntersectPoint).length === 0) {
@@ -451,7 +539,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function getRaycastCoordinates(screenX, screenY) {
-
+        let worldIntersectPoint = null;
         let objectsToCheck = [];
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
@@ -494,6 +582,25 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
+    }
+
+    function getOrientedCursorIfItWereAtScreenCenter() {
+        // move cursor to center, then get the matrix, then move the cursor back to where it was
+        let worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        updateSpatialCursor(worldIntersectPoint);
+        updateTestSpatialCursor(worldIntersectPoint);
+        indicator1.updateMatrixWorld(); // update immediately before doing the calculations
+
+        let result = getOrientedCursorRelativeToWorldObject();
+
+        // move it back
+        let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        let prevWorldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        updateSpatialCursor(prevWorldIntersectPoint);
+        updateTestSpatialCursor(prevWorldIntersectPoint);
+        indicator1.updateMatrixWorld();
+
+        return result;
     }
 
     // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is
@@ -554,9 +661,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
+    exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
-    exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
+    exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
+    exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
 }(realityEditor.spatialCursor));
