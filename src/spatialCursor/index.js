@@ -4,7 +4,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
 
-    const SNAP_CURSOR_TO_TOOLS = true;
+    // todo: ask Ben: for some reason when this is true, cursor can no longer long-press select tools
+    const SNAP_CURSOR_TO_TOOLS = false;
     const DEFAULT_SPATIAL_CURSOR_ON = true;
 
     let isCursorEnabled = DEFAULT_SPATIAL_CURSOR_ON;
@@ -420,7 +421,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
     
-    let curQuaternion, destQuaternion = null;
     function updateSpatialCursor() {
         if (typeof worldIntersectPoint.point !== 'undefined') {
             indicator1.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);

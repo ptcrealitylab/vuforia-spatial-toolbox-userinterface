@@ -20,7 +20,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         #define PI 3.14159
         // #define blur 0.002
         #define blur 0.1
-        #define brightness 0.001
+        #define brightness 0.0001
         
         #define black vec3(0.)
         #define white vec3(1.)
@@ -35,12 +35,14 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             float x;
             float y;
             float speed;
+            float angle;
+            float time;
         };
         
         uniform int amount;
         // cannot initialize the lines[] array with variable size
         // so update the amount in the js file and shader always the same
-        uniform Lines lines[5];
+        uniform Lines lines[30];
         
         // set up color uniforms
         struct AvatarColor {
@@ -51,9 +53,16 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         
         varying vec2 vUv;
         
+        mat2 Rot(float deg) {
+            float a = radians(deg);
+            float s=sin(a), c=cos(a);
+            return mat2(c, -s, s, c);
+        }
+        
         // draw a vertical line segment at p with width w and height h
-        float line(vec2 uv, vec2 p, float w, float h) {
+        float line(vec2 uv, vec2 p, float angle, float w, float h) {
             uv -= p;
+            uv *= Rot(angle);
             // un-comment below line to find out what I did wrong
             // float horizontal = S(.01, 0., abs(length(uv.x - w / 2.)));
             float horizontal = S(blur, 0., abs(uv.x)- w / 2.);
@@ -61,8 +70,9 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             return horizontal * vertical;
         }
         
-        float GlowingLine(vec2 uv, vec2 p, float w, float h) {
+        float GlowingLine(vec2 uv, vec2 p, float angle, float w, float h) {
             uv -= p;
+            uv *= Rot(angle);
             float horizontal = S(blur, 0., abs(uv.x)- w / 2.);
             float vertical = S(blur, 0., abs(uv.y) - h / 2.);
             float d = horizontal * vertical;
@@ -79,13 +89,18 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             
             // draw the ascending lines
             for (int i = 0; i < amount; i++) {
-                float x = lines[i].x, y = lines[i].y, width = lines[i].width, height = lines[i].height;
-                float d = GlowingLine(uv, vec2(x, y), width, height);
+                float x = lines[i].x, y = lines[i].y, angle = lines[i].angle, width = lines[i].width, height = lines[i].height, time = lines[i].time;
+                float d = GlowingLine(uv, vec2(x, y), angle, width, height);
+                // float flash = sin(time * 20. + float(i)) * .5 + .5;
+                // float flash = sin(time * 20. + float(i));
+                // float flash = 0.;
+                // col += (avatarColor[0].color + vec3(.1, .1, .1) * flash) * d;
+                // alpha += d;
                 col += avatarColor[0].color * d;
                 alpha += d;
             }
         
-            col *= .1;
+            col *= .08;
             alpha *= .1;
             if (alpha < .35) alpha = 0.;
         
@@ -102,7 +117,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
     `;
 
     // the amount variable always needs to be identical to the lines[] array in fragment shader
-    const amount = 5;
+    const amount = 30;
     let lines = [];
 
     let color = 'rgb(0, 255, 255)', colorLighter = 'rgb(255, 255, 255)';
@@ -134,6 +149,14 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
 
     const remap = (x, lowIn, highIn, lowOut, highOut) => {
         return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
+    }
+    
+    const fract = (x) => {
+        return Math.abs(x - Math.trunc(x));
+    }
+    
+    const degToRad = (deg) => {
+        return deg * Math.PI / 180;
     }
 
     window.addEventListener('pointerdown', (e) => {
@@ -187,16 +210,38 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             colorLighter: new THREE.Color(colorLighter)
         };
     }
+
+    let isFlying = false;
+    function registerKeyboardFlyMode() {
+        realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
+            isFlying = params.isFlying;
+        });
+
+        realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
+            isFlying = params.isFlying;
+        });
+    }
     
     let spatialIndicatorActivated = false;
     function handleMouseClick(e) {
         // if (!avatarActive) return;
         spatialIndicatorActivated = true;
-        worldIntersectPoint = getRaycastCoordinates(e.clientX, e.clientY);
+        let screenX, screenY;
+        if (isFlying) {
+            screenX = window.innerWidth / 2;
+            screenY = window.innerHeight / 2;
+        } else {
+            let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+            screenX = mousePosition.x;
+            screenY = mousePosition.y;
+        }
+        worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+        // worldIntersectPoint = getRaycastCoordinates(e.pageX, e.pageY);
         if (worldIntersectPoint !== undefined) addSpatialIndicator();
     }
 
     const indicatorAxis = new THREE.Vector3(0, 1, 0);
+    const indicatorWidth = 25;
     const indicatorHeight = 400;
     const indicatorName = 'cylinderIndicator';
     const iDuration = 5;
@@ -207,10 +252,9 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
     let innerWidth = 20;
     let innerBottomHeight = 70;
     let innerTopHeight = 250;
-    let innerHeightOffset = 50;
+    let innerHeightOffset = 0;
     
     function addSpatialIndicator() {
-        console.info('should add a cylinder to the scene');
         // add an indicator group
         const indicatorGroup = new THREE.Group();
         indicatorGroup.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
@@ -226,6 +270,20 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             opacity: 1,
             flatShading: true,
         });
+        // todo: explain to Valentin that even if the hex code is the same, the resulting ShaderMaterial, MeshBasicMaterial, and MeshStandardMaterial
+        // todo: all have slightly different colors. The only way to make this work is to make custom shader respond to scene light, which is complicated
+        // const material2 = new THREE.MeshBasicMaterial( {
+        //     color: finalColor[0].color,
+        //     transparent: true,
+        //     opacity: 1,
+        //     flatShading: true,
+        // });
+        // let box1 = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), material1);
+        // box1.position.set(0, 1000, 0);
+        // realityEditor.gui.threejsScene.addToScene(box1);
+        // let box2 = new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), material2);
+        // box2.position.set(-200, 1000, 0);
+        // realityEditor.gui.threejsScene.addToScene(box2);
         
         // add inner cones
         const bottomConeGeometry = new THREE.ConeGeometry(innerWidth, innerBottomHeight, 4, 1, true);
@@ -239,7 +297,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         indicatorGroup.add(innerCone);
         
         // add outer cylinder
-        const geometry2 = new THREE.CylinderGeometry( 50, 50, indicatorHeight, 32, 1, true );
+        const geometry2 = new THREE.CylinderGeometry( indicatorWidth, indicatorWidth, indicatorHeight, 32, 1, true );
         const cylinder2 = new THREE.Mesh(geometry2, cylinderMaterial);
         cylinder2.position.set(0, indicatorHeight / 2, 0);
         indicatorGroup.add(cylinder2);
@@ -282,21 +340,27 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
         });
+
+        registerKeyboardFlyMode();
         
         // initialize 20 line data
         for (let i = 0; i < amount; i++) {
-            let width = remap(Math.random(), 0, 1, .002, .006);
-            let height = remap(Math.random(), 0, 1, .2, .4);
+            let width = remap(Math.random(), 0, 1, .004, .012);
+            let height = remap(Math.random(), 0, 1, .01, .05);
             let x = remap(Math.random(), 0, 1, width / 2, 1 - width / 2);
             let y = 0;
-            let speed = remap(Math.random(), 0, 1, 2, 6);
+            let speed = remap(Math.random(), 0, 1, .5, 1);
+            let angle = Math.random() * 24 - 12;
+            let time = 0;
 
             lines.push({
                 width: width,
                 height: height,
                 x: x,
                 y: y,
-                speed: speed
+                speed: speed,
+                angle: angle,
+                time: time
             });
         }
         
@@ -318,12 +382,17 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         lines.forEach(line => {
             if (line.y >= 1) {
                 line.width = remap(Math.random(), 0, 1, .004, .012);
-                line.height = remap(Math.random(), 0, 1, .2, .4);
+                line.height = remap(Math.random(), 0, 1, .01, .05);
                 line.x = remap(Math.random(), 0, 1, line.width / 2, 1 - line.width / 2);
                 line.y = 0;
-                line.speed = remap(Math.random(), 0, 1, 2, 6);
+                line.speed = remap(Math.random(), 0, 1, .5, 1);
+                line.angle = Math.random() * 24 - 12;
+                line.time = 0;
             } else {
-                line.y += .01 * line.speed;
+                line.time += .01;
+                line.x += .005 * line.speed * Math.sin(degToRad(line.angle));
+                line.x = fract(line.x);
+                line.y += .005 * line.speed * Math.cos(degToRad(line.angle));
             }
         })
         
@@ -338,7 +407,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             let iTime = iClock.getElapsedTime();
             // translate up/down and rotate the inner cones
             let innerCone = item.children[0];
-            innerCone.position.y = remap(Math.sin(iTime * 4), -1, 1, innerBottomHeight + innerHeightOffset + 60, innerBottomHeight + innerHeightOffset - 60);
+            innerCone.position.y = remap(Math.sin(iTime * 4), -1, 1, innerBottomHeight + innerHeightOffset + 10, innerBottomHeight + innerHeightOffset - 10);
             innerCone.rotation.y = iTime;
             // change the entire indicator group scale
             let y1 = Math.pow(iScaleFactor, iClick) * (-1 / iAnimDuration * (iTime - 0.3 * iClick) + (iDuration + iAnimDuration) / iAnimDuration);

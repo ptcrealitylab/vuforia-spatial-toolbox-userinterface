@@ -10,6 +10,8 @@ createNameSpace("realityEditor.device.keyboardEvents");
     
     var callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/keyboardEvents');
     let keyboardCurrentlyOpen = false;
+    
+    let isFlying = false;
 
     /**
      * Public init method sets up module and registers callbacks in other modules
@@ -17,6 +19,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     function initService() {
         window.addEventListener('keyup', keyUpHandler);
         window.addEventListener('keydown', keyDownHandler);
+        window.addEventListener('keyup', (e) => handleFlyMode(e));
         realityEditor.network.addPostMessageHandler('resetScroll', function() {
             resetScroll();
             setTimeout(function() {
@@ -63,6 +66,17 @@ createNameSpace("realityEditor.device.keyboardEvents");
         callbackHandler.registerCallback(functionName, callback);
     }
 
+    function handleFlyMode(e) {
+        if (e.key === 'f' || e.key === 'F') {
+            isFlying = !isFlying;
+            if (isFlying) {
+                callbackHandler.triggerCallbacks('enterFlyMode', {isFlying: true});
+            } else {
+                callbackHandler.triggerCallbacks('enterNormalMode', {isFlying: false});
+            }
+        }
+    }
+    
     /**
      * Creates an invisible contenteditable div that we can focus on to open the keyboard.
      * This allows frames to use an API to safely open a keyboard and listen to events without encountering webkit keyboard bugs.

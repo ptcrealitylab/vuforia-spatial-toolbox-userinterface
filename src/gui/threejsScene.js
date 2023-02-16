@@ -228,6 +228,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.clear();
+            // render the ground plane visualizer first
+            camera.layers.set(2);
+            renderer.render(scene, camera);
+            renderer.clearDepth();
             if (hasGltfScene) {
                 camera.layers.set(1);
                 renderer.render(scene, camera);
@@ -255,6 +259,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
         const layer = parameters.layer;
+        const independent = parameters.independent;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -275,6 +280,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             } else {
                 worldObjectGroups[worldObjectId].add(obj);
             }
+        } else if (independent) {
+            scene.add(obj);
         } else {
             if (attach) {
                 threejsContainerObj.attach(obj);
@@ -849,8 +856,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return transformControls;
     }
 
-    exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance);
+    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
+        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
     }
 
     // source: https://github.com/mrdoob/three.js/issues/78
@@ -896,6 +903,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
         // console.log(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
         return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
+    }
+
+    exports.getCameraWorldPosition = () => {
+        let cameraPos = new THREE.Vector3();
+        camera.getWorldPosition(cameraPos);
+        return cameraPos;
     }
 
     /**

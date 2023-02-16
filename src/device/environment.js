@@ -67,7 +67,7 @@ createNameSpace("realityEditor.device.environment");
         suppressObjectRendering: false, // temporarily toggle on to stop rendering objects/tools/nodes
         overrideAreaTargetScanningUI: false, // hide the default status textfield for the area target scanning
         // colors
-        groundWireframeColor: 'rgb(0, 255, 255)',
+        groundWireframeColor: 'rgb(255, 240, 0)',
     };
 
     // variables can be directly set by add-ons by using the public 'variables' property

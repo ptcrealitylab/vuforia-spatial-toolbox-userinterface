@@ -1,0 +1,152 @@
+.css-3d-div {
+    width: 200px;
+    height: 100px;
+    /*background-color: #ff8800;*/
+    
+    z-index: 5000;
+    
+    pointer-events: none;
+}
+
+.css-3d-text {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 12px;
+    color: black;
+}
+
+.button-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+.exit-button {
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: exit-button-fade-in 0.5s ease-out 0.1s forwards;
+    
+    opacity: 0;
+    
+    width: 100px;
+    height: 100px;
+    /*transform: translateX(-50%);*/
+    transform: translateY(-50%);
+    background-image: url("../svg/gif/exit.gif");
+    background-size: cover;
+}
+
+@keyframes exit-button-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.top-button {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    animation: move-top 0.5s ease-out 0.1s forwards;
+    
+    opacity: 0;
+    
+    width: 100px;
+    height: 100px;
+    /*transform: translateX(-50%);*/
+    background-image: url("../svg/gif/button-off.gif");
+    background-size: cover;
+}
+
+.right-button {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    animation: move-right 0.5s ease-out 0.1s forwards;
+    
+    opacity: 0;
+    
+    width: 100px;
+    height: 100px;
+    transform: translateY(-50%);
+    background-image: url("../svg/gif/draw.gif");
+    background-size: cover;
+}
+
+.bottom-button {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    animation: move-bottom 0.5s ease-out 0.1s forwards;
+    
+    opacity: 0;
+    
+    width: 100px;
+    height: 100px;
+    /*transform: translateX(-50%);*/
+    background-image: url("../svg/gif/button-on.gif");
+    background-size: cover;
+}
+
+.left-button {
+    position: absolute;
+    top: 0;
+    left: -10px;
+    animation: move-left 0.5s ease-out 0.1s forwards;
+    
+    opacity: 0;
+    
+    width: 100px;
+    height: 100px;
+    transform: translateY(-50%);
+    background-image: url("../svg/gif/envelope.gif");
+    background-size: cover;
+}
+
+@keyframes move-top {
+    from {
+        transform: translateY(0);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(-150px);
+        opacity: 1;
+    }
+}
+
+@keyframes move-left {
+    from {
+        transform: translateX(0) translateY(-50%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-100px) translateY(-50%);
+        opacity: 1;
+    }
+}
+
+@keyframes move-bottom {
+    from {
+        transform: translateY(0);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(50px);
+        opacity: 1;
+    }
+}
+
+@keyframes move-right {
+    from {
+        transform: translateX(0) translateY(-50%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(100px) translateY(-50%);
+        opacity: 1;
+    }
+}
