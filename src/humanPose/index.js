@@ -12,7 +12,7 @@ import * as utils from './utils.js'
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
-    const SHOW_PLAYBACK = true;
+    const SHOW_PLAYBACK = false;
 
     let myHumanPoseId = null;  // objectId
 
