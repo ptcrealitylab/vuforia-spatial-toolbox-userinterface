@@ -754,6 +754,9 @@ export class HumanPoseAnalyzer {
     }
 
     resetHistoryClones() {
+        if (this.clonesAll.length === 0) {
+            return;
+        }
         for (let clone of this.clonesAll) {
             clone.poseObject.remove();
         }
@@ -840,6 +843,9 @@ export class HumanPoseAnalyzer {
      */
     setAnimationMode(animationMode) {
         this.animationMode = animationMode;
+        if (this.clonesAll.length === 0) {
+            return;
+        }
         if (this.animationMode === AnimationMode.ALL) {
             for (let clone of this.clonesAll) {
                 clone.poseObject.setVisible(true);
@@ -884,8 +890,6 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        poseRendererHistorical.markMatrixNeedsUpdate();
-
         this.animationPosition += dt;
         let offset = this.animationPosition - this.animationStart;
         let duration = this.animationEnd - this.animationStart;
@@ -897,7 +901,7 @@ export class HumanPoseAnalyzer {
     hideLastDisplayedClone() {
         if (this.lastDisplayedCloneIndex >= 0) {
             let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
-            if (lastClone) {
+            if (lastClone && lastClone.poseObject.visible) {
                 lastClone.poseObject.setVisible(false);
                 poseRendererHistorical.markMatrixNeedsUpdate();
             }
@@ -932,6 +936,7 @@ export class HumanPoseAnalyzer {
                 this.hideLastDisplayedClone();
                 this.lastDisplayedCloneIndex = bestCloneIndex;
                 bestClone.poseObject.setVisible(true);
+                poseRendererHistorical.markMatrixNeedsUpdate();
             }
         } else {
             this.hideLastDisplayedClone();
@@ -973,9 +978,6 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
             opacity: 0.5,
         }));
         poseRendererHistorical.addToScene(container);
-
-        window.poseRendererLive = poseRendererLive;
-        window.poseRendererHistorical = poseRendererHistorical;
     }
 
     for (let id in poseRenderers) {
