@@ -36,9 +36,9 @@ createNameSpace("realityEditor.network.discovery");
 
     function processNextQueuedHeartbeat() {
         if (queuedHeartbeats.length === 0) { return; }
-        let message = queuedHeartbeats.pop();
+        let message = queuedHeartbeats.shift();
         processHeartbeat(message);
-        setTimeout(processNextQueuedHeartbeat, 10); // process async to avoid overwhelming all at once
+        setTimeout(processNextQueuedHeartbeat, 100); // process async to avoid overwhelming all at once
     }
 
     function deleteFromDiscoveryMap(ip, id) {
@@ -94,7 +94,18 @@ createNameSpace("realityEditor.network.discovery");
         }
 
         if (realityEditor.device.environment.variables.suppressObjectDetections || ignoreFromPause || isSystemInitializing) {
-            queuedHeartbeats.push(message);
+            // only add it if we don't already have the same one pending
+            const alreadyInArray = queuedHeartbeats.some(existingMessage => {
+                return existingMessage.id === message.id &&
+                    existingMessage.ip === message.ip &&
+                    existingMessage.port === message.port &&
+                    existingMessage.vn === message.vn &&
+                    existingMessage.pr === message.pr &&
+                    existingMessage.tcs === message.tcs;
+            });
+            if (!alreadyInArray) {
+                queuedHeartbeats.push(message);
+            }
         } else {
             if (typeof message.zone !== 'undefined' && message.zone !== '') {
                 if (realityEditor.gui.settings.toggleStates.zoneState && realityEditor.gui.settings.toggleStates.zoneStateText === message.zone) {
