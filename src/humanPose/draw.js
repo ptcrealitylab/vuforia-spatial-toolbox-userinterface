@@ -4,9 +4,7 @@ import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 
 let humanPoseAnalyzer;
-let poseRendererLive;
-let poseRendererHistorical;
-let poseRenderers = {};
+const poseRenderers = {};
 
 const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 const RENDER_CONFIDENCE_COLOR = false;
@@ -76,12 +74,13 @@ class HumanPoseRenderer {
     /**
      * @param {THREE.Material} material - Material for all instanced meshes
      */
-    constructor(material) {
+    constructor(material, maxInstances) {
         this.container = new THREE.Group();
         // A stack of free instance slots (indices) that a PoseRenderInstance
         // can reuse
         this.freeInstanceSlots = [];
         this.nextInstanceSlot = 0;
+        this.maxInstances = maxInstances;
         this.createMeshes(material);
     }
 
@@ -96,7 +95,7 @@ class HumanPoseRenderer {
         this.jointsMesh = new THREE.InstancedMesh(
             geo,
             material,
-            JOINTS_PER_POSE * MAX_POSE_INSTANCES,
+            JOINTS_PER_POSE * this.maxInstances,
         );
         // Initialize instanceColor
         this.jointsMesh.setColorAt(0, COLOR_BASE);
@@ -110,7 +109,7 @@ class HumanPoseRenderer {
         this.bonesMesh = new THREE.InstancedMesh(
             geoCyl,
             material,
-            BONES_PER_POSE * MAX_POSE_INSTANCES,
+            BONES_PER_POSE * this.maxInstances,
         );
         // Initialize instanceColor
         this.bonesMesh.setColorAt(0, COLOR_BASE);
@@ -122,13 +121,21 @@ class HumanPoseRenderer {
     }
 
     /**
+     * @return {boolean} whether every slot is taken
+     */
+    isFull() {
+        return this.nextInstanceSlot >= this.maxInstances &&
+            this.freeInstanceSlots.length === 0;
+    }
+
+    /**
      * @return {number} index of the taken slot
      */
     takeSlot() {
         if (this.freeInstanceSlots.length > 0) {
             return this.freeInstanceSlots.pop();
         }
-        if (this.nextInstanceSlot >= MAX_POSE_INSTANCES) {
+        if (this.nextInstanceSlot >= this.maxInstances) {
             console.error('out of instances');
             return 0;
         }
@@ -648,9 +655,33 @@ export class HumanPoseAnalyzer {
         this.animationMode = AnimationMode.ONE;
         this.lastAnimationUpdate = Date.now();
 
+        this.poseRendererLive = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), 16);
+        this.poseRendererLive.addToScene(historyCloneContainer);
+
+        this.historicalPoseRenderers = [];
+        this.addHistoricalPoseRenderer();
+
         this.update = this.update.bind(this);
 
         window.requestAnimationFrame(this.update);
+    }
+
+    addHistoricalPoseRenderer() {
+        const poseRendererHistorical = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0.5,
+        }), MAX_POSE_INSTANCES);
+        poseRendererHistorical.addToScene(this.historyCloneContainer);
+        this.historicalPoseRenderers.push(poseRendererHistorical);
+        return poseRendererHistorical;
+    }
+
+    getHistoricalPoseRenderer() {
+        const hpr = this.historicalPoseRenderers[this.historicalPoseRenderers.length - 1];
+        if (hpr.isFull()) {
+            return this.addHistoricalPoseRenderer();
+        }
+        return hpr;
     }
 
     update() {
@@ -682,7 +713,7 @@ export class HumanPoseAnalyzer {
 
     poseRendererUpdated(poseRenderer, timestamp) {
         if (this.recordingClones) {
-            const obj = poseRenderer.cloneToRenderer(poseRendererHistorical, this.cloneMaterialIndex);
+            const obj = poseRenderer.cloneToRenderer(this.getHistoricalPoseRenderer(), this.cloneMaterialIndex);
             this.clonesAll.push({
                 timestamp,
                 poseObject: obj,
@@ -760,7 +791,9 @@ export class HumanPoseAnalyzer {
         for (let clone of this.clonesAll) {
             clone.poseObject.remove();
         }
-        poseRendererHistorical.markMatrixNeedsUpdate();
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markMatrixNeedsUpdate();
+        }
         this.clonesAll = [];
     }
 
@@ -855,7 +888,9 @@ export class HumanPoseAnalyzer {
                 clone.poseObject.setVisible(false);
             }
         }
-        poseRendererHistorical.markMatrixNeedsUpdate();
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markMatrixNeedsUpdate();
+        }
     }
 
     advanceCloneMaterial() {
@@ -864,7 +899,9 @@ export class HumanPoseAnalyzer {
         this.clonesAll.forEach(clone => {
             clone.poseObject.setColorOption(this.cloneMaterialIndex);
         });
-        poseRendererHistorical.markColorNeedsUpdate();
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markColorNeedsUpdate();
+        }
     }
 
     setAnimation(start, end) {
@@ -903,7 +940,7 @@ export class HumanPoseAnalyzer {
             let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
             if (lastClone && lastClone.poseObject.visible) {
                 lastClone.poseObject.setVisible(false);
-                poseRendererHistorical.markMatrixNeedsUpdate();
+                lastClone.poseObject.renderer.markMatrixNeedsUpdate();
             }
         }
     }
@@ -936,7 +973,7 @@ export class HumanPoseAnalyzer {
                 this.hideLastDisplayedClone();
                 this.lastDisplayedCloneIndex = bestCloneIndex;
                 bestClone.poseObject.setVisible(true);
-                poseRendererHistorical.markMatrixNeedsUpdate();
+                bestClone.poseObject.renderer.markMatrixNeedsUpdate();
             }
         } else {
             this.hideLastDisplayedClone();
@@ -969,15 +1006,6 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
         }
 
         humanPoseAnalyzer = new HumanPoseAnalyzer(historyMeshContainer, historyCloneContainer);
-
-        poseRendererLive = new HumanPoseRenderer(new THREE.MeshBasicMaterial());
-        poseRendererLive.addToScene(container);
-
-        poseRendererHistorical = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
-            transparent: true,
-            opacity: 0.5,
-        }));
-        poseRendererHistorical.addToScene(container);
     }
 
     for (let id in poseRenderers) {
@@ -998,10 +1026,12 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     }
 
     if (!historical) {
-        poseRendererLive.markNeedsUpdate();
+        humanPoseAnalyzer.poseRendererLive.markNeedsUpdate();
 
         if (prevHistorical) {
-            poseRendererHistorical.markNeedsUpdate();
+            for (let hpr of humanPoseAnalyzer.historicalPoseRenderers) {
+                hpr.markNeedsUpdate();
+            }
         }
     }
 
@@ -1030,7 +1060,9 @@ function renderHistoricalPose(poseObject, timestamp, container) {
 }
 
 function updatePoseRenderer(poseObject, timestamp, container, historical) {
-    let renderer = historical ? poseRendererHistorical : poseRendererLive;
+    let renderer = historical ?
+        humanPoseAnalyzer.getHistoricalPoseRenderer() :
+        humanPoseAnalyzer.poseRendererLive;
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid);
     }
