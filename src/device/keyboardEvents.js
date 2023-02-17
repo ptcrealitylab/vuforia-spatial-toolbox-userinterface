@@ -68,6 +68,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     }
 
     function handleFlyMode(e) {
+        if (isKeyboardActive()) return; // ignore if a tool is using the keyboard
         if (e.key === 'f' || e.key === 'F') {
             isFlying = !isFlying;
             if (isFlying) {

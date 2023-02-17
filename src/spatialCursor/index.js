@@ -215,7 +215,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         addSpatialCursor();
         addTestSpatialCursor();
         toggleDisplaySpatialCursor(false);
-        updateCursorDirection();
+        updateCursorDirectionArray();
 
         registerKeyboardFlyMode();
         
@@ -478,9 +478,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     
     let cursorDirections = [];
-    let clock2 = new THREE.Clock(false);
+    let clockForCursorDirection = new THREE.Clock(false);
     let updateInterval = 200;
-    function updateCursorDirection() {
+    function updateCursorDirectionArray() {
         setInterval(() => {
             if (Object.keys(worldIntersectPoint).length === 0) return;
             if (cursorDirections.length < 2) {
@@ -489,7 +489,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
             cursorDirections.push(worldIntersectPoint.normalVector.clone());
             cursorDirections.shift();
-            clock2.start();
+            clockForCursorDirection.start();
         }, updateInterval);
     }
     
@@ -504,7 +504,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (cursorDirections.length === 2) {
             let oldQuaternion = new THREE.Quaternion().setFromUnitVectors(indicatorAxis, cursorDirections[0]);
             let desQuaternion = new THREE.Quaternion().setFromUnitVectors(indicatorAxis, cursorDirections[1]);
-            let percentage = clock2.getElapsedTime() * 1000 / updateInterval;
+            let percentage = clockForCursorDirection.getElapsedTime() * 1000 / updateInterval;
             indicator1.quaternion.slerpQuaternions(oldQuaternion, desQuaternion, percentage);
             indicator2.quaternion.slerpQuaternions(oldQuaternion, desQuaternion, percentage);
         }
