@@ -256,6 +256,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
             realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
         }
+
+        return addedElement;
     }
 
     function update() {
