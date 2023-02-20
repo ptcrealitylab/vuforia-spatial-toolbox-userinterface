@@ -114,6 +114,19 @@ export class RegionCard {
     }
 
     pin() {
+        let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
+        const frameKey = addedTool.uuid;
+        const publicData = {
+            startTime: this.startTime,
+            endTime: this.endTime,
+            summary: 'TODO',
+        };
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
+        };
+        setTimeout(write, 1000);
+        setTimeout(write, 2000);
+
         this.state = RegionCardState.Pinned;
         const rect = this.element.getBoundingClientRect();
 
