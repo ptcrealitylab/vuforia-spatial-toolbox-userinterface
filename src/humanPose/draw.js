@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo, SCALE, createDummySkeleton} from './utils.js';
+import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo, SCALE} from './utils.js';
 import Reba from './rebaScore.js';
 import AccelerationAnnotator from "./AccelerationAnnotator.js";
 import {SpaghettiMeshPath} from './spaghetti.js';
@@ -22,15 +22,17 @@ export class HumanPoseRenderer {
      */
     constructor(id) {
         this.id = id;
-        this.joints = {};
         this.container = new THREE.Group();
+        this.joints = {};
         this.bones = {};
+        this.baseColor = new THREE.Color(0, 0.5, 1);
+        this.boneRebaData = {}; // Dictionary that maps bone names to the Reba score of that bone
         this.overallRebaScore = 1;
         this.jointAccelerationData = {}; // Dictionary that maps joint names to the acceleration of that joint
         this.maxAccelerationScore = 0; // The maximum acceleration score of any joint (2=high, 1=medium, 0=low)
-        this.createJoints();
         this.currentPoseTimestamp = 0;
         this.accelerationAnnotator = new AccelerationAnnotator(this);
+        this.createJoints();
     }
 
     /**
@@ -40,15 +42,14 @@ export class HumanPoseRenderer {
     createJoints() {
         const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
         const mat = new THREE.MeshLambertMaterial();
-
-        this.baseColor = new THREE.Color(0, 0.5, 1);
-
+        
         this.jointsMesh = new THREE.InstancedMesh(
             geo,
             mat,
             Object.values(JOINTS).length,
         );
         this.jointsMesh.name = 'joints';
+        this.jointsMesh.joints = this.joints;
         this.jointsMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
         for (const [i, jointId] of Object.values(JOINTS).entries()) {
@@ -64,6 +65,7 @@ export class HumanPoseRenderer {
             Object.keys(JOINT_CONNECTIONS).length,
         );
         this.bonesMesh.name = 'bones';
+        this.bonesMesh.bones = this.bones;
         this.container.add(this.bonesMesh);
 
         for (const [i, boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
@@ -101,7 +103,11 @@ export class HumanPoseRenderer {
         this.jointsMesh.getMatrixAt(index, mat);
         return new THREE.Vector3().setFromMatrixPosition(mat);
     }
-    
+
+    /**
+     * Returns an object with position data for all joints
+     * @return {{jointId: THREE.Vector3}}
+     */
     get jointPositionData() {
         let data = {};
         for (let jointId of Object.values(JOINTS)) {
@@ -163,9 +169,10 @@ export class HumanPoseRenderer {
             this.bonesMesh.setMatrixAt(boneIndex, mat);
         }
 
+        Reba.annotateHumanPoseRenderer(this);
+        this.accelerationAnnotator.annotate();
         if (!RENDER_CONFIDENCE_COLOR) {
-            Reba.annotateHumanPoseRenderer(this);
-            this.accelerationAnnotator.annotate();
+            Reba.colorHumanPoseRenderer(this);
         }
 
         this.jointsMesh.instanceMatrix.needsUpdate = true;
@@ -174,6 +181,9 @@ export class HumanPoseRenderer {
         this.bonesMesh.instanceColor.needsUpdate = true;
     }
 
+    setBoneRebaData(data) {
+        this.boneRebaData = data;
+    }
 
     setOverallRebaScore(score) {
         this.overallRebaScore = score;
@@ -219,14 +229,16 @@ export class HumanPoseRenderer {
     setJointColor(jointName, jointColor) {
         this.setColorInMesh(this.joints, this.jointsMesh, jointName, jointColor);
     }
+    
     /**
+     * @param {string} jointName name of joint
      * @param {number} confidence in range [0,1]
      */
-    setJointConfidenceColor(jointId, confidence) {
-        if (typeof this.spheres[jointId] === 'undefined') {
+    setJointConfidenceColor(jointName, confidence) {
+        if (typeof this.joints[jointName] === 'undefined') {
             return;
         }
-        const jointIndex = this.spheres[jointId];
+        const jointIndex = this.joints[jointName];
 
         let baseColorHSL = {};
         this.baseColor.getHSL(baseColorHSL);
@@ -236,7 +248,7 @@ export class HumanPoseRenderer {
         let color = new THREE.Color();
         color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
 
-        this.spheresMesh.setColorAt(jointIndex, color);
+        this.jointsMesh.setColorAt(jointIndex, color);
     }
 
     addToScene(container) {
@@ -281,7 +293,6 @@ export class HumanPoseAnalyzer {
         this.historyMeshesAll = {}; // Dictionary of {pose renderer IDs: SpaghettiMeshPaths} present in historyMeshContainer
         this.clonesAll = []; // Array of all clones present in historyCloneContainer, entry format: {timestamp (Number), poseObject (Object3D)}
         this.lastDisplayedCloneIndex = 0;
-        // TODO: ensure different joint selectors and acceleration mesh paths for different poseRenderer objects
         this.jointSelectorObj = null;
         this.accelerationMeshPath = null; // A standard MeshPath that gets colored according to the selected joint's acceleration values
 
@@ -315,14 +326,15 @@ export class HumanPoseAnalyzer {
         });
 
         window.requestAnimationFrame(this.update);
-
-
+        
         document.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            e.stopPropagation();
             this.onPointerDown(e);
         });
         document.addEventListener('pointermove', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            e.stopPropagation();
             this.onPointerMove(e);
         });
     }
@@ -379,56 +391,65 @@ export class HumanPoseAnalyzer {
     }
     
     createJointSelectorObj() {
-        this.jointSelectorObj = createDummySkeleton();
-        this.jointSelectorObj.selectedJoint = null;
-        this.jointSelectorObj.hoveredJoint = null;
-        this.jointSelectorObj.updateColors = () => {
-            for (let i = 0; i < this.jointSelectorObj.jointInstancedMesh.count; i++) {
-                if (this.jointSelectorObj.hoveredJoint === i && this.jointSelectorObj.selectedJoint === i) {
-                    this.jointSelectorObj.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFF8000));
-                } else if (this.jointSelectorObj.hoveredJoint === i) {
-                    this.jointSelectorObj.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFF00));
-                } else if (this.jointSelectorObj.selectedJoint === i) {
-                    this.jointSelectorObj.jointInstancedMesh.setColorAt(i, new THREE.Color(0x00FF00));
-                } else {
-                    this.jointSelectorObj.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFFFF));
+        const humanPoseAnalyzer = this;
+        this.jointSelectorObj = {
+            jointInstancedMesh: null,
+            selectedJoint: null,
+            hoveredJoint: null,
+            setMesh(jointInstancedMesh) {
+                this.jointInstancedMesh = jointInstancedMesh;
+            },
+            jointNameFromIndex(index) {
+                return Object.keys(this.jointInstancedMesh.joints).find(key => this.jointInstancedMesh.joints[key] === index);
+            },
+            updateColors() {
+                for (let i = 0; i < this.jointInstancedMesh.count; i++) {
+                    if (this.hoveredJoint === i && this.selectedJoint === i) {
+                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFF8000));
+                    } else if (this.hoveredJoint === i) {
+                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFF00));
+                    } else if (this.selectedJoint === i) {
+                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0x00FF00));
+                    } else {
+                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFFFF));
+                    }
                 }
+                this.jointInstancedMesh.instanceColor.needsUpdate = true;
+            },
+            onSelect(instanceId) {
+                if (humanPoseAnalyzer.accelerationMeshPath) {
+                    // Dispose acceleration mesh
+                    humanPoseAnalyzer.accelerationMeshPath.parent.remove(humanPoseAnalyzer.accelerationMeshPath);
+                    humanPoseAnalyzer.accelerationMeshPath.resetPoints();
+                    humanPoseAnalyzer.accelerationMeshPath = null;
+                }
+                if (this.selectedJoint === instanceId) { // Allow for toggle off
+                    this.selectedJoint = null;
+                } else {
+                    this.selectedJoint = instanceId;
+                }
+                this.updateColors();
+
+                if (this.selectedJoint) {
+                    const jointName = this.jointNameFromIndex(this.selectedJoint);
+                    const jointPositionData = humanPoseAnalyzer.clonesAll.map(clone => clone.poseObject.userData.jointPositionData[jointName]);
+                    const jointAccelerationData = humanPoseAnalyzer.clonesAll.map(clone => clone.poseObject.userData.jointAccelerationData[jointName]);
+                    jointPositionData.forEach((position, index) => position.color = AccelerationAnnotator.threeColorFromAcceleration(jointAccelerationData[index]));
+                    humanPoseAnalyzer.accelerationMeshPath = new MeshPath(jointPositionData, {
+                        usePerVertexColors: true,
+                    });
+                    humanPoseAnalyzer.historyMeshContainer.add(humanPoseAnalyzer.accelerationMeshPath);
+                }
+            },
+            onHover(instanceId) {
+                if (instanceId) {
+                    this.hoveredJoint = instanceId;
+                } else {
+                    this.hoveredJoint = null;
+                }
+                this.updateColors();
             }
-            this.jointSelectorObj.jointInstancedMesh.instanceColor.needsUpdate = true;
-        }
-        this.jointSelectorObj.onSelect = (instanceId) => {
-            if (this.accelerationMeshPath) {
-                this.accelerationMeshPath.parent.remove(this);
-                this.accelerationMeshPath.resetPoints();
-                this.accelerationMeshPath = null;
-            }
-            if (this.jointSelectorObj.selectedJoint === instanceId) { // Allow for toggle off
-                this.jointSelectorObj.selectedJoint = null;
-            } else {
-                this.jointSelectorObj.selectedJoint = instanceId;
-            }
-            this.jointSelectorObj.updateColors();
-            
-            if (this.jointSelectorObj.selectedJoint) {
-                const jointName = this.jointSelectorObj.jointNameFromIndex(this.jointSelectorObj.selectedJoint);
-                const jointPositionData = this.clonesAll.map(clone => clone.poseObject.userData.jointPositionData[jointName]);
-                const jointAccelerationData = this.clonesAll.map(clone => clone.poseObject.userData.jointAccelerationData[jointName]);
-                jointPositionData.forEach((position, index) => position.color = AccelerationAnnotator.threeColorFromAcceleration(jointAccelerationData[index]));
-                this.accelerationMeshPath = new MeshPath(jointPositionData, {
-                    usePerVertexColors: true,
-                });
-                this.historyMeshContainer.add(this.accelerationMeshPath);
-            }
-        }
-        this.jointSelectorObj.onHover = (instanceId) => {
-            if (instanceId) {
-                this.jointSelectorObj.hoveredJoint = instanceId;
-            } else {
-                this.jointSelectorObj.hoveredJoint = null;
-            }
-            this.jointSelectorObj.updateColors();
-        }
-        this.historyMeshContainer.add(this.jointSelectorObj);
+        };
     }
 
     poseRendererUpdated(poseRenderer, timestamp) {
@@ -443,6 +464,10 @@ export class HumanPoseAnalyzer {
         }
         if (this.clonesAll.length > 0 && !this.jointSelectorObj) {
             this.createJointSelectorObj();
+            const mostRecentPoseObject = this.clonesAll[this.clonesAll.length - 1].poseObject;
+            this.jointSelectorObj.setMesh(mostRecentPoseObject.jointInstancedMesh); // TODO: should find better UX for this, not clear that you need to click on the skeleton to select a joint
+            // const dummySkeleton = createDummySkeleton();
+            // this.jointSelectorObj.setMesh(dummySkeleton.jointInstancedMesh); // Dummy skeleton approach for testing, but not ideal
         }
 
         let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
@@ -491,11 +516,11 @@ export class HumanPoseAnalyzer {
         return hueReba;
     }
     
-    getMaxAccelerationScoreColor(maxAccelerationScore) {
-        if (maxAccelerationScore === 2) {
+    getAccelerationScoreColor(accelerationScore) {
+        if (accelerationScore === 2) {
             return redColor;
         }
-        if (maxAccelerationScore === 1) {
+        if (accelerationScore === 1) {
             return yellowColor;
         }
         return greenColor;
@@ -510,7 +535,7 @@ export class HumanPoseAnalyzer {
         let colorReba = new THREE.Color(); // overall color based on REBA score
         colorReba.setHSL(hueReba / 360, 1, 0.5);
         
-        let colorAcceleration = this.getMaxAccelerationScoreColor(poseRenderer.maxAccelerationScore); // overall color based on acceleration
+        let colorAcceleration = this.getAccelerationScoreColor(poseRenderer.maxAccelerationScore); // overall color based on acceleration
         colorAcceleration.setHSL(colorAcceleration.getHSL({}).h, 1, 0.5);
 
         let newContainer = poseRenderer.container.clone();
@@ -520,6 +545,9 @@ export class HumanPoseAnalyzer {
             transparent: true,
             opacity: 0.5,
         });
+        
+        const jointsObj = newContainer.getObjectByName('joints');
+        const bonesObj = newContainer.getObjectByName('bones');
 
         newContainer.children.forEach((obj) => {
             if (obj.instanceColor) {
@@ -531,10 +559,20 @@ export class HumanPoseAnalyzer {
                 for (let i = 0; i < attrReba.count; i++) {
                     colorReba.toArray(attrReba.array, i * 3);
                     colorRainbow.toArray(attrRainbow.array, i * 3);
-                    if (obj.name !== 'joints') {
-                        // colorAcceleration.toArray(attrAcceleration.array, i * 3); // Set global acceleration color to bones, but leave joints as-is
-                        greenColor.toArray(attrAcceleration.array, i * 3); // This is clearer, even if less information. Display global acceleration via history line instead
+                    if (obj === bonesObj) {
+                        // Color bone according to the acceleration of the last joint in the connection
+                        const jointName = Object.values(JOINT_CONNECTIONS)[i][1];
+                        const jointAccelerationScore = poseRenderer.jointAccelerationData[jointName].color;
+                        const color = this.getAccelerationScoreColor(jointAccelerationScore);
+                        color.toArray(attrAcceleration.array, i * 3);
                     }
+                }
+                if (obj === jointsObj) {
+                    Object.keys(poseRenderer.jointAccelerationData).forEach((jointName, jointIndex) => {
+                        const jointAccelerationScore = poseRenderer.jointAccelerationData[jointName].color;
+                        const color = this.getAccelerationScoreColor(jointAccelerationScore);
+                        color.toArray(attrAcceleration.array, jointIndex * 3);
+                    });
                 }
                 obj.__cloneColors = [
                     attrReba,
@@ -545,6 +583,14 @@ export class HumanPoseAnalyzer {
                 obj.instanceColor = obj.__cloneColors[this.cloneMaterialIndex % obj.__cloneColors.length];
                 obj.material = matBase;
                 obj.instanceColor.needsUpdate = true;
+                if (obj === jointsObj) {
+                    newContainer.jointInstancedMesh = obj;
+                    newContainer.jointInstancedMesh.joints = poseRenderer.jointsMesh.joints;
+                }
+                if (obj === bonesObj) {
+                    newContainer.boneInstancedMesh = obj;
+                    newContainer.boneInstancedMesh.bones = poseRenderer.bonesMesh.bones;
+                }
             }
         });
         return newContainer;
@@ -584,6 +630,12 @@ export class HumanPoseAnalyzer {
     resetHistoryClones() {
         // Loop over copy of children to remove all
         for (let child of this.historyCloneContainer.children.concat()) {
+            if (child.geometry) {
+                child.geometry.dispose();
+            }
+            if (child.material) {
+                child.material.dispose();
+            }
             if (child.dispose) {
                 child.dispose();
             }

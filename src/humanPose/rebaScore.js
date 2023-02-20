@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
-import {JOINTS as POSE_NET_JOINTS} from './utils.js';
+import {JOINT_CONNECTIONS, JOINTS as POSE_NET_JOINTS} from './utils.js';
 
 const POSE_JOINTS = Object.freeze({
     PELVIS: 0,
@@ -654,15 +654,15 @@ function calculateTableB(skel) {
     LWAReba.set('2,3,6', '9');
 
 
-    let numberB = parseInt(LWAReba.get(lwaKey), 10);
+    const numberB = parseInt(LWAReba.get(lwaKey), 10);
     return numberB;
 }
 
 function overallRebaCalculation(skel) {
-    var tableA = calculateTableA(skel);
-    var tableB = calculateTableB(skel);
+    const tableA = calculateTableA(skel);
+    const tableB = calculateTableB(skel);
 
-    var tableC = [
+    const tableC = [
         [1, 1, 1, 2, 3, 3, 4, 5, 6, 7, 7, 7],
         [1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7, 8],
         [2, 3, 3, 3, 4, 5, 6, 7, 7, 8, 8, 8],
@@ -677,7 +677,7 @@ function overallRebaCalculation(skel) {
         [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12]
     ];
 
-    var finalREBA = tableC[tableA - 1][tableB - 1];
+    const finalREBA = tableC[tableA - 1][tableB - 1];
     return finalREBA;
 }
 
@@ -813,12 +813,30 @@ function annotateHumanPoseRenderer(humanPoseRenderer) {
     let skel = extractSkel(humanPoseRenderer);
     calculateReba(skel);
     humanPoseRenderer.setOverallRebaScore(overallRebaCalculation(skel));
+    const boneRebaData = {};
     for (let boneName in skel.angles) {
-        let rebaColor = skel.angles[boneName][5];
-        humanPoseRenderer.setBoneColor(boneName, rebaColor);
+        boneRebaData[boneName] = {
+            score: skel.angles[boneName][4],
+            color: skel.angles[boneName][5],
+        };
+    }
+    humanPoseRenderer.setBoneRebaData(boneRebaData);
+}
+
+function colorHumanPoseRenderer(humanPoseRenderer) {
+    if (humanPoseRenderer.boneRebaData) {
+        for (let boneName in humanPoseRenderer.boneRebaData) {
+            humanPoseRenderer.setBoneColor(boneName, humanPoseRenderer.boneRebaData[boneName].color);
+            if (JOINT_CONNECTIONS[boneName]) {
+                humanPoseRenderer.setJointColor(JOINT_CONNECTIONS[boneName][1], humanPoseRenderer.boneRebaData[boneName].color);
+            }
+        }
+    } else {
+        console.error('Cannot color poseRenderer without boneRebaData, call annotateHumanPoseRenderer first');
     }
 }
 
 export default {
     annotateHumanPoseRenderer,
+    colorHumanPoseRenderer
 };

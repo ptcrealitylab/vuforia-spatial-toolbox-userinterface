@@ -1,15 +1,13 @@
 import {Vector3, Color} from "../../thirdPartyCode/three/three.module.js";
 import {JOINTS as POSE_NET_JOINTS} from "./utils.js";
 
-const HIGH_CUTOFF = 0.05;
-const MED_CUTOFF = 0.02;
+const HIGH_CUTOFF = 0.035; // 0.05;
+const MED_CUTOFF = 0.015; // 0.02;
 
 class AccelerationAnnotator {
     constructor(humanPoseRenderer) {
         this.humanPoseRenderer = humanPoseRenderer;
         this.skelHistory = [];
-        this.jointColorHistories = {}; // A dictionary that maps jointNames to a list which contains times, these are the times when that joint was last at a specific acceleration threshold (denoted by the index)
-        this.colorHistoryDuration = 500; // How long in ms to persist a high acceleration in the UI
     }
     
     recordSkel(skel) {
@@ -45,7 +43,7 @@ class AccelerationAnnotator {
         for (let jointName in skel2.joints) {
             const v0 = this.jointVelocityBetweenSkels(jointName, skel0, skel1);
             const v1 = this.jointVelocityBetweenSkels(jointName, skel1, skel2);
-            skel2.joints[jointName].acceleration = v1.sub(v0).length() / (skel2.timestamp - skel1.timestamp);
+            skel2.joints[jointName].acceleration = v1.sub(v0).length() / ((skel2.timestamp - skel0.timestamp) / 2);
         }
     }
 
@@ -61,32 +59,6 @@ class AccelerationAnnotator {
         return skel;
     }
 
-    /**
-     * Calculates the color for a joint based on its acceleration, but takes into account its history.
-     * If the joint has been set to a high-acceleration color recently, it should keep being set to that color
-     * until this.colorHistoryDuration milliseconds have passed.
-     * @param acceleration {number}
-     * @param jointName
-     * @return {number}
-     */
-    colorFromAccelerationWithHistory(acceleration, jointName) {
-        if (!this.jointColorHistories[jointName]) {
-            this.jointColorHistories[jointName] = [0, 0, 0]; // Initialize to all be at timestamp 0.
-        }
-        const baseColor = AccelerationAnnotator.colorFromAcceleration(acceleration);
-        let resultColor;
-        const now = Date.now();
-        if (baseColor === 2 || this.jointColorHistories[jointName][2] + this.colorHistoryDuration >= now) {
-            resultColor = 2;
-        } else if (baseColor === 1 || this.jointColorHistories[jointName][1] + this.colorHistoryDuration >= now) {
-            resultColor = 1;
-        } else {
-            resultColor = baseColor;
-        }
-        this.jointColorHistories[jointName][baseColor] = Date.now();
-        return resultColor;
-    }
-
     annotate() {
         let skel = this.getCurrentSkelFromPoseRenderer();
         this.recordSkel(skel);
@@ -95,16 +67,28 @@ class AccelerationAnnotator {
         const accelerationData = {};
         for (let jointName in skel.joints) {
             const acceleration = skel.joints[jointName].acceleration;
-            accelerationData[jointName] = acceleration;
-            const accelerationColor = this.colorFromAccelerationWithHistory(acceleration, jointName);
+            const accelerationColor = AccelerationAnnotator.colorFromAcceleration(acceleration);
             if (accelerationColor > maxScore) {
                 maxScore = accelerationColor;
             }
-            this.humanPoseRenderer.setJointColor(jointName, accelerationColor)
+            accelerationData[jointName] = {
+                acceleration,
+                color: accelerationColor
+            };
         }
-        this.humanPoseRenderer.setJointAccelerationData(accelerationData);
         this.humanPoseRenderer.setMaxAccelerationScore(maxScore);
+        this.humanPoseRenderer.setJointAccelerationData(accelerationData);
     }
+    
+    // color() {
+    //     if (this.humanPoseRenderer.jointAccelerationData) {
+    //         for (let jointName in this.humanPoseRenderer.jointAccelerationData) {
+    //             this.humanPoseRenderer.setJointColor(jointName, this.humanPoseRenderer.jointAccelerationData[jointName].color)
+    //         }
+    //     } else {
+    //         console.error('Cannot color poseRenderer without acceleration data, call annotate() first');
+    //     }
+    // }
     
     static colorFromAcceleration(acceleration) {
         if (acceleration > HIGH_CUTOFF) {
@@ -123,7 +107,7 @@ class AccelerationAnnotator {
         if (acceleration > MED_CUTOFF) {
             return new Color(1, 1 - ((acceleration - MED_CUTOFF) / (HIGH_CUTOFF - MED_CUTOFF)), 0); // yellow
         }
-        return new Color(acceleration / MED_CUTOFF, 1, 0); // green
+        return new Color(0, 1, 0); // green
     }
 }
 
