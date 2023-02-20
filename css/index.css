@@ -1512,7 +1512,7 @@ Logic Interface CSS
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
-    z-index: 290;
+    z-index: 2900;
 }
 
 #exitEnvelopeButton {
