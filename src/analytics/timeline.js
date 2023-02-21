@@ -16,7 +16,8 @@ const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
 
-const DEFAULT_MIN_PIXELS_PER_MS = 0.00004;
+const DEFAULT_MAX_WIDTH_MS = 1024 / 0.00004;
+const MIN_WIDTH_MS = 1024 / 0.12;
 
 const DragMode = {
     NONE: 'none',
@@ -94,9 +95,7 @@ export class Timeline {
 
             this.width = rect.width;
             this.pixelsPerMs = this.width / this.widthMs;
-            if (this.minPixelsPerMs < 0) {
-                this.minPixelsPerMs = this.pixelsPerMs;
-            }
+
             this.canvas.width = this.width;
             this.canvas.height = this.height;
             this.gfx.width = this.width;
@@ -548,21 +547,25 @@ export class Timeline {
         let newWidthMs = endTime - startTime;
         this.timeMin = startTime;
         this.widthMs = newWidthMs;
-        if (this.width <= 0) {
+        this.minTimeMin = this.timeMin;
+        if (this.width > 0) {
+            this.pixelsPerMs = this.width / this.widthMs;
+        } else {
             this.pixelsPerMs = -1;
         }
-        this.minTimeMin = this.timeMin;
+
         if (unbounded) {
             this.maxTimeMax = Number.MAX_VALUE;
-            this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
+            this.maxWidthMs = DEFAULT_MAX_WIDTH_MS;
         } else {
             this.maxTimeMax = this.timeMin + this.widthMs;
-            this.minPixelsPerMs = this.pixelsPerMs;
+            // Set maximum to be fully encompassing board
+            this.maxWidthMs = this.widthMs;
         }
     }
 
     resetBounds() {
-        this.minPixelsPerMs = DEFAULT_MIN_PIXELS_PER_MS;
+        this.maxWidthMs = DEFAULT_MAX_WIDTH_MS;
         this.minTimeMin = 0;
         this.maxTimeMax = Number.MAX_VALUE;
     }
@@ -599,20 +602,31 @@ export class Timeline {
         const timeBefore = this.xToTime(this.mouseX);
 
         if (Math.abs(event.deltaY) * 1.3 > Math.abs(event.deltaX)) {
-            const factor = 1 + event.deltaY * -0.01;
-            this.pixelsPerMs *= factor;
-            if (this.pixelsPerMs > 0.12) {
-                this.pixelsPerMs = 0.12;
-            } else if (this.pixelsPerMs < this.minPixelsPerMs) {
-                this.pixelsPerMs = this.minPixelsPerMs;
+            let factor = 1 + Math.abs(event.deltaY) * 0.01;
+            if (event.deltaY < 0) {
+                // Preserves same scrolling speed
+                factor = 1 / factor;
+            }
+            this.widthMs *= factor;
+            if (this.widthMs > this.maxWidthMs) {
+                this.widthMs = this.maxWidthMs;
+                if (this.maxWidthMs !== DEFAULT_MAX_WIDTH_MS) {
+                    this.timeMin = this.minTimeMin;
+                }
+            }
+            if (this.widthMs < MIN_WIDTH_MS) {
+                this.widthMs = MIN_WIDTH_MS;
             }
 
             // let timeCenter = this.timeMin + this.widthMs / 2;
-            this.widthMs = this.width / this.pixelsPerMs;
+            this.pixelsPerMs = this.width / this.widthMs;
             // this.timeMin = timeCenter - this.widthMs / 2;
 
             // Do some math to keep timeBefore at the same x value
-            this.timeMin = timeBefore - this.mouseX / this.pixelsPerMs;
+            let newTimeMin = timeBefore - this.mouseX / this.pixelsPerMs;
+            if (newTimeMin >= this.minTimeMin && newTimeMin <= this.maxTimeMax - this.widthMs) {
+                this.timeMin = newTimeMin;
+            }
         } else {
             let dTime = event.deltaX / this.pixelsPerMs;
             this.timeMin -= dTime;
