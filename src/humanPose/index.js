@@ -22,6 +22,7 @@ import * as utils from './utils.js'
     let lastUpdateTime = Date.now();
     let lastRenderedPoses = {};
     let inHistoryPlayback = false;
+    const loadedHistoryLogs = {};
 
     function initService() {
         console.log('init humanPose module', network, draw, utils);
@@ -144,9 +145,13 @@ import * as utils from './utils.js'
                 if (logStartTime > regionEndTime && regionEndTime >= 0) {
                     continue;
                 }
+                if (loadedHistoryLogs.hasOwnProperty(logName)) {
+                    continue;
+                }
                 const resLog = await fetch(`${historyLogsUrl}/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
+                loadedHistoryLogs[logName] = true;
             }
         } catch (e) {
             console.warn('Unable to load history', e);
