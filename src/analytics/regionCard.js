@@ -119,7 +119,7 @@ export class RegionCard {
         const publicData = {
             startTime: this.startTime,
             endTime: this.endTime,
-            summary: 'TODO',
+            summary: this.element.outerHTML,
         };
         const write = () => {
             realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
