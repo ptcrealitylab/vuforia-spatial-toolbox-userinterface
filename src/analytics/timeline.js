@@ -119,6 +119,7 @@ export class Timeline {
         this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
+        this.drawTicks();
         this.drawPoses();
 
         this.drawHighlightRegion();
@@ -371,6 +372,31 @@ export class Timeline {
                 this.gfx.arc(x, y, rowHeight / 5, 0, 2 * Math.PI);
                 this.gfx.closePath();
                 this.gfx.fill();
+            }
+        }
+    }
+
+    drawTicks() {
+        const tenSecMs = 10 * 1000;
+        const minuteMs = 60 * 1000;
+        const hourMs = 60 * 60 * 1000;
+        let tickAmountMs = -1;
+        if (this.widthMs < minuteMs * 10) {
+            tickAmountMs = tenSecMs;
+        } else if (this.widthMs < hourMs * 6) {
+            tickAmountMs = minuteMs;
+        } else if (this.widthMs < hourMs * 100) {
+            tickAmountMs = hourMs;
+        }
+
+        if (tickAmountMs > 0) {
+            let tickMs = Math.floor(this.timeMin / tickAmountMs) * tickAmountMs;
+            while (tickMs < this.timeMin + this.widthMs) {
+                let tickX = this.timeToX(tickMs);
+                tickMs += tickAmountMs;
+
+                this.gfx.fillStyle = 'rgba(128, 128, 128, 0.3)';
+                this.gfx.fillRect(tickX - 1, boardStart, 1, boardHeight);
             }
         }
     }
