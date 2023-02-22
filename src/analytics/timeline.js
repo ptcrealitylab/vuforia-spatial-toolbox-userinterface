@@ -1,6 +1,8 @@
 import {RegionCard, RegionCardState} from './regionCard.js';
 import {
     getHistoryPointsInTimeInterval,
+    setAnimationMode,
+    AnimationMode,
 } from '../humanPose/draw.js';
 
 const needleTopPad = 4;
@@ -51,6 +53,7 @@ export class Timeline {
         this.dragMode = DragMode.NONE;
         this.mouseX = -1;
         this.mouseY = -1;
+        this.cursorTime = -1;
 
         this.boardLabelLeft = document.createElement('div');
         this.boardLabelLeft.classList.add('timelineBoardLabel');
@@ -118,31 +121,48 @@ export class Timeline {
 
         this.drawPoses();
 
-        if (this.highlightRegion) {
-            let startX = this.timeToX(this.highlightRegion.startTime);
-            this.gfx.fillStyle = '#00ffff';
-            this.gfx.beginPath();
-            this.gfx.moveTo(startX + needleWidth / 2, 0);
-            this.gfx.lineTo(startX + needleWidth / 2, this.height);
-            this.gfx.lineTo(startX - needleWidth / 2, this.height);
-            this.gfx.lineTo(startX - needleWidth / 2, needleTipWidth);
-            this.gfx.lineTo(startX - needleWidth / 2 - needleTipWidth, 0);
-            this.gfx.closePath();
-            this.gfx.fill();
+        this.drawHighlightRegion();
 
-            let endX = this.timeToX(this.highlightRegion.endTime);
-            this.gfx.beginPath();
-            this.gfx.moveTo(endX - needleWidth / 2, 0);
-            this.gfx.lineTo(endX - needleWidth / 2, this.height);
-            this.gfx.lineTo(endX + needleWidth / 2, this.height);
-            this.gfx.lineTo(endX + needleWidth / 2, needleTipWidth);
-            this.gfx.lineTo(endX + needleWidth / 2 + needleTipWidth, 0);
-            this.gfx.closePath();
-            this.gfx.fill();
-        }
+        this.drawCursor();
 
         this.updateBoardLabels();
         this.updateRegionCard();
+    }
+
+    drawHighlightRegion() {
+        if (!this.highlightRegion) {
+            return;
+        }
+
+        let startX = this.timeToX(this.highlightRegion.startTime);
+        this.gfx.fillStyle = '#00ffff';
+        this.gfx.beginPath();
+        this.gfx.moveTo(startX + needleWidth / 2, 0);
+        this.gfx.lineTo(startX + needleWidth / 2, this.height);
+        this.gfx.lineTo(startX - needleWidth / 2, this.height);
+        this.gfx.lineTo(startX - needleWidth / 2, needleTipWidth);
+        this.gfx.lineTo(startX - needleWidth / 2 - needleTipWidth, 0);
+        this.gfx.closePath();
+        this.gfx.fill();
+
+        let endX = this.timeToX(this.highlightRegion.endTime);
+        this.gfx.beginPath();
+        this.gfx.moveTo(endX - needleWidth / 2, 0);
+        this.gfx.lineTo(endX - needleWidth / 2, this.height);
+        this.gfx.lineTo(endX + needleWidth / 2, this.height);
+        this.gfx.lineTo(endX + needleWidth / 2, needleTipWidth);
+        this.gfx.lineTo(endX + needleWidth / 2 + needleTipWidth, 0);
+        this.gfx.closePath();
+        this.gfx.fill();
+    }
+
+    drawCursor() {
+        if (this.cursorTime < this.timeMin || this.cursorTime > this.timeMin + this.widthMs) {
+            return;
+        }
+        let x = this.timeToX(this.cursorTime);
+        this.gfx.fillStyle = 'white';
+        this.gfx.fillRect(x - needleWidth / 2, 0, needleWidth, this.height);
     }
 
     formatRangeToLabels(dateTimeFormat, dateStart, dateEnd) {
@@ -424,6 +444,7 @@ export class Timeline {
             } else {
                 this.highlightStartX = event.offsetX;
             }
+            setAnimationMode(AnimationMode.regionAll);
         } else {
             this.dragMode = DragMode.PAN;
         }
@@ -579,6 +600,8 @@ export class Timeline {
             Math.abs(this.highlightStartX - this.mouseX) < 3) {
             this.setHighlightRegion(null);
         }
+
+        setAnimationMode(AnimationMode.region);
 
         this.dragMode = DragMode.NONE;
         realityEditor.analytics.setCursorTime(-1);

@@ -8,9 +8,16 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderers = {};
 
-const AnimationMode = {
-    ONE: 'one',
-    ALL: 'all',
+export const AnimationMode = {
+    // The single historical pose at the cursor time is visible
+    cursor: 'cursor',
+    // A single historical pose within the highlight region is visible, it
+    // animates through the movements it made
+    region: 'region',
+    // Every historical pose within the highlight region is visible
+    regionAll: 'regionAll',
+    // Every historical pose is visible
+    all: 'all',
 };
 
 export class HumanPoseAnalyzer {
@@ -32,7 +39,7 @@ export class HumanPoseAnalyzer {
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
-        this.animationMode = AnimationMode.ONE;
+        this.animationMode = AnimationMode.region;
         this.lastAnimationUpdate = Date.now();
 
         this.poseRendererLive = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), 16);
@@ -85,8 +92,14 @@ export class HumanPoseAnalyzer {
             maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
         }
 
-        this.setAnimation(minTimestamp, maxTimestamp);
-        this.updateAnimation();
+        if (this.animationMode === AnimationMode.region ||
+            this.animationMode === AnimationMode.regionAll) {
+            this.setAnimation(this.animationStart, this.animationEnd);
+        }
+
+        if (this.animationMode === AnimationMode.region) {
+            this.updateAnimationRegion();
+        }
 
         window.requestAnimationFrame(this.update);
     }
@@ -98,7 +111,7 @@ export class HumanPoseAnalyzer {
                 timestamp,
                 poseObject: obj,
             })
-            obj.setVisible(this.animationMode === AnimationMode.ALL);
+            obj.setVisible(this.animationMode === AnimationMode.all);
         }
 
         let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
@@ -182,6 +195,11 @@ export class HumanPoseAnalyzer {
      * @param {number} secondTimestamp - end of time interval in ms
      */
     setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+        if (this.animationMode !== AnimationMode.region &&
+            this.animationMode !== AnimationMode.regionAll) {
+            this.setAnimationMode(AnimationMode.region);
+        }
+        this.setAnimation(firstTimestamp, secondTimestamp);
         for (let mesh of Object.values(this.historyMeshesAll)) {
             mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
         }
@@ -207,6 +225,7 @@ export class HumanPoseAnalyzer {
      */
     setHoverTime(timestamp) {
         if (timestamp < 0) {
+            this.resetAnimationMode();
             return;
         }
         for (let mesh of Object.values(this.historyMeshesAll)) {
@@ -214,6 +233,9 @@ export class HumanPoseAnalyzer {
                 continue;
             }
             mesh.setHoverTime(timestamp);
+            if (this.animationMode !== AnimationMode.cursor) {
+                this.setAnimationMode(AnimationMode.cursor);
+            }
         }
     }
 
@@ -255,21 +277,29 @@ export class HumanPoseAnalyzer {
      * @param {AnimationMode} animationMode
      */
     setAnimationMode(animationMode) {
+        if (this.animationMode === animationMode) {
+            return;
+        }
         this.animationMode = animationMode;
         if (this.clonesAll.length === 0) {
             return;
         }
-        if (this.animationMode === AnimationMode.ALL) {
+
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markMatrixNeedsUpdate();
+        }
+
+        if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clonesAll) {
                 clone.poseObject.setVisible(true);
             }
-        } else {
+            return;
+        }
+
+        if (this.animationMode === AnimationMode.cursor || this.animationMode === AnimationMode.region) {
             for (let clone of this.clonesAll) {
                 clone.poseObject.setVisible(false);
             }
-        }
-        for (let hpr of this.historicalPoseRenderers) {
-            hpr.markMatrixNeedsUpdate();
         }
     }
 
@@ -284,20 +314,38 @@ export class HumanPoseAnalyzer {
         }
     }
 
+    /**
+     * @param {number} start - start of animation region in ms
+     * @param {number} end - end of animation region in ms
+     */
     setAnimation(start, end) {
         if (this.animationStart === start && this.animationEnd === end) {
             return;
         }
 
+        switch (this.animationMode) {
+        case AnimationMode.region:
+            // Fully reset the animation when changing
+            this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = -1;
+            break;
+        case AnimationMode.regionAll:
+            this.hideAllClones();
+            this.setCloneVisibleInInterval(true, start, end);
+            break;
+        case AnimationMode.all:
+            // no effect
+            break;
+        case AnimationMode.cursor:
+            // no effect
+            break;
+        }
+
         this.animationStart = start;
         this.animationEnd = end;
-
-        // Fully reset the animation when changing
-        this.hideLastDisplayedClone();
-        this.lastDisplayedCloneIndex = -1;
     }
 
-    updateAnimation() {
+    updateAnimationRegion() {
         let dt = Date.now() - this.lastAnimationUpdate;
         this.lastAnimationUpdate += dt;
 
@@ -313,6 +361,37 @@ export class HumanPoseAnalyzer {
         let offsetClamped = offset % duration;
         this.animationPosition = this.animationStart + offsetClamped;
         this.displayNearestClone(this.animationPosition);
+    }
+
+    setCloneVisibleInInterval(visible, start, end) {
+        if (start < 0 || end < 0 ||
+            this.clonesAll.length < 0) {
+            return;
+        }
+
+        for (let i = 0; i < this.clonesAll.length; i++) {
+            let clone = this.clonesAll[i];
+            if (clone.timestamp < start) {
+                continue;
+            }
+            if (clone.timestamp > end) {
+                break;
+            }
+            let poseObject = clone.poseObject;
+            if (poseObject.visible === visible) {
+                continue;
+            }
+            poseObject.setVisible(visible);
+            poseObject.renderer.markMatrixNeedsUpdate();
+        }
+    }
+
+    showAllClones() {
+        this.setCloneVisibleInInterval(true, 0, Number.MAX_VALUE);
+    }
+
+    hideAllClones() {
+        this.setCloneVisibleInInterval(false, 0, Number.MAX_VALUE);
     }
 
     hideLastDisplayedClone() {
@@ -567,13 +646,20 @@ function setHistoryLinesVisible(visible) {
 }
 
 /**
+ * @param {AnimationMode} animationMode
+ */
+function setAnimationMode(animationMode) {
+    humanPoseAnalyzer.setAnimationMode(animationMode);
+}
+
+/**
  * @param {boolean} enabled
  */
 function setRecordingClonesEnabled(enabled) {
     if (enabled) {
-        humanPoseAnalyzer.setAnimationMode(AnimationMode.ALL);
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.all);
     } else {
-        humanPoseAnalyzer.setAnimationMode(AnimationMode.ONE);
+        humanPoseAnalyzer.setAnimationMode(AnimationMode.region);
     }
 }
 
@@ -600,6 +686,7 @@ export {
     renderHumanPoseObjects,
     resetHistoryLines,
     resetHistoryClones,
+    setAnimationMode,
     setHoverTime,
     setHighlightTimeInterval,
     setDisplayTimeInterval,
