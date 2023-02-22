@@ -1811,6 +1811,7 @@ Logic Interface CSS
 
     z-index: 2800;
     transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    pointer-events: none;
 }
 
 #analytics-timeline-container {
@@ -1820,6 +1821,7 @@ Logic Interface CSS
     max-width: 1024px;
     width: 100%;
     transform: translateX(-50%);
+    pointer-events: all;
 }
 
 .analytics-timeline {
@@ -1872,6 +1874,7 @@ Logic Interface CSS
     top: 80px;
     left: 35px;
     padding: 0;
+    pointer-events: all;
 }
 
 .analytics-region-card-title {
