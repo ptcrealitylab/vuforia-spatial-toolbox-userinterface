@@ -47,6 +47,7 @@ export class Timeline {
         this.displayRegion = null;
         this.height = boardHeight + boardStart + needlePad;
         this.highlightRegion = null;
+        this.highlightStartTime = -1;
         this.regionCard = null;
         this.lastRegionCardCacheKey = '';
 
@@ -54,6 +55,8 @@ export class Timeline {
         this.mouseX = -1;
         this.mouseY = -1;
         this.cursorTime = -1;
+
+        this.lastDraw = Date.now();
 
         this.boardLabelLeft = document.createElement('div');
         this.boardLabelLeft.classList.add('timelineBoardLabel');
@@ -90,6 +93,9 @@ export class Timeline {
     }
 
     draw() {
+        let dt = Date.now() - this.lastDraw;
+        this.lastDraw += dt;
+
         if (this.width < 0) {
             let rect = this.canvas.getBoundingClientRect();
             if (rect.width <= 0) {
@@ -104,6 +110,7 @@ export class Timeline {
             this.gfx.width = this.width;
             this.gfx.height = this.height;
         }
+
         if (this.timeMin > 0 && !this.scrolled) {
             const newTimeMin = Date.now() - this.widthMs;
             if (newTimeMin > this.timeMin) {
@@ -111,6 +118,21 @@ export class Timeline {
                 if (this.timeMin + this.widthMs > this.maxTimeMax) {
                     this.timeMin = this.maxTimeMax - this.widthMs;
                 }
+            }
+        }
+
+        if (this.dragMode === DragMode.SELECT) {
+            const dragSpeedBase = 0.5;
+            if (this.mouseX < this.width * 0.2) {
+                let velX = this.width * 0.25 - this.mouseX;
+                let velTime = velX / this.pixelsPerMs * dragSpeedBase;
+                this.timeMin -= velTime * dt / 1000;
+                this.limitTimeMin();
+            } else if (this.mouseX > this.width * 0.8) {
+                let velX = this.mouseX - this.width * 0.75;
+                let velTime = velX / this.pixelsPerMs * dragSpeedBase;
+                this.timeMin -= velTime * dt / 1000;
+                this.limitTimeMin();
             }
         }
 
@@ -464,11 +486,11 @@ export class Timeline {
         if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
             if (this.isPointerOnStartNeedle()) {
-                this.highlightStartX = this.timeToX(this.highlightRegion.endTime);
+                this.highlightStartTime = this.highlightRegion.endTime;
             } else if (this.isPointerOnEndNeedle()) {
-                this.highlightStartX = this.timeToX(this.highlightRegion.startTime);
+                this.highlightStartTime = this.highlightRegion.startTime;
             } else {
-                this.highlightStartX = event.offsetX;
+                this.highlightStartTime = this.xToTime(event.offsetX);
             }
             setAnimationMode(AnimationMode.regionAll);
         } else {
@@ -512,10 +534,10 @@ export class Timeline {
 
     onPointerMoveDragModeSelect(_event) {
         this.canvas.style.cursor = 'col-resize';
-        let highlightEndX = this.mouseX;
+        let highlightEndTime = this.xToTime(this.mouseX);
 
-        let startTime = this.xToTime(Math.min(this.highlightStartX, highlightEndX));
-        let endTime = this.xToTime(Math.max(this.highlightStartX, highlightEndX));
+        let startTime = Math.min(this.highlightStartTime, highlightEndTime);
+        let endTime = Math.max(this.highlightStartTime, highlightEndTime);
         realityEditor.analytics.setHighlightRegion({
             startTime,
             endTime,
@@ -623,7 +645,7 @@ export class Timeline {
         this.updatePointer(event);
 
         if (this.dragMode === DragMode.SELECT &&
-            Math.abs(this.highlightStartX - this.mouseX) < 3) {
+            Math.abs(this.timeToX(this.highlightStartTime) - this.mouseX) < 3) {
             this.setHighlightRegion(null);
         }
 
