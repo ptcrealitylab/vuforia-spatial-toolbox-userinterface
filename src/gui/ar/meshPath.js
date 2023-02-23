@@ -62,13 +62,24 @@ export class MeshPath extends THREE.Group
 
         if (typeof this.onRemove === 'function') {
             this.onRemove(); // dispose of geometry to avoid memory leak
+            this.onRemove = null;
         }
     }
 
+    /**
+     * @typedef {Vector3} MeshPathPoint
+     * @property {(number[]|THREE.Color)} color - The color of the point [0-255, 0-255, 0-255] (only used if perVertexColors=true)
+     * @property {number} [scale] - The scale of the point (1.0 = default)
+     */
+    
     // call this to build (or rebuild) the mesh given an updated array of [{x,y,z}, ...] values
     // each point can also have parameters:
     // - color: [0-255, 0-255, 0-255] (only used if perVertexColors=true)
     // - scale: float (1.0 = default)
+    /**
+     * Sets the points on the path
+     * @param points {MeshPathPoint[]}
+     */
     setPoints(points) {
         this.resetPoints(); // removes the previous mesh from the scene and disposes of its geometry
         

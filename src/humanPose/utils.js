@@ -55,6 +55,10 @@ const JOINT_CONNECTIONS = {
     navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
 };
 
+function getBoneName(bone) {
+    return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
+}
+
 // other modules in the project can use this to reliably check whether an object is a humanPose object
 function isHumanPoseObject(object) {
     if (!object) { return false; }
@@ -244,7 +248,8 @@ function createDummySkeleton() {
     dummySkeleton.jointNameFromIndex = (index) => {
         return Object.keys(dummySkeleton.joints).find(key => dummySkeleton.joints[key] === index);
     }
-    
+
+    dummySkeleton.jointInstancedMesh.joints = dummySkeleton.joints;
     return dummySkeleton;
 }
 
@@ -254,6 +259,7 @@ export {
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
     SCALE,
+    getBoneName,
     isHumanPoseObject,
     makePoseFromJoints,
     getPoseObjectName,

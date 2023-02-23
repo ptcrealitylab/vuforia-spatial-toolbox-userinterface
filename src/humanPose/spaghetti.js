@@ -93,7 +93,16 @@ export class SpaghettiMeshPath extends MeshPath {
             }
         });
     }
-    
+
+    /**
+     * @typedef {MeshPathPoint} SpaghettiMeshPathPoint
+     * @property {number} timestamp - the time in milliseconds since the start of the path
+     */
+
+    /**
+     * Sets the points of the path, and also calculates the horizontal plane at the average Y height of the path
+     * @param points {SpaghettiMeshPathPoint[]} - the points to set
+     */
     setPoints(points) {
         super.setPoints(points);
         

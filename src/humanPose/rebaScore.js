@@ -1,668 +1,590 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import {JOINT_CONNECTIONS, JOINTS, getBoneName} from './utils.js';
+import AnalyticsColors from "./AnalyticsColors.js";
 
-import {JOINT_CONNECTIONS, JOINTS as POSE_NET_JOINTS} from './utils.js';
+// https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
+// https://ergo-plus.com/reba-assessment-tool-guide/
+// ^ Sample REBA scoring tables
 
-const POSE_JOINTS = Object.freeze({
-    PELVIS: 0,
-    NAVEL: 1,
-    CHEST: 2,
-    NECK: 3,
-    LEFT_CLAVICLE: 4,
-    LEFT_SHOULDER: 5,
-    LEFT_ELBOW: 6,
-    LEFT_WRIST: 7,
-    LEFT_HAND: 8,
-    LEFT_HANDTIP: 9,
-    LEFT_THUMB: 10,
-    RIGHT_CLAVICLE: 11,
-    RIGHT_SHOULDER: 12,
-    RIGHT_ELBOW: 13,
-    RIGHT_WRIST: 14,
-    RIGHT_HAND: 15,
-    RIGHT_HANDTIP: 16,
-    RIGHT_THUMB: 17,
-    LEFT_HIP: 18,
-    LEFT_KNEE: 19,
-    LEFT_ANKLE: 20,
-    LEFT_FOOT: 21,
-    RIGHT_HIP: 22,
-    RIGHT_KNEE: 23,
-    RIGHT_ANKLE: 24,
-    RIGHT_FOOT: 25,
-    HEAD: 26,
-    NOSE: 27,
-    LEFT_EYE: 28,
-    LEFT_EAR: 29,
-    RIGHT_EYE: 30,
-    RIGHT_EAR: 31
-});
-
-function jointToPoseNet(i) {
-    let key = Object.keys(POSE_JOINTS)[i];
-    if (!POSE_NET_JOINTS.hasOwnProperty(key)) {
-        return -1;
-    }
-    return POSE_NET_JOINTS[key];
+/**
+ * Clamp a value between a minimum and maximum.
+ * @param value {number} The value to clamp.
+ * @param min {number} The minimum value.
+ * @param max {number} The maximum value.
+ * @return {number} The clamped value.
+ */
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
 }
 
-function calculateXAngle(skel, jointARaw, jointBRaw) {
-    const jointA = jointToPoseNet(jointARaw);
-    const jointB = jointToPoseNet(jointBRaw);
-
-    if (typeof skel == 'undefined') {
-        console.log('the skel is undefined');
-        return 'undefined';
-    }
-
-    /* if joint is undefined skip over this iteration */
-    if (typeof skel.joints[jointA] == 'undefined' || typeof skel.joints[jointB] == 'undefined')
-        return 'undefined';
-
-    /* calculate angular distance between the bone and the X axis  */
-    const vectorBone = new THREE.Vector3(skel.joints[jointA].x - skel.joints[jointB].x, skel.joints[jointA].y - skel.joints[jointB].y, skel.joints[jointA].z - skel.joints[jointB].z);
-    const vectorAxis = new THREE.Vector3(1, 0, 0);
-
-    let angle = vectorBone.angleTo(vectorAxis) * 180 / Math.PI;
-
-    return angle;
+/**
+ * Calculates the angle between two vectors in degrees.
+ * @param vector1 {THREE.Vector3} The first vector.
+ * @param vector2 {THREE.Vector3} The second vector.
+ * @return {number} The angle between the two vectors in degrees.
+ */
+function angleBetween(vector1, vector2) {
+    return vector1.angleTo(vector2) * 180 / Math.PI;
 }
 
-
-function  calculateYAngle(skel, jointARaw, jointBRaw) {
-    const jointA = jointToPoseNet(jointARaw);
-    const jointB = jointToPoseNet(jointBRaw);
-
-    if (typeof skel == 'undefined') {
-        console.log('the skel is undefined');
-        return 'undefined';
-    }
-    /* if joint is undefined skip over this iteration */
-    if (typeof skel.joints[jointA] == 'undefined' || typeof skel.joints[jointB] == 'undefined') {
-        return 'undefined';
-    }
-
-
-    /* calculate angular distance between the bone and the Y axis  */
-    const vectorBone = new THREE.Vector3(skel.joints[jointA].x - skel.joints[jointB].x, skel.joints[jointA].y - skel.joints[jointB].y, skel.joints[jointA].z - skel.joints[jointB].z);
-    const vectorAxis = new THREE.Vector3(0, 1, 0);
-    let angle = vectorBone.angleTo(vectorAxis) * 180 / Math.PI;
-
-    /* check if the y angle is positive or negative */
-    const distanceVector = new THREE.Vector3(0, 1, 5);
-    const negativeDistanceVector = new THREE.Vector3(0, 1, -5);
-    let distance = (vectorBone.distanceTo(distanceVector)) < (vectorBone.distanceTo(negativeDistanceVector));
-
-
-    // let distance = (vectorBone.distanceTo(distanceVector))>Math.sqrt(26);
-
-    if (!distance) {
-        angle *= -1;
-    }
-
-    return angle;
-}
-
-function calculateZAngle(skel, jointARaw, jointBRaw) {
-    const jointA = jointToPoseNet(jointARaw);
-    const jointB = jointToPoseNet(jointBRaw);
-
-    if (typeof skel == 'undefined') {
-        console.log('the skel is undefined');
-        return 'undefined';
-    }
-    /* if joint is undefined skip over this iteration */
-    if (typeof skel.joints[jointA] == 'undefined' || typeof skel.joints[jointB] == 'undefined') {
-        return 'undefined';
-    }
-
-    /* calculate angular distance between the bone and the Z axis  */
-    const vectorBone = new THREE.Vector3(skel.joints[jointA].x - skel.joints[jointB].x, skel.joints[jointA].y - skel.joints[jointB].y, skel.joints[jointA].z - skel.joints[jointB].z);
-    const vectorAxis = new THREE.Vector3(0, 0, 1);
-    let angle = vectorBone.angleTo(vectorAxis) * 180 / Math.PI;
-
-    return angle;
-}
-
-function chestNavelReba(skel) {
-    let chestNavelAngles = skel.angles.chestNavel;
-    var chestNavelScore = 0;
-
-    /* get forward back score using y-coordinate */
-    if ((chestNavelAngles[1] > 0 && chestNavelAngles[1] <= 20) || (chestNavelAngles[1] < 0 && chestNavelAngles[1] >= -20) ) {
-        chestNavelScore = 2;
-    } else if ((chestNavelAngles[1] > 20 && chestNavelAngles[1] <= 60) || chestNavelAngles[1] < -20) {
-        chestNavelScore = 3;
-    } else if (chestNavelAngles[1] > 60) {
-        chestNavelScore = 4;
-    }
-
-    /* get side-bending score using x-coordinate */
-    if (chestNavelAngles[0] <= 75 || chestNavelAngles[0] >= 105) {
-        chestNavelScore++;
-    }
-
-    /* get twisting score using z-coordinate */
-    if (chestNavelAngles[2] <= 75 || chestNavelAngles[2] >= 105) {
-        chestNavelScore++;
-    }
-
-    /* set the skeleton's headNeck score and color */
-    skel.angles.chestNavel[4] = chestNavelScore;
-
-    if (chestNavelScore <= 2 ) {
-        skel.angles.chestNavel[5] = 0;
-    } else if (chestNavelScore <= 4) {
-        skel.angles.chestNavel[5] = 1;
-    } else if (chestNavelScore <= 6) {
-        skel.angles.chestNavel[5] = 2;
-    }
-
-    return chestNavelScore;
-}
-
-function navelPelvisReba(skel) {
-    let navelPelvisAngles = skel.angles.navelPelvis;
-    var navelPelvisScore = 0;
-
-    /* get forward back score using y-coordinate */
-    if ((navelPelvisAngles[1] > 0 && navelPelvisAngles[1] <= 20) || (navelPelvisAngles[1] < 0 && navelPelvisAngles[1] >= -20) ) {
-        navelPelvisScore = 2;
-    } else if ((navelPelvisAngles[1] > 20 && navelPelvisAngles[1] <= 60) || navelPelvisAngles[1] < -20) {
-        navelPelvisScore = 3;
-    } else if (navelPelvisAngles[1] > 60) {
-        navelPelvisScore = 4;
-    }
-
-    /* get side-bending score using x-coordinate */
-    if (navelPelvisAngles[0] <= 75 || navelPelvisAngles[0] >= 105) {
-        navelPelvisScore++;
-    }
-
-    /* get twisting score using z-coordinate */
-    if (navelPelvisAngles[2] <= 75 || navelPelvisAngles[2] >= 105) {
-        navelPelvisScore++;
-    }
-
-    /* set the skeleton's headNeck score and color */
-    skel.angles.navelPelvis[4] = navelPelvisScore;
-
-    if (navelPelvisScore <= 2 ) {
-        skel.angles.navelPelvis[5] = 0;
-    } else if (navelPelvisScore <= 4) {
-        skel.angles.navelPelvis[5] = 1;
-    } else if (navelPelvisScore <= 6) {
-        skel.angles.navelPelvis[5] = 2;
-    }
-
-    return navelPelvisScore;
-}
-
-/* calculate the headNeckReba score, set the score for the skel and return score */
-function headNeckReba(skel) {
-    let headNeckAngles = skel.angles.headNeck;
-    var headNeckScore = 0;
-
-    /* get forward back score using y-coordinate */
-    if (headNeckAngles[1] >= 0 && headNeckAngles[1] <= 20) {
-        headNeckScore++;
-    } else if (headNeckAngles[1] > 20 || headNeckAngles[1] < 0) {
-        headNeckScore = 2;
-    }
-
-    /* get side-bending score using x-coordinate */
-    if (headNeckAngles[0] <= 75 || headNeckAngles[0] >= 105) {
-        headNeckScore++;
-    }
-
-    /* get twisting score using z-coordinate */
-    if (headNeckAngles[2] <= 75 || headNeckAngles[2] >= 105) {
-        headNeckScore++;
-    }
-
-    /* set smallRebaScore */
-    skel.angles.headNeck[4] = headNeckScore;
-
-    /* set color of bone */
-    if (headNeckScore <= 2 ) {
-        skel.angles.headNeck[5] = 0;
-    } else if (headNeckScore == 3) {
-        skel.angles.headNeck[5] = 1;
-    } else if (headNeckScore == 4) {
-        skel.angles.headNeck[5] = 2;
-    }
-
-    return headNeckScore;
-}
-
-/* calculate neckChestReba and annotate the skel's angles */
-function neckChestReba(skel) {
-    let neckChestAngles = skel.angles.neckChest;
-    var neckChestScore = 0;
-
-    /* get forward back score using y-coordinate */
-    if ((neckChestAngles[1] > 0 && neckChestAngles[1] <= 20) || (neckChestAngles[1] < 0 && neckChestAngles[1] >= -20) ) {
-        neckChestScore = 2;
-    } else if ((neckChestAngles[1] > 20 && neckChestAngles[1] <= 60) || neckChestAngles[1] < -20) {
-        neckChestScore = 3;
-    } else if (neckChestAngles[1] > 60) {
-        neckChestScore = 4;
-    }
-
-    /* get side-bending score using x-coordinate */
-    if (neckChestAngles[0] <= 75 || neckChestAngles[0] >= 105) {
-        neckChestScore++;
-    }
-
-    /* get twisting score using z-coordinate */
-    if (neckChestAngles[2] <= 75 || neckChestAngles[2] >= 105) {
-        neckChestScore++;
-    }
-
-    /* set the skeleton's headNeck score and color */
-    skel.angles.neckChest[4] = neckChestScore;
-
-    if (neckChestScore <= 2 ) {
-        skel.angles.neckChest[5] = 0;
-    } else if (neckChestScore <= 4) {
-        skel.angles.neckChest[5] = 1;
-    } else if (neckChestScore <= 6) {
-        skel.angles.neckChest[5] = 2;
-    }
-
-    return neckChestScore;
-}
-
-function elbowWristLeftReba(skel) {
-    let elbowWristAnglesLeft = skel.angles.elbowWristLeft;
-    var elbowWristLeftScore = 0;
-
-    /* get forward bending using y-coordinate */
-    if (Math.abs(elbowWristAnglesLeft[1]) >= 80 && Math.abs(elbowWristAnglesLeft[1]) <= 120) {
-        elbowWristLeftScore++;
-    } else if ((Math.abs(elbowWristAnglesLeft[1]) > 120 && Math.abs(elbowWristAnglesLeft[1]) <= 180) || Math.abs(elbowWristAnglesLeft[1]) < 80) {
-        elbowWristLeftScore = 2;
-    }
-
-    /* set smallReba and color */
-    skel.angles.elbowWristLeft[4] = elbowWristLeftScore;
-    if (elbowWristLeftScore < 2 ) {
-        skel.angles.elbowWristLeft[5] = 0;
-    } else if (elbowWristLeftScore == 2) {
-        skel.angles.elbowWristLeft[5] = 1;
-    }
-
-
-    return elbowWristLeftScore;
-}
-
-function elbowWristRightReba(skel) {
-    let elbowWristAnglesRight = skel.angles.elbowWristRight;
-    var elbowWristRightScore = 0;
-
-    /* get forward bending using y-coordinate */
-    if (Math.abs(elbowWristAnglesRight[1]) >= 80 && Math.abs(elbowWristAnglesRight[1]) <= 120) {
-        elbowWristRightScore++;
-    } else if ((Math.abs(elbowWristAnglesRight[1]) > 120 && Math.abs(elbowWristAnglesRight[1]) <= 180) || Math.abs(elbowWristAnglesRight[1]) < 80) {
-        elbowWristRightScore = 2;
-    }
-
-    /* set smallReba score and color */
-    skel.angles.elbowWristRight[4] = elbowWristRightScore;
-    if (elbowWristRightScore < 2 ) {
-        skel.angles.elbowWristRight[5] = 0;
-    } else if (elbowWristRightScore == 2) {
-        skel.angles.elbowWristRight[5] = 1;
-    }
-
-    return elbowWristRightScore;
-}
-
-function wristHandLeftReba(skel) {
-    let wristHandAnglesLeft = skel.angles.wristHandLeft;
-    var wristHandLeftScore = 0;
-
-    /* get forward and backward bending using y-coordinates */
-    if (Math.abs(wristHandAnglesLeft[1]) >= 165) {
-        wristHandLeftScore++;
-    } else if (Math.abs(wristHandAnglesLeft[1]) < 165) {
-        wristHandLeftScore = 2;
-    }
-
-    /* bending and twisting */
-    // if (wristHandAnglesLeft[0] <= 75 || wristHandAnglesLeft[0] >= 105 || wristHandAnglesLeft[2] <= 75 || wristHandAnglesLeft[2] >= 105 ) {
-    //   wristHandLeftScore++;
-    // }
-
-
-
-    /* set smallReba and color */
-    skel.angles.wristHandLeft[4] = wristHandLeftScore;
-    // skel.angles.wristHandLeft[5] = 1;
-
-    if (wristHandLeftScore == 1) {
-        skel.angles.wristHandLeft[5] = 0;
-    } else if (wristHandLeftScore == 2) {
-        skel.angles.wristHandLeft[5] = 1;
-    } else if (wristHandLeftScore == 3) {
-        skel.angles.wristHandLeft[5] = 2;
-    }
-
-    return wristHandLeftScore;
-
-}
-
-function wristHandRightReba(skel) {
-    let wristHandAnglesRight = skel.angles.wristHandRight;
-    var wristHandRightScore = 0;
-
-
-    /* get forward and backward bending using y-coordinates */
-    if (Math.abs(wristHandAnglesRight[1]) >= 165) {
-        wristHandRightScore++;
-    } else if (Math.abs(wristHandAnglesRight[1]) < 165) {
-        wristHandRightScore = 2;
-    }
-
-    /* bending and twisting */
-    //  /* bending and twisting */
-    //  if (wristHandAnglesRight[0] <= 75 || wristHandAnglesRight[0] >= 105 || wristHandAnglesRight[2] <= 75 || wristHandAnglesRight[2] >= 105 ) {
-    //   wristHandRightScore++;
-    // }
-
-    skel.angles.wristHandRight[4] = wristHandRightScore;
-
-
-    /* annotate the color of the bone */
-    if (wristHandRightScore == 1) {
-        skel.angles.wristHandRight[5] = 0;
-    } else if (wristHandRightScore == 2) {
-        skel.angles.wristHandRight[5] = 1;
-    } else if (wristHandRightScore == 3) {
-        skel.angles.wristHandRight[5] = 2;
-    }
-
-    return wristHandRightScore;
-}
-
-function hipKneeLeftReba(skel) {
-    let hipKneeLeftAngles = skel.angles.hipKneeLeft;
-    var hipKneeLeftScore = 0;
-
-    /* get forward bending using y-coordinate */
-    if (Math.abs(hipKneeLeftAngles[1]) >= 120 && Math.abs(hipKneeLeftAngles[1]) <= 150 ) {
-        hipKneeLeftScore = 1;
-    } else if (Math.abs(hipKneeLeftAngles[1]) < 120) {
-        hipKneeLeftScore = 2;
-    }
-
-    /* set smallReba and color */
-    skel.angles.hipKneeLeft[4] = hipKneeLeftScore;
-
-    if (hipKneeLeftScore < 1 ) {
-        skel.angles.hipKneeLeft[5] = 0;
-    } else if (hipKneeLeftScore < 2) {
-        skel.angles.hipKneeLeft[5] = 1;
+/**
+ * Sets the score and color for the neck reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function neckReba(rebaData) {
+    let neckScore = 1;
+    let neckColor = AnalyticsColors.undefined;
+
+    const headUp = rebaData.orientations.head.up;
+    const headForward = rebaData.orientations.head.forward;
+    
+    // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
+    const upMisalignmentAngle = angleBetween(headUp, rebaData.orientations.chest.up);
+    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);
+    const backwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward.clone().negate());
+    const rightBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right);
+    const leftBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right.clone().negate());
+
+    // Check for bending
+    if (upMisalignmentAngle > 20) {
+        neckScore++; // +1 for greater than 20 degrees
+        if (forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) {
+            neckScore++; // +1 for side-bending or back-bending greater than 20 degrees
+        }
     } else {
-        skel.angles.hipKneeLeft[5] = 2;
+        if (forwardBendingAlignment < backwardBendingAlignment) {
+            neckScore++; // +1 for back-bending any amount
+        }
     }
-    return hipKneeLeftScore;
-}
-
-function hipKneeRightReba(skel) {
-    let hipKneeRightAngles = skel.angles.hipKneeRight;
-    var hipKneeRightScore = 0;
-
-    /* get forward bending using y-coordinate */
-    if (Math.abs(hipKneeRightAngles[1]) >= 120 && Math.abs(hipKneeRightAngles[1]) <= 150 ) {
-        hipKneeRightScore = 1;
-    } else if (Math.abs(hipKneeRightAngles[1]) < 120) {
-        hipKneeRightScore = 2;
+    
+    const twistRightAngle = angleBetween(headForward, rebaData.orientations.chest.right); // Angle from full twist right
+    const twistLeftAngle = 180 - twistRightAngle;
+    
+    // Check for twisting of >20 degrees from straight ahead
+    if (twistRightAngle < 70 || twistLeftAngle < 70) {
+        neckScore++; // +1 for twisting
     }
+    
+    neckScore = clamp(neckScore, 1, 3);
 
-    /* set smallReba and color */
-    skel.angles.hipKneeRight[4] = hipKneeRightScore;
-    if (hipKneeRightScore < 1 ) {
-        skel.angles.hipKneeRight[5] = 0;
-    } else if (hipKneeRightScore < 2) {
-        skel.angles.hipKneeRight[5] = 1;
+    if (neckScore === 1 ) {
+        neckColor = AnalyticsColors.green;
+    } else if (neckScore === 2) {
+        neckColor = AnalyticsColors.yellow;
     } else {
-        skel.angles.hipKneeRight[5] = 2;
+        neckColor = AnalyticsColors.red;
     }
-    return hipKneeRightScore;
+    
+    [JOINTS.NECK,
+        JOINTS.HEAD,
+        JOINTS.LEFT_EYE,
+        JOINTS.RIGHT_EYE,
+        JOINTS.LEFT_EAR,
+        JOINTS.RIGHT_EAR,
+        JOINTS.NOSE
+    ].forEach(joint => {
+        rebaData.scores[joint] = neckScore;
+        rebaData.colors[joint] = neckColor;
+    });
+    
+    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckScore;
+    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckColor;
 }
 
-function shoulderElbowLeftReba(skel) {
-    let shoulderElbowLeftAngles = skel.angles.shoulderElbowLeft;
-    var shoulderElbowLeftScore = 0;
+/**
+ * Sets the score and color for the trunk reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function trunkReba(rebaData) {
+    let trunkScore = 1;
+    let trunkColor = AnalyticsColors.undefined;
+    
+    const chestUp = rebaData.orientations.chest.up;
+    const chestForward = rebaData.orientations.chest.forward;
+    
+    // Comparisons should be relative to directions determined by hips
+    
+    // +1 for any bending > 5 degrees, twisting
+    // Another +1 if bending is sideways
+    // Another +1 for forward or backwards bending > 20 degrees
+    // Another +1 for forward or backwards bending > 60 degrees
+    const up = new THREE.Vector3(0, 1, 0);
+    const upMisalignmentAngle = angleBetween(chestUp, up);
+    const forwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward);
+    const backwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward.clone().negate());
+    const rightBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right);
+    const leftBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right.clone().negate());
+    
+    // Check for bending
+    if (upMisalignmentAngle > 5) {
+        trunkScore++; // +1 for greater than 5 degrees
+        if ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment)) {
+            trunkScore++; // +1 for side-bending
+        }
+        if (upMisalignmentAngle > 20) {
+            trunkScore++; // +1 for greater than 20 degrees
+            if (upMisalignmentAngle > 60) {
+                trunkScore++; // +1 for greater than 60 degrees
+            }
+        }
+    }
+    
+    const twistRightAngle = angleBetween(chestForward, rebaData.orientations.hips.right); // Angle from full twist right
+    const twistLeftAngle = 180 - twistRightAngle;
+    
+    // Check for twisting
+    if (twistRightAngle < 70 || twistLeftAngle < 70) {
+        trunkScore++; // +1 for twisting
+    }
+    
+    trunkScore = clamp(trunkScore, 1, 5);
 
+    if (trunkScore === 1 ) {
+        trunkColor = AnalyticsColors.green;
+    } else if (trunkScore <= 4) {
+        trunkColor = AnalyticsColors.yellow;
+    } else {
+        trunkColor = AnalyticsColors.red;
+    }
+    
+    [JOINTS.CHEST,
+        JOINTS.NAVEL,
+        JOINTS.PELVIS,
+    ].forEach(joint => {
+        rebaData.scores[joint] = trunkScore;
+        rebaData.colors[joint] = trunkColor;
+    });
+    
+    [JOINT_CONNECTIONS.neckChest,
+        JOINT_CONNECTIONS.chestNavel,
+        JOINT_CONNECTIONS.navelPelvis,
+        JOINT_CONNECTIONS.shoulderSpan,
+        JOINT_CONNECTIONS.chestRight,
+        JOINT_CONNECTIONS.chestLeft,
+        JOINT_CONNECTIONS.hipSpan,
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = trunkScore;
+        rebaData.boneColors[getBoneName(bone)] = trunkColor;
+    });
+}
 
-    /* get forward bending using y-coordinate */
-    if (shoulderElbowLeftAngles[1] >= 160 || shoulderElbowLeftAngles[1] <= -160) {
-        shoulderElbowLeftScore++;
-    } else if (shoulderElbowLeftAngles[1] < 0 && shoulderElbowLeftAngles[1] > -160) {
-        shoulderElbowLeftScore = 2;
-    } else if (shoulderElbowLeftAngles[1] < 160 && shoulderElbowLeftAngles[1] >= 135) {
-        shoulderElbowLeftScore = 2;
-    } else if (shoulderElbowLeftAngles[1] < 135 && shoulderElbowLeftAngles[1] >= 90) {
-        shoulderElbowLeftScore = 3;
-    } else if (shoulderElbowLeftAngles[1] < 90 && shoulderElbowLeftAngles[1] >= 0) {
-        shoulderElbowLeftScore = 4;
+/**
+ * Sets the score and color for the arms reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function legsReba(rebaData) {
+    let leftLegScore = 1;
+    let leftLegColor = AnalyticsColors.undefined;
+    let rightLegScore = 1;
+    let rightLegColor = AnalyticsColors.undefined;
+    
+    // +1 for knee bending > 30 degrees
+    // Another +1 for knee bending > 60 degrees
+    // Another +1 if leg is raised
+    const footYDifference = rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y;
+    const leftKneeUp = rebaData.joints[JOINTS.LEFT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_KNEE]);
+    const rightKneeUp = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.RIGHT_KNEE]);
+    const leftFootUp = rebaData.joints[JOINTS.LEFT_KNEE].clone().sub(rebaData.joints[JOINTS.LEFT_ANKLE]);
+    const rightFootUp = rebaData.joints[JOINTS.RIGHT_KNEE].clone().sub(rebaData.joints[JOINTS.RIGHT_ANKLE]);
+    const leftKneeUpAngle = angleBetween(leftKneeUp, leftFootUp);
+    const rightKneeUpAngle = angleBetween(rightKneeUp, rightFootUp);
+    
+    // Check for knee bending
+    if (leftKneeUpAngle > 30) {
+        leftLegScore++; // +1 for greater than 30 degrees
+        if (leftKneeUpAngle > 60) {
+            leftLegScore++; // +1 for greater than 60 degrees
+        }
+    }
+    if (rightKneeUpAngle > 30) {
+        rightLegScore++; // +1 for greater than 30 degrees
+        if (rightKneeUpAngle > 60) {
+            rightLegScore++; // +1 for greater than 60 degrees
+        }
+    }
+    
+    // Check for leg raising
+    const footDifferenceCutoff = 0.1;
+    console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
+    if (footYDifference > footDifferenceCutoff) {// TODO: measure this to find a good cutoff
+        leftLegScore++; // +1 for left leg raised
+    } else if (footYDifference < -1 * footDifferenceCutoff) {
+        rightLegScore++; // +1 for right leg raised
+    }
+    
+    leftLegScore = clamp(leftLegScore, 1, 4);
+    rightLegScore = clamp(rightLegScore, 1, 4);
+
+    if (leftLegScore === 1) {
+        leftLegColor = AnalyticsColors.green;
+    } else if (leftLegScore === 2) {
+        leftLegColor = AnalyticsColors.yellow;
+    } else {
+        leftLegColor = AnalyticsColors.red;
     }
 
-    /* set smallReba and color */
-    skel.angles.shoulderElbowLeft[4] = shoulderElbowLeftScore;
-    if (shoulderElbowLeftScore < 2 ) {
-        skel.angles.shoulderElbowLeft[5] = 0;
-    } else if (shoulderElbowLeftScore < 3 ) {
-        skel.angles.shoulderElbowLeft[5] = 1;
-    } else if (shoulderElbowLeftScore <= 4) {
-        skel.angles.shoulderElbowLeft[5] = 2;
+    if (rightLegScore === 1) {
+        rightLegColor = AnalyticsColors.green;
+    } else if (rightLegScore === 2) {
+        rightLegColor = AnalyticsColors.yellow;
+    } else {
+        rightLegColor = AnalyticsColors.red;
     }
-    return shoulderElbowLeftScore;
+    
+    [JOINTS.LEFT_HIP,
+        JOINTS.LEFT_KNEE,
+        JOINTS.LEFT_ANKLE,
+    ].forEach(joint => {
+        rebaData.scores[joint] = leftLegScore;
+        rebaData.colors[joint] = leftLegColor;
+    });
+    
+    [JOINTS.RIGHT_HIP,
+        JOINTS.RIGHT_KNEE,
+        JOINTS.RIGHT_ANKLE,
+    ].forEach(joint => {
+        rebaData.scores[joint] = rightLegScore;
+        rebaData.colors[joint] = rightLegColor;
+    });
+    
+    [JOINT_CONNECTIONS.hipKneeLeft,
+        JOINT_CONNECTIONS.kneeAnkleLeft,
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = leftLegScore;
+        rebaData.boneColors[getBoneName(bone)] = leftLegColor;
+    });
+    
+    [JOINT_CONNECTIONS.hipKneeRight,
+        JOINT_CONNECTIONS.kneeAnkleRight,
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = rightLegScore;
+        rebaData.boneColors[getBoneName(bone)] = rightLegColor;
+    });
 }
 
-function shoulderElbowRightReba(skel) {
-    let shoulderElbowRightAngles = skel.angles.shoulderElbowRight;
-    var shoulderElbowRightScore = 0;
-
-    /* get forward bending using y-coordinate */
-    if (shoulderElbowRightAngles[1] >= 160 || shoulderElbowRightAngles[1] <= -160) {
-        shoulderElbowRightScore++;
-    } else if (shoulderElbowRightAngles[1] < 0 && shoulderElbowRightAngles[1] > -160) {
-        shoulderElbowRightScore = 2;
-    } else if (shoulderElbowRightAngles[1] < 160 && shoulderElbowRightAngles[1] >= 135) {
-        shoulderElbowRightScore = 2;
-    } else if (shoulderElbowRightAngles[1] < 135 && shoulderElbowRightAngles[1] >= 90) {
-        shoulderElbowRightScore = 3;
-    } else if (shoulderElbowRightAngles[1] < 90 && shoulderElbowRightAngles[1] >= 0) {
-        shoulderElbowRightScore = 4;
+/**
+ * Sets the score and color for the upper arms reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function upperArmReba(rebaData) {
+    let leftArmScore = 1;
+    let leftArmColor = AnalyticsColors.undefined;
+    let rightArmScore = 1;
+    let rightArmColor = AnalyticsColors.undefined;
+    
+    // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture
+    
+    // +1 for upper arm angle raised > 20 degrees
+    // Another +1 for upper arm angle raised > 45 degrees
+    // Another +1 for upper arm angle raised > 90 degrees
+    // Another +1 if shoulder is raised
+    // Another +1 if arm is abducted
+    // Cannot implement: -1 if arm is supported or person is leaning
+    const chestUp = rebaData.orientations.chest.up
+    const leftShoulderYDifference = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(chestUp);
+    const rightShoulderYDifference = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(chestUp);
+    const down = new THREE.Vector3(0, -1, 0);
+    const leftShoulderDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]);
+    const rightShoulderDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+    
+    // Check for arm angle
+    const leftArmAngle = angleBetween(leftShoulderDown, down);
+    const rightArmAngle = angleBetween(rightShoulderDown, down);
+    if (leftArmAngle > 20) {
+        leftArmScore++; // +1 for greater than 20 degrees
+        if (leftArmAngle > 45) {
+            leftArmScore++; // +1 for greater than 45 degrees
+            if (leftArmAngle > 90) {
+                leftArmScore++; // +1 for greater than 90 degrees
+            }
+        }
     }
-
-    /* set smallReba and color */
-    skel.angles.shoulderElbowRight[4] = shoulderElbowRightScore;
-
-    if (shoulderElbowRightScore < 2 ) {
-        skel.angles.shoulderElbowRight[5] = 0;
-    } else if (shoulderElbowRightScore < 3 ) {
-        skel.angles.shoulderElbowRight[5] = 1;
-    } else if (shoulderElbowRightScore <= 4) {
-        skel.angles.shoulderElbowRight[5] = 2;
+    if (rightArmAngle > 20) {
+        rightArmScore++; // +1 for greater than 20 degrees
+        if (rightArmAngle > 45) {
+            rightArmScore++; // +1 for greater than 45 degrees
+            if (rightArmAngle > 90) {
+                rightArmScore++; // +1 for greater than 90 degrees
+            }
+        }
     }
-    return shoulderElbowRightScore;
+    
+    // Check for shoulder raising
+    const shoulderDifferenceCutoff = 0.1;
+    console.log(`leftShoulderYDifference: ${leftShoulderYDifference}\nrightShoulderYDifference: ${rightShoulderYDifference}\nCurrent cutoff: ${shoulderDifferenceCutoff}`);
+    if (leftShoulderYDifference > shoulderDifferenceCutoff) {// TODO: measure this to find a good cutoff
+        leftArmScore++; // +1 for left shoulder raised
+    }
+    if (rightShoulderYDifference > shoulderDifferenceCutoff) {
+        rightArmScore++; // +1 for right shoulder raised
+    }
+    
+    // Check for arm abduction
+    const chestLeft = rebaData.orientations.chest.right.clone().negate();
+    const chestRight = rebaData.orientations.chest.right;
+    const leftAlignmentAngle = angleBetween(leftShoulderDown, chestLeft);
+    const rightAlignmentAngle = angleBetween(rightShoulderDown, chestRight);
+    
+    if (leftAlignmentAngle < 70) {
+        leftArmScore++; // +1 for left arm abducted
+    }
+    if (rightAlignmentAngle < 70) {
+        rightArmScore++; // +1 for right arm abducted
+    }
+    
+    leftArmScore = clamp(leftArmScore, 1, 6);
+    rightArmScore = clamp(rightArmScore, 1, 6);
+    
+    if (leftArmScore === 1) {
+        leftArmColor = AnalyticsColors.green;
+    } else if (leftArmScore < 5) {
+        leftArmColor = AnalyticsColors.yellow;
+    } else {
+        leftArmColor = AnalyticsColors.red;
+    }
+    
+    if (rightArmScore === 1) {
+        rightArmColor = AnalyticsColors.green;
+    } else if (rightArmScore < 5) {
+        rightArmColor = AnalyticsColors.yellow;
+    } else {
+        rightArmColor = AnalyticsColors.red;
+    }
+    
+    rebaData.scores[JOINTS.LEFT_SHOULDER] = leftArmScore;
+    rebaData.colors[JOINTS.LEFT_SHOULDER] = leftArmColor;
+    rebaData.scores[JOINTS.RIGHT_SHOULDER] = rightArmScore;
+    rebaData.colors[JOINTS.RIGHT_SHOULDER] = rightArmColor;
+    
+    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmScore;
+    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmColor;
+    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmScore;
+    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmColor;
 }
 
-function calculateReba(skel) {
-    /* call all helper functions to annotate the individual scores of each bone */
-
-    headNeckReba(skel);
-    neckChestReba(skel);
-
-    chestNavelReba(skel);
-    navelPelvisReba(skel);
-    elbowWristLeftReba(skel);
-    elbowWristRightReba(skel);
-    wristHandLeftReba(skel);
-    wristHandRightReba(skel);
-    shoulderElbowLeftReba(skel);
-    shoulderElbowRightReba(skel);
-    hipKneeLeftReba(skel);
-    hipKneeRightReba(skel);
-
-    /* NOTE: pose tracking for the hands is pretty inaccurate so we just completely omitted it from the calculations
-         there is a helper function for it but it is never called */
-    // console.log("elbowWristLeftReba is ", elbowWristLeftReba);
-    // console.log("elbowWristRightReba is ", elbowWristRightReba);
-
-    /* could calculate the overall reba score here or later for better optimization */
-    // let overallScore = overallReba(skel);
+/**
+ * Sets the score and color for the lower arms reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function lowerArmReba(rebaData) {
+    let leftArmScore = 1;
+    let leftArmColor = AnalyticsColors.undefined;
+    let rightArmScore = 1;
+    let rightArmColor = AnalyticsColors.undefined;
+    
+    // 1 by default, 2 for elbow bent < 60 degrees or > 100 degrees
+    
+    // Check for elbow angle
+    const leftForearmDown = rebaData.joints[JOINTS.LEFT_WRIST].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]);
+    const rightForearmDown = rebaData.joints[JOINTS.RIGHT_WRIST].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]);
+    const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]);
+    const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+    const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
+    const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
+    
+    if (leftElbowAngle < 60 || leftElbowAngle > 100) {
+        leftArmScore = 2; // 2 for left elbow bent < 60 degrees
+    }
+    if (rightElbowAngle < 60 || rightElbowAngle > 100) {
+        rightArmScore = 2; // 2 for right elbow bent < 60 degrees
+    }
+    
+    leftArmScore = clamp(leftArmScore, 1, 2);
+    rightArmScore = clamp(rightArmScore, 1, 2);
+    
+    if (leftArmScore === 1) {
+        leftArmColor = AnalyticsColors.green;
+    } else {
+        leftArmColor = AnalyticsColors.red;
+    }
+    
+    if (rightArmScore === 1) {
+        rightArmColor = AnalyticsColors.green;
+    } else {
+        rightArmColor = AnalyticsColors.red;
+    }
+    
+    rebaData.scores[JOINTS.LEFT_ELBOW] = leftArmScore;
+    rebaData.colors[JOINTS.LEFT_ELBOW] = leftArmColor;
+    rebaData.scores[JOINTS.RIGHT_ELBOW] = rightArmScore;
+    rebaData.colors[JOINTS.RIGHT_ELBOW] = rightArmColor;
+    
+    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmScore;
+    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmColor;
+    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmScore;
+    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmColor;
 }
 
-function calculateTableA(skel) {
-    let neck = skel.angles.headNeck[4];
-
-    // let legs = Math.ceil((skel.angles.hipKneeLeft[5] + skel.angles.hipKneeRight[5])/2);
-    let legs = skel.angles.hipKneeLeft[4];
-    let trunk = skel.angles.chestNavel[4];
-
-    /* apparently the REBA assessment is stupid and doesn't have an entry in the table for the max score for some of the bones :/ */
-    if (legs == 0)
-        legs = 1;
-    if (neck == 4)
-        neck = 3;
-    if (trunk == 6)
-        trunk = 5;
-
-    let nltKey = String(neck + ',' + legs + ',' + trunk);
-
-    const NLTReba = new Map(); //set up table for intermediate score from neck, then legs, then trunk
-    NLTReba.set('1,1,1', '1');
-    NLTReba.set('1,1,2', '2');
-    NLTReba.set('1,1,3', '2');
-    NLTReba.set('1,1,4', '3');
-    NLTReba.set('1,1,5', '4');
-    NLTReba.set('1,2,1', '2');
-    NLTReba.set('1,2,2', '3');
-    NLTReba.set('1,2,3', '4');
-    NLTReba.set('1,2,4', '5');
-    NLTReba.set('1,2,5', '6');
-    NLTReba.set('1,3,1', '3');
-    NLTReba.set('1,3,2', '4');
-    NLTReba.set('1,3,3', '5');
-    NLTReba.set('1,3,4', '6');
-    NLTReba.set('1,3,5', '7');
-    NLTReba.set('1,4,1', '4');
-    NLTReba.set('1,4,2', '5');
-    NLTReba.set('1,4,3', '6');
-    NLTReba.set('1,4,4', '7');
-    NLTReba.set('1,4,5', '8');
-    NLTReba.set('2,1,1', '1');
-    NLTReba.set('2,1,2', '3');
-    NLTReba.set('2,1,3', '4');
-    NLTReba.set('2,1,4', '5');
-    NLTReba.set('2,1,5', '6');
-    NLTReba.set('2,2,1', '2');
-    NLTReba.set('2,2,2', '4');
-    NLTReba.set('2,2,3', '5');
-    NLTReba.set('2,2,4', '6');
-    NLTReba.set('2,2,5', '7');
-    NLTReba.set('2,3,1', '3');
-    NLTReba.set('2,3,2', '5');
-    NLTReba.set('2,3,3', '6');
-    NLTReba.set('2,3,4', '7');
-    NLTReba.set('2,3,5', '8');
-    NLTReba.set('2,3,1', '4');
-    NLTReba.set('2,3,2', '6');
-    NLTReba.set('2,3,3', '7');
-    NLTReba.set('2,3,4', '8');
-    NLTReba.set('2,3,5', '9');
-    NLTReba.set('3,1,1', '3');
-    NLTReba.set('3,1,2', '4');
-    NLTReba.set('3,1,3', '5');
-    NLTReba.set('3,1,4', '6');
-    NLTReba.set('3,1,5', '7');
-    NLTReba.set('3,2,1', '3');
-    NLTReba.set('3,2,2', '5');
-    NLTReba.set('3,2,3', '6');
-    NLTReba.set('3,2,4', '7');
-    NLTReba.set('3,2,5', '8');
-    NLTReba.set('3,3,1', '5');
-    NLTReba.set('3,3,2', '6');
-    NLTReba.set('3,3,3', '7');
-    NLTReba.set('3,3,4', '8');
-    NLTReba.set('3,3,5', '9');
-    NLTReba.set('3,4,1', '6');
-    NLTReba.set('3,4,2', '7');
-    NLTReba.set('3,4,3', '8');
-    NLTReba.set('3,4,4', '9');
-    NLTReba.set('3,4,5', '9');
-
-    let numberA = parseInt(NLTReba.get(nltKey), 10);
-    return numberA;
+/**
+ * Sets the score and color for the wrist reba.
+ * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ */
+function wristReba(rebaData) {
+    let leftWristScore = 1;
+    let leftWristColor = AnalyticsColors.green;
+    let rightWristScore = 1;
+    let rightWristColor = AnalyticsColors.green;
+    
+    // Tracking is not accurate enough to calculate this
+    
+    rebaData.scores[JOINTS.LEFT_WRIST] = leftWristScore;
+    rebaData.colors[JOINTS.LEFT_WRIST] = leftWristColor;
+    rebaData.scores[JOINTS.RIGHT_WRIST] = rightWristScore;
+    rebaData.colors[JOINTS.RIGHT_WRIST] = rightWristColor;
 }
 
-function calculateTableB(skel) {
-    /* let the score be the average between both limbs */
-    let lowerArm = Math.round((skel.angles.elbowWristLeft[4] + skel.angles.elbowWristRight[4]) / 2);
-    let wrist = Math.round((skel.angles.wristHandLeft[4] + skel.angles.wristHandRight[4]) / 2);
-    let upperArm = Math.round((skel.angles.shoulderElbowLeft[4] + skel.angles.shoulderElbowRight[4]) / 2);
-    // let lowerArm = Math.ceil((skel.angles.elbowWristLeft[4] + skel.angles.elbowWristRight[4])/2);
-    // let wrist = Math.ceil((skel.angles.wristHandLeft[4] + skel.angles.wristHandRight[4])/2);
-    // let upperArm = Math.ceil((skel.angles.shoulderElbowLeft[4] + skel.angles.shoulderElbowRight[4])/2);
-
-    wrist = Math.min(Math.max(wrist, 1), 3);
-    lowerArm = Math.min(Math.max(lowerArm, 1), 2);
-    upperArm = Math.min(Math.max(lowerArm, 1), 6);
-
-    let lwaKey = lowerArm + ',' + wrist + ',' + upperArm;
-
-    const LWAReba = new Map(); //set up table for intermediate score from lower, then wrist, then upper
-    LWAReba.set('1,1,1', '1');
-    LWAReba.set('1,1,2', '1');
-    LWAReba.set('1,1,3', '3');
-    LWAReba.set('1,1,4', '4');
-    LWAReba.set('1,1,5', '6');
-    LWAReba.set('1,1,6', '7');
-    LWAReba.set('1,2,1', '2');
-    LWAReba.set('1,2,2', '2');
-    LWAReba.set('1,2,3', '4');
-    LWAReba.set('1,2,4', '5');
-    LWAReba.set('1,2,5', '7');
-    LWAReba.set('1,2,6', '8');
-    LWAReba.set('1,3,1', '2');
-    LWAReba.set('1,3,2', '3');
-    LWAReba.set('1,3,3', '5');
-    LWAReba.set('1,3,4', '5');
-    LWAReba.set('1,3,5', '8');
-    LWAReba.set('1,3,6', '8');
-    LWAReba.set('2,1,1', '1');
-    LWAReba.set('2,1,2', '2');
-    LWAReba.set('2,1,3', '4');
-    LWAReba.set('2,1,4', '5');
-    LWAReba.set('2,1,5', '7');
-    LWAReba.set('2,1,6', '8');
-    LWAReba.set('2,2,1', '2');
-    LWAReba.set('2,2,2', '3');
-    LWAReba.set('2,2,3', '5');
-    LWAReba.set('2,2,4', '6');
-    LWAReba.set('2,2,5', '8');
-    LWAReba.set('2,2,6', '9');
-    LWAReba.set('2,3,1', '3');
-    LWAReba.set('2,3,2', '4');
-    LWAReba.set('2,3,3', '5');
-    LWAReba.set('2,3,4', '7');
-    LWAReba.set('2,3,5', '8');
-    LWAReba.set('2,3,6', '9');
-
-
-    const numberB = parseInt(LWAReba.get(lwaKey), 10);
-    return numberB;
+function getOverallRebaColor(rebaScore) {
+    const lowCutoff = 4; // TODO: experiment with cutoffs
+    const highCutoff = 8;
+    console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`);
+    const rebaFrac = (clamp(rebaScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
+    const startColor = AnalyticsColors.green.faded;
+    const endColor = AnalyticsColors.red.faded;
+    return startColor.clone().lerpHSL(endColor, rebaFrac);
 }
 
-function overallRebaCalculation(skel) {
-    const tableA = calculateTableA(skel);
-    const tableB = calculateTableB(skel);
+function calculateReba(rebaData) {
+    // call all helper functions to annotate the individual scores of each bone
+    neckReba(rebaData);
+    trunkReba(rebaData);
+    legsReba(rebaData);
+    upperArmReba(rebaData);
+    lowerArmReba(rebaData);
+    wristReba(rebaData);
 
-    const tableC = [
+    rebaData.overallRebaScore = overallRebaCalculation(rebaData);
+    rebaData.overallRebaColor = getOverallRebaColor(rebaData.overallRebaScore);
+}
+
+function neckLegTrunkScore(rebaData) {
+    const neck = rebaData.scores[JOINTS.NECK];
+    const legs = Math.max(rebaData.scores[JOINTS.LEFT_HIP], rebaData.scores[JOINTS.RIGHT_HIP]);
+    const trunk = rebaData.scores[JOINTS.CHEST];
+
+    let key = `${neck},${legs},${trunk}`;
+    
+    const scoreTable = {
+        '1,1,1': 1,
+        '1,1,2': 2,
+        '1,1,3': 2,
+        '1,1,4': 3,
+        '1,1,5': 4,
+        '1,2,1': 2,
+        '1,2,2': 3,
+        '1,2,3': 4,
+        '1,2,4': 5,
+        '1,2,5': 6,
+        '1,3,1': 3,
+        '1,3,2': 4,
+        '1,3,3': 5,
+        '1,3,4': 6,
+        '1,3,5': 7,
+        '1,4,1': 4,
+        '1,4,2': 5,
+        '1,4,3': 6,
+        '1,4,4': 7,
+        '1,4,5': 8,
+        '2,1,1': 1,
+        '2,1,2': 3,
+        '2,1,3': 4,
+        '2,1,4': 5,
+        '2,1,5': 6,
+        '2,2,1': 2,
+        '2,2,2': 4,
+        '2,2,3': 5,
+        '2,2,4': 6,
+        '2,2,5': 7,
+        '2,3,1': 3,
+        '2,3,2': 5,
+        '2,3,3': 6,
+        '2,3,4': 7,
+        '2,3,5': 8,
+        '2,4,1': 4,
+        '2,4,2': 6,
+        '2,4,3': 7,
+        '2,4,4': 8,
+        '2,4,5': 9,
+        '3,1,1': 3,
+        '3,1,2': 4,
+        '3,1,3': 5,
+        '3,1,4': 6,
+        '3,1,5': 7,
+        '3,2,1': 3,
+        '3,2,2': 5,
+        '3,2,3': 6,
+        '3,2,4': 7,
+        '3,2,5': 8,
+        '3,3,1': 5,
+        '3,3,2': 6,
+        '3,3,3': 7,
+        '3,3,4': 8,
+        '3,3,5': 9,
+        '3,4,1': 6,
+        '3,4,2': 7,
+        '3,4,3': 8,
+        '3,4,4': 9,
+        '3,4,5': 9
+    };
+    return scoreTable[key];
+}
+
+function armAndWristScore(rebaData) {
+    const lowerArm = Math.max(rebaData.scores[JOINTS.LEFT_ELBOW], rebaData.scores[JOINTS.RIGHT_ELBOW]);
+    const wrist = Math.max(rebaData.scores[JOINTS.LEFT_WRIST], rebaData.scores[JOINTS.RIGHT_WRIST]);
+    const upperArm = Math.max(rebaData.scores[JOINTS.LEFT_SHOULDER], rebaData.scores[JOINTS.RIGHT_SHOULDER]);
+
+    let key = `${lowerArm},${wrist},${upperArm}`;
+
+    const scoreTable = {
+        '1,1,1': 1,
+        '1,1,2': 1,
+        '1,1,3': 3,
+        '1,1,4': 4,
+        '1,1,5': 6,
+        '1,1,6': 7,
+        '1,2,1': 2,
+        '1,2,2': 2,
+        '1,2,3': 4,
+        '1,2,4': 5,
+        '1,2,5': 7,
+        '1,2,6': 8,
+        '1,3,1': 2,
+        '1,3,2': 3,
+        '1,3,3': 5,
+        '1,3,4': 5,
+        '1,3,5': 8,
+        '1,3,6': 8,
+        '2,1,1': 1,
+        '2,1,2': 2,
+        '2,1,3': 4,
+        '2,1,4': 5,
+        '2,1,5': 7,
+        '2,1,6': 8,
+        '2,2,1': 2,
+        '2,2,2': 3,
+        '2,2,3': 5,
+        '2,2,4': 6,
+        '2,2,5': 8,
+        '2,2,6': 9,
+        '2,3,1': 3,
+        '2,3,2': 4,
+        '2,3,3': 5,
+        '2,3,4': 7,
+        '2,3,5': 8,
+        '2,3,6': 9,
+    }
+    return scoreTable[key];
+}
+
+function overallRebaCalculation(rebaData) {
+    const forceScore = 0; // We cannot calculate this at the moment, ranges from 0 - 3
+    let scoreA = neckLegTrunkScore(rebaData) + forceScore;
+    
+    const couplingScore = 0; // We cannot calculate this at the moment, ranges from 0 - 3
+    let scoreB = armAndWristScore(rebaData) + couplingScore;
+    
+    // Effective output range is 1 - 11, since scoreA and scoreB are 1 - 9
+    const scoreTable = [
         [1, 1, 1, 2, 3, 3, 4, 5, 6, 7, 7, 7],
         [1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 7, 8],
         [2, 3, 3, 3, 4, 5, 6, 7, 7, 8, 8, 8],
@@ -677,166 +599,96 @@ function overallRebaCalculation(skel) {
         [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12]
     ];
 
-    const finalREBA = tableC[tableA - 1][tableB - 1];
-    return finalREBA;
+    return scoreTable[scoreA - 1][scoreB - 1];
 }
 
-/* create the object that contains all the angles for a skeleton and return that object */
-function getAngles(skel) {
-/* NOTE: I made it so that the first joint listed is always moving farthest away from body */
-    let angles = {
-        headNeck: [
-            // XYZ euler angles in degrees
-            calculateXAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
-            calculateYAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
-            calculateZAngle(skel, POSE_JOINTS.HEAD, POSE_JOINTS.NECK),
-            // index of bone relative to k4abt humanposerenderer's initialization order
-            15,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        neckChest: [
-            calculateXAngle(skel, 3, 2),
-            calculateYAngle(skel, 3, 2),
-            calculateZAngle(skel, 3, 2),
-            16,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        chestNavel: [
-            calculateXAngle(skel, 2, 1),
-            calculateYAngle(skel, 2, 1),
-            calculateZAngle(skel, 2, 1),
-            17,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        navelPelvis: [
-            calculateXAngle(skel, 1, 0),
-            calculateYAngle(skel, 1, 0),
-            calculateZAngle(skel, 1, 0),
-            18,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        hipKneeLeft: [
-            calculateXAngle(skel, 19, 18),
-            calculateYAngle(skel, 19, 18),
-            calculateZAngle(skel, 19, 18),
-            21,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        hipKneeRight: [
-            calculateXAngle(skel, 23, 22),
-            calculateYAngle(skel, 23, 22),
-            calculateZAngle(skel, 23, 22),
-            25,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        shoulderElbowLeft: [
-            calculateXAngle(skel, 6, 5),
-            calculateYAngle(skel, 6, 5),
-            calculateZAngle(skel, 6, 5),
-            3,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        shoulderElbowRight: [
-            calculateXAngle(skel, 13, 12),
-            calculateYAngle(skel, 13, 12),
-            calculateZAngle(skel, 13, 12),
-            8,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        elbowWristLeft: [
-            calculateXAngle(skel, 7, 6),
-            calculateYAngle(skel, 7, 6),
-            calculateZAngle(skel, 7, 6),
-            2,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        elbowWristRight: [
-            calculateXAngle(skel, 14, 13),
-            calculateYAngle(skel, 14, 13),
-            calculateZAngle(skel, 14, 13),
-            7,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        wristHandLeft: [
-            calculateXAngle(skel, 8, 7),
-            calculateYAngle(skel, 8, 7),
-            calculateZAngle(skel, 8, 7),
-            1,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-        wristHandRight: [
-            calculateXAngle(skel, 15, 14),
-            calculateYAngle(skel, 15, 14),
-            calculateZAngle(skel, 15, 14),
-            6,
-            smallRebaScore(),
-            smallRebaColor()
-        ],
-    };
+/**
+ * @typedef {Object} Orientation
+ * @property {Vector3} forward The forward direction of the orientation
+ * @property {Vector3} up The up direction of the orientation
+ * @property {Vector3} right The right direction of the orientation
+ */
 
-    return angles;
-}
+/**
+ * @typedef {Object} RebaData
+ * @property {number} overallRebaScore The overall reba score of the pose
+ * @property {Color} overallRebaColor The overall reba color of the pose
+ * @property {Object.<string, Vector3>} joints The joints of the pose
+ * @property {Object.<string, number>} scores The scores of the pose
+ * @property {Object.<string, Color>} colors The colors of the pose
+ * @property {Object.<string, number>} boneScores The bone scores of the pose
+ * @property {Object.<string, Color>} boneColors The bone colors of the pose
+ * @property {Object.<string, Orientation>} orientations The orientations of the pose
+ */
 
-function smallRebaScore() {
-    return 0;
-}
-
-function smallRebaColor() {
-    return 0;
-}
-
-function extractSkel(humanPoseRenderer) {
-    let skel = {
+/**
+ * Generates a rebaData object from a pose
+ * @param pose {Pose} The pose to extract the rebaData from
+ * @return {RebaData} The rebaData object
+ */
+function extractRebaData(pose) {
+    let rebaData = {
+        overallRebaScore: 0,
+        overallRebaColor: AnalyticsColors.undefined,
         joints: {},
-        angles: {},
-    };
-    for (let jointId of Object.values(POSE_NET_JOINTS)) {
-        skel.joints[jointId] = humanPoseRenderer.getJointPosition(jointId);
-    }
-
-    skel.angles = getAngles(skel);
-    return skel;
-}
-
-function annotateHumanPoseRenderer(humanPoseRenderer) {
-    let skel = extractSkel(humanPoseRenderer);
-    calculateReba(skel);
-    humanPoseRenderer.setOverallRebaScore(overallRebaCalculation(skel));
-    const boneRebaData = {};
-    for (let boneName in skel.angles) {
-        boneRebaData[boneName] = {
-            score: skel.angles[boneName][4],
-            color: skel.angles[boneName][5],
-        };
-    }
-    humanPoseRenderer.setBoneRebaData(boneRebaData);
-}
-
-function colorHumanPoseRenderer(humanPoseRenderer) {
-    if (humanPoseRenderer.boneRebaData) {
-        for (let boneName in humanPoseRenderer.boneRebaData) {
-            humanPoseRenderer.setBoneColor(boneName, humanPoseRenderer.boneRebaData[boneName].color);
-            if (JOINT_CONNECTIONS[boneName]) {
-                humanPoseRenderer.setJointColor(JOINT_CONNECTIONS[boneName][1], humanPoseRenderer.boneRebaData[boneName].color);
+        scores: {},
+        colors: {},
+        boneScores: {},
+        boneColors: {},
+        orientations: {
+            head: {
+                forward: new THREE.Vector3(),
+                up: new THREE.Vector3(),
+                right: new THREE.Vector3()
+            },
+            chest: {
+                forward: new THREE.Vector3(),
+                up: new THREE.Vector3(),
+                right: new THREE.Vector3()
+            },
+            hips: {
+                forward: new THREE.Vector3(),
+                up: new THREE.Vector3(),
+                right: new THREE.Vector3()
             }
         }
-    } else {
-        console.error('Cannot color poseRenderer without boneRebaData, call annotateHumanPoseRenderer first');
+    };
+    for (let jointId of Object.values(JOINTS)) {
+        rebaData.joints[jointId] = pose.getJoint(jointId).position;
+        rebaData.scores[jointId] = 0;
+        rebaData.colors[jointId] = AnalyticsColors.undefined;
     }
+    for (let boneId of Object.keys(JOINT_CONNECTIONS)) {
+        rebaData.boneScores[boneId] = 0;
+        rebaData.boneColors[boneId] = AnalyticsColors.undefined;
+    }
+    
+    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
+    rebaData.orientations.head.up = rebaData.joints[JOINTS.HEAD].clone().sub(rebaData.joints[JOINTS.NECK]).normalize();
+    rebaData.orientations.head.right = rebaData.orientations.head.forward.clone().cross(rebaData.orientations.head.up).normalize();
+    
+    rebaData.orientations.chest.up = rebaData.joints[JOINTS.NECK].clone().sub(rebaData.joints[JOINTS.CHEST]).normalize();
+    rebaData.orientations.chest.right = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]).normalize();
+    rebaData.orientations.chest.forward = rebaData.orientations.chest.up.clone().cross(rebaData.orientations.chest.right).normalize();
+    
+    rebaData.orientations.hips.up = new THREE.Vector3(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up)
+    rebaData.orientations.hips.right = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_HIP]).normalize();
+    rebaData.orientations.hips.forward = rebaData.orientations.hips.up.clone().cross(rebaData.orientations.hips.right).normalize();
+
+    return rebaData;
+}
+
+/**
+ * Calculates the Reba score for a given pose
+ * @param pose {Pose} The pose to calculate the score for
+ * @return {RebaData} The rebaData object
+ */
+function calculateForPose(pose) {
+    const rebaData = extractRebaData(pose);
+    calculateReba(rebaData);
+    return rebaData;
 }
 
 export default {
-    annotateHumanPoseRenderer,
-    colorHumanPoseRenderer
+    calculateForPose
 };

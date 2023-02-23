@@ -1,17 +1,23 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo, SCALE} from './utils.js';
-import Reba from './rebaScore.js';
-import AccelerationAnnotator from "./AccelerationAnnotator.js";
+import {
+    JOINTS,
+    JOINT_CONNECTIONS,
+    JOINT_PUBLIC_DATA_KEYS,
+    getJointNodeInfo,
+    SCALE,
+} from './utils.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
-import {MeshPath} from "../gui/ar/meshPath.js";
+import AnalyticsColors from "./AnalyticsColors.js";
+import RebaLens from "./RebaLens.js";
+import Pose from "./Pose.js";
+import OverallRebaLens from "./OverallRebaLens.js";
+import AccelerationLens from "./AccelerationLens.js";
+import TimeLens from "./TimeLens.js";
 
 let poseRenderers = {};
 let humanPoseAnalyzer;
 
 const RENDER_CONFIDENCE_COLOR = false; // If true, the color of the joint will be based on the confidence of the pose estimation, otherwise, use normal analytics coloring methods
-const redColor = new THREE.Color(1, 0, 0);
-const yellowColor = new THREE.Color(1, 1, 0);
-const greenColor = new THREE.Color(0, 1, 0);
 
 /**
  * Renders 3D skeleton
@@ -23,67 +29,65 @@ export class HumanPoseRenderer {
     constructor(id) {
         this.id = id;
         this.container = new THREE.Group();
-        this.joints = {};
-        this.bones = {};
-        this.baseColor = new THREE.Color(0, 0.5, 1);
-        this.boneRebaData = {}; // Dictionary that maps bone names to the Reba score of that bone
-        this.overallRebaScore = 1;
-        this.jointAccelerationData = {}; // Dictionary that maps joint names to the acceleration of that joint
-        this.maxAccelerationScore = 0; // The maximum acceleration score of any joint (2=high, 1=medium, 0=low)
-        this.currentPoseTimestamp = 0;
-        this.accelerationAnnotator = new AccelerationAnnotator(this);
+        this.jointIndices = {};
+        this.boneIndices = {};
+        this.pose = null;
+        this.lens = new RebaLens();
         this.createJoints();
+        this.createBones();
     }
 
     /**
-     * Creates all THREE.Meshes representing the joints/joint balls of the
-     * pose
+     * Creates the InstancedMesh representing the joints of the pose
      */
     createJoints() {
         const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
-        const mat = new THREE.MeshLambertMaterial();
+        const mat = new THREE.MeshBasicMaterial();
         
-        this.jointsMesh = new THREE.InstancedMesh(
+        this.jointMesh = new THREE.InstancedMesh(
             geo,
             mat,
             Object.values(JOINTS).length,
         );
-        this.jointsMesh.name = 'joints';
-        this.jointsMesh.joints = this.joints;
-        this.jointsMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.jointMesh.name = 'joints';
+        this.jointMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        
+        Object.values(JOINTS).forEach((jointId, i) => {
+            this.jointIndices[jointId] = i;
+            this.jointMesh.setColorAt(i, AnalyticsColors.base);
+        });
 
-        for (const [i, jointId] of Object.values(JOINTS).entries()) {
-            this.joints[jointId] = i;
-            this.jointsMesh.setColorAt(i, this.baseColor);
-        }
-        this.container.add(this.jointsMesh);
+        this.container.add(this.jointMesh);
+    }
+    
+    createBones() {
+        const geo = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
+        const mat = new THREE.MeshBasicMaterial();
 
-        const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
-        this.bonesMesh = new THREE.InstancedMesh(
-            geoCyl,
+        this.boneMesh = new THREE.InstancedMesh(
+            geo,
             mat,
             Object.keys(JOINT_CONNECTIONS).length,
         );
-        this.bonesMesh.name = 'bones';
-        this.bonesMesh.bones = this.bones;
-        this.container.add(this.bonesMesh);
+        this.boneMesh.name = 'bones';
+        this.boneMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
-        for (const [i, boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
-            this.bones[boneName] = i;
-            this.bonesMesh.setColorAt(i, this.baseColor);
-        }
-
-        this.jointsMesh.material = new THREE.MeshBasicMaterial();
-        this.bonesMesh.material = new THREE.MeshBasicMaterial();
+        Object.keys(JOINT_CONNECTIONS).forEach((boneName, i) => {
+            this.boneIndices[boneName] = i;
+            this.boneMesh.setColorAt(i, AnalyticsColors.base);
+        });
+        
+        this.container.add(this.boneMesh);
     }
 
     /**
-     * @param {string} jointId - from utils.JOINTS
-     * @param {THREE.Vector3} position
+     * Sets the position of a joint
+     * @param {string} jointId - ID of joint to set position of
+     * @param {Vector3} position - Position to set joint to
      */
     setJointPosition(jointId, position) {
-        const index = this.joints[jointId];
-        this.jointsMesh.setMatrixAt(
+        const index = this.jointIndices[jointId];
+        this.jointMesh.setMatrixAt(
             index,
             new THREE.Matrix4().makeTranslation(
                 position.x,
@@ -91,166 +95,123 @@ export class HumanPoseRenderer {
                 position.z,
             ),
         );
-        this.jointPositionData[jointId] = position;
     }
 
     /**
-     * @return {THREE.Vector3}
+     * Updates joint positions based on this.pose
      */
-    getJointPosition(jointId) {
-        const index = this.joints[jointId];
-        const mat = new THREE.Matrix4();
-        this.jointsMesh.getMatrixAt(index, mat);
-        return new THREE.Vector3().setFromMatrixPosition(mat);
+    updateJointPositions() {
+        this.pose.forEachJoint(joint => {
+            this.setJointPosition(joint.name, joint.position);
+        });
+        this.jointMesh.instanceMatrix.needsUpdate = true;
     }
 
     /**
-     * Returns an object with position data for all joints
-     * @return {{jointId: THREE.Vector3}}
+     * Updates bone (stick between joints) position based on this.joints' positions.
+     * @param bone {Object} - bone from this.pose
      */
-    get jointPositionData() {
-        let data = {};
-        for (let jointId of Object.values(JOINTS)) {
-            data[jointId] = this.getJointPosition(jointId);
-        }
-        return data;
+    updateBonePosition(bone) {
+        const boneIndex = this.boneIndices[bone.name];
+        const jointAPos = bone.joint0.position;
+        const jointBPos = bone.joint1.position;
+
+        const pos = jointAPos.clone().add(jointBPos).divideScalar(2);
+
+        const scale = jointBPos.clone().sub(jointAPos).length();
+        const scaleVector = new THREE.Vector3(1, scale / SCALE, 1);
+        
+        const direction = jointBPos.clone().sub(jointAPos).normalize();
+        const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+
+        const mat = new THREE.Matrix4().compose(pos, rot, scaleVector);
+        this.boneMesh.setMatrixAt(boneIndex, mat);
     }
 
     /**
-     * @param {Array<String>} jointIds
-     * @return {{x: number, y: number, z: number}} Average position of all
-     *         joints listed in jointIds
-     */
-    averageJointPositions(jointIds) {
-        let avg = {x: 0, y: 0, z: 0};
-        for (let jointId of jointIds) {
-            let jointPos = this.getJointPosition(jointId);
-            avg.x += jointPos.x;
-            avg.y += jointPos.y;
-            avg.z += jointPos.z;
-        }
-        avg.x /= jointIds.length;
-        avg.y /= jointIds.length;
-        avg.z /= jointIds.length;
-        return avg;
-    }
-
-    /**
-     * Updates bone (stick between joints) positions based on this.joints'
-     * positions.
+     * Updates bone (stick between joints) positions based on this.joints' positions.
      */
     updateBonePositions() {
+        this.pose.forEachBone(bone => {
+            this.updateBonePosition(bone);
+        });
+        this.boneMesh.instanceMatrix.needsUpdate = true;
+    }
 
-        for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
-            const boneIndex = this.bones[boneName];
-            let jointA = this.getJointPosition(JOINT_CONNECTIONS[boneName][0]);
-            let jointB = this.getJointPosition(JOINT_CONNECTIONS[boneName][1]);
-
-            let pos = new THREE.Vector3(
-                (jointA.x + jointB.x) / 2,
-                (jointA.y + jointB.y) / 2,
-                (jointA.z + jointB.z) / 2,
-            );
-
-            let diff = new THREE.Vector3(jointB.x - jointA.x, jointB.y - jointA.y,
-                jointB.z - jointA.z);
-            let scale = new THREE.Vector3(1, diff.length() / SCALE, 1);
-            diff.normalize();
-
-            let rot = new THREE.Quaternion();
-            rot.setFromUnitVectors(new THREE.Vector3(0, 1, 0),
-                                   diff);
-
-            // bone.lookAt(this.container.localToWorld(localTarget));
-            // bone.rotateX(Math.PI / 2);
-            let mat = new THREE.Matrix4();
-            mat.compose(pos, rot, scale);
-
-            this.bonesMesh.setMatrixAt(boneIndex, mat);
-        }
-
-        Reba.annotateHumanPoseRenderer(this);
-        this.accelerationAnnotator.annotate();
+    /**
+     * Sets the colors of the pose based on the current lens
+     */
+    updateColors() {
         if (!RENDER_CONFIDENCE_COLOR) {
-            Reba.colorHumanPoseRenderer(this);
+            this.lens.applyLensToPose(this.pose);
+            this.pose.forEachJoint(joint => {
+                this.setJointColor(joint.name, this.lens.getColorForJoint(joint));
+            });
+            this.pose.forEachBone(bone => {
+                this.setBoneColor(bone.name, this.lens.getColorForBone(bone));
+            })
+            this.jointMesh.instanceColor.needsUpdate = true;
+            this.boneMesh.instanceColor.needsUpdate = true;
         }
-
-        this.jointsMesh.instanceMatrix.needsUpdate = true;
-        this.jointsMesh.instanceColor.needsUpdate = true;
-        this.bonesMesh.instanceMatrix.needsUpdate = true;
-        this.bonesMesh.instanceColor.needsUpdate = true;
     }
 
-    setBoneRebaData(data) {
-        this.boneRebaData = data;
-    }
+    /**
+     * Updates the pose displayed by the pose renderer
+     * @param pose {Pose} The pose to display
+     */
+    setPose(pose) {
+        this.pose = pose;
 
-    setOverallRebaScore(score) {
-        this.overallRebaScore = score;
-    }
-
-    setJointAccelerationData(data) {
-        this.jointAccelerationData = data;
-    }
-    
-    setMaxAccelerationScore(score) {
-        this.maxAccelerationScore = score;
-    }
-    
-    setColorInMesh(dict, meshDict, name, color) {
-        if (typeof dict[name] === 'undefined') {
-            return;
-        }
-        
-        const index = dict[name];
-        if (color === 0) {
-            meshDict.setColorAt(index, greenColor);
-        } else if (color === 1) {
-            meshDict.setColorAt(index, yellowColor);
-        } else if (color === 2) {
-            meshDict.setColorAt(index, redColor);
-        }
+        this.updateJointPositions();
+        this.updateBonePositions();
+        this.updateColors();
     }
 
     /**
      * Annotates bone using material based on boneColor
      * @param {string} boneName
-     * @param {number} boneColor
+     * @param {Color} boneColor
      */
     setBoneColor(boneName, boneColor) {
-        this.setColorInMesh(this.bones, this.bonesMesh, boneName, boneColor);
+        if (typeof this.boneIndices[boneName] === 'undefined') {
+            return;
+        }
+        const index = this.boneIndices[boneName];
+        this.boneMesh.setColorAt(index, boneColor);
     }
 
     /**
      * Annotates joint using material based on jointColor
      * @param {string} jointName
-     * @param {number} jointColor
+     * @param {Color} jointColor
      */
     setJointColor(jointName, jointColor) {
-        this.setColorInMesh(this.joints, this.jointsMesh, jointName, jointColor);
+        if (typeof this.jointIndices[jointName] === 'undefined') {
+            return;
+        }
+        const index = this.jointIndices[jointName];
+        this.jointMesh.setColorAt(index, jointColor);
     }
     
     /**
-     * @param {string} jointName name of joint
-     * @param {number} confidence in range [0,1]
+     * Sets joint color using pose confidence
+     * @param {string} jointName - name of joint to set color of
+     * @param {number} confidence - confidence value to set color to
      */
     setJointConfidenceColor(jointName, confidence) {
-        if (typeof this.joints[jointName] === 'undefined') {
+        if (typeof this.jointIndices[jointName] === 'undefined') {
             return;
         }
-        const jointIndex = this.joints[jointName];
-
-        let baseColorHSL = {};
-        this.baseColor.getHSL(baseColorHSL);
-
+        let baseColorHSL = AnalyticsColors.base.getHSL({});
         baseColorHSL.l = baseColorHSL.l * confidence;
-
-        let color = new THREE.Color();
-        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
-
-        this.jointsMesh.setColorAt(jointIndex, color);
+        let color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
+        this.setJointColor(jointName, color);
     }
 
+    /**
+     * Helper function to add the pose to the scene
+     * @param {Object3D} container - container to add pose to
+     */
     addToScene(container) {
         if (container) {
             container.add(this.container);
@@ -260,47 +221,71 @@ export class HumanPoseRenderer {
     }
 
     /**
-     * Removes from container and disposes resources
+     * Helper function to remove the pose from the scene
      */
-    removeFromScene(container) {
-        if (container) {
-            container.remove(this.container);
-        } else {
-            realityEditor.gui.threejsScene.removeFromScene(this.container);
+    removeFromScene() {
+        if (this.container.parent) {
+            this.container.parent.remove(this.container);
         }
-        this.bonesMesh.dispose();
-        this.jointsMesh.dispose();
+    }
+
+    /**
+     * Helper function to dispose of the pose's resources
+     */
+    dispose() {
+        this.jointMesh.geometry.dispose();
+        this.jointMesh.material.dispose();
+        this.jointMesh.dispose();
+        this.boneMesh.geometry.dispose();
+        this.boneMesh.material.dispose();
+        this.boneMesh.dispose();
+        this.removeFromScene();
     }
 }
 
-const AnimationMode = {
-    ONE: 'one',
-    ALL: 'all',
+/**
+ * @typedef {string} CloneRenderMode
+ */
+
+/**
+ * Enum for the different clone render modes for the HumanPoseAnalyzer
+ * ALL: render all history clones
+ * ONE: render a single history clone
+ * @type {{ONE: CloneRenderMode, ALL: CloneRenderMode}}
+ */
+const CloneRenderMode = {
+    ONE: 'ONE',
+    ALL: 'ALL',
 };
 
 export class HumanPoseAnalyzer {
     /**
-     * @param {THREE.Object3D} historyMeshContainer - THREE container for
-     *                         history line meshes
-     * @param {THREE.Object3D} historyCloneContainer - THREE container for
-     *                         history clone meshes
+     * Creates a new HumanPoseAnalyzer
+     * @param {Object3D} parent - container to add the analyzer's containers to
      */
-    constructor(historyMeshContainer, historyCloneContainer) {
-        this.historyMeshContainer = historyMeshContainer; // THREE container for history line meshes (SpaghettiMeshPath)
-        this.historyCloneContainer = historyCloneContainer; // THREE container for history clone meshes (clones of HumanPoseRenderer's container)
-        this.recordingClones = true;
-        this.cloneMaterialIndex = 0; // Index for which analytics mode we are using on the history clones
-        this.historyMeshesAll = {}; // Dictionary of {pose renderer IDs: SpaghettiMeshPaths} present in historyMeshContainer
-        this.clonesAll = []; // Array of all clones present in historyCloneContainer, entry format: {timestamp (Number), poseObject (Object3D)}
-        this.lastDisplayedCloneIndex = 0;
-        this.jointSelectorObj = null;
-        this.accelerationMeshPath = null; // A standard MeshPath that gets colored according to the selected joint's acceleration values
+    constructor(parent) {
+        this.setupContainers(parent);
 
+        /** @type {AnalyticsLens[]} */
+        this.lenses = [
+            new RebaLens(),
+            new OverallRebaLens(),
+            new AccelerationLens(),
+            new TimeLens(),
+        ]
+        this.activeLensIndex = 0;
+        this.historyLineLens = this.lenses[1]; // Might be worth making a custom lens for this
+        
+        this.historyLinesAll = {}; // Dictionary of {poseRenderer IDs: SpaghettiMeshPaths} present in historyLineContainer
+        this.clonesAll = []; // Array of all clones present in cloneContainer, entry format: Object3Ds with a pose child
+        this.lastDisplayedCloneIndex = 0;
+
+        // Used for animating clone movements
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
-        this.animationMode = AnimationMode.ONE;
-        this.lastAnimationUpdate = Date.now();
+        this.cloneRenderMode = CloneRenderMode.ONE;
+        this.lastAnimationTime = Date.now();
 
         this.update = this.update.bind(this);
 
@@ -326,23 +311,36 @@ export class HumanPoseAnalyzer {
         });
 
         window.requestAnimationFrame(this.update);
-        
-        document.addEventListener('pointerdown', (e) => {
-            if (realityEditor.device.isMouseEventCameraControl(e)) return;
-            e.stopPropagation();
-            this.onPointerDown(e);
-        });
-        document.addEventListener('pointermove', (e) => {
-            if (realityEditor.device.isMouseEventCameraControl(e)) return;
-            e.stopPropagation();
-            this.onPointerMove(e);
-        });
     }
 
+    /**
+     * Sets up the containers for the history lines and clones
+     * @param parent {Object3D} - object to add the analyzer's containers to
+     */
+    setupContainers(parent) {
+        this.historyLineContainer = new THREE.Group();
+        this.historyLineContainer.visible = false;
+        if (parent) {
+            parent.add(this.historyLineContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.historyLineContainer);
+        }
+        this.cloneContainer = new THREE.Group();
+        this.cloneContainer.visible = true;
+        if (parent) {
+            parent.add(this.cloneContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.cloneContainer);
+        }
+    }
+
+    /**
+     * Runs every frame to update the animation state
+     */
     update() {
         let minTimestamp = -1;
         let maxTimestamp = -1;
-        for (let spaghettiMesh of Object.values(this.historyMeshesAll)) {
+        for (let spaghettiMesh of Object.values(this.historyLinesAll)) {
             let comparer = spaghettiMesh.comparer;
             let points = spaghettiMesh.currentPoints;
             if (comparer.firstPointIndex === null) {
@@ -360,306 +358,205 @@ export class HumanPoseAnalyzer {
             maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
         }
 
-        this.setAnimation(minTimestamp, maxTimestamp);
+        this.setAnimationRange(minTimestamp, maxTimestamp);
         this.updateAnimation();
 
         window.requestAnimationFrame(this.update);
     }
-    
-    onPointerDown(e) {
-        if (this.jointSelectorObj) {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.jointSelectorObj.jointInstancedMesh]);
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                const instanceId = intersect.instanceId;
-                this.jointSelectorObj.onSelect(instanceId);
-            }
-        }
-    }
-    
-    onPointerMove(e) {
-        if (this.jointSelectorObj) {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.jointSelectorObj.jointInstancedMesh]);
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-                const instanceId = intersect.instanceId;
-                this.jointSelectorObj.onHover(instanceId);
-            } else {
-                this.jointSelectorObj.onHover();
-            }
-        }
-    }
-    
-    createJointSelectorObj() {
-        const humanPoseAnalyzer = this;
-        this.jointSelectorObj = {
-            jointInstancedMesh: null,
-            selectedJoint: null,
-            hoveredJoint: null,
-            setMesh(jointInstancedMesh) {
-                this.jointInstancedMesh = jointInstancedMesh;
-            },
-            jointNameFromIndex(index) {
-                return Object.keys(this.jointInstancedMesh.joints).find(key => this.jointInstancedMesh.joints[key] === index);
-            },
-            updateColors() {
-                for (let i = 0; i < this.jointInstancedMesh.count; i++) {
-                    if (this.hoveredJoint === i && this.selectedJoint === i) {
-                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFF8000));
-                    } else if (this.hoveredJoint === i) {
-                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFF00));
-                    } else if (this.selectedJoint === i) {
-                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0x00FF00));
-                    } else {
-                        this.jointInstancedMesh.setColorAt(i, new THREE.Color(0xFFFFFF));
-                    }
-                }
-                this.jointInstancedMesh.instanceColor.needsUpdate = true;
-            },
-            onSelect(instanceId) {
-                if (humanPoseAnalyzer.accelerationMeshPath) {
-                    // Dispose acceleration mesh
-                    humanPoseAnalyzer.accelerationMeshPath.parent.remove(humanPoseAnalyzer.accelerationMeshPath);
-                    humanPoseAnalyzer.accelerationMeshPath.resetPoints();
-                    humanPoseAnalyzer.accelerationMeshPath = null;
-                }
-                if (this.selectedJoint === instanceId) { // Allow for toggle off
-                    this.selectedJoint = null;
-                } else {
-                    this.selectedJoint = instanceId;
-                }
-                this.updateColors();
 
-                if (this.selectedJoint) {
-                    const jointName = this.jointNameFromIndex(this.selectedJoint);
-                    const jointPositionData = humanPoseAnalyzer.clonesAll.map(clone => clone.poseObject.userData.jointPositionData[jointName]);
-                    const jointAccelerationData = humanPoseAnalyzer.clonesAll.map(clone => clone.poseObject.userData.jointAccelerationData[jointName]);
-                    jointPositionData.forEach((position, index) => position.color = AccelerationAnnotator.threeColorFromAcceleration(jointAccelerationData[index]));
-                    humanPoseAnalyzer.accelerationMeshPath = new MeshPath(jointPositionData, {
-                        usePerVertexColors: true,
-                    });
-                    humanPoseAnalyzer.historyMeshContainer.add(humanPoseAnalyzer.accelerationMeshPath);
-                }
-            },
-            onHover(instanceId) {
-                if (instanceId) {
-                    this.hoveredJoint = instanceId;
-                } else {
-                    this.hoveredJoint = null;
-                }
-                this.updateColors();
-            }
-        };
-    }
-
+    /**
+     * Responds to new poses being added to the HumanPoseRenderer
+     * @param poseRenderer {HumanPoseRenderer} - the pose renderer that was updated
+     * @param timestamp {number} - the timestamp of the pose
+     */
     poseRendererUpdated(poseRenderer, timestamp) {
-        if (this.recordingClones) {
-            const obj = this.clone(poseRenderer, timestamp);
-            this.clonesAll.push({
-                timestamp,
-                poseObject: obj,
-            })
-            obj.visible = this.animationMode === AnimationMode.ALL;
-            this.historyCloneContainer.add(obj);
-        }
-        if (this.clonesAll.length > 0 && !this.jointSelectorObj) {
-            this.createJointSelectorObj();
-            const mostRecentPoseObject = this.clonesAll[this.clonesAll.length - 1].poseObject;
-            this.jointSelectorObj.setMesh(mostRecentPoseObject.jointInstancedMesh); // TODO: should find better UX for this, not clear that you need to click on the skeleton to select a joint
-            // const dummySkeleton = createDummySkeleton();
-            // this.jointSelectorObj.setMesh(dummySkeleton.jointInstancedMesh); // Dummy skeleton approach for testing, but not ideal
-        }
+        const clone = this.clone(poseRenderer);
+        clone.visible = this.cloneRenderMode === CloneRenderMode.ALL;
+        this.clonesAll.push(clone)
+        this.cloneContainer.add(clone);
+        this.lenses.forEach(lens => {
+            const modifiedResult = lens.applyLensToHistoryMinimally(this.clonesAll.map(clone => clone.pose));
+            modifiedResult.forEach((wasModified, index) => {
+                if (wasModified) {
+                    this.clonesAll[index].updateColors(lens);
+                }
+            });
+        });
 
-        let newPoint = poseRenderer.getJointPosition(JOINTS.NOSE).clone();
-        newPoint.y += 400;
-
-        if (!this.historyMeshesAll.hasOwnProperty(poseRenderer.id)) {
-            this.createHistoryLine(poseRenderer);
+        let currentPoint = poseRenderer.pose.getJoint(JOINTS.NOSE).position.clone(); // TODO: should this be JOINTS.HEAD?
+        currentPoint.y += 400;
+        
+        if (!this.historyLinesAll.hasOwnProperty(poseRenderer.id)) {
+            this.createHistoryLine(poseRenderer.id);
         }
-
-        let historyMesh = this.historyMeshesAll[poseRenderer.id];
+        let historyLine = this.historyLinesAll[poseRenderer.id];
 
         // Split spaghetti line if we jumped by a large amount
-        if (historyMesh.currentPoints.length > 0) {
-            let lastPoint = historyMesh.currentPoints[historyMesh.currentPoints.length - 1];
-            let lastVec = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
-            if (lastVec.distanceToSquared(newPoint) > 800 * 800) {
-                this.historyMeshesAll[poseRenderer.id + '-until-' + timestamp] = historyMesh;
-                this.createHistoryLine(poseRenderer);
-                historyMesh = this.historyMeshesAll[poseRenderer.id];
+        if (historyLine.currentPoints.length > 0) {
+            const lastPoint = historyLine.currentPoints[historyLine.currentPoints.length - 1];
+            const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
+            if (lastPointVector.distanceToSquared(currentPoint) > 800 * 800) {
+                this.historyLinesAll[poseRenderer.id + '-until-' + timestamp] = historyLine;
+                historyLine = this.createHistoryLine(poseRenderer.id);
             }
         }
 
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
-        let colorRGB = new THREE.Color();
-        colorRGB.setHSL(hueReba / 360, 0.8, 0.3);
+        // TODO: set colors to lens colors for pose
+        const color = this.historyLineLens.getColorForPose(poseRenderer.pose); // TODO: swap color with lens swap
 
-        let nextHistoryPoint = {
-            x: newPoint.x,
-            y: newPoint.y,
-            z: newPoint.z,
-            color: [colorRGB.r * 255, colorRGB.g * 255, colorRGB.b * 255],
-            overallRebaScore: poseRenderer.overallRebaScore,
+        /** @type {SpaghettiMeshPathPoint} */
+        let historyPoint = {
+            x: currentPoint.x,
+            y: currentPoint.y,
+            z: currentPoint.z,
+            color,
             timestamp,
         };
 
-        historyMesh.currentPoints.push(nextHistoryPoint);
-        this.historyMeshesAll[poseRenderer.id].setPoints(historyMesh.currentPoints);
+        historyLine.currentPoints.push(historyPoint);
+        this.historyLinesAll[poseRenderer.id].setPoints(historyLine.currentPoints);
     }
 
-    getOverallRebaScoreHue(overallRebaScore) {
-        let hueReba = 140 - (overallRebaScore - 1) * 240 / 11;
-        if (isNaN(hueReba)) {
-            hueReba = 120;
-        }
-        hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
-        return hueReba;
-    }
-    
-    getAccelerationScoreColor(accelerationScore) {
-        if (accelerationScore === 2) {
-            return redColor;
-        }
-        if (accelerationScore === 1) {
-            return yellowColor;
-        }
-        return greenColor;
-    }
+    /**
+     * @typedef {Object3D} Clone
+     * @property {Pose} pose - the pose of the clone
+     */
 
-    clone(poseRenderer, timestamp) {
-        let colorRainbow = new THREE.Color();
-        colorRainbow.setHSL(((timestamp / 5) % 360) / 360, 1, 0.5);
-
-        let hueReba = this.getOverallRebaScoreHue(poseRenderer.overallRebaScore);
-        // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
-        let colorReba = new THREE.Color(); // overall color based on REBA score
-        colorReba.setHSL(hueReba / 360, 1, 0.5);
-        
-        let colorAcceleration = this.getAccelerationScoreColor(poseRenderer.maxAccelerationScore); // overall color based on acceleration
-        colorAcceleration.setHSL(colorAcceleration.getHSL({}).h, 1, 0.5);
-
-        let newContainer = poseRenderer.container.clone();
-        newContainer.userData.jointPositionData = poseRenderer.jointPositionData;
-        newContainer.userData.jointAccelerationData = poseRenderer.jointAccelerationData;
-        let matBase = new THREE.MeshBasicMaterial({ // Base material for clone is slightly transparent
+    /**
+     * Creates a new clone from the poseRenderer's current pose
+     * @param poseRenderer {HumanPoseRenderer} - the poseRenderer to clone
+     * @return {Clone} - the created clone
+     */
+    clone(poseRenderer) {
+        const clone = poseRenderer.container.clone();
+        clone.pose = poseRenderer.pose;
+        const material = new THREE.MeshBasicMaterial({ // Base material for clone is slightly transparent
             transparent: true,
             opacity: 0.5,
         });
         
-        const jointsObj = newContainer.getObjectByName('joints');
-        const bonesObj = newContainer.getObjectByName('bones');
+        const jointsObj = clone.getObjectByName('joints');
+        const bonesObj = clone.getObjectByName('bones');
 
-        newContainer.children.forEach((obj) => {
+        clone.children.forEach((obj) => {
             if (obj.instanceColor) {
-                // Make the InstancedMesh materials transparent
-                let attrBase = obj.instanceColor;
-                let attrReba = obj.instanceColor.clone();
-                let attrRainbow = obj.instanceColor.clone();
-                let attrAcceleration = obj.instanceColor.clone();
-                for (let i = 0; i < attrReba.count; i++) {
-                    colorReba.toArray(attrReba.array, i * 3);
-                    colorRainbow.toArray(attrRainbow.array, i * 3);
-                    if (obj === bonesObj) {
-                        // Color bone according to the acceleration of the last joint in the connection
-                        const jointName = Object.values(JOINT_CONNECTIONS)[i][1];
-                        const jointAccelerationScore = poseRenderer.jointAccelerationData[jointName].color;
-                        const color = this.getAccelerationScoreColor(jointAccelerationScore);
-                        color.toArray(attrAcceleration.array, i * 3);
-                    }
-                }
-                if (obj === jointsObj) {
-                    Object.keys(poseRenderer.jointAccelerationData).forEach((jointName, jointIndex) => {
-                        const jointAccelerationScore = poseRenderer.jointAccelerationData[jointName].color;
-                        const color = this.getAccelerationScoreColor(jointAccelerationScore);
-                        color.toArray(attrAcceleration.array, jointIndex * 3);
-                    });
-                }
-                obj.__cloneColors = [
-                    attrReba,
-                    attrBase,
-                    attrRainbow,
-                    attrAcceleration
-                ];
-                obj.instanceColor = obj.__cloneColors[this.cloneMaterialIndex % obj.__cloneColors.length];
-                obj.material = matBase;
+                obj.__lensColors = this.lenses.map(lens => {
+                    return obj.instanceColor.clone();
+                });
+                obj.material = material;
+                obj.instanceColor = obj.__lensColors[this.activeLensIndex];
                 obj.instanceColor.needsUpdate = true;
-                if (obj === jointsObj) {
-                    newContainer.jointInstancedMesh = obj;
-                    newContainer.jointInstancedMesh.joints = poseRenderer.jointsMesh.joints;
-                }
-                if (obj === bonesObj) {
-                    newContainer.boneInstancedMesh = obj;
-                    newContainer.boneInstancedMesh.bones = poseRenderer.bonesMesh.bones;
-                }
             }
         });
-        return newContainer;
+        
+        const humanPoseAnalyzer = this;
+
+        /**
+         * Updates the corresponding color BufferAttribute of the clone based on the lens
+         * @param lens {AnalyticsLens} - the lens to use to update the colors
+         */
+        clone.updateColors = (lens) => {
+            clone.children.forEach((obj) => {
+                if (obj.__lensColors) {
+                    const lensColorBufferAttribute = obj.__lensColors[humanPoseAnalyzer.lenses.indexOf(lens)];
+                    if (obj === jointsObj) {
+                        clone.pose.forEachJoint((joint, i) => {
+                            const color = lens.getColorForJoint(joint)
+                            color.toArray(lensColorBufferAttribute.array, i * 3);
+                        });
+                    } else if (obj === bonesObj) {
+                        clone.pose.forEachBone((bone, i) => {
+                            const color = lens.getColorForBone(bone)
+                            color.toArray(lensColorBufferAttribute.array, i * 3);
+                        });
+                    }
+                    lensColorBufferAttribute.needsUpdate = true;
+                }
+            });
+        }
+        
+        clone.setLens = (lens) => {
+            clone.children.forEach((obj) => {
+                if (obj.__lensColors) {
+                    obj.instanceColor = obj.__lensColors[humanPoseAnalyzer.lenses.indexOf(lens)];
+                    obj.instanceColor.needsUpdate = true;
+                }
+            });
+        }
+        
+        clone.setLens(this.lenses[this.activeLensIndex]);
+        return clone;
     }
 
     /**
-     * Creates a history line (spaghetti line) placing it within
-     * the historyMeshContainer
-     * @param {HumanPoseRenderer} poseRenderer
+     * Creates a history line.
+     * Side effect: adds the history line to historyLineContainer and historyLinesAll
+     * @param {string} id - key for historyLinesAll
      */
-    createHistoryLine(poseRenderer) {
-        const historyMesh = new SpaghettiMeshPath([], {
+    createHistoryLine(id) {
+        const historyLine = new SpaghettiMeshPath([], {
             widthMm: 30,
             heightMm: 30,
             usePerVertexColors: true,
             wallBrightness: 0.6,
         });
-        this.historyMeshContainer.add(historyMesh);
+        this.historyLineContainer.add(historyLine);
 
-        this.historyMeshesAll[poseRenderer.id] = historyMesh;
-    }
-
-    resetHistoryLines() {
-        for (let key of Object.keys(this.historyMeshesAll)) {
-            let historyMesh = this.historyMeshesAll[key];
-            historyMesh.resetPoints();
-            this.historyMeshContainer.remove(historyMesh);
-        }
-        if (this.accelerationMeshPath) {
-            this.accelerationMeshPath.parent.remove(this);
-            this.accelerationMeshPath.resetPoints();
-            this.accelerationMeshPath = null;
-        }
-        this.historyMeshesAll = {};
-    }
-
-    resetHistoryClones() {
-        // Loop over copy of children to remove all
-        for (let child of this.historyCloneContainer.children.concat()) {
-            if (child.geometry) {
-                child.geometry.dispose();
-            }
-            if (child.material) {
-                child.material.dispose();
-            }
-            if (child.dispose) {
-                child.dispose();
-            }
-            this.historyCloneContainer.remove(child);
-        }
-        this.clonesAll = [];
+        this.historyLinesAll[id] = historyLine;
+        
+        return historyLine;
     }
 
     /**
+     * Clears all history lines
+     */
+    resetHistoryLines() {
+        Object.keys(this.historyLinesAll).forEach(key => {
+            const historyLine = this.historyLinesAll[key];
+            historyLine.resetPoints();
+            historyLine.parent.remove(historyLine);
+        });
+        this.historyLinesAll = {};
+    }
+
+    /**
+     * Clears all history clones
+     */
+    resetHistoryClones() {
+        this.clonesAll.forEach(clone => {
+            if (clone.geometry) {
+                clone.geometry.dispose();
+            }
+            if (clone.material) {
+                clone.material.dispose();
+            }
+            if (clone.dispose) {
+                clone.dispose();
+            }
+            clone.parent.remove(clone);
+        });
+        this.clonesAll = [];
+        this.lastDisplayedCloneIndex = 0;
+    }
+
+    /**
+     * Sets the interval which controls what history is highlighted
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
      */
     setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
-        for (let mesh of Object.values(this.historyMeshesAll)) {
+        for (let mesh of Object.values(this.historyLinesAll)) {
             mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
         }
     }
 
     /**
+     * Sets the interval which controls what history is shown
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
      */
     setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
-        for (let mesh of Object.values(this.historyMeshesAll)) {
+        for (let mesh of Object.values(this.historyLinesAll)) {
             if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
                 mesh.visible = false;
                 continue;
@@ -670,13 +567,14 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {number} timestamp - time to hover in ms
+     * Sets the hover time for the relevant history line
+     * @param {number} timestamp - timestamp in ms
      */
     setHoverTime(timestamp) {
         if (timestamp < 0) {
             return;
         }
-        for (let mesh of Object.values(this.historyMeshesAll)) {
+        for (let mesh of Object.values(this.historyLinesAll)) {
             if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
                 continue;
             }
@@ -685,15 +583,16 @@ export class HumanPoseAnalyzer {
     }
 
     /**
+     * Gets all history points in the time interval from all history lines
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
-     * @return {Array<SpaghettiMeshPathPoint>}
+     * @return {Vector3[]} - all points in the time interval
      */
     getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
         // TODO: perf can be improved through creating historyPointsAll and
         // binary search for indices
         let allPoints = [];
-        for (const mesh of Object.values(this.historyMeshesAll)) {
+        for (const mesh of Object.values(this.historyLinesAll)) {
             for (const point of mesh.currentPoints) {
                 if (point.timestamp < firstTimestamp) {
                     continue;
@@ -712,141 +611,156 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {boolean} visible
+     * Sets the visibility of the history lines
+     * @param {boolean} visible - whether to show the history lines
      */
     setHistoryLinesVisible(visible) {
-        this.historyMeshContainer.visible = visible;
+        this.historyLineContainer.visible = visible;
     }
 
     /**
-     * @param {AnimationMode} animationMode
+     * Sets the render mode for clones
+     * @param {CloneRenderMode} cloneRenderMode - the render mode
      */
-    setAnimationMode(animationMode) {
-        this.animationMode = animationMode;
-        if (this.animationMode === AnimationMode.ALL) {
+    setCloneRenderMode(cloneRenderMode) {
+        if (cloneRenderMode === CloneRenderMode.ALL) {
             for (let clone of this.clonesAll) {
-                clone.poseObject.visible = true;
+                clone.visible = true;
+            }
+        } else if (cloneRenderMode === CloneRenderMode.ONE) {
+            for (let clone of this.clonesAll) {
+                clone.visible = false;
             }
         } else {
-            for (let clone of this.clonesAll) {
-                clone.poseObject.visible = false;
-            }
+            console.error(`Unknown clone render mode: ${cloneRenderMode}`);
+            return;
         }
+        this.cloneRenderMode = cloneRenderMode;
+
     }
 
-    advanceCloneMaterial() {
-        this.cloneMaterialIndex += 1;
+    /**
+     * Advances the active lens to the next one
+     * @return {AnalyticsLens} - the new active lens
+     */
+    advanceLens() {
+        // TODO: set HumanPoseRenderer's lens as well
+        this.activeLensIndex = (this.activeLensIndex + 1) % this.lenses.length;
+        this.applyCurrentLensToHistory();
+        this.clonesAll.forEach(clone => {
+            clone.setLens(this.lenses[this.activeLensIndex]);
+        });
+        return this.lenses[this.activeLensIndex];
+    }
 
-        this.historyCloneContainer.traverse((obj) => {
-            if (obj.__cloneColors) {
-                let index = this.cloneMaterialIndex % obj.__cloneColors.length;
-                obj.instanceColor = obj.__cloneColors[index];
-                obj.instanceColor.needsUpdate = true;
+    /**
+     * Applies the current lens to the history, updating the clones' colors if needed
+     */
+    applyCurrentLensToHistory() {
+        const posesChanged = this.lenses[this.activeLensIndex].applyLensToHistory(this.clonesAll.map(clone => clone.pose));
+        posesChanged.forEach((wasChanged, index) => {
+            if (wasChanged) { // Only update colors if the pose data was modified
+                this.clonesAll[index].updateColors(this.lenses[this.activeLensIndex]);
             }
         });
     }
 
-    setAnimation(start, end) {
+    /**
+     * Sets the animation range, updating the animation position if necessary
+     * @param start {number} - start time of animation in ms
+     * @param end {number} - end time of animation in ms
+     */
+    setAnimationRange(start, end) {
         this.animationStart = start;
         this.animationEnd = end;
+        if (this.animationPosition < start || this.animationPosition > end) {
+            this.animationPosition = start;
+        }
     }
 
+    /**
+     * Plays the current frame of the animation
+     */
     updateAnimation() {
-        let dt = Date.now() - this.lastAnimationUpdate;
-        this.lastAnimationUpdate += dt;
+        const now = Date.now();
+        const dt = now - this.lastAnimationTime;
+        this.lastAnimationTime = now;
         if (this.animationStart < 0 || this.animationEnd < 0) {
-            this.hideLastDisplayedClone(-1);
+            this.clearAnimation();
             return;
         }
         this.animationPosition += dt;
-        let offset = this.animationPosition - this.animationStart;
-        let duration = this.animationEnd - this.animationStart;
-        let offsetClamped = offset % duration;
-        this.animationPosition = this.animationStart + offsetClamped;
-        this.displayNearestClone(this.animationPosition);
+        let progress = this.animationPosition - this.animationStart;
+        let animationDuration = this.animationEnd - this.animationStart;
+        let progressClamped = progress % animationDuration;
+        this.animationPosition = this.animationStart + progressClamped;
+        this.displayCloneByTimestamp(this.animationPosition);
     }
 
+    /**
+     * Resets the animation data and stops playback
+     */
+    clearAnimation() {
+        this.animationStart = -1;
+        this.animationEnd = -1;
+        this.animationPosition = -1;
+        this.hideLastDisplayedClone(-1);
+    }
+
+    /**
+     * Hides the previous clone to be displayed
+     * @param timestamp {number} - ????
+     */
     hideLastDisplayedClone(timestamp) {
         if (this.lastDisplayedCloneIndex >= 0) {
-            let lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
+            const lastClone = this.clonesAll[this.lastDisplayedCloneIndex];
             if (lastClone) {
-                lastClone.poseObject.visible = false;
+                lastClone.visible = false;
             }
-            if (timestamp >= 0 && lastClone.timestamp > timestamp) {
+            if (timestamp >= 0 && lastClone.pose.timestamp > timestamp) {
                 this.lastDisplayedCloneIndex = 0;
             }
         }
     }
 
-    displayNearestClone(timestamp) {
+    /**
+     * Displays the clone with the closest timestamp to the given timestamp
+     * @param timestamp {number} - the timestamp to display
+     */
+    displayCloneByTimestamp(timestamp) {
+        if (this.cloneRenderMode === CloneRenderMode.ALL) { // Don't do anything if we're rendering all clones
+            return;
+        }
         this.hideLastDisplayedClone(timestamp);
 
         if (this.clonesAll.length < 2) {
             return;
         }
         let bestClone = null;
-        for (let i = this.lastDisplayedCloneIndex; i < this.clonesAll.length; i++) {
+        for (let i = this.lastDisplayedCloneIndex; i < this.clonesAll.length; i++) { // TODO: improve this with binary search
             let clone = this.clonesAll[i];
             let cloneNext = this.clonesAll[i + 1];
-            if (clone.timestamp > timestamp) {
+            if (clone.pose.timestamp > timestamp) {
                 break;
             }
-            if (!cloneNext || cloneNext.timestamp > timestamp) {
+            if (!cloneNext || cloneNext.pose.timestamp > timestamp) {
                 bestClone = clone;
                 this.lastDisplayedCloneIndex = i;
                 break;
             }
         }
         if (bestClone) {
-            bestClone.poseObject.visible = true;
+            bestClone.visible = true;
         }
     }
 }
 
-function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
-
-    if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
-
-
-    if (!humanPoseAnalyzer) {
-        const historyMeshContainer = new THREE.Group();
-        historyMeshContainer.visible = false;
-        if (container) {
-            container.add(historyMeshContainer);
-        } else {
-            realityEditor.gui.threejsScene.addToScene(historyMeshContainer);
-        }
-
-        const historyCloneContainer = new THREE.Group();
-        historyCloneContainer.visible = true;
-        if (container) {
-            container.add(historyCloneContainer);
-        } else {
-            realityEditor.gui.threejsScene.addToScene(historyCloneContainer);
-        }
-
-        humanPoseAnalyzer = new HumanPoseAnalyzer(historyMeshContainer, historyCloneContainer);
-    }
-
-    for (let id in poseRenderers) {
-        poseRenderers[id].updated = false;
-    }
-    for (let poseObject of poseObjects) {
-        if (historical) {
-            renderHistoricalPose(poseObject, timestamp, container);
-        } else {
-            renderPose(poseObject, timestamp, container);
-        }
-    }
-    for (let id of Object.keys(poseRenderers)) {
-        if (!poseRenderers[id].updated) {
-            poseRenderers[id].removeFromScene(container);
-            delete poseRenderers[id];
-        }
-    }
-}
-
-function setMatrixFromArray(matrix, array) {
+/**
+ * Helper function to set a matrix from an array
+ * @param matrix {THREE.Matrix4} - the matrix to set
+ * @param array {number[]} - the array to set the matrix from
+ */
+function setMatrixFromArray(matrix, array) { // TODO: currently in use here and in threejsScene, move into utilities file
     matrix.set( array[0], array[4], array[8], array[12],
         array[1], array[5], array[9], array[13],
         array[2], array[6], array[10], array[14],
@@ -854,35 +768,71 @@ function setMatrixFromArray(matrix, array) {
     );
 }
 
-function renderPose(poseObject, timestamp, container) {
-    updatePoseRenderer(poseObject, timestamp, container, false);
-}
+/**
+ * @typedef {Object} HumanPoseObject
+ * @property {string} objectId - the id of the object that the poseObject belongs to // TODO: check this
+ * @property {string} uuid - the uuid of the poseObject // TODO: investigate need for UUID and ID
+ * @property {string} id - the id of the poseObject // TODO: check types
+ * @property {number[]} matrix - the matrix of the poseObject
+ * @property {Object} frames - the frames of the poseObject
+ */
 
-function renderHistoricalPose(poseObject, timestamp, container) {
-    if (!poseObject.uuid) {
-        poseObject.uuid = poseObject.objectId;
-        poseObject.id = poseObject.objectId;
+/**
+ * Processes the poseObject given and renders them into the corresponding poseRenderers
+ * @param poseObjects {HumanPoseObject[]} - the poseObjects to render
+ * @param timestamp {number} - the timestamp of the poseObjects
+ * @param historical {boolean} - whether the poseObjects are historical (being played back) or not (live)
+ * @param container {Object3D} - the container to place the HumanPoseRenderers into
+ */
+function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
+    if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+
+    if (!humanPoseAnalyzer) {
+        humanPoseAnalyzer = new HumanPoseAnalyzer(container);
     }
 
-    updatePoseRenderer(poseObject, timestamp, container, true);
+    for (let id in poseRenderers) {
+        poseRenderers[id].updated = false;
+    }
+    for (let poseObject of poseObjects) {
+        if (historical) {
+            if (!poseObject.uuid) { // TODO: why is this here but not in non-historical case?
+                poseObject.uuid = poseObject.objectId;
+                poseObject.id = poseObject.objectId;
+            }
+            updatePoseRenderer(poseObject, timestamp, true, container);
+        } else {
+            updatePoseRenderer(poseObject, timestamp, false, container);
+        }
+    }
+    for (let id of Object.keys(poseRenderers)) {
+        if (!poseRenderers[id].updated) {
+            poseRenderers[id].dispose();
+            delete poseRenderers[id];
+        }
+    }
 }
 
-function updatePoseRenderer(poseObject, timestamp, container, historical) {
+/**
+ * Updates the corresponding poseRenderer with the poseObject given
+ * @param poseObject {HumanPoseObject} - the poseObject to render
+ * @param timestamp {number} - the timestamp of when the poseObject was recorded
+ * @param historical {boolean} - whether the poseObject is historical (being played back) or not (live)
+ * @param container {Object3D} - the container to place the HumanPoseRenderer into
+ */
+function updatePoseRenderer(poseObject, timestamp, historical, container) {
     if (!poseRenderers[poseObject.uuid]) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderer(poseObject.uuid);
         poseRenderers[poseObject.uuid].addToScene(container);
     }
     let poseRenderer = poseRenderers[poseObject.uuid];
     poseRenderer.updated = true;
-    poseRenderer.currentPoseTimestamp = timestamp;
 
     if (historical) {
-        updateJointsHistorical(poseRenderer, poseObject);
+        updateJointsAndBonesHistorical(poseRenderer, poseObject, timestamp);
     } else {
-        updateJoints(poseRenderer, poseObject);
+        updateJointsAndBones(poseRenderer, poseObject, timestamp);
     }
-
-    poseRenderer.updateBonePositions();
 
     humanPoseAnalyzer.poseRendererUpdated(poseRenderer, timestamp);
     if (realityEditor.analytics) {
@@ -892,6 +842,10 @@ function updatePoseRenderer(poseObject, timestamp, container, historical) {
     }
 }
 
+/**
+ * Helper function to get the matrix of the ground plane relative to the world
+ * @return {Matrix4} - the matrix of the ground plane relative to the world
+ */
 function getGroundPlaneRelativeMatrix() {
     let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
     let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
@@ -900,15 +854,23 @@ function getGroundPlaneRelativeMatrix() {
     return groundPlaneRelativeMatrix;
 }
 
-function updateJointsHistorical(poseRenderer, poseObject) {
+/**
+ * Updates the pose renderer with the pre-recorded pose data
+ * @param poseRenderer {HumanPoseRenderer} - the pose renderer to update
+ * @param poseObject {HumanPoseObject} - the pose object to get the data from
+ * @param timestamp {number} - when the pose was recorded
+ */
+function updateJointsAndBonesHistorical(poseRenderer, poseObject, timestamp) { // TODO: analyze differences between this and updateJointsAndBones
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
+    const jointPositions = {};
+    
     if (poseObject.matrix && poseObject.matrix.length > 0) {
         let objectRootMatrix = new THREE.Matrix4();
         setMatrixFromArray(objectRootMatrix, poseObject.matrix);
         groundPlaneRelativeMatrix.multiply(objectRootMatrix);
     }
-
+    
     for (let jointId of Object.values(JOINTS)) {
         let frame = poseObject.frames[poseObject.uuid + jointId];
         if (!frame.ar.matrix) {
@@ -923,13 +885,24 @@ function updateJointsHistorical(poseRenderer, poseObject) {
         let jointPosition = new THREE.Vector3();
         jointPosition.setFromMatrixPosition(jointMatrixThree);
 
-        poseRenderer.setJointPosition(jointId, jointPosition);
+        jointPositions[jointId] = jointPosition;
     }
+    
+    const pose = new Pose(jointPositions, timestamp);
+    poseRenderer.setPose(pose);
 }
 
-function updateJoints(poseRenderer, poseObject) {
+/**
+ * Updates the pose renderer with the current pose data
+ * @param poseRenderer {HumanPoseRenderer} - the pose renderer to update
+ * @param poseObject {HumanPoseObject} - the pose object to get the data from
+ * @param timestamp {number} - when the pose was recorded
+ */
+function updateJointsAndBones(poseRenderer, poseObject, timestamp) { // TODO: analyze differences between this and updateJointsAndBonesHistorical
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
+    const jointPositions = {};
+    
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
@@ -942,7 +915,7 @@ function updateJoints(poseRenderer, poseObject) {
         let jointPosition = new THREE.Vector3();
         jointPosition.setFromMatrixPosition(jointMatrixThree);
 
-        poseRenderer.setJointPosition(jointId, jointPosition);
+        jointPositions[jointId] = jointPosition;
 
         if (RENDER_CONFIDENCE_COLOR) {
             let keys = getJointNodeInfo(poseObject, i);
@@ -957,17 +930,27 @@ function updateJoints(poseRenderer, poseObject) {
             poseRenderer.setJointConfidenceColor(jointId, confidence);
         }
     }
+
+    const pose = new Pose(jointPositions, timestamp);
+    poseRenderer.setPose(pose);
 }
 
+/**
+ * Resets the HumanPoseAnalyzer's history lines
+ */
 function resetHistoryLines() {
     humanPoseAnalyzer.resetHistoryLines();
 }
 
+/**
+ * Resets the HumanPoseAnalyzer's history clones
+ */
 function resetHistoryClones() {
     humanPoseAnalyzer.resetHistoryClones();
 }
 
 /**
+ * Sets the time interval to highlight on the HumanPoseAnalyzer
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
  */
@@ -976,16 +959,18 @@ function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
 }
 
 /**
+ * Gets the points in the history lines that are within the given time interval
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
- * @return {Array<SpaghettiMeshPathPoint>}
+ * @return {SpaghettiMeshPathPoint[]} - the points in the history lines that are within the given time interval
  */
 function getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
     return humanPoseAnalyzer.getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp);
 }
 
 /**
- * @param {boolean} visible
+ * Sets the visibility of the history lines
+ * @param {boolean} visible - whether to show the history lines
  */
 function setHistoryLinesVisible(visible) {
     if (!humanPoseAnalyzer) {
@@ -995,35 +980,52 @@ function setHistoryLinesVisible(visible) {
 }
 
 /**
- * @param {boolean} enabled
+ * Sets the clone rendering mode
+ * @param {boolean} enabled - whether to render all clones or just one
  */
 function setRecordingClonesEnabled(enabled) {
     if (enabled) {
-        humanPoseAnalyzer.setAnimationMode(AnimationMode.ALL);
+        humanPoseAnalyzer.setCloneRenderMode(CloneRenderMode.ALL);
     } else {
-        humanPoseAnalyzer.setAnimationMode(AnimationMode.ONE);
+        humanPoseAnalyzer.setCloneRenderMode(CloneRenderMode.ONE);
     }
 }
 
-function advanceCloneMaterial() {
-    humanPoseAnalyzer.advanceCloneMaterial();
+/**
+ * Advances the human pose analyzer's analytics lens
+ */
+function advanceLens() {
+    humanPoseAnalyzer.advanceLens();
 }
 
 /**
- * @param {number} time - ms
+ * Advances the human pose analyzer's clone material
+ * @deprecated
+ * @see advanceLens
+ */
+function advanceCloneMaterial() {
+    console.warn('advanceCloneMaterial is deprecated, use advanceLens instead');
+    advanceLens();
+}
+
+/**
+ * Sets the hover time for the HumanPoseAnalyzer
+ * @param {number} time - the hover time in ms
  */
 function setHoverTime(time) {
     humanPoseAnalyzer.setHoverTime(time);
 }
 
 /**
- * @param {number} startTime - ms
- * @param {number} endTime - ms
+ * Sets the time interval to display on the HumanPoseAnalyzer
+ * @param {number} startTime - start of time interval in ms
+ * @param {number} endTime - end of time interval in ms
  */
 function setDisplayTimeInterval(startTime, endTime) {
     humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
 }
 
+// TODO: Remove deprecated API use
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
@@ -1033,6 +1035,7 @@ export {
     setDisplayTimeInterval,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
+    advanceLens,
     advanceCloneMaterial,
     getHistoryPointsInTimeInterval,
 };
