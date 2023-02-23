@@ -36,6 +36,7 @@ export class HumanPoseAnalyzer {
         this.clonesAll = [];
         this.lastDisplayedCloneIndex = 0;
 
+        this.prevAnimationState = null;
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
@@ -225,7 +226,9 @@ export class HumanPoseAnalyzer {
      */
     setHoverTime(timestamp) {
         if (timestamp < 0) {
-            this.resetAnimationMode();
+            if (this.animationMode === AnimationMode.cursor) {
+                this.restoreAnimationState();
+            }
             return;
         }
         for (let mesh of Object.values(this.historyMeshesAll)) {
@@ -236,6 +239,9 @@ export class HumanPoseAnalyzer {
             if (this.animationMode !== AnimationMode.cursor) {
                 this.setAnimationMode(AnimationMode.cursor);
             }
+            this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = -1;
+            this.displayNearestClone(timestamp);
         }
     }
 
@@ -280,6 +286,9 @@ export class HumanPoseAnalyzer {
         if (this.animationMode === animationMode) {
             return;
         }
+        if (animationMode === AnimationMode.cursor) {
+            this.saveAnimationState();
+        }
         this.animationMode = animationMode;
         if (this.clonesAll.length === 0) {
             return;
@@ -301,6 +310,28 @@ export class HumanPoseAnalyzer {
                 clone.poseObject.setVisible(false);
             }
         }
+    }
+
+    saveAnimationState() {
+        this.prevAnimationState = {
+            animationMode: this.animationMode,
+            animationStart: this.animationStart,
+            animationEnd: this.animationEnd,
+        };
+    }
+
+    /**
+     * Reset to previous animation state after temporary cursor mode
+     */
+    restoreAnimationState() {
+        if (!this.prevAnimationState) {
+            return;
+        }
+        this.setAnimationMode(this.prevAnimationState.animationMode);
+        this.setAnimation(
+            this.prevAnimationState.animationStart,
+            this.prevAnimationState.animationEnd);
+        this.prevAnimationState = null;
     }
 
     advanceCloneMaterial() {

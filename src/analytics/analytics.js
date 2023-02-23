@@ -60,7 +60,7 @@ export class Analytics {
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
-        if (time > 0 && !fromSpaghetti) {
+        if (!fromSpaghetti) {
             setHoverTime(time);
         }
     }
