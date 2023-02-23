@@ -591,6 +591,7 @@ export class Timeline {
      */
     setDisplayRegion(displayRegion) {
         this.displayRegion = displayRegion;
+        this.poses = [];
         if (!this.displayRegion) {
             this.resetBounds();
             return;
