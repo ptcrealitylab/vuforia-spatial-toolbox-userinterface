@@ -114,18 +114,8 @@ export class RegionCard {
     }
 
     pin() {
-        let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
-        const frameKey = addedTool.uuid;
-        const publicData = {
-            startTime: this.startTime,
-            endTime: this.endTime,
-            summary: this.element.outerHTML,
-        };
-        const write = () => {
-            realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
-        };
-        setTimeout(write, 1000);
-        setTimeout(write, 2000);
+        // add region card to public data of currently active envelope
+        // realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
 
         this.state = RegionCardState.Pinned;
         const rect = this.element.getBoundingClientRect();
@@ -149,6 +139,21 @@ export class RegionCard {
 
             this.switchContainer(pinnedRegionCardsContainer);
         }, 750);
+    }
+
+    save() {
+        let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
+        const frameKey = addedTool.uuid;
+        const publicData = {
+            startTime: this.startTime,
+            endTime: this.endTime,
+            summary: this.element.outerHTML,
+        };
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
+        };
+        setTimeout(write, 1000);
+        setTimeout(write, 2000);
     }
 
     unpin() {
