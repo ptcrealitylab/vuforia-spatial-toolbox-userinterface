@@ -123,13 +123,14 @@ export class Timeline {
 
         if (this.dragMode === DragMode.SELECT) {
             const dragSpeedBase = 0.5;
-            if (this.mouseX < this.width * 0.2) {
-                let velX = this.width * 0.25 - this.mouseX;
+            const dragStart = 0.15;
+            if (this.mouseX < this.width * dragStart) {
+                let velX = this.width * (dragStart + 0.05) - this.mouseX;
                 let velTime = velX / this.pixelsPerMs * dragSpeedBase;
                 this.timeMin -= velTime * dt / 1000;
                 this.limitTimeMin();
-            } else if (this.mouseX > this.width * 0.8) {
-                let velX = this.mouseX - this.width * 0.75;
+            } else if (this.mouseX > this.width * (1 - dragStart)) {
+                let velX = this.mouseX - this.width * (1 - dragStart - 0.05);
                 let velTime = velX / this.pixelsPerMs * dragSpeedBase;
                 this.timeMin -= velTime * dt / 1000;
                 this.limitTimeMin();
