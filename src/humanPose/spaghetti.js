@@ -378,7 +378,7 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        this.comparer.selectionState = SelectionState.FIRST;
+        this.comparer.selectionState = SelectionState.TIMELINE;
         this.comparer.setFirstPoint(index, true);
         this.updateMeshWithComparer();
     }
