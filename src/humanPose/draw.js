@@ -77,6 +77,19 @@ export class HumanPoseRenderer {
     }
 
     /**
+     * @param {number} opacity 
+     */
+    setTransparency(opacity) {
+
+        let mat = new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: opacity,
+        });
+        this.spheresMesh.material = mat;
+        this.bonesMesh.material = mat;
+    }  
+
+    /**
      * @param {string} jointId - from utils.JOINTS
      * @param {THREE.Vector3} position
      */
@@ -162,8 +175,10 @@ export class HumanPoseRenderer {
 
         this.spheresMesh.instanceMatrix.needsUpdate = true;
         this.spheresMesh.instanceColor.needsUpdate = true;
+        this.spheresMesh.material.needsUpdate = true;
         this.bonesMesh.instanceMatrix.needsUpdate = true;
         this.bonesMesh.instanceColor.needsUpdate = true;
+        this.bonesMesh.material.needsUpdate = true; 
     }
 
 
@@ -753,6 +768,14 @@ function updateJoints(poseRenderer, poseObject) {
             }
             poseRenderer.setJointConfidenceColor(jointId, confidence);
         }
+    }
+
+    if (poseObject.parent) {
+        // human pose object is associated with another one which is 'primary'. Therefore, we push this one visually in background.
+        poseRenderer.setTransparency(0.5);
+    }
+    else {
+        poseRenderer.setTransparency(1.0);
     }
 }
 
