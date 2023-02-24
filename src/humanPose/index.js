@@ -155,6 +155,8 @@ import * as utils from './utils.js'
         } catch (e) {
             console.warn('Unable to load history', e);
         }
+
+        draw.finishHistoryPlayback();
     }
 
     async function replayHistory(hist) {
