@@ -185,9 +185,7 @@ export class HumanPoseAnalyzer {
         for (let clone of this.clonesAll) {
             clone.poseObject.remove();
         }
-        for (let hpr of this.historicalPoseRenderers) {
-            hpr.markMatrixNeedsUpdate();
-        }
+        this.markHistoricalMatrixNeedsUpdate();
         this.clonesAll = [];
     }
 
@@ -294,9 +292,7 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        for (let hpr of this.historicalPoseRenderers) {
-            hpr.markMatrixNeedsUpdate();
-        }
+        this.markHistoricalMatrixNeedsUpdate();
 
         if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clonesAll) {
@@ -340,8 +336,24 @@ export class HumanPoseAnalyzer {
         this.clonesAll.forEach(clone => {
             clone.poseObject.setColorOption(this.cloneMaterialIndex);
         });
+        this.markHistoricalColorNeedsUpdate();
+    }
+
+    markHistoricalColorNeedsUpdate() {
         for (let hpr of this.historicalPoseRenderers) {
             hpr.markColorNeedsUpdate();
+        }
+    }
+
+    markHistoricalMatrixNeedsUpdate() {
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markMatrixNeedsUpdate();
+        }
+    }
+
+    markHistoricalNeedsUpdate() {
+        for (let hpr of this.historicalPoseRenderers) {
+            hpr.markNeedsUpdate();
         }
     }
 
@@ -519,9 +531,7 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
         humanPoseAnalyzer.poseRendererLive.markNeedsUpdate();
 
         if (prevHistorical) {
-            for (let hpr of humanPoseAnalyzer.historicalPoseRenderers) {
-                hpr.markNeedsUpdate();
-            }
+            humanPoseAnalyzer.markHistoricalNeedsUpdate();
         }
     }
 
@@ -718,7 +728,7 @@ function setDisplayTimeInterval(startTime, endTime) {
  * history logs
  */
 function finishHistoryPlayback() {
-    humanPoseAnalyzer.markColorNeedsUpdate();
+    humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
 }
 
 export {
