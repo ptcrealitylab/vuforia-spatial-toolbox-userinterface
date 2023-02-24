@@ -127,33 +127,39 @@ import * as utils from './utils.js'
         draw.resetHistoryLines();
         draw.resetHistoryClones();
 
+        const worldObject = realityEditor.worldObjects.getBestWorldObject();
+        const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
+        let logs = [];
         try {
-            const worldObject = realityEditor.worldObjects.getBestWorldObject();
-            const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
             const resLogs = await fetch(historyLogsUrl);
-            const logs = await resLogs.json();
-            for (const logName of logs) {
-                let matches = logName.match(/objects_(\d+)-(\d+)/);
-                if (!matches) {
-                    continue;
-                }
-                let logStartTime = parseInt(matches[1]);
-                let logEndTime = parseInt(matches[2]);
-                if (isNaN(logStartTime) || isNaN(logEndTime)) {
-                    continue;
-                }
-                if (logEndTime < regionStartTime) {
-                    continue;
-                }
-                if (logStartTime > regionEndTime && regionEndTime >= 0) {
-                    continue;
-                }
+            logs = await resLogs.json();
+        } catch (e) {
+            console.error('Unable to load list of history logs', e);
+        }
+
+        for (const logName of logs) {
+            let matches = logName.match(/objects_(\d+)-(\d+)/);
+            if (!matches) {
+                continue;
+            }
+            let logStartTime = parseInt(matches[1]);
+            let logEndTime = parseInt(matches[2]);
+            if (isNaN(logStartTime) || isNaN(logEndTime)) {
+                continue;
+            }
+            if (logEndTime < regionStartTime) {
+                continue;
+            }
+            if (logStartTime > regionEndTime && regionEndTime >= 0) {
+                continue;
+            }
+            try {
                 const resLog = await fetch(`${historyLogsUrl}/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
+            } catch (e) {
+                console.error('Unable to load history log', `${historyLogsUrl}/${logName}`, e);
             }
-        } catch (e) {
-            console.warn('Unable to load history', e);
         }
 
         draw.finishHistoryPlayback();
