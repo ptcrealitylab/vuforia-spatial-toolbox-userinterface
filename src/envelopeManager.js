@@ -590,9 +590,11 @@ createNameSpace("realityEditor.envelopeManager");
     }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
-    
+
     exports.getKnownEnvelopes = function() {
         return knownEnvelopes;
     }
+
+    exports.getOpenEnvelopes = getOpenEnvelopes;
 
 }(realityEditor.envelopeManager));
