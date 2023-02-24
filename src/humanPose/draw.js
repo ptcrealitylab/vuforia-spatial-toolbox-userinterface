@@ -713,6 +713,14 @@ function setDisplayTimeInterval(startTime, endTime) {
     humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
 }
 
+/**
+ * Finalize historical renderer matrices after loading them from
+ * history logs
+ */
+function finishHistoryPlayback() {
+    humanPoseAnalyzer.markColorNeedsUpdate();
+}
+
 export {
     renderHumanPoseObjects,
     resetHistoryLines,
@@ -725,4 +733,5 @@ export {
     setRecordingClonesEnabled,
     advanceCloneMaterial,
     getHistoryPointsInTimeInterval,
+    finishHistoryPlayback,
 };
