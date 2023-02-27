@@ -360,7 +360,7 @@ export class SpaghettiMeshPath extends MeshPath {
     /**
      * @param {number} timestamp - time that is hovered in ms
      */
-    setHoverTime(timestamp) {
+    setCursorTime(timestamp) {
         let index = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
             let point = this.currentPoints[i];
