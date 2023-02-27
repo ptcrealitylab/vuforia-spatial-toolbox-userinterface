@@ -15,11 +15,15 @@ class AccelerationLens extends AnalyticsLens {
      */
     constructor() {
         super("Acceleration");
+        
+        // For live rendering
+        this.previousPose = null;
+        this.previousPreviousPose = null;
     }
 
     /**
      * Checks if the given joint has had its velocity calculated.
-     * @param joint {Joint} The joint to check.
+     * @param joint {Object} The joint to check.
      * @return {boolean} True if the joint has had its velocity calculated, false otherwise.
      */
     velocityAppliedToJoint(joint) {
@@ -28,7 +32,7 @@ class AccelerationLens extends AnalyticsLens {
 
     /**
      * Checks if the given joint has had its acceleration calculated.
-     * @param joint {Joint} The joint to check.
+     * @param joint {Object} The joint to check.
      * @return {boolean} True if the joint has had its acceleration calculated, false otherwise.
      */
     accelerationAppliedToJoint(joint) {
@@ -36,8 +40,38 @@ class AccelerationLens extends AnalyticsLens {
     }
     
     applyLensToPose(pose) {
-        console.error("Cannot apply acceleration lens to an isolated pose, need history");
-        return false;
+        // Since this function is only used for live data, we can manually keep track of previous poses and do the calculations after two poses have been recorded
+        if (!this.previousPose) {
+            pose.forEachJoint(joint => {
+                joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose
+                joint.speed = 0;
+                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
+                joint.accelerationMagnitude = 0;
+            });
+            this.previousPose = pose;
+        } else if (!this.previousPreviousPose) {
+            pose.forEachJoint(joint => {
+                const previousJoint = this.previousPose.getJoint(joint.name);
+                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - this.previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
+                joint.speed = joint.velocity.length();
+                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
+                joint.accelerationMagnitude = 0;
+            });
+            this.previousPreviousPose = this.previousPose;
+            this.previousPose = pose;
+        } else {
+            pose.forEachJoint(joint => {
+                const previousJoint = this.previousPose.getJoint(joint.name);
+                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - this.previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
+                joint.speed = joint.velocity.length();
+                const previousPreviousJoint = this.previousPreviousPose.getJoint(joint.name);
+                joint.acceleration = joint.velocity.clone().sub(previousPreviousJoint.velocity).divideScalar(((pose.timestamp - this.previousPreviousPose.timestamp) / 2) / 1000); // Divide by 2 to get the average time between the two poses, and divide by 1000 to convert from ms to s
+                joint.accelerationMagnitude = joint.acceleration.length();
+            });
+            this.previousPreviousPose = this.previousPose;
+            this.previousPose = pose;
+        }
+        return true;
     }
 
     applyLensToHistoryMinimally(poseHistory) {
@@ -132,7 +166,7 @@ class AccelerationLens extends AnalyticsLens {
     }
     
     getColorForPose(pose) {
-        if (typeof pose.joints[pose.getJoint(JOINTS.HEAD)].accelerationMagnitude !== "number") {
+        if (typeof pose.getJoint(JOINTS.HEAD).accelerationMagnitude !== "number") {
             return AnalyticsColors.undefined;
         }
         let maxAcceleration = 0;

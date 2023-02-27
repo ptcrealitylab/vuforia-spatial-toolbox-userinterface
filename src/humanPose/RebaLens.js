@@ -60,10 +60,10 @@ class RebaLens extends AnalyticsLens {
     }
     
     getColorForPose(pose) {
-        if (typeof pose.joints[pose.getJoint(JOINTS.HEAD)].rebaColorOverall === "undefined") {
+        if (typeof pose.getJoint(JOINTS.HEAD).rebaColorOverall === "undefined") {
             return AnalyticsColors.undefined;
         }
-        return pose.joints[pose.getJoint(JOINTS.HEAD)].rebaColorOverall;
+        return pose.getJoint(JOINTS.HEAD).rebaColorOverall;
     }
 }
 

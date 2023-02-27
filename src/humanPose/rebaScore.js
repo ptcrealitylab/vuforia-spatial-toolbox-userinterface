@@ -433,13 +433,14 @@ function wristReba(rebaData) {
     rebaData.colors[JOINTS.RIGHT_WRIST] = rightWristColor;
 }
 
+const startColor = AnalyticsColors.fade(AnalyticsColors.green);
+const endColor = AnalyticsColors.fade(AnalyticsColors.red);
+
 function getOverallRebaColor(rebaScore) {
     const lowCutoff = 4; // TODO: experiment with cutoffs
     const highCutoff = 8;
     console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`);
     const rebaFrac = (clamp(rebaScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
-    const startColor = AnalyticsColors.green.faded;
-    const endColor = AnalyticsColors.red.faded;
     return startColor.clone().lerpHSL(endColor, rebaFrac);
 }
 
