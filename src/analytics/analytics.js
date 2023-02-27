@@ -5,8 +5,8 @@ import {
 } from './regionCard.js';
 import {
     getHistoryPointsInTimeInterval,
-    setHighlightTimeInterval,
-    setDisplayTimeInterval,
+    setHighlightRegion,
+    setDisplayRegion,
     setHoverTime,
     setHistoryLinesVisible,
 } from '../humanPose/draw.js';
@@ -98,8 +98,8 @@ export class Analytics {
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         this.timeline.setHighlightRegion(highlightRegion);
-        if (highlightRegion && !fromSpaghetti) {
-            setHighlightTimeInterval(highlightRegion.startTime, highlightRegion.endTime);
+        if (highlightRegion) {
+            setHighlightRegion(highlightRegion, fromSpaghetti);
         }
     }
 
@@ -114,7 +114,7 @@ export class Analytics {
         await loadHistory(region);
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
-            setDisplayTimeInterval(region.startTime, region.endTime);
+            setDisplayRegion(region);
         }
     }
 

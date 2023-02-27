@@ -190,32 +190,40 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {TimeRegion} highlightRegion
      * @param {number} secondTimestamp - end of time interval in ms
+     * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
-    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    setHighlightRegion(highlightRegion, fromSpaghetti) {
+        if (!highlightRegion) {
+            return;
+        }
         if (this.animationMode !== AnimationMode.region &&
             this.animationMode !== AnimationMode.regionAll) {
             this.setAnimationMode(AnimationMode.region);
         }
-        this.setAnimation(firstTimestamp, secondTimestamp);
-        for (let mesh of Object.values(this.historyMeshesAll)) {
-            mesh.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+        this.setAnimation(highlightRegion.startTime, highlightRegion.endTime);
+        if (!fromSpaghetti) {
+            for (let mesh of Object.values(this.historyMeshesAll)) {
+                mesh.setHighlightRegion(highlightRegion);
+            }
         }
     }
 
     /**
-     * @param {number} firstTimestamp - start of time interval in ms
-     * @param {number} secondTimestamp - end of time interval in ms
+     * @param {TimeRegion} displayRegion
      */
-    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
         for (let mesh of Object.values(this.historyMeshesAll)) {
             if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
                 mesh.visible = false;
                 continue;
             }
             mesh.visible = true;
-            mesh.setDisplayTimeInterval(firstTimestamp, secondTimestamp);
+            mesh.setDisplayRegion(displayRegion);
         }
     }
 
@@ -660,11 +668,11 @@ function resetHistoryClones() {
 }
 
 /**
- * @param {number} firstTimestamp - start of time interval in ms
- * @param {number} secondTimestamp - end of time interval in ms
+ * @param {{startTime: number, endTime: number}} highlightRegion
+ * @param {boolean} fromSpaghetti - whether a history mesh originated this call
  */
-function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
-    humanPoseAnalyzer.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+function setHighlightRegion(highlightRegion, fromSpaghetti) {
+    humanPoseAnalyzer.setHighlightRegion(highlightRegion, fromSpaghetti);
 }
 
 /**
@@ -716,11 +724,10 @@ function setHoverTime(time) {
 }
 
 /**
- * @param {number} startTime - ms
- * @param {number} endTime - ms
+ * @param {{startTime: number, endTime: number}} displayRegion
  */
-function setDisplayTimeInterval(startTime, endTime) {
-    humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
+function setDisplayRegion(displayRegion) {
+    humanPoseAnalyzer.setDisplayRegion(displayRegion);
 }
 
 /**
@@ -737,8 +744,8 @@ export {
     resetHistoryClones,
     setAnimationMode,
     setHoverTime,
-    setHighlightTimeInterval,
-    setDisplayTimeInterval,
+    setHighlightRegion,
+    setDisplayRegion,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceCloneMaterial,
