@@ -384,10 +384,12 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     /**
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - end of interval in ms
+     * @param {{startTime: number, endTime: number}} highlightRegion
      */
-    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    setHighlightRegion(highlightRegion) {
+        const firstTimestamp = highlightRegion.startTime;
+        const secondTimestamp = highlightRegion.endTime;
+
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
@@ -415,13 +417,15 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     /**
-     * Limits currentPoints to a subset of allPoints based on firstTimestamp
-     * and secondTimestamp
+     * Limits currentPoints to a subset of allPoints based on the display
+     * region
      *
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - end of interval in ms
+     * @param {{startTime: number, endTime: number}} displayRegion
      */
-    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.allPoints.length; i++) {
