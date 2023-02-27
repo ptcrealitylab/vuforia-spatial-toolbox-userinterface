@@ -7,7 +7,7 @@ import {
     getHistoryPointsInTimeInterval,
     setHighlightRegion,
     setDisplayRegion,
-    setHoverTime,
+    setCursorTime,
     setHistoryLinesVisible,
 } from '../humanPose/draw.js';
 import {
@@ -86,9 +86,7 @@ export class Analytics {
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
-        if (!fromSpaghetti) {
-            setHoverTime(time);
-        }
+        setCursorTime(time, fromSpaghetti);
     }
 
     /**

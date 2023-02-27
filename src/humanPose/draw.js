@@ -231,8 +231,10 @@ export class HumanPoseAnalyzer {
 
     /**
      * @param {number} timestamp - time to hover in ms
+     * @param {boolean} fromSpaghetti - prevents infinite recursion from
+     *                  modifying human pose spaghetti which calls this function
      */
-    setHoverTime(timestamp) {
+    setCursorTime(timestamp, fromSpaghetti) {
         if (timestamp < 0) {
             if (this.animationMode === AnimationMode.cursor) {
                 this.restoreAnimationState();
@@ -243,7 +245,9 @@ export class HumanPoseAnalyzer {
             if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
                 continue;
             }
-            mesh.setHoverTime(timestamp);
+            if (!fromSpaghetti) {
+                mesh.setCursorTime(timestamp);
+            }
             if (this.animationMode !== AnimationMode.cursor) {
                 this.setAnimationMode(AnimationMode.cursor);
             }
@@ -720,9 +724,11 @@ function advanceCloneMaterial() {
 
 /**
  * @param {number} time - ms
+ * @param {boolean} fromSpaghetti - prevents infinite recursion from
+ *                  modifying human pose spaghetti which calls this function
  */
-function setHoverTime(time) {
-    humanPoseAnalyzer.setHoverTime(time);
+function setCursorTime(time, fromSpaghetti) {
+    humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
 }
 
 /**
@@ -745,7 +751,7 @@ export {
     resetHistoryLines,
     resetHistoryClones,
     setAnimationMode,
-    setHoverTime,
+    setCursorTime,
     setHighlightRegion,
     setDisplayRegion,
     setHistoryLinesVisible,
