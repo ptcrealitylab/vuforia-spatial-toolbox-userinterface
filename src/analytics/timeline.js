@@ -12,8 +12,8 @@ const needleWidth = 3;
 const needleDragWidth = 12;
 
 const rowPad = 4;
-const rowHeight = 10;
-const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
+const rowHeight = 16;
+const boardHeight = 4 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
