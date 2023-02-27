@@ -136,7 +136,6 @@ export class SpaghettiMeshPath extends MeshPath {
 
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
-        setAnimationMode(AnimationMode.regionAll);
     }
 
     onPointerMove(e) {
@@ -256,6 +255,7 @@ export class SpaghettiMeshPath extends MeshPath {
             this.cursor.visible = false;
         } else {
             this.comparer.setFirstPoint(pointIndex, isHover);
+            setAnimationMode(AnimationMode.regionAll);
         }
         this.updateMeshWithComparer();
         this.updateAnalyticsHighlightRegion();
