@@ -44,7 +44,7 @@ export class RegionCard {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onClickPin = this.onClickPin.bind(this);
-        this.onClickEnter = this.onClickEnter.bind(this);
+        this.onClickView = this.onClickView.bind(this);
 
         this.createCard();
 
@@ -84,16 +84,16 @@ export class RegionCard {
         event.stopPropagation();
     }
 
-    onClickEnter() {
+    onClickView() {
         switch (this.state) {
         case RegionCardState.Tooltip:
             this.pin();
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                realityEditor.analytics.setDisplayRegion(null);
+                realityEditor.analytics.setHighlightRegion(null);
             } else {
-                realityEditor.analytics.setDisplayRegion({
+                realityEditor.analytics.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
                 });
@@ -178,12 +178,12 @@ export class RegionCard {
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
 
-        const enterButton = document.createElement('a');
-        enterButton.href = '#';
-        enterButton.classList.add('analytics-region-card-enter');
-        enterButton.textContent = 'Enter';
-        enterButton.addEventListener('click', this.onClickEnter);
-        this.element.appendChild(enterButton);
+        const viewButton = document.createElement('a');
+        viewButton.href = '#';
+        viewButton.classList.add('analytics-region-card-view');
+        viewButton.textContent = 'View';
+        viewButton.addEventListener('click', this.onClickView);
+        this.element.appendChild(viewButton);
     }
 
     getMotionSummaryText() {
