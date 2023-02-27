@@ -581,6 +581,7 @@ function updatePoseRenderer(poseObject, timestamp, container, historical) {
         poseRenderers[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid);
     }
     let poseRenderer = poseRenderers[poseObject.uuid];
+    poseRenderer.updated = true;
 
     if (historical) {
         updateJointsHistorical(poseRenderer, poseObject);
