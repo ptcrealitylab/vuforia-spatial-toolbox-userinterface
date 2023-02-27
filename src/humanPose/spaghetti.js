@@ -1,6 +1,10 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
 import * as utils from './utils.js'
+import {
+    setAnimationMode,
+    AnimationMode,
+} from './draw.js';
 
 // Approximate milliseconds between points (10 fps)
 const POINT_RES_MS = 100;
@@ -119,18 +123,22 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
+        // If we're clicking the spaghetti at the end of a selection (selecting
+        // second point), we want to freeze the current highlight interval
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
         if (intersects.length > 0 &&
             this.comparer.selectionState === SelectionState.SECOND) {
             this.comparer.selectionState = SelectionState.TIMELINE;
             this.frozen = true;
+            setAnimationMode(AnimationMode.region);
             return;
         }
 
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
+        setAnimationMode(AnimationMode.regionAll);
     }
-    
+
     onPointerMove(e) {
         if (this.frozen) {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
@@ -153,6 +161,7 @@ export class SpaghettiMeshPath extends MeshPath {
                 this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
                 this.comparer.setEndPoint(this.prevState.secondPointIndex);
                 this.comparer.selectionState = SelectionState.TIMELINE;
+                setAnimationMode(AnimationMode.region);
                 this.updateMeshWithComparer();
             }
 
@@ -287,12 +296,14 @@ export class SpaghettiMeshPath extends MeshPath {
             const firstTimestamp = points[comparer.firstPointIndex].timestamp;
             if (comparer.secondPointIndex !== null) {
                 const secondTimestamp = points[comparer.secondPointIndex].timestamp;
+                realityEditor.analytics.setCursorTime(-1, true);
                 realityEditor.analytics.setHighlightRegion({
                     startTime: Math.min(firstTimestamp, secondTimestamp),
                     endTime: Math.max(firstTimestamp, secondTimestamp),
                 }, true);
             } else {
                 realityEditor.analytics.setCursorTime(firstTimestamp, true);
+                setAnimationMode(AnimationMode.cursor);
             }
         }
     }
