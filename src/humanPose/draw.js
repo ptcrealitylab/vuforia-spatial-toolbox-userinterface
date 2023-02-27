@@ -30,7 +30,7 @@ export class HumanPoseAnalyzer {
     constructor(historyMeshContainer, historyCloneContainer) {
         this.historyMeshContainer = historyMeshContainer;
         this.historyCloneContainer = historyCloneContainer;
-        this.recordingClones = true;
+        this.recordingClones = realityEditor.device.environment.isDesktop();
         this.cloneMaterialIndex = 0;
         this.historyMeshesAll = {};
         this.clonesAll = [];
@@ -47,7 +47,9 @@ export class HumanPoseAnalyzer {
         this.poseRendererLive.addToScene(historyCloneContainer);
 
         this.historicalPoseRenderers = [];
-        this.addHistoricalPoseRenderer();
+        if (realityEditor.device.environment.isDesktop()) {
+            this.addHistoricalPoseRenderer();
+        }
 
         this.update = this.update.bind(this);
 
