@@ -1905,3 +1905,7 @@ Logic Interface CSS
 .analytics-region-card-pin:visited, .analytics-region-card-enter:visited {
     color: white;
 }
+
+.exclusiveFullScreen {
+    pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
+}

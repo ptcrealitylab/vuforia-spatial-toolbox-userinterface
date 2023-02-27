@@ -588,11 +588,58 @@ createNameSpace("realityEditor.envelopeManager");
         var frame = realityEditor.getFrame(objectKey, frameKey);
         return frame.src;
     }
+    
+    function showBlurredBackground(focusedFrameId) {
+        // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (!blur) {
+            blur = document.createElement('div');
+            blur.id = 'blurredEnvelopeBackground';
+            blur.style.backgroundColor = '#67676760';
+            blur.style.webkitBackdropFilter = 'blur(30px)';
+            blur.style.backdropFilter = 'blur(30px)';
+            blur.style.pointerEvents = 'none';
+            blur.style.position = 'absolute';
+            blur.style.width = '100vw';
+            blur.style.height = '100vh';
+            blur.style.top = '0';
+            // -webkit-transform-style: preserve-3d;
+            blur.style.webkitTransformStyle = 'preserve-3d';
+            blur.style.transformStyle = 'preserve-3d';
+            blur.style.zIndex = '1';
+            blur.style.transform = 'translateZ(1000px)';
+            // document.body.appendChild(blur);
+        }
+        let GUI = document.getElementById('GUI');
+        // let focusedElement = document.getElementById('object' + focusedFrameId);
+        // focusedElement.parentNode.insertBefore(blur, focusedElement);
+        GUI.parentNode.insertBefore(blur, GUI);
+        blur.style.display = 'inline';
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.add('exclusiveFullScreen');
+        }
+    }
+    
+    function hideBlurredBackground(focusedFrameId) {
+        // hide the fullscreen blurred div, if it exists
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (blur) {
+            blur.style.display = 'none';
+        }
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.remove('exclusiveFullScreen');
+        }
+    }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
     
     exports.getKnownEnvelopes = function() {
         return knownEnvelopes;
     }
+    
+    exports.showBlurredBackground = showBlurredBackground;
+    exports.hideBlurredBackground = hideBlurredBackground;
 
 }(realityEditor.envelopeManager));

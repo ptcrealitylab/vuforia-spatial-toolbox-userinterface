@@ -1613,6 +1613,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
 
+            // if (msgContent.isFullScreenExclusive || tempThisObject.isFullScreenExclusive) {
+            //     globalDOMCache[msgContent.frame].classList.add('exclusiveFullScreen');
+            // }
+
             globalDOMCache['object' + tempThisObject.uuid].style.zIndex = zIndex;
 
             if (realityEditor.device.editingState.frame === msgContent.frame) {
@@ -1629,6 +1633,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.fullScreen === false) {
             if (!msgContent.node) { // ignore messages from nodes of this frame
                 realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, msgContent.fullScreenAnimated);
+                realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
             }
         }
 
@@ -1673,6 +1678,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                     }, 250);
                 }, 10);
             }
+            
+            if (typeof msgContent.fullScreenFull2D !== 'undefined') {
+                realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
+            }
 
             // make the div invisible while it switches to fullscreen mode, so we don't see a jump in content vs mode
             document.getElementById("object" + msgContent.frame).classList.add('transitioningToFullscreen');
@@ -1702,6 +1711,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             globalDOMCache['iframe' + tempThisObject.uuid].classList.add('webGlFrame');
 
+            // if (msgContent.isFullScreenExclusive || tempThisObject.isFullScreenExclusive) {
+            //     globalDOMCache[msgContent.frame].classList.add('exclusiveFullScreen');
+            // }
+
             globalDOMCache['object' + tempThisObject.uuid].style.zIndex = zIndex;
 
             // update containsStickyFrame property on object whenever this changes, so that we dont have to recompute every frame
@@ -1723,6 +1736,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (typeof msgContent.isFullScreenExclusive !== "undefined") {
         tempThisObject.isFullScreenExclusive = msgContent.isFullScreenExclusive;
+        
+        // if (msgContent.isFullScreenExclusive) {
+        //     globalDOMCache[msgContent.frame].classList.add('exclusiveFullScreen');
+        // } else {
+        //     globalDOMCache[msgContent.frame].classList.remove('exclusiveFullScreen');
+        // }
 
         // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
         if (tempThisObject.isFullScreenExclusive) {
