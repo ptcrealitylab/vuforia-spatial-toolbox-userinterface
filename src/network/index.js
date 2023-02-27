@@ -1680,7 +1680,11 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
             
             if (typeof msgContent.fullScreenFull2D !== 'undefined') {
-                realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
+                if (msgContent.fullScreenFull2D) {
+                    realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
+                } else {
+                    realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
+                }
             }
 
             // make the div invisible while it switches to fullscreen mode, so we don't see a jump in content vs mode
