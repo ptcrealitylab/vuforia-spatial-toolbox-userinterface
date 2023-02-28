@@ -1,5 +1,10 @@
 import {Timeline} from './timeline.js';
 import {
+    RegionCard,
+    RegionCardState,
+} from './regionCard.js';
+import {
+    getHistoryPointsInTimeInterval,
     setHighlightTimeInterval,
     setDisplayTimeInterval,
     setHoverTime,
@@ -17,12 +22,18 @@ export class Analytics {
         this.timelineContainer.id = 'analytics-timeline-container';
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this.timelineContainer);
-        this.draw = this.draw.bind(this);
-        requestAnimationFrame(this.draw);
         this.added = false;
+        this.loadingHistory = false;
+        this.pinnedRegionCards = [];
+        this.pinnedRegionCardsContainer = null;
+        this.draw = this.draw.bind(this);
+
+        requestAnimationFrame(this.draw);
     }
 
     add() {
+        this.createNewPinnedRegionCardsContainer();
+
         document.body.appendChild(this.container);
         setHistoryLinesVisible(true);
         this.added = true;
@@ -32,6 +43,21 @@ export class Analytics {
         document.body.removeChild(this.container);
         setHistoryLinesVisible(false);
         this.added = false;
+    }
+
+    /**
+     * Add a new container for pinned region cards, removing the old one if applicable
+     */
+    createNewPinnedRegionCardsContainer() {
+        if (this.pinnedRegionCardsContainer) {
+            this.container.removeChild(this.pinnedRegionCardsContainer);
+        }
+        const pinnedRegionCardsContainer = document.createElement('div');
+        pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+        this.container.appendChild(pinnedRegionCardsContainer);
+
+        this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
+        this.pinnedRegionCards = [];
     }
 
     toggle() {
@@ -60,7 +86,7 @@ export class Analytics {
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
-        if (time > 0 && !fromSpaghetti) {
+        if (!fromSpaghetti) {
             setHoverTime(time);
         }
     }
@@ -84,7 +110,9 @@ export class Analytics {
      */
     async setDisplayRegion(region, fromSpaghetti) {
         this.timeline.setDisplayRegion(region);
+        this.loadingHistory = true;
         await loadHistory(region);
+        this.loadingHistory = false;
         if (region && !fromSpaghetti) {
             setDisplayTimeInterval(region.startTime, region.endTime);
         }
@@ -123,5 +151,63 @@ export class Analytics {
      */
     setAllClonesVisible(allClonesVisible) {
         console.error('setAllClonesVisible unimplemented', allClonesVisible);
+    }
+
+
+    hydrateRegionCards(regionCardDescriptions) {
+        if (this.loadingHistory) {
+            setTimeout(() => {
+                this.hydrateRegionCards(regionCardDescriptions);
+            }, 100);
+            return;
+        }
+        for (let desc of regionCardDescriptions) {
+            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getHistoryPointsInTimeInterval(desc.startTime, desc.endTime));
+            regionCard.state = RegionCardState.Pinned;
+            regionCard.removePinAnimation();
+            this.addRegionCard(regionCard);
+        }
+    }
+
+    addRegionCard(regionCard) {
+        for (let pinnedRegionCard of this.pinnedRegionCards) {
+            if (pinnedRegionCard.startTime === regionCard.startTime &&
+                pinnedRegionCard.endTime === regionCard.endTime) {
+                // New region card already exists in the list
+                return;
+            }
+        }
+        this.pinnedRegionCards.push(regionCard);
+    }
+
+    writeDehydratedRegionCards() {
+        // Write region card descriptions to public data of currently active envelope
+        let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
+        let allCards = this.pinnedRegionCards.map(regionCard => {
+            return {
+                startTime: regionCard.startTime,
+                endTime: regionCard.endTime,
+            };
+        });
+        for (let envelope of openEnvelopes) {
+            let objectKey = envelope.object;
+            let frameKey = envelope.frame;
+            realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'cards', allCards);
+        }
+    }
+
+    pinRegionCard(regionCard) {
+        setTimeout(() => {
+            regionCard.moveTo(35, 120 + (14 + 14 * 2 + 10) * this.pinnedRegionCards.length);
+        }, 10);
+
+        setTimeout(() => {
+            regionCard.removePinAnimation();
+
+            this.addRegionCard(regionCard);
+            this.writeDehydratedRegionCards();
+
+            regionCard.switchContainer(this.pinnedRegionCardsContainer);
+        }, 750);
     }
 }

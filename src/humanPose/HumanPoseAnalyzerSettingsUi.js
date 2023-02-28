@@ -1,4 +1,4 @@
-import {CloneRenderMode} from "./draw.js";
+import {AnimationMode} from "./draw.js";
 import {JOINTS} from "./utils.js";
 
 class HumanPoseAnalyzerSettingsUi {
@@ -116,7 +116,8 @@ class HumanPoseAnalyzerSettingsUi {
         });
         
         this.root.querySelector('#hpa-settings-toggle-poses').addEventListener('change', (event) => {
-            this.humanPoseAnalyzer.setCloneRenderMode(event.target.checked ? CloneRenderMode.ALL : CloneRenderMode.ONE);
+            // this.humanPoseAnalyzer.setAnimationMode(event.target.checked ? AnimationMode.all : AnimationMode.cursor);
+            // TODO: re-implement
         });
         
         this.root.querySelector('#hpa-settings-toggle-history-lines').addEventListener('change', (event) => {
@@ -248,8 +249,8 @@ class HumanPoseAnalyzerSettingsUi {
         this.root.querySelector('#hpa-settings-select-lens').value = lens.name;
     }
 
-    setCloneRenderMode(cloneRenderMode) {
-        this.root.querySelector('#hpa-settings-toggle-poses').checked = cloneRenderMode === CloneRenderMode.ALL;
+    setAnimationMode(animationMode) {
+        this.root.querySelector('#hpa-settings-toggle-poses').checked = animationMode === AnimationMode.all;
     }
 
     setHistoryLinesVisible(historyLinesVisible) {

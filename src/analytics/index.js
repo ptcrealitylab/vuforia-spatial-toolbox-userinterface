@@ -31,6 +31,10 @@ import {Analytics} from './analytics.js'
             analytics.setDisplayRegion(msgData.displayRegion);
         });
 
+        realityEditor.network.addPostMessageHandler('analyticsHydrateRegionCards', (msgData) => {
+            analytics.hydrateRegionCards(msgData.regionCards);
+        });
+
         realityEditor.network.addPostMessageHandler('analyticsSetLens', (msgData) => {
             analytics.setLens(msgData.lens);
         });

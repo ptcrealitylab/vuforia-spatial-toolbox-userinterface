@@ -5,9 +5,6 @@ const rowHeight = 22;
 
 const svgNS = 'http://www.w3.org/2000/svg';
 
-const pinnedRegionCards = [];
-let pinnedRegionCardsContainer;
-
 export const RegionCardState = {
     Tooltip: 'Tooltip', // an ephemeral tooltip on the timeline
     Pinned: 'Pinned', // a regioncard displayed with statistics
@@ -55,13 +52,6 @@ export class RegionCard {
         this.element.addEventListener('pointerdown', this.onPointerDown);
         this.element.addEventListener('pointerout', this.onPointerOut);
         this.container.appendChild(this.element);
-
-        if (!pinnedRegionCardsContainer) {
-            pinnedRegionCardsContainer = document.createElement('div');
-            pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
-            const analyticsContainer = document.getElementById('analytics-container');
-            analyticsContainer.appendChild(pinnedRegionCardsContainer);
-        }
     }
 
     onPointerOver() {
@@ -122,20 +112,30 @@ export class RegionCard {
         this.element.style.bottom = 'auto';
         this.moveTo(rect.left, rect.top);
         this.element.classList.add('pinAnimation', 'minimized');
-        setTimeout(() => {
-            this.moveTo(35, 120 + (14 + 14 * 2 + 10) * pinnedRegionCards.length);
-            // this.element.classList.add('minimized');
-        }, 10);
 
-        setTimeout(() => {
-            this.element.classList.remove('pinAnimation');
-            this.element.classList.add('pinned');
-            this.element.style.top = 'auto';
-            this.element.style.left = 'auto';
-            pinnedRegionCards.push(this);
+        realityEditor.analytics.pinRegionCard(this);
+    }
 
-            this.switchContainer(pinnedRegionCardsContainer);
-        }, 750);
+    save() {
+        let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
+        const frameKey = addedTool.uuid;
+        const publicData = {
+            startTime: this.startTime,
+            endTime: this.endTime,
+            summary: this.element.outerHTML,
+        };
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
+        };
+        setTimeout(write, 1000);
+        setTimeout(write, 2000);
+    }
+
+    removePinAnimation() {
+        this.element.classList.remove('pinAnimation');
+        this.element.classList.add('pinned');
+        this.element.style.top = 'auto';
+        this.element.style.left = 'auto';
     }
 
     unpin() {

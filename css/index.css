@@ -1516,7 +1516,7 @@ Logic Interface CSS
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
-    z-index: 290;
+    z-index: 2900;
 }
 
 #exitEnvelopeButton {
@@ -1812,17 +1812,20 @@ Logic Interface CSS
     left: 0;
     width: 100%;
     height: 100%;
+
+    z-index: 2800;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    pointer-events: none;
 }
 
 #analytics-timeline-container {
     position: absolute;
     bottom: calc(30px + 30px + 68px + 30px - 12px);
     left: 50%;
-    z-index: 10000;
-    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
-    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
     max-width: 1024px;
     width: 100%;
+    transform: translateX(-50%);
+    pointer-events: all;
 }
 
 .analytics-timeline {
@@ -1875,6 +1878,7 @@ Logic Interface CSS
     top: 80px;
     left: 35px;
     padding: 0;
+    pointer-events: all;
 }
 
 .analytics-region-card-title {
