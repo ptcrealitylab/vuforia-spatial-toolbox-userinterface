@@ -12,8 +12,8 @@ const needleWidth = 3;
 const needleDragWidth = 12;
 
 const rowPad = 4;
-const rowHeight = 10;
-const boardHeight = 6 * (rowPad + rowHeight) + rowPad;
+const rowHeight = 16;
+const boardHeight = 4 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
 
 const labelPad = 4;
@@ -142,7 +142,7 @@ export class Timeline {
         this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
-        this.drawTicks();
+        this.calculateAndDrawTicks();
         this.drawPoses();
 
         this.drawHighlightRegion();
@@ -399,28 +399,51 @@ export class Timeline {
         }
     }
 
-    drawTicks() {
-        const tenSecMs = 10 * 1000;
-        const minuteMs = 60 * 1000;
-        const hourMs = 60 * 60 * 1000;
-        let tickAmountMs = -1;
-        if (this.widthMs < minuteMs * 10) {
-            tickAmountMs = tenSecMs;
-        } else if (this.widthMs < hourMs * 6) {
-            tickAmountMs = minuteMs;
-        } else if (this.widthMs < hourMs * 100) {
-            tickAmountMs = hourMs;
+    calculateAndDrawTicks() {
+        const tickSpacings = [
+            1000,
+            10 * 1000,
+            60 * 1000, // one minute
+            120 * 1000,
+            10 * 60 * 1000,
+            60 * 60 * 1000, // one hour
+            6 * 60 * 60 * 1000,
+            12 * 60 * 60 * 1000,
+            24 * 60 * 60 * 1000,
+        ];
+
+        let chosenTick = 1;
+        while (chosenTick < tickSpacings.length) {
+            if (this.widthMs < tickSpacings[chosenTick] * 12) {
+                break;
+            }
+            chosenTick += 1;
         }
 
-        if (tickAmountMs > 0) {
-            let tickMs = Math.floor(this.timeMin / tickAmountMs) * tickAmountMs;
-            while (tickMs < this.timeMin + this.widthMs) {
-                let tickX = this.timeToX(tickMs);
-                tickMs += tickAmountMs;
+        if (chosenTick >= tickSpacings.length) {
+            return;
+        }
 
-                this.gfx.fillStyle = 'rgba(128, 128, 128, 0.3)';
-                this.gfx.fillRect(tickX - 1, boardStart, 1, boardHeight);
-            }
+        let minorTick = tickSpacings[chosenTick - 1];
+        if (chosenTick > 4) {
+            minorTick = tickSpacings[chosenTick - 2];
+        }
+        let majorTick = tickSpacings[chosenTick];
+
+        this.gfx.fillStyle = 'rgba(128, 128, 128, 0.3)';
+        this.fillTicks(minorTick);
+        this.gfx.fillStyle = 'rgba(128, 128, 128, 0.7)';
+        this.fillTicks(majorTick);
+    }
+
+    fillTicks(tickAmountMs) {
+        let tickMs = Math.floor(this.timeMin / tickAmountMs) * tickAmountMs;
+
+        while (tickMs < this.timeMin + this.widthMs) {
+            let tickX = this.timeToX(tickMs);
+            tickMs += tickAmountMs;
+
+            this.gfx.fillRect(tickX - 1, boardStart, 1, boardHeight);
         }
     }
 

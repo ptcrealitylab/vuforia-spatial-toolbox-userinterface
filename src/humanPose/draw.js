@@ -68,6 +68,7 @@ export class HumanPoseAnalyzer {
         });
 
         this.clonesAll = []; // Array of all clones, entry format: Object3Ds with a pose child // TODO: update this to new hpri system
+        this.recordingClones = realityEditor.device.environment.isDesktop();
         this.lastDisplayedCloneIndex = 0;
 
         this.prevAnimationState = null;
@@ -81,7 +82,9 @@ export class HumanPoseAnalyzer {
         this.poseRendererLive.addToScene(this.liveContainer);
 
         this.historicalPoseRenderers = [];
-        this.addHistoricalPoseRenderer();
+        if (realityEditor.device.environment.isDesktop()) {
+            this.addHistoricalPoseRenderer();
+        }
 
         this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
         this.setUiDefaults();
@@ -349,41 +352,49 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the interval which controls what history is highlighted
-     * @param {number} firstTimestamp - start of time interval in ms
-     * @param {number} secondTimestamp - end of time interval in ms
+     * @param {TimeRegion} highlightRegion - the time region to highlight
+     * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
-    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    setHighlightRegion(highlightRegion, fromSpaghetti) {
+        if (!highlightRegion) {
+            return;
+        }
         if (this.animationMode !== AnimationMode.region &&
             this.animationMode !== AnimationMode.regionAll) {
             this.setAnimationMode(AnimationMode.region);
         }
-        this.setAnimationRange(firstTimestamp, secondTimestamp);
-        Object.values(this.historyLinesAll[this.activeLens.name]).forEach(historyLine => {
-            historyLine.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
-        });
+        this.setAnimation(highlightRegion.startTime, highlightRegion.endTime);
+        if (!fromSpaghetti) {
+            for (let mesh of Object.values(this.historyLinesAll[this.activeLens.name])) {
+                mesh.setHighlightRegion(highlightRegion);
+            }
+        }
     }
 
     /**
-     * Sets the interval which controls what history is shown
-     * @param {number} firstTimestamp - start of time interval in ms
-     * @param {number} secondTimestamp - end of time interval in ms
+     * @param {TimeRegion} displayRegion
      */
-    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
-        Object.values(this.historyLinesAll[this.activeLens.name]).forEach(mesh => {
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
+        for (let mesh of Object.values(this.historyLinesAll[this.activeLens.name])) {
             if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
                 mesh.visible = false;
                 return;
             }
             mesh.visible = true;
-            mesh.setDisplayTimeInterval(firstTimestamp, secondTimestamp);
-        });
+            mesh.setDisplayRegion(displayRegion);
+        }
     }
 
     /**
      * Sets the hover time for the relevant history line
      * @param {number} timestamp - timestamp in ms
+     * @param {boolean} fromSpaghetti - prevents infinite recursion from modifying human pose spaghetti which calls
+     * this function
      */
-    setHoverTime(timestamp) {
+    setCursorTime(timestamp, fromSpaghetti) {
         if (timestamp < 0) {
             if (this.animationMode === AnimationMode.cursor) {
                 this.restoreAnimationState();
@@ -394,7 +405,9 @@ export class HumanPoseAnalyzer {
             if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
                 continue;
             }
-            mesh.setHoverTime(timestamp);
+            if (!fromSpaghetti) {
+                mesh.setCursorTime(timestamp);
+            }
             if (this.animationMode !== AnimationMode.cursor) {
                 this.setAnimationMode(AnimationMode.cursor);
             }
@@ -605,7 +618,7 @@ export class HumanPoseAnalyzer {
         this.animationPosition += dt;
         let progress = this.animationPosition - this.animationStart;
         let animationDuration = this.animationEnd - this.animationStart;
-        let progressClamped = progress % animationDuration;
+        let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
         this.animationPosition = this.animationStart + progressClamped;
         this.displayCloneByTimestamp(this.animationPosition);
     }
@@ -794,15 +807,16 @@ function updatePoseRenderer(poseObject, timestamp, historical, container) {
     if (!poseRenderInstances[poseObject.uuid]) { // TODO: how does this work when we clone an instance? Doesn't that get the same id? Why have this when we have clonesAll
         poseRenderInstances[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid, humanPoseAnalyzer.activeLens);
     }
-    let poseRendererInstance = poseRenderInstances[poseObject.uuid];
+    let poseRenderInstance = poseRenderInstances[poseObject.uuid];
+    poseRenderInstance.updated = true;
 
     if (historical) {
-        updateJointsAndBonesHistorical(poseRendererInstance, poseObject, timestamp);
+        updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp);
     } else {
-        updateJointsAndBones(poseRendererInstance, poseObject, timestamp);
+        updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
     }
 
-    humanPoseAnalyzer.poseRendererInstanceUpdated(poseRendererInstance, timestamp);
+    humanPoseAnalyzer.poseRendererInstanceUpdated(poseRenderInstance, timestamp);
     if (realityEditor.analytics) {
         realityEditor.analytics.appendPose({
             time: timestamp,
@@ -918,12 +932,17 @@ function resetHistoryClones() {
 }
 
 /**
+<<<<<<< HEAD
  * Sets the time interval to highlight on the HumanPoseAnalyzer
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
+=======
+ * @param {{startTime: number, endTime: number}} highlightRegion
+ * @param {boolean} fromSpaghetti - whether a history mesh originated this call
+>>>>>>> master
  */
-function setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
-    humanPoseAnalyzer.setHighlightTimeInterval(firstTimestamp, secondTimestamp);
+function setHighlightRegion(highlightRegion, fromSpaghetti) {
+    humanPoseAnalyzer.setHighlightRegion(highlightRegion, fromSpaghetti);
 }
 
 /**
@@ -974,6 +993,7 @@ function advanceLens() {
 }
 
 /**
+<<<<<<< HEAD
  * Advances the human pose analyzer's clone material
  * @deprecated
  * @see advanceLens
@@ -986,18 +1006,27 @@ function advanceCloneMaterial() {
 /**
  * Sets the hover time for the HumanPoseAnalyzer
  * @param {number} time - the hover time in ms
+=======
+ * @param {number} time - ms
+ * @param {boolean} fromSpaghetti - prevents infinite recursion from
+ *                  modifying human pose spaghetti which calls this function
+>>>>>>> master
  */
-function setHoverTime(time) {
-    humanPoseAnalyzer.setHoverTime(time);
+function setCursorTime(time, fromSpaghetti) {
+    humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
 }
 
 /**
+<<<<<<< HEAD
  * Sets the time interval to display on the HumanPoseAnalyzer
  * @param {number} startTime - start of time interval in ms
  * @param {number} endTime - end of time interval in ms
+=======
+ * @param {{startTime: number, endTime: number}} displayRegion
+>>>>>>> master
  */
-function setDisplayTimeInterval(startTime, endTime) {
-    humanPoseAnalyzer.setDisplayTimeInterval(startTime, endTime);
+function setDisplayRegion(displayRegion) {
+    humanPoseAnalyzer.setDisplayRegion(displayRegion);
 }
 
 /**
@@ -1014,9 +1043,9 @@ export {
     resetHistoryLines,
     resetHistoryClones,
     setAnimationMode,
-    setHoverTime,
-    setHighlightTimeInterval,
-    setDisplayTimeInterval,
+    setCursorTime,
+    setHighlightRegion,
+    setDisplayRegion,
     setHistoryLinesVisible,
     setRecordingClonesEnabled,
     advanceLens,
