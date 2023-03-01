@@ -16,22 +16,6 @@ class HumanPoseAnalyzerSettingsUi {
             </div>
             <div class="hpa-settings-body">
                 <div class="hpa-settings-section">
-                    <div class="hpa-settings-section-title">View Settings</div>
-                    <div class="hpa-settings-section-body">
-                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">Toggle Poses</div>
-                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">
-                        </div>
-                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">Toggle History Lines</div>
-                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-history-lines">
-                        </div>
-                        <div class="hpa-settings-section-row">
-                            <div class="hpa-settings-section-row-button" id="hpa-settings-reset">Clear Poses and History</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="hpa-settings-section">
                     <div class="hpa-settings-section-title">Lens Settings</div>
                     <div class="hpa-settings-section-body">
                         <div class="hpa-settings-section-row">
@@ -39,6 +23,35 @@ class HumanPoseAnalyzerSettingsUi {
                             <select class="hpa-settings-section-row-select" id="hpa-settings-select-lens">
                                 <option value="Sample Option">This should only display if something is broken with this.populateSelects()</option>
                             </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">Live Settings</div>
+                    <div class="hpa-settings-section-body">
+<!--                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">-->
+<!--                            <div class="hpa-settings-section-row-label">Toggle Poses</div>-->
+<!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
+<!--                        </div>-->
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">Toggle Spaghetti Lines</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-live-history-lines">
+                        </div>
+                        <div class="hpa-settings-section-row">
+                            <div class="hpa-settings-section-row-button" id="hpa-settings-reset-history">Clear Live Data</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">Historical Settings</div>
+                    <div class="hpa-settings-section-body">
+<!--                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">-->
+<!--                            <div class="hpa-settings-section-row-label">Toggle Poses</div>-->
+<!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
+<!--                        </div>-->
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">Toggle Spaghetti Lines</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-historical-history-lines">
                         </div>
                     </div>
                 </div>
@@ -114,19 +127,18 @@ class HumanPoseAnalyzerSettingsUi {
             };
             this.root.querySelector('.hpa-settings-header').addEventListener('mouseup', mouseUpListener);
         });
-        
-        this.root.querySelector('#hpa-settings-toggle-poses').addEventListener('change', (event) => {
-            // this.humanPoseAnalyzer.setAnimationMode(event.target.checked ? AnimationMode.all : AnimationMode.cursor);
-            // TODO: re-implement
+
+        this.root.querySelector('#hpa-settings-toggle-live-history-lines').addEventListener('change', (event) => {
+            this.humanPoseAnalyzer.setLiveHistoryLinesVisible(event.target.checked);
+        });
+
+        this.root.querySelector('#hpa-settings-toggle-historical-history-lines').addEventListener('change', (event) => {
+            this.humanPoseAnalyzer.setHistoricalHistoryLinesVisible(event.target.checked);
         });
         
-        this.root.querySelector('#hpa-settings-toggle-history-lines').addEventListener('change', (event) => {
-            this.humanPoseAnalyzer.setHistoryLinesVisible(event.target.checked);
-        });
-        
-        this.root.querySelector('#hpa-settings-reset').addEventListener('mouseup', (event) => {
-            this.humanPoseAnalyzer.resetHistoryLines();
-            this.humanPoseAnalyzer.resetHistoryClones();
+        this.root.querySelector('#hpa-settings-reset-history').addEventListener('mouseup', (event) => {
+            this.humanPoseAnalyzer.resetLiveHistoryLines();
+            this.humanPoseAnalyzer.resetLiveHistoryClones();
         });
 
         this.root.querySelector('#hpa-settings-select-lens').addEventListener('change', (event) => {
@@ -249,12 +261,12 @@ class HumanPoseAnalyzerSettingsUi {
         this.root.querySelector('#hpa-settings-select-lens').value = lens.name;
     }
 
-    setAnimationMode(animationMode) {
-        this.root.querySelector('#hpa-settings-toggle-poses').checked = animationMode === AnimationMode.all;
+    setLiveHistoryLinesVisible(historyLinesVisible) {
+        this.root.querySelector('#hpa-settings-toggle-live-history-lines').checked = historyLinesVisible;
     }
 
-    setHistoryLinesVisible(historyLinesVisible) {
-        this.root.querySelector('#hpa-settings-toggle-history-lines').checked = historyLinesVisible;
+    setHistoricalHistoryLinesVisible(historyLinesVisible) {
+        this.root.querySelector('#hpa-settings-toggle-historical-history-lines').checked = historyLinesVisible;
     }
 
     setActiveJointByName(jointName) {

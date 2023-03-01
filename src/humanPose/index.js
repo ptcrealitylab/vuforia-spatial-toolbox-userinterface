@@ -123,10 +123,6 @@ import * as utils from './utils.js'
         const regionStartTime = historyRegion.startTime;
         const regionEndTime = historyRegion.endTime;
 
-        // We may have already replayed the past so we must forget it
-        draw.resetHistoryLines();
-        draw.resetHistoryClones();
-
         const worldObject = realityEditor.worldObjects.getBestWorldObject();
         const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
         let logs = [];

@@ -40,7 +40,8 @@ class AccelerationLens extends AnalyticsLens {
     }
     
     applyLensToPose(pose) {
-        // Since this function is only used for live data, we can manually keep track of previous poses and do the calculations after two poses have been recorded
+        // Since this function is only used for sequential data, we can manually keep track of previous poses and do the calculations after two poses have been recorded
+        // TODO: there might be a bug with this logic when loading historical data after other data has been recorded
         if (!this.previousPose) {
             pose.forEachJoint(joint => {
                 joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose

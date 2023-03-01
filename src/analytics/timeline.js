@@ -2,7 +2,7 @@ import {RegionCard, RegionCardState} from './regionCard.js';
 import {
     getHistoryPointsInTimeInterval,
     setAnimationMode,
-    AnimationMode,
+    AnimationMode, getPosesInTimeInterval,
 } from '../humanPose/draw.js';
 
 const needleTopPad = 4;
@@ -260,7 +260,7 @@ export class Timeline {
             }
             this.regionCard = null;
         }
-        this.regionCard = new RegionCard(this.container, getHistoryPointsInTimeInterval(leftTime, rightTime));
+        this.regionCard = new RegionCard(this.container, getPosesInTimeInterval(leftTime, rightTime));
 
         this.regionCard.moveTo(midX, this.height + labelPad);
     }

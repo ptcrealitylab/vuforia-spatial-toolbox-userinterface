@@ -14,7 +14,7 @@ export class HumanPoseRenderInstance {
     /**
      * @param {HumanPoseRenderer} renderer
      * @param {string} id - Unique identifier of human pose being rendered
-     * @param {AnalyticsLens} lens - The default lens to use for this instance
+     * @param {AnalyticsLens} lens - The initial lens to use for this instance
      */
     constructor(renderer, id, lens) {
         this.renderer = renderer;
@@ -22,6 +22,7 @@ export class HumanPoseRenderInstance {
         this.updated = true;
         this.visible = true;
         this.lens = lens;
+        this.lensColors = {};
         this.pose = null;
         this.slot = -1;
         this.add();
@@ -113,7 +114,7 @@ export class HumanPoseRenderInstance {
 
         this.updateJointPositions();
         this.updateBonePositions();
-        this.updateColors();
+        this.updateColorBuffers(this.lens);
     }
 
     /**
@@ -122,7 +123,7 @@ export class HumanPoseRenderInstance {
      */
     setLens(lens) {
         this.lens = lens;
-        this.updateColors();
+        this.updateColorBuffers(this.lens);
     }
 
     /**
@@ -153,16 +154,28 @@ export class HumanPoseRenderInstance {
 
     /**
      * Sets the colors of the pose based on the current lens
+     * @param {AnalyticsLens} lens - lens to use for updating colors
      */
-    updateColors() {
-        if (!RENDER_CONFIDENCE_COLOR) {
-            this.lens.applyLensToPose(this.pose);
+    updateColorBuffers(lens) {
+        if (!this.lensColors[lens.name]) {
+            this.lensColors[lens.name] = {
+                joints: Object.values(JOINT_TO_INDEX).map(() => AnalyticsColors.undefined),
+                bones: Object.values(BONE_TO_INDEX).map(() => AnalyticsColors.undefined),
+            };
+        }
+        this.pose.forEachJoint(joint => {
+            this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = lens.getColorForJoint(joint);
+        });
+        this.pose.forEachBone(bone => {
+            this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = lens.getColorForBone(bone);
+        });
+        if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
             this.pose.forEachJoint(joint => {
-                this.setJointColor(joint.name, this.lens.getColorForJoint(joint));
+                this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
             });
             this.pose.forEachBone(bone => {
-                this.setBoneColor(bone.name, this.lens.getColorForBone(bone));
-            })
+                this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
+            });
         }
     }
 
@@ -186,13 +199,11 @@ export class HumanPoseRenderInstance {
             return;
         }
 
-        if (this.visible) {
-            // Setting to not visible
-            this.renderer.hideSlot(this.slot);
-        } else {
-            // Setting to visible
+        if (visible) {
             this.updateJointPositions();
             this.updateBonePositions();
+        } else {
+            this.renderer.hideSlot(this.slot);
         }
         this.visible = visible;
     }

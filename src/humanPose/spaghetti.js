@@ -180,6 +180,9 @@ export class SpaghettiMeshPath extends MeshPath {
 
         // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
         let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
+        if (!pointOnPlane) {
+            return;
+        }
         this.cursorDestination = [pointOnPlane.x, pointOnPlane.y, pointOnPlane.z];
         this.cursor.material.color.setHex(0xffffff);
         this.cursor.scale.set(1,1,1);
@@ -243,6 +246,9 @@ export class SpaghettiMeshPath extends MeshPath {
         let pointOnPlane = realityEditor.gui.ar.utilities.getPointOnPlaneFromScreenXY(this.planeOrigin, this.planeNormal, cameraNode, screenX, screenY);
         let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
         let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
+        if (!pointOnPlane) {
+            return;
+        }
         return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
     }
     

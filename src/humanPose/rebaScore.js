@@ -205,7 +205,7 @@ function legsReba(rebaData) {
     
     // Check for leg raising
     const footDifferenceCutoff = 0.1;
-    console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
+    // console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
     if (footYDifference > footDifferenceCutoff) {// TODO: measure this to find a good cutoff
         leftLegScore++; // +1 for left leg raised
     } else if (footYDifference < -1 * footDifferenceCutoff) {
@@ -311,7 +311,7 @@ function upperArmReba(rebaData) {
     
     // Check for shoulder raising
     const shoulderDifferenceCutoff = 0.1;
-    console.log(`leftShoulderYDifference: ${leftShoulderYDifference}\nrightShoulderYDifference: ${rightShoulderYDifference}\nCurrent cutoff: ${shoulderDifferenceCutoff}`);
+    // console.log(`leftShoulderYDifference: ${leftShoulderYDifference}\nrightShoulderYDifference: ${rightShoulderYDifference}\nCurrent cutoff: ${shoulderDifferenceCutoff}`);
     if (leftShoulderYDifference > shoulderDifferenceCutoff) {// TODO: measure this to find a good cutoff
         leftArmScore++; // +1 for left shoulder raised
     }
@@ -437,9 +437,9 @@ const startColor = AnalyticsColors.fade(AnalyticsColors.green);
 const endColor = AnalyticsColors.fade(AnalyticsColors.red);
 
 function getOverallRebaColor(rebaScore) {
-    const lowCutoff = 4; // TODO: experiment with cutoffs
+    const lowCutoff = 4;
     const highCutoff = 8;
-    console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`);
+    // console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`); // TODO: experiment with cutoffs
     const rebaFrac = (clamp(rebaScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
     return startColor.clone().lerpHSL(endColor, rebaFrac);
 }

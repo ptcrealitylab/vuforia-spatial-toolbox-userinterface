@@ -109,6 +109,10 @@
     background-color: #660000;
 }
 
+.hpa-settings-section-row-button:active {
+    background-color: #990000;
+}
+
 .hpa-settings-section-row-select {
     display: inline-block;
     width: 200px;

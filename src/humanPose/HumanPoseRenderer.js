@@ -280,6 +280,10 @@ export class HumanPoseRenderer {
             realityEditor.gui.threejsScene.addToScene(this.container);
         }
     }
+    
+    removeFromParent() {
+        this.removeFromScene(this.container.parent);
+    }
 
     /**
      * Removes from container and disposes resources
