@@ -218,7 +218,16 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     isVisible() {
-        return this.visible && this.parent && this.parent.visible;
+        let ancestorsAllVisible = true;
+        let parent = this.parent;
+        while (parent) {
+            if (!parent.visible) {
+                ancestorsAllVisible = false;
+                break;
+            }
+            parent = parent.parent;
+        }
+        return this.visible && ancestorsAllVisible;
     }
 
     setupPointerEvents() {

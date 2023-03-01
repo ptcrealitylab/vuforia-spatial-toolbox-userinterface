@@ -10,7 +10,7 @@ class PoseObjectIdLens extends AnalyticsLens {
      * Creates a new PoseObjectIdLens object.
      */
     constructor() {
-        super('Distinct People');
+        super('Distinct People (Debug)');
 
         this.poseObjectIds = [];
         this.numeratorsForDenominator = {};

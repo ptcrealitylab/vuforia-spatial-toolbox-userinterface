@@ -215,8 +215,25 @@ export class HumanPoseRenderInstance {
      */
     cloneToRenderer(newRenderer) {
         let clone = new HumanPoseRenderInstance(newRenderer, this.id, this.lens);
-        clone.setPose(this.pose);
+        clone.copy(this);
         return clone;
+    }
+
+    /**
+     * Copy all elements of the other pose render instance
+     * @param other {HumanPoseRenderInstance} - the instance to copy from
+     */
+    copy(other) {
+        this.lens = other.lens;
+        this.lensColors = {};
+        Object.keys(other.lensColors).forEach(lensName => {
+            this.lensColors[lensName] = {
+                joints: other.lensColors[lensName].joints.slice(),
+                bones: other.lensColors[lensName].bones.slice(),
+            };
+        });
+        this.setPose(other.pose);
+        return this;
     }
 
     /**

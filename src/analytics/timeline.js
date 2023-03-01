@@ -91,6 +91,18 @@ export class Timeline {
         this.canvas.addEventListener('pointerout', this.onPointerOut);
         this.canvas.addEventListener('wheel', this.onWheel);
     }
+    
+    reset() {
+        this.poses = [];
+        this.displayRegion = null;
+        this.highlightRegion = null;
+        this.highlightStartTime = -1;
+        this.timeMin = Date.now() - DEFAULT_WIDTH_MS;
+        this.widthMs = DEFAULT_WIDTH_MS;
+        this.scrolled = false;
+        this.lastRegionCardCacheKey = '';
+        this.resetBounds();
+    }
 
     draw() {
         let dt = Date.now() - this.lastDraw;

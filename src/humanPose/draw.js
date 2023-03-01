@@ -17,6 +17,9 @@ let humanPoseAnalyzer;
 const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
 
+const POSE_OPACITY_BASE = 0.5;
+const POSE_OPACITY_BACKGROUND = 0.2;
+
 /**
  * @typedef {string} AnimationMode
  */
@@ -90,9 +93,15 @@ export class HumanPoseAnalyzer {
         this.animationMode = AnimationMode.region;
         this.lastAnimationTime = Date.now();
         
-        // The pose that is being streamed live
-        this.instantPoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES, this.activeLens);
-        this.instantPoseRenderer.addToScene(this.liveContainer);
+        // The renderer for poses that need to be rendered opaquely
+        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES);
+        this.opaquePoseRenderer.addToScene(this.opaqueContainer);
+        
+        // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
+        this.selectionMarkPoseRenderInstances = {
+            start: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkStart', this.activeLens), // TODO: apply lens changes
+            end: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkEnd', this.activeLens), // TODO: apply lens changes
+        };
 
         // Contains all historical poses
         this.historicalPoseRenderers = [];
@@ -121,7 +130,7 @@ export class HumanPoseAnalyzer {
      */
     setupContainers(parent) {
         this.historicalHistoryLineContainer = new THREE.Group();
-        this.historicalHistoryLineContainer.visible = false;
+        this.historicalHistoryLineContainer.visible = true;
         if (parent) {
             parent.add(this.historicalHistoryLineContainer);
         } else {
@@ -148,6 +157,13 @@ export class HumanPoseAnalyzer {
         } else {
             realityEditor.gui.threejsScene.addToScene(this.liveContainer);
         }
+        this.opaqueContainer = new THREE.Group();
+        this.opaqueContainer.visible = true;
+        if (parent) {
+            parent.add(this.opaqueContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.opaqueContainer);
+        }
     }
 
     /**
@@ -167,8 +183,8 @@ export class HumanPoseAnalyzer {
     addHistoricalPoseRenderer() {
         const poseRendererHistorical = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.5,
-        }), MAX_POSE_INSTANCES, this.activeLens);
+            opacity: POSE_OPACITY_BASE,
+        }), MAX_POSE_INSTANCES);
         poseRendererHistorical.addToScene(this.historicalContainer);
         this.historicalPoseRenderers.push(poseRendererHistorical);
         return poseRendererHistorical;
@@ -202,7 +218,7 @@ export class HumanPoseAnalyzer {
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0.5,
-        }), MAX_POSE_INSTANCES, this.activeLens);
+        }), MAX_POSE_INSTANCES);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
         return livePoseRenderer;
@@ -503,19 +519,20 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * @param {TimeRegion} displayRegion
+     * Sets the interval which controls what history is displayed, hides history outside of the interval
+     * @param {TimeRegion} displayRegion - the time region to display
      */
     setDisplayRegion(displayRegion) {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
 
-        for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-            if (mesh.getStartTime() > secondTimestamp || mesh.getEndTime() < firstTimestamp) {
-                mesh.visible = false;
+        for (let historyLine of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
+            if (historyLine.getStartTime() > secondTimestamp || historyLine.getEndTime() < firstTimestamp) {
+                historyLine.visible = false;
                 return;
             }
-            mesh.visible = true;
-            mesh.setDisplayRegion(displayRegion);
+            historyLine.visible = true;
+            historyLine.setDisplayRegion(displayRegion);
         }
     }
 
@@ -653,7 +670,7 @@ export class HumanPoseAnalyzer {
         this.nextLensIndex = (this.activeLensIndex + 1) % this.lenses.length;
         this.setActiveLens(this.lenses[this.nextLensIndex]);
     }
-
+    
     /**
      * Applies the current lens to the history, updating the clones' colors if needed
      */
@@ -686,11 +703,10 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        this.markHistoricalMatrixNeedsUpdate();
-
         if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clones.all) {
                 clone.setVisible(true);
+                clone.renderer.markMatrixNeedsUpdate();
             }
             return;
         }
@@ -698,7 +714,18 @@ export class HumanPoseAnalyzer {
         if (this.animationMode === AnimationMode.cursor || this.animationMode === AnimationMode.region) {
             for (let clone of this.clones.all) {
                 clone.setVisible(false);
+                clone.renderer.markMatrixNeedsUpdate();
             }
+        }
+
+        if (this.animationMode === AnimationMode.regionAll) {
+            this.setHistoricalPoseRenderersOpacity(POSE_OPACITY_BACKGROUND);
+        } else {
+            this.setHistoricalPoseRenderersOpacity(POSE_OPACITY_BASE);
+            this.selectionMarkPoseRenderInstances.start.setVisible(false);
+            this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
+            this.selectionMarkPoseRenderInstances.end.setVisible(false);
+            this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
         }
     }
 
@@ -725,6 +752,14 @@ export class HumanPoseAnalyzer {
             this.prevAnimationState.animationStart,
             this.prevAnimationState.animationEnd);
         this.prevAnimationState = null;
+    }
+
+    setHistoricalPoseRenderersOpacity(opacity) {
+        for (let hpr of this.historicalPoseRenderers) {
+            if (hpr.material.opacity !== opacity) {
+                hpr.material.opacity = opacity;
+            }
+        }
     }
 
     /**
@@ -770,9 +805,22 @@ export class HumanPoseAnalyzer {
             this.hideLastDisplayedClone();
             this.lastDisplayedClone = null;
             break;
-        case AnimationMode.regionAll:
+        case AnimationMode.regionAll: {
             this.hideAllClones();
             this.setCloneVisibleInInterval(true, start, end);
+            const startClone = this.getCloneByTimestamp(start);
+            if (startClone) {
+                this.selectionMarkPoseRenderInstances.start.copy(startClone);
+                this.selectionMarkPoseRenderInstances.start.setVisible(true);
+                this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
+            }
+            const endClone = this.getCloneByTimestamp(end);
+            if (endClone) {
+                this.selectionMarkPoseRenderInstances.end.copy(endClone);
+                this.selectionMarkPoseRenderInstances.end.setVisible(true);
+                this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
+            }
+        }
             break;
         case AnimationMode.all:
             // no effect
@@ -890,33 +938,49 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        let bestClone = null;
-        let start = Math.max(this.clones.all.indexOf(this.lastDisplayedClone), 0);
-        if (this.clones.all[start].pose.timestamp > timestamp) {
-            start = 0;
-        }
-        for (let i = start; i < this.clones.all.length; i++) {
-            let clone = this.clones.all[i];
-            let cloneNext = this.clones.all[i + 1];
-            if (clone.pose.timestamp > timestamp) {
-                break;
-            }
-            if (!cloneNext || cloneNext.pose.timestamp > timestamp) {
-                bestClone = clone;
-                break;
-            }
-        }
-        if (bestClone) {
-            if (this.lastDisplayedClone !== bestClone) {
-                this.hideLastDisplayedClone();
-                this.lastDisplayedClone = bestClone;
-                bestClone.setVisible(true);
-                bestClone.renderer.markMatrixNeedsUpdate();
-            }
-        } else {
+        const bestClone = this.getCloneByTimestamp(timestamp);
+        if (!bestClone) {
             this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+            this.lastDisplayedCloneIndex = -1;
+            return;
         }
+
+        if (this.lastDisplayedClone !== bestClone) {
+            this.hideLastDisplayedClone();
+            this.lastDisplayedClone = bestClone;
+            bestClone.setVisible(true);
+            bestClone.renderer.markMatrixNeedsUpdate();
+        }
+    }
+
+    /**
+     * Returns the clone with the closest timestamp to the given timestamp
+     * @param {number} timestamp - time in ms
+     * @return {HumanPoseRenderInstance} - the clone with the closest timestamp
+     */
+    getCloneByTimestamp(timestamp) {
+        if (this.clones.all.length < 2) {
+            return null;
+        }
+
+        let bestClone = null;
+        let distance = 0;
+
+        // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
+        for (let i = 0; i < this.clones.all.length; i++) {
+            if (!bestClone) {
+                bestClone = this.clones.all[i];
+                distance = Math.abs(bestClone.pose.timestamp - timestamp);
+                continue;
+            }
+            let clone = this.clones.all[i];
+            let cloneDistance = Math.abs(clone.pose.timestamp - timestamp);
+            if (cloneDistance < distance) {
+                bestClone = clone;
+                distance = cloneDistance;
+            }
+        }
+        return bestClone;
     }
 }
 
@@ -1003,12 +1067,11 @@ function hidePoseRenderInstance(poseRenderInstance) {
 function updatePoseRenderer(poseObject, timestamp, historical, container) {
     let renderer = historical ?
         humanPoseAnalyzer.getHistoricalPoseRenderer() :
-        humanPoseAnalyzer.instantPoseRenderer;
+        humanPoseAnalyzer.opaquePoseRenderer;
     if (!poseRenderInstances[poseObject.uuid]) {
         poseRenderInstances[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid, humanPoseAnalyzer.activeLens);
     }
     let poseRenderInstance = poseRenderInstances[poseObject.uuid];
-
     if (historical) {
         historicalPoseRenderInstanceList.push(poseRenderInstance);
         updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp);
@@ -1207,6 +1270,16 @@ function setLiveHistoryLinesVisible(visible) {
 }
 
 /**
+ * Sets the visibility of the live history lines
+ * @param {boolean} visible - whether to show the live history lines
+ * @deprecated
+ */
+function setHistoryLinesVisible(visible) {
+    console.warn('setHistoryLinesVisible is deprecated, use setLiveHistoryLinesVisible instead');
+    setLiveHistoryLinesVisible(visible);
+}
+
+/**
  * Resets the HumanPoseAnalyzer's historical data
  */
 function clearHistoricalData() {
@@ -1299,6 +1372,13 @@ function hideAnalyzerUI() {
     humanPoseAnalyzer.settingsUi.hide();
 }
 
+/**
+ * Toggles the HumanPoseAnalyzer's settings UI
+ */
+function toggleAnalyzerUI() {
+    humanPoseAnalyzer.settingsUi.toggle();
+}
+
 // TODO: Remove deprecated API use
 export {
     renderHumanPoseObjects,
@@ -1321,4 +1401,5 @@ export {
     finishHistoryPlayback,
     showAnalyzerUI,
     hideAnalyzerUI,
+    toggleAnalyzerUI,
 };

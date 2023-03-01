@@ -36,18 +36,16 @@ export class Analytics {
 
     add() {
         this.createNewPinnedRegionCardsContainer();
-
         document.body.appendChild(this.container);
-        setHistoricalHistoryLinesVisible(true);
         this.added = true;
         showAnalyzerUI();
     }
 
     remove() {
         document.body.removeChild(this.container);
-        setHistoricalHistoryLinesVisible(false);
         clearHistoricalData();
         this.added = false;
+        this.timeline.reset();
         hideAnalyzerUI();
     }
 

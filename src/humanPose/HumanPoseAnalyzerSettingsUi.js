@@ -76,13 +76,6 @@ class HumanPoseAnalyzerSettingsUi {
         this.setInitialPosition();
         this.root.querySelector('#hpa-joint-settings').remove(); // TODO: implement joint selection and remove this line
         this.hide(); // It is important to set the menu's position before hiding it, otherwise its width will be calculated as 0
-
-        // TODO: debug only, remove after testing
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 's') {
-                this.toggle();
-            }
-        });
     }
 
     /**

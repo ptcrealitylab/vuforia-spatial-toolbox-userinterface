@@ -51,16 +51,17 @@ function unionUpdateRange(instancedBufferAttribute, offset, count) {
 export class HumanPoseRenderer {
     /**
      * @param {THREE.Material} material - Material for all instanced meshes
+     * @param {number} maxInstances - Maximum number of instances to render
      */
-    constructor(material, maxInstances, lens) {
+    constructor(material, maxInstances) {
         this.container = new THREE.Group();
         // A stack of free instance slots (indices) that a PoseRenderInstance
         // can reuse
         this.freeInstanceSlots = [];
         this.nextInstanceSlot = 0;
         this.maxInstances = maxInstances;
+        this.material = material;
         this.createMeshes(material);
-        this.lens = lens;
     }
 
     /**
@@ -311,5 +312,15 @@ export class HumanPoseRenderer {
     markColorNeedsUpdate() {
         this.jointsMesh.instanceColor.needsUpdate = true;
         this.bonesMesh.instanceColor.needsUpdate = true;
+    }
+
+    /**
+     * For debugging purposes
+     */
+    toString() {
+        return JSON.stringify({
+            jointsCount: this.jointsMesh.count,
+            bonesCount: this.bonesMesh.count,
+        });
     }
 }
