@@ -59,6 +59,7 @@ export class HumanPoseRenderer {
         this.freeInstanceSlots = [];
         this.nextInstanceSlot = 0;
         this.maxInstances = maxInstances;
+        this.material = material;
         this.createMeshes(material);
     }
 
