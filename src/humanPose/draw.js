@@ -8,6 +8,9 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderers = {};
 
+const HISTORICAL_OPACITY_BASE = 0.5;
+const HISTORICAL_OPACITY_BACKGROUND = 0.2;
+
 export const AnimationMode = {
     // The single historical pose at the cursor time is visible
     cursor: 'cursor',
@@ -46,6 +49,11 @@ export class HumanPoseAnalyzer {
         this.poseRendererLive = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), 16);
         this.poseRendererLive.addToScene(historyCloneContainer);
 
+        this.selectionMarkPoseRenderInstances = {
+            start: new HumanPoseRenderInstance(this.poseRendererLive, 'selectionMarkStart'),
+            end: new HumanPoseRenderInstance(this.poseRendererLive, 'selectionMarkEnd'),
+        };
+
         this.historicalPoseRenderers = [];
         if (realityEditor.device.environment.isDesktop()) {
             this.addHistoricalPoseRenderer();
@@ -59,7 +67,7 @@ export class HumanPoseAnalyzer {
     addHistoricalPoseRenderer() {
         const poseRendererHistorical = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.5,
+            opacity: HISTORICAL_OPACITY_BASE,
         }), MAX_POSE_INSTANCES);
         poseRendererHistorical.addToScene(this.historyCloneContainer);
         this.historicalPoseRenderers.push(poseRendererHistorical);
@@ -320,6 +328,14 @@ export class HumanPoseAnalyzer {
                 clone.poseObject.setVisible(false);
             }
         }
+
+        if (this.animationMode === AnimationMode.regionAll) {
+            this.setHistoricalPoseRenderersOpacity(HISTORICAL_OPACITY_BACKGROUND);
+        } else {
+            this.setHistoricalPoseRenderersOpacity(HISTORICAL_OPACITY_BASE);
+            this.selectionMarkPoseRenderInstances.start.setVisible(false);
+            this.selectionMarkPoseRenderInstances.end.setVisible(false);
+        }
     }
 
     saveAnimationState() {
@@ -351,6 +367,14 @@ export class HumanPoseAnalyzer {
             clone.poseObject.setColorOption(this.cloneMaterialIndex);
         });
         this.markHistoricalColorNeedsUpdate();
+    }
+
+    setHistoricalPoseRenderersOpacity(opacity) {
+        for (let hpr of this.historicalPoseRenderers) {
+            if (hpr.material.opacity !== opacity) {
+                hpr.material.opacity = opacity;
+            }
+        }
     }
 
     markHistoricalColorNeedsUpdate() {
@@ -386,9 +410,22 @@ export class HumanPoseAnalyzer {
             this.hideLastDisplayedClone();
             this.lastDisplayedCloneIndex = -1;
             break;
-        case AnimationMode.regionAll:
+        case AnimationMode.regionAll: {
             this.hideAllClones();
             this.setCloneVisibleInInterval(true, start, end);
+            let startRes = this.getNearestClone(start);
+            if (startRes) {
+                this.selectionMarkPoseRenderInstances.start.copy(startRes.clone.poseObject);
+                this.selectionMarkPoseRenderInstances.start.setVisible(true);
+                this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
+            }
+            let endRes = this.getNearestClone(end);
+            if (endRes) {
+                this.selectionMarkPoseRenderInstances.end.copy(endRes.clone.poseObject);
+                this.selectionMarkPoseRenderInstances.end.setVisible(true);
+                this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
+            }
+        }
             break;
         case AnimationMode.all:
             // no effect
@@ -466,12 +503,39 @@ export class HumanPoseAnalyzer {
             return;
         }
 
+        let start = Math.max(this.lastDisplayedCloneIndex, 0);
+        const nearest = this.getNearestClone(timestamp, start);
+        if (!nearest) {
+            this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = -1;
+        }
+
+        const bestClone = nearest.clone;
+        const bestCloneIndex = nearest.index;
+
+        if (this.lastDisplayedCloneIndex !== bestCloneIndex) {
+            this.hideLastDisplayedClone();
+            this.lastDisplayedCloneIndex = bestCloneIndex;
+            bestClone.poseObject.setVisible(true);
+            bestClone.poseObject.renderer.markMatrixNeedsUpdate();
+        }
+    }
+
+    /**
+     * @param {number} timestamp - time in ms
+     * @return {{clone: HumanPoseRenderInstance, index: number}?}
+     */
+    getNearestClone(timestamp, start = 0) {
+        if (this.clonesAll.length < 2) {
+            return;
+        }
+
         let bestClone = null;
         let bestCloneIndex = -1;
-        let start = Math.max(this.lastDisplayedCloneIndex, 0);
         if (this.clonesAll[start].timestamp > timestamp) {
             start = 0;
         }
+
         for (let i = start; i < this.clonesAll.length; i++) {
             let clone = this.clonesAll[i];
             let cloneNext = this.clonesAll[i + 1];
@@ -485,15 +549,10 @@ export class HumanPoseAnalyzer {
             }
         }
         if (bestClone) {
-            if (this.lastDisplayedCloneIndex !== bestCloneIndex) {
-                this.hideLastDisplayedClone();
-                this.lastDisplayedCloneIndex = bestCloneIndex;
-                bestClone.poseObject.setVisible(true);
-                bestClone.poseObject.renderer.markMatrixNeedsUpdate();
-            }
-        } else {
-            this.hideLastDisplayedClone();
-            this.lastDisplayedCloneIndex = -1;
+            return {
+                clone: bestClone,
+                index: bestCloneIndex
+            };
         }
     }
 }

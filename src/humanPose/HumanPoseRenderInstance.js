@@ -249,57 +249,80 @@ export class HumanPoseRenderInstance {
 
     cloneToRenderer(newRenderer, startingColorOption) {
         let clone = new HumanPoseRenderInstance(newRenderer, this.id);
+        clone.copy(this, startingColorOption);
+        return clone;
+    }
 
+    /**
+     * Copy all elements of other pose render instance
+     * @param {HumanPoseRenderInstance}
+     */
+    copy(other, startingColorOption = 0) {
         for (const jointId of Object.keys(JOINT_TO_INDEX)) {
-            clone.setJointPosition(jointId, this.getJointPosition(jointId));
+            this.setJointPosition(jointId, other.getJointPosition(jointId));
         }
         // TODO would be significantly faster to use the bulk set methods
-        clone.updateBonePositions();
+        this.updateBonePositions();
 
         let colorRainbow = new THREE.Color();
         colorRainbow.setHSL(((Date.now() / 5) % 360) / 360, 1, 0.5);
 
-        let hueReba = this.getOverallRebaScoreHue();
+        let hueReba = other.getOverallRebaScoreHue();
         // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
         let colorReba = new THREE.Color();
         colorReba.setHSL(hueReba / 360, 1, 0.5);
 
-        let boneColors = this.renderer.getSlotBoneColors(this.slot);
-        let jointColors = this.renderer.getSlotJointColors(this.slot);
+        if (!other.colorOptions || other.colorOptions.length !== 3) {
+            // Generate color options manually if the other pose renderer
+            // hasn't already e.g. a live pose rendere only has the baseline
+            // bone/joint colors
 
-        let boneColorsRainbow = boneColors.slice(0);
-        let jointColorsRainbow = jointColors.slice(0);
+            let boneColors = other.renderer.getSlotBoneColors(other.slot);
+            let jointColors = other.renderer.getSlotJointColors(other.slot);
 
-        let boneColorsReba = boneColors.slice(0);
-        let jointColorsReba = jointColors.slice(0);
+            let boneColorsRainbow = boneColors.slice(0);
+            let jointColorsRainbow = jointColors.slice(0);
 
-        for (let i = 0; i < boneColors.length / 3; i++) {
-            colorRainbow.toArray(boneColorsRainbow, i * 3);
-            colorReba.toArray(boneColorsReba, i * 3);
+            let boneColorsReba = boneColors.slice(0);
+            let jointColorsReba = jointColors.slice(0);
+
+            for (let i = 0; i < boneColors.length / 3; i++) {
+                colorRainbow.toArray(boneColorsRainbow, i * 3);
+                colorReba.toArray(boneColorsReba, i * 3);
+            }
+            for (let i = 0; i < jointColors.length / 3; i++) {
+                colorRainbow.toArray(jointColorsRainbow, i * 3);
+                colorReba.toArray(jointColorsReba, i * 3);
+            }
+
+            this.colorOptions[0] = {
+                boneColors: boneColorsReba,
+                jointColors: jointColorsReba,
+            };
+
+            this.colorOptions[1] = {
+                boneColors,
+                jointColors,
+            };
+
+            this.colorOptions[2] = {
+                boneColors: boneColorsRainbow,
+                jointColors: jointColorsRainbow,
+            };
+        } else {
+            for (let i = 0; i < other.colorOptions.length; i++) {
+                let colorOption = other.colorOptions[i];
+                let copiedOpt = {
+                    boneColors: colorOption.boneColors.slice(0),
+                    jointColors: colorOption.jointColors.slice(0),
+                };
+                this.colorOptions[i] = copiedOpt;
+            }
         }
-        for (let i = 0; i < jointColors.length / 3; i++) {
-            colorRainbow.toArray(jointColorsRainbow, i * 3);
-            colorReba.toArray(jointColorsReba, i * 3);
-        }
 
-        clone.colorOptions.push({
-            boneColors: boneColorsReba,
-            jointColors: jointColorsReba,
-        });
+        this.setColorOption(startingColorOption);
 
-        clone.colorOptions.push({
-            boneColors,
-            jointColors,
-        });
-
-        clone.colorOptions.push({
-            boneColors: boneColorsRainbow,
-            jointColors: jointColorsRainbow,
-        });
-
-        clone.setColorOption(startingColorOption);
-
-        return clone;
+        return this;
     }
 
     /**
