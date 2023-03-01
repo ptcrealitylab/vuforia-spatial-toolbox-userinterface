@@ -391,7 +391,9 @@ export class HumanPoseAnalyzer {
             Object.keys(this.historyLines[lens.name].historical).forEach(key => {
                 const historyLine = this.historyLines[lens.name].historical[key];
                 historyLine.resetPoints();
-                historyLine.parent.remove(historyLine);
+                if (historyLine.parent) {
+                    historyLine.parent.remove(historyLine);
+                }
                 delete this.historyLines[lens.name].all[key];
             });
             this.historyLines[lens.name].historical = {};
@@ -1027,7 +1029,7 @@ function getGroundPlaneRelativeMatrix() {
  */
 function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
-
+    
     if (!humanPoseAnalyzer) {
         humanPoseAnalyzer = new HumanPoseAnalyzer(container);
     }
@@ -1068,10 +1070,11 @@ function updatePoseRenderer(poseObject, timestamp, historical, container) {
     let renderer = historical ?
         humanPoseAnalyzer.getHistoricalPoseRenderer() :
         humanPoseAnalyzer.opaquePoseRenderer;
-    if (!poseRenderInstances[poseObject.uuid]) {
-        poseRenderInstances[poseObject.uuid] = new HumanPoseRenderInstance(renderer, poseObject.uuid, humanPoseAnalyzer.activeLens);
+    const identifier = `${historical ? 'historical-' : ''}${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+    if (!poseRenderInstances[identifier]) {
+        poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, humanPoseAnalyzer.activeLens);
     }
-    let poseRenderInstance = poseRenderInstances[poseObject.uuid];
+    let poseRenderInstance = poseRenderInstances[identifier];
     if (historical) {
         historicalPoseRenderInstanceList.push(poseRenderInstance);
         updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp);
