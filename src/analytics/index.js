@@ -1,13 +1,13 @@
 createNameSpace("realityEditor.analytics");
 
 import {Analytics} from './analytics.js'
-import {AnalyticsMock} from './AnalyticsMock.js'
+import {AnalyticsMobile} from './AnalyticsMobile.js'
 
 (function(exports) {
     const DEBUG_ALWAYS_ADD = false;
     const analytics = realityEditor.device.environment.isDesktop() ?
         new Analytics() :
-        new AnalyticsMock();
+        new AnalyticsMobile();
     exports.analytics = analytics;
 
     exports.analytics.initService = function() {
