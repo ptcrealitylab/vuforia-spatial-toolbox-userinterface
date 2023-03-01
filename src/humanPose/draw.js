@@ -508,6 +508,7 @@ export class HumanPoseAnalyzer {
         if (!nearest) {
             this.hideLastDisplayedClone();
             this.lastDisplayedCloneIndex = -1;
+            return;
         }
 
         const bestClone = nearest.clone;
