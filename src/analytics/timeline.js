@@ -1,6 +1,5 @@
 import {RegionCard, RegionCardState} from './regionCard.js';
 import {
-    getHistoryPointsInTimeInterval,
     setAnimationMode,
     AnimationMode, getPosesInTimeInterval,
 } from '../humanPose/draw.js';

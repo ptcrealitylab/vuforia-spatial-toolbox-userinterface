@@ -4,11 +4,9 @@ import {
     RegionCardState,
 } from './regionCard.js';
 import {
-    getHistoryPointsInTimeInterval,
     setHighlightRegion,
     setDisplayRegion,
     setCursorTime,
-    setHistoricalHistoryLinesVisible,
     clearHistoricalData,
     showAnalyzerUI,
     hideAnalyzerUI, getPosesInTimeInterval

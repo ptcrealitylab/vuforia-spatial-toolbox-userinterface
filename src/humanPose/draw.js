@@ -580,34 +580,6 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * Gets all history points in the time interval from all history lines
-     * @param {number} firstTimestamp - start of time interval in ms
-     * @param {number} secondTimestamp - end of time interval in ms
-     * @return {Vector3[]} - all points in the time interval
-     */
-    getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
-        // TODO: perf can be improved through creating historyPointsAll and
-        // binary search for indices
-        let allPoints = [];
-        for (const mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-            for (const point of mesh.currentPoints) {
-                if (point.timestamp < firstTimestamp) {
-                    continue;
-                }
-                if (point.timestamp > secondTimestamp) {
-                    // Assume sorted
-                    break;
-                }
-                allPoints.push(point);
-            }
-        }
-        allPoints.sort((a, b) => {
-            return a.timestamp - b.timestamp;
-        });
-        return allPoints;
-    }
-
-    /**
      * Makes the historical history lines visible or invisible
      * @param visible {boolean} - whether to show the history lines
      */
@@ -623,18 +595,6 @@ export class HumanPoseAnalyzer {
     setLiveHistoryLinesVisible(visible) {
         this.liveHistoryLineContainer.visible = visible;
         this.settingsUi.setLiveHistoryLinesVisible(visible);
-    }
-
-    /**
-     * Sets the visibility of the history lines
-     * @param {boolean} visible - whether to show the history lines
-     * @deprecated
-     * @see setLiveHistoryLinesVisible
-     * @see setHistoricalHistoryLinesVisible
-     */
-    setHistoryLinesVisible(visible) {
-        this.setLiveHistoryLinesVisible(visible);
-        console.warn('setHistoryLinesVisible is deprecated. Use setLiveHistoryLinesVisible or setHistoricalHistoryLinesVisible instead.');
     }
 
     /**
@@ -1039,9 +999,9 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
             if (!poseObject.uuid) {
                 poseObject.uuid = poseObject.objectId;
             }
-            updatePoseRenderer(poseObject, timestamp, true, container);
+            updatePoseRenderer(poseObject, timestamp, true);
         } else {
-            updatePoseRenderer(poseObject, timestamp, false, container);
+            updatePoseRenderer(poseObject, timestamp, false);
         }
     }
     if (!historical) {
@@ -1064,9 +1024,8 @@ function hidePoseRenderInstance(poseRenderInstance) {
  * @param poseObject {HumanPoseObject} - the poseObject to render
  * @param timestamp {number} - the timestamp of when the poseObject was recorded
  * @param historical {boolean} - whether the poseObject is historical (being played back) or not (live)
- * @param container {Object3D} - the container to place the HumanPoseRenderer into
  */
-function updatePoseRenderer(poseObject, timestamp, historical, container) {
+function updatePoseRenderer(poseObject, timestamp, historical) {
     let renderer = historical ?
         humanPoseAnalyzer.getHistoricalPoseRenderer() :
         humanPoseAnalyzer.opaquePoseRenderer;
@@ -1247,16 +1206,6 @@ function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
 }
 
 /**
- * Gets the points in the history lines that are within the given time interval
- * @param {number} firstTimestamp - start of time interval in ms
- * @param {number} secondTimestamp - end of time interval in ms
- * @return {SpaghettiMeshPathPoint[]} - the points in the history lines that are within the given time interval
- */
-function getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp) {
-    return humanPoseAnalyzer.getHistoryPointsInTimeInterval(firstTimestamp, secondTimestamp);
-}
-
-/**
  * Sets the visibility of the historical history lines
  * @param {boolean} visible - whether to show the historical history lines
  */
@@ -1270,16 +1219,6 @@ function setHistoricalHistoryLinesVisible(visible) {
  */
 function setLiveHistoryLinesVisible(visible) {
     humanPoseAnalyzer.setLiveHistoryLinesVisible(visible);
-}
-
-/**
- * Sets the visibility of the live history lines
- * @param {boolean} visible - whether to show the live history lines
- * @deprecated
- */
-function setHistoryLinesVisible(visible) {
-    console.warn('setHistoryLinesVisible is deprecated, use setLiveHistoryLinesVisible instead');
-    setLiveHistoryLinesVisible(visible);
 }
 
 /**
@@ -1400,7 +1339,6 @@ export {
     advanceLens,
     advanceCloneMaterial,
     getPosesInTimeInterval,
-    getHistoryPointsInTimeInterval,
     finishHistoryPlayback,
     showAnalyzerUI,
     hideAnalyzerUI,

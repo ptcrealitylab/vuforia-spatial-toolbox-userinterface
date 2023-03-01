@@ -234,7 +234,7 @@ function createDummySkeleton() {
     Object.values(JOINTS).forEach((jointId, i) => {
         dummySkeleton.joints[jointId] = i;
         dummySkeleton.jointInstancedMesh.setMatrixAt(i, getDummyJointMatrix(jointId));
-    });{}
+    });
 
     const boneGeometry = new THREE.CylinderGeometry(.01 * SCALE, .01 * SCALE, SCALE, 3);
     dummySkeleton.boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, material, Object.values(JOINT_CONNECTIONS).length);

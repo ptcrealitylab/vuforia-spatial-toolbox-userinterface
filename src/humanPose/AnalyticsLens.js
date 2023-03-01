@@ -15,10 +15,10 @@ class AnalyticsLens {
 
     /**
      * Applies the lens to a single pose by adding new properties to the pose object.
-     * @param pose {Pose} The pose to apply the lens to.
+     * @param _pose {Pose} The pose to apply the lens to.
      * @return {boolean} True if the pose was modified, false otherwise.
      */
-    applyLensToPose(pose) {
+    applyLensToPose(_pose) {
         return false;
     }
 
@@ -42,28 +42,28 @@ class AnalyticsLens {
 
     /**
      * Calculates the color for a given joint.
-     * @param joint {Object} The joint to calculate the color for.
+     * @param _joint {Object} The joint to calculate the color for.
      * @return {Color} The color to use for the value.
      */
-    getColorForJoint(joint) {
+    getColorForJoint(_joint) {
         return AnalyticsColors.undefined;
     }
 
     /**
      * Calculates the color for a given bone.
-     * @param bone {Object} The bone to calculate the color for.
+     * @param _bone {Object} The bone to calculate the color for.
      * @return {Color} The color to use for the value.
      */
-    getColorForBone(bone) {
+    getColorForBone(_bone) {
         return AnalyticsColors.undefined;
     }
 
     /**
      * Calculates the color for a given pose.
-     * @param pose {Pose} The pose to calculate the color for.
+     * @param _pose {Pose} The pose to calculate the color for.
      * @return {Color} The color to use for the value.
      */
-    getColorForPose(pose) {
+    getColorForPose(_pose) {
         return AnalyticsColors.undefined;
     }
 }

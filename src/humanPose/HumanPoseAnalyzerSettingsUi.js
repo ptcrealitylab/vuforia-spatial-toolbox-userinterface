@@ -1,4 +1,3 @@
-import {AnimationMode} from "./draw.js";
 import {JOINTS} from "./utils.js";
 
 class HumanPoseAnalyzerSettingsUi {
@@ -129,7 +128,7 @@ class HumanPoseAnalyzerSettingsUi {
             this.humanPoseAnalyzer.setHistoricalHistoryLinesVisible(event.target.checked);
         });
         
-        this.root.querySelector('#hpa-settings-reset-history').addEventListener('mouseup', (event) => {
+        this.root.querySelector('#hpa-settings-reset-history').addEventListener('mouseup', () => {
             this.humanPoseAnalyzer.resetLiveHistoryLines();
             this.humanPoseAnalyzer.resetLiveHistoryClones();
         });
@@ -262,9 +261,8 @@ class HumanPoseAnalyzerSettingsUi {
         this.root.querySelector('#hpa-settings-toggle-historical-history-lines').checked = historyLinesVisible;
     }
 
-    setActiveJointByName(jointName) {
-        return; // TODO: re-add once implemented
-        this.root.querySelector('#hpa-settings-select-joint').value = jointName;
+    setActiveJointByName(_jointName) {
+        // this.root.querySelector('#hpa-settings-select-joint').value = jointName; // TODO: re-add once implemented
     }
 }
 
