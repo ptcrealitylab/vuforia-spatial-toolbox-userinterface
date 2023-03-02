@@ -119,8 +119,10 @@ export class HumanPoseAnalyzer {
         this.livePoseRenderers = [];
         this.addLivePoseRenderer();
 
-        this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
-        this.setUiDefaults();
+        if (realityEditor.device.environment.isDesktop()) {
+            this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
+            this.setUiDefaults();
+        }
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
@@ -553,7 +555,9 @@ export class HumanPoseAnalyzer {
         this.historyLineContainers.live[lens.name].visible = true;
 
         // Update UI
-        this.settingsUi.setActiveLens(lens);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveLens(lens);
+        }
     }
 
     /**
@@ -571,7 +575,9 @@ export class HumanPoseAnalyzer {
      */
     setActiveJointByName(jointName) {
         this.activeJointName = jointName;
-        this.settingsUi.setActiveJointByName(jointName);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveJointByName(jointName);
+        }
         // TODO: Create history line for joint
     }
 
@@ -669,7 +675,9 @@ export class HumanPoseAnalyzer {
      */
     setHistoricalHistoryLinesVisible(visible) {
         this.historicalHistoryLineContainer.visible = visible;
-        this.settingsUi.setHistoricalHistoryLinesVisible(visible);
+        if (this.settingsUi) {
+            this.settingsUi.setHistoricalHistoryLinesVisible(visible);
+        }
     }
 
     /**
@@ -678,7 +686,9 @@ export class HumanPoseAnalyzer {
      */
     setLiveHistoryLinesVisible(visible) {
         this.liveHistoryLineContainer.visible = visible;
-        this.settingsUi.setLiveHistoryLinesVisible(visible);
+        if (this.settingsUi) {
+            this.settingsUi.setLiveHistoryLinesVisible(visible);
+        }
     }
 
     /**
@@ -1314,21 +1324,27 @@ function finishHistoryPlayback() {
  * Shows the HumanPoseAnalyzer's settings UI
  */
 function showAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.show();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.show();
+    }
 }
 
 /**
  * Hides the HumanPoseAnalyzer's settings UI
  */
 function hideAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.hide();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.hide();
+    }
 }
 
 /**
  * Toggles the HumanPoseAnalyzer's settings UI
  */
 function toggleAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.toggle();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.toggle();
+    }
 }
 
 // TODO: Remove deprecated API use
