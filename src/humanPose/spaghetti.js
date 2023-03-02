@@ -76,6 +76,7 @@ class MeasurementLabel {
 export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
         super(path, params);
+        this.allPoints = this.currentPoints;
 
         this.pathId = realityEditor.device.utilities.uuidTime();
         this.comparer = new KeyframeComparer();
@@ -96,6 +97,11 @@ export class SpaghettiMeshPath extends MeshPath {
                 this.cursor.position.set(animatedPos.x, animatedPos.y, animatedPos.z);
             }
         });
+    }
+    
+    setAllPoints(points) {
+        this.allPoints = points;
+        this.setPoints(points);
     }
 
     /**

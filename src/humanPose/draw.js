@@ -1,5 +1,11 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} from './utils.js';
+import {
+    JOINTS,
+    JOINT_PUBLIC_DATA_KEYS,
+    getJointNodeInfo,
+    getGroundPlaneRelativeMatrix,
+    setMatrixFromArray
+} from './utils.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
 import {Pose} from "./Pose.js";
 import {RebaLens} from "./RebaLens.js";
@@ -99,8 +105,8 @@ export class HumanPoseAnalyzer {
         
         // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
         this.selectionMarkPoseRenderInstances = {
-            start: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkStart', this.activeLens), // TODO: apply lens changes
-            end: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkEnd', this.activeLens), // TODO: apply lens changes
+            start: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkStart', this.activeLens),
+            end: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkEnd', this.activeLens),
         };
 
         // Contains all historical poses
@@ -259,7 +265,6 @@ export class HumanPoseAnalyzer {
             minTimestamp = Math.min(minTimestamp, firstTimestamp, secondTimestamp);
             maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
         }
-        
         if (this.animationMode === AnimationMode.region ||
             this.animationMode === AnimationMode.regionAll) {
             this.setAnimationRange(minTimestamp, maxTimestamp);
@@ -273,29 +278,62 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * Responds to new poses being added to the HumanPoseRenderer
-     * @param {HumanPoseRenderInstance} poseRendererInstance - the pose renderer that was updated
-     * @param {number} timestamp - the timestamp of the pose
+     * Processes new poses being added to the HumanPoseRenderer
+     * @param {Pose} pose - the pose renderer that was updated
      * @param {boolean} historical - whether the pose is historical or live
      */
-    poseRendererInstanceUpdated(poseRendererInstance, timestamp, historical) {
+    poseUpdated(pose, historical) {
+        this.addCloneFromPose(pose, historical);
+        this.updateHistoryLines(pose, historical);
+    }
+
+    /**
+     * Processes new bulk historical poses being added to the HumanPoseRenderer
+     * @param {Pose[]} poses - the poses to be added
+     */
+    bulkHistoricalPosesUpdated(poses) {
+        this.lenses.forEach(lens => {
+            lens.reset();
+        });
+        poses.forEach(pose => {
+            this.addCloneFromPose(pose, true);
+        });
+        this.bulkUpdateHistoryLines(poses, true);
+    }
+
+    /**
+     * Creates a new clone from a pose and adds it to the analyzer
+     * @param {Pose} pose - the pose to clone
+     * @param {boolean} historical - whether the pose is historical or live
+     */
+    addCloneFromPose(pose, historical) {
         const poseRenderer = historical ? this.getHistoricalPoseRenderer() : this.getLivePoseRenderer();
-        const clone = poseRendererInstance.cloneToRenderer(poseRenderer);
-        this.clones.all.push(clone);
+        const instanceId = `${pose.timestamp}-${pose.metadata.poseObjectId}`;
+        if (!poseRenderInstances[instanceId]) {
+            poseRenderInstances[instanceId] = new HumanPoseRenderInstance(poseRenderer, instanceId, this.activeLens);
+        }
+        const poseRenderInstance = poseRenderInstances[instanceId];
         if (historical) {
-            this.clones.historical.push(clone);
-        } else {
-            this.clones.live.push(clone);
+            historicalPoseRenderInstanceList.push(poseRenderInstance);
         }
+        
+        this.clones.all.push(poseRenderInstance);
+        if (historical) {
+            this.clones.historical.push(poseRenderInstance);
+        } else {
+            this.clones.live.push(poseRenderInstance);
+        }
+        poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         if (this.animationMode === AnimationMode.all) {
-            clone.setVisible(true);
+            poseRenderInstance.setVisible(true);
         } else {
-            clone.setVisible(false);
+            poseRenderInstance.setVisible(false);
         }
-        clone.renderer.markMatrixNeedsUpdate();
+
+        poseRenderInstance.renderer.markMatrixNeedsUpdate();
 
         const relevantClones = historical ? this.clones.historical : this.clones.live;
-        const poseHistory = relevantClones.map(clone => clone.pose);
+        const poseHistory = relevantClones.map(poseRenderInstance => poseRenderInstance.pose);
         this.lenses.forEach(lens => {
             const modifiedResult = lens.applyLensToHistoryMinimally(poseHistory); // Needed to efficiently update each pose frame, if we update everything it's not as performant
             modifiedResult.forEach((wasModified, index) => {
@@ -305,47 +343,90 @@ export class HumanPoseAnalyzer {
                 }
             });
         });
-        clone.setLens(this.activeLens);
-        clone.renderer.markColorNeedsUpdate();
+        poseRenderInstance.setLens(this.activeLens);
+        poseRenderInstance.renderer.markColorNeedsUpdate();
+    }
 
-        let currentPoint = poseRendererInstance.pose.getJoint(JOINTS.HEAD).position.clone();
-        currentPoint.y += 400;
-        
+    /**
+     * Updates the history lines with the given pose
+     * @param {Pose} pose - the pose to be added
+     * @param {boolean} historical - whether the pose is historical or live
+     */
+    updateHistoryLines(pose, historical) {
         this.lenses.forEach(lens => {
-            if (!this.historyLines[lens.name].all.hasOwnProperty(poseRendererInstance.id)) {
-                this.createHistoryLine(lens, poseRendererInstance.id, historical);
-            }
-            let historyLine = this.historyLines[lens.name].all[poseRendererInstance.id];
-            
-            // Split spaghetti line if we jumped by a large amount
-            if (historyLine.currentPoints.length > 0) {
-                const lastPoint = historyLine.currentPoints[historyLine.currentPoints.length - 1];
-                const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
-                if (lastPointVector.distanceToSquared(currentPoint) > 800 * 800) {
-                    this.historyLines[lens.name].all[poseRendererInstance.id + '-until-' + timestamp] = historyLine;
-                    if (historical) {
-                        this.historyLines[lens.name].historical[poseRendererInstance.id + '-until-' + timestamp] = historyLine;
-                    } else {
-                        this.historyLines[lens.name].live[poseRendererInstance.id + '-until-' + timestamp] = historyLine;
-                    }
-                    historyLine = this.createHistoryLine(lens, poseRendererInstance.id, historical);
-                }
-            }
-
-            const color = lens.getColorForPose(poseRendererInstance.pose);
-
-            /** @type {SpaghettiMeshPathPoint} */
-            let historyPoint = {
-                x: currentPoint.x,
-                y: currentPoint.y,
-                z: currentPoint.z,
-                color,
-                timestamp,
-            };
-
-            historyLine.currentPoints.push(historyPoint);
-            this.historyLines[lens.name].all[poseRendererInstance.id].setPoints(historyLine.currentPoints);
+            this.addPointToHistoryLine(lens, pose, historical, true);
         });
+    }
+
+    /**
+     * Updates the history lines with the given bulk poses
+     * @param {Pose[]} poses - the poses to be added
+     * @param {boolean} historical - whether the pose is historical or live
+     */
+    bulkUpdateHistoryLines(poses, historical) {
+        const updatedHistoryLines = [];
+        this.lenses.forEach(lens => {
+            poses.forEach(pose => {
+                const updatedHistoryLine = this.addPointToHistoryLine(lens, pose, historical, false);
+                if (!updatedHistoryLines.includes(updatedHistoryLine)) {
+                    updatedHistoryLines.push(updatedHistoryLine);
+                }
+            });
+        });
+        updatedHistoryLines.forEach(historyLine => {
+            historyLine.setAllPoints(historyLine.currentPoints);
+        });
+    }
+
+    /**
+     * Adds a poseRenderInstance's point to the history line's points for the given lens, updating the history line if desired
+     * @param {AnalyticsLens} lens - the lens to add the point with
+     * @param {Pose} pose - the pose to add the point from
+     * @param {boolean} historical - whether the pose is historical or live
+     * @param {boolean} shouldUpdate - whether to update the history line to reflect the changes immediately
+     * @return {SpaghettiMeshPath} - the history line that was updated
+     */
+    addPointToHistoryLine(lens, pose, historical, shouldUpdate) {
+        const timestamp = pose.timestamp;
+        const id = pose.metadata.poseObjectId;
+        let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
+        currentPoint.y += 400;
+        if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
+            this.createHistoryLine(lens, id, historical);
+        }
+        let historyLine = this.historyLines[lens.name].all[id];
+        // Split spaghetti line if we jumped by a large amount
+        if (historyLine.currentPoints.length > 0) {
+            const lastPoint = historyLine.currentPoints[historyLine.currentPoints.length - 1];
+            const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
+            if (lastPointVector.distanceToSquared(currentPoint) > 800 * 800) {
+                this.historyLines[lens.name].all[id + '-until-' + timestamp] = historyLine;
+                if (historical) {
+                    this.historyLines[lens.name].historical[id + '-until-' + timestamp] = historyLine;
+                } else {
+                    this.historyLines[lens.name].live[id + '-until-' + timestamp] = historyLine;
+                }
+                historyLine = this.createHistoryLine(lens, id, historical);
+            }
+        }
+
+        const color = lens.getColorForPose(pose);
+
+        /** @type {SpaghettiMeshPathPoint} */
+        let historyPoint = {
+            x: currentPoint.x,
+            y: currentPoint.y,
+            z: currentPoint.z,
+            color,
+            timestamp,
+        };
+
+        historyLine.currentPoints.push(historyPoint);
+        if (shouldUpdate) {
+            historyLine.setPoints(historyLine.currentPoints);
+        }
+        
+        return historyLine;
     }
 
     /**
@@ -530,7 +611,7 @@ export class HumanPoseAnalyzer {
     setDisplayRegion(displayRegion) {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
-
+        
         for (let historyLine of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
             if (historyLine.getStartTime() > secondTimestamp || historyLine.getEndTime() < firstTimestamp) {
                 historyLine.visible = false;
@@ -950,33 +1031,8 @@ export class HumanPoseAnalyzer {
 }
 
 /**
- * Helper function to set a matrix from an array
- * @param {THREE.Matrix4} matrix - the matrix to set
- * @param {number[]} array - the array to set the matrix from
- */
-function setMatrixFromArray(matrix, array) {
-    matrix.set( array[0], array[4], array[8], array[12],
-        array[1], array[5], array[9], array[13],
-        array[2], array[6], array[10], array[14],
-        array[3], array[7], array[11], array[15]
-    );
-}
-
-/**
- * Helper function to get the matrix of the ground plane relative to the world
- * @return {Matrix4} - the matrix of the ground plane relative to the world
- */
-function getGroundPlaneRelativeMatrix() {
-    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-    let groundPlaneRelativeMatrix = new THREE.Matrix4();
-    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
-    return groundPlaneRelativeMatrix;
-}
-
-/**
  * @typedef {Object} HumanPoseObject
- * @property {string} objectId - the id of the object that the poseObject belongs to
+ * @property {Pose} pose - the pose
  * @property {string} uuid - the uuid of the poseObject
  * @property {string} id - the id of the poseObject
  * @property {number[]} matrix - the matrix of the poseObject
@@ -984,13 +1040,32 @@ function getGroundPlaneRelativeMatrix() {
  */
 
 /**
+ * Processes the given historical poses and renders them efficiently
+ * @param {Pose[]}  poses - the poses to render
+ * @param {Object3D} container - the container to place the HumanPoseRenderers into
+ */
+function bulkRenderHistoricalPoses(poses, container) {
+    if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+    if (!humanPoseAnalyzer) {
+        humanPoseAnalyzer = new HumanPoseAnalyzer(container);
+    }
+    poses.forEach(pose => {
+        if (realityEditor.analytics) {
+            realityEditor.analytics.appendPose({
+                time: pose.timestamp,
+            });
+        }
+    });
+    humanPoseAnalyzer.bulkHistoricalPosesUpdated(poses);
+}
+
+/**
  * Processes the poseObject given and renders them into the corresponding poseRenderInstances
  * @param {HumanPoseObject[]} poseObjects - the poseObjects to render
  * @param {number} timestamp - the timestamp of the poseObjects
- * @param {boolean} historical - whether the poseObjects are historical (being played back) or not (live)
  * @param {Object3D} container - the container to place the HumanPoseRenderers into
  */
-function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
+function renderLiveHumanPoseObjects(poseObjects, timestamp, container) {
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
     
     if (!humanPoseAnalyzer) {
@@ -998,18 +1073,9 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     }
 
     for (let poseObject of poseObjects) {
-        if (historical) {
-            if (!poseObject.uuid) {
-                poseObject.uuid = poseObject.objectId;
-            }
-            updatePoseRenderer(poseObject, timestamp, true);
-        } else {
-            updatePoseRenderer(poseObject, timestamp, false);
-        }
+        updatePoseRenderer(poseObject, timestamp);
     }
-    if (!historical) {
-        humanPoseAnalyzer.getLivePoseRenderer().markNeedsUpdate();
-    }
+    humanPoseAnalyzer.getLivePoseRenderer().markNeedsUpdate();
 }
 
 let hidePoseRenderInstanceTimeoutIds = {};
@@ -1026,79 +1092,20 @@ function hidePoseRenderInstance(poseRenderInstance) {
  * Updates the corresponding poseRenderer with the poseObject given
  * @param {HumanPoseObject} poseObject - the poseObject to render
  * @param {number} timestamp - the timestamp of when the poseObject was recorded
- * @param {boolean} historical - whether the poseObject is historical (being played back) or not (live)
  */
-function updatePoseRenderer(poseObject, timestamp, historical) {
-    let renderer = historical ?
-        humanPoseAnalyzer.getHistoricalPoseRenderer() :
-        humanPoseAnalyzer.opaquePoseRenderer;
-    const identifier = `${historical ? 'historical-' : ''}${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+function updatePoseRenderer(poseObject, timestamp) {
+    let renderer = humanPoseAnalyzer.opaquePoseRenderer;
+    const identifier = poseObject.uuid;
     if (!poseRenderInstances[identifier]) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, humanPoseAnalyzer.activeLens);
     }
     let poseRenderInstance = poseRenderInstances[identifier];
-    if (historical) {
-        historicalPoseRenderInstanceList.push(poseRenderInstance);
-        updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp);
-    } else {
-        updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
-    }
-    
+    updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
     if (hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]) {
         clearTimeout(hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]);
         hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = null;
     }
     hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => hidePoseRenderInstance(poseRenderInstance), 1000);
-}
-
-/**
- * Updates the pose renderer with the pre-recorded pose data
- * @param {HumanPoseRenderInstance} poseRenderInstance - the pose renderer to update
- * @param {HumanPoseObject} poseObject - the pose object to get the data from
- * @param {number} timestamp - when the pose was recorded
- */
-function updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp) {
-    let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
-
-    const jointPositions = {};
-    
-    if (poseObject.matrix && poseObject.matrix.length > 0) {
-        let objectRootMatrix = new THREE.Matrix4();
-        setMatrixFromArray(objectRootMatrix, poseObject.matrix);
-        groundPlaneRelativeMatrix.multiply(objectRootMatrix);
-    }
-    
-    for (let jointId of Object.values(JOINTS)) {
-        let frame = poseObject.frames[poseObject.uuid + jointId];
-        if (!frame.ar.matrix) {
-            continue;
-        }
-
-        // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
-        let jointMatrixThree = new THREE.Matrix4();
-        setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
-        jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
-
-        let jointPosition = new THREE.Vector3();
-        jointPosition.setFromMatrixPosition(jointMatrixThree);
-
-        jointPositions[jointId] = jointPosition;
-    }
-    
-    if (Object.keys(jointPositions).length === 0) {
-        return;
-    }
-    
-    const pose = new Pose(jointPositions, timestamp, {poseObjectId: poseObject.uuid});
-    humanPoseAnalyzer.activeLens.applyLensToPose(pose);
-    poseRenderInstance.setPose(pose);
-
-    humanPoseAnalyzer.poseRendererInstanceUpdated(poseRenderInstance, timestamp, true);
-    if (realityEditor.analytics) {
-        realityEditor.analytics.appendPose({
-            time: timestamp,
-        });
-    }
 }
 
 /**
@@ -1147,7 +1154,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     poseRenderInstance.setVisible(true);
     poseRenderInstance.renderer.markNeedsUpdate();
 
-    humanPoseAnalyzer.poseRendererInstanceUpdated(poseRenderInstance, timestamp, false);
+    humanPoseAnalyzer.poseUpdated(pose, false);
     if (realityEditor.analytics) {
         realityEditor.analytics.appendPose({
             time: timestamp,
@@ -1326,7 +1333,8 @@ function toggleAnalyzerSettingsUI() {
 
 // TODO: Remove deprecated API use
 export {
-    renderHumanPoseObjects,
+    bulkRenderHistoricalPoses,
+    renderLiveHumanPoseObjects,
     resetLiveHistoryLines,
     resetHistoryLines,
     resetLiveHistoryClones,

@@ -43,7 +43,6 @@ export class MeshPath extends THREE.Group
         this.wallColorsBuffer = [];
 
         this.setPoints(path);
-        this.allPoints = this.currentPoints;
     }
 
     resetPoints() {
@@ -225,7 +224,7 @@ export class MeshPath extends THREE.Group
         // can be accessed publicly
         this.horizontalMesh = horizontalMesh;
         this.wallMesh = wallMesh;
-
+        
         this.onRemove = () => {
             // Since these geometries are not reused, they MUST be disposed to prevent memory leakage
             if (horizontalGeometry) horizontalGeometry.dispose();
