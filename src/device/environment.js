@@ -25,9 +25,11 @@ createNameSpace("realityEditor.device.environment");
     function isDesktop() {
         const userAgent = window.navigator.userAgent;
         const isWebView = userAgent.includes('Mobile') && !userAgent.includes('Safari');
-        const isMac = userAgent.includes('Macintosh');
+        const isIpad = /Macintosh/i.test(navigator.userAgent) &&
+            navigator.maxTouchPoints &&
+            navigator.maxTouchPoints > 1;
 
-        return (!isWebView) || isMac;
+        return !isWebView && !isIpad;
     }
 
     // initialized with default variables for iPhone environment. add-ons can modify
