@@ -51,6 +51,7 @@ function unionUpdateRange(instancedBufferAttribute, offset, count) {
 export class HumanPoseRenderer {
     /**
      * @param {THREE.Material} material - Material for all instanced meshes
+     * @param {number} maxInstances - Maximum number of instances to render
      */
     constructor(material, maxInstances) {
         this.container = new THREE.Group();
@@ -280,6 +281,10 @@ export class HumanPoseRenderer {
             realityEditor.gui.threejsScene.addToScene(this.container);
         }
     }
+    
+    removeFromParent() {
+        this.removeFromScene(this.container.parent);
+    }
 
     /**
      * Removes from container and disposes resources
@@ -307,5 +312,15 @@ export class HumanPoseRenderer {
     markColorNeedsUpdate() {
         this.jointsMesh.instanceColor.needsUpdate = true;
         this.bonesMesh.instanceColor.needsUpdate = true;
+    }
+
+    /**
+     * For debugging purposes
+     */
+    toString() {
+        return JSON.stringify({
+            jointsCount: this.jointsMesh.count,
+            bonesCount: this.bonesMesh.count,
+        });
     }
 }

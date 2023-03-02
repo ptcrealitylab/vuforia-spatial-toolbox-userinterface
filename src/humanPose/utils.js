@@ -1,3 +1,5 @@
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+
 const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
 
 const JOINT_NODE_NAME = 'storage';
@@ -5,6 +7,7 @@ const JOINT_PUBLIC_DATA_KEYS = {
     data: 'data',
     transferData: 'whole_pose'
 };
+const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 
 const JOINTS = {
     NOSE: 'nose',
@@ -51,6 +54,10 @@ const JOINT_CONNECTIONS = {
     chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
     navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
 };
+
+function getBoneName(bone) {
+    return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
+}
 
 // other modules in the project can use this to reliably check whether an object is a humanPose object
 function isHumanPoseObject(object) {
@@ -118,16 +125,147 @@ function getJointNodeInfo(humanObject, jointIndex) {
     }
 }
 
+function getDummyJointMatrix(jointId) {
+    const matrix = new THREE.Matrix4();
+    switch (jointId) {
+        case JOINTS.NOSE:
+            matrix.setPosition(0, 0, 0.1 * SCALE);
+            return matrix;
+        case JOINTS.LEFT_EYE:
+            matrix.setPosition(-0.05 * SCALE, 0.05 * SCALE, 0.075 * SCALE);
+            return matrix;
+        case JOINTS.RIGHT_EYE:
+            matrix.setPosition(0.05 * SCALE, 0.05 * SCALE, 0.075 * SCALE);
+            return matrix;
+        case JOINTS.LEFT_EAR:
+            matrix.setPosition(-0.1 * SCALE, 0, 0);
+            return matrix;
+        case JOINTS.RIGHT_EAR:
+            matrix.setPosition(0.1 * SCALE, 0, 0);
+            return matrix;
+        case JOINTS.LEFT_SHOULDER:
+            matrix.setPosition(-0.25 * SCALE, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_SHOULDER:
+            matrix.setPosition(0.25 * SCALE, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_ELBOW:
+            matrix.setPosition(-0.3 * SCALE, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_ELBOW:
+            matrix.setPosition(0.3 * SCALE, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_WRIST:
+            matrix.setPosition(-0.3 * SCALE, -0.9 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_WRIST:
+            matrix.setPosition(0.3 * SCALE, -0.9 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_HIP:
+            matrix.setPosition(-0.175 * SCALE, -0.8 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_HIP:
+            matrix.setPosition(0.175 * SCALE, -0.8 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_KNEE:
+            matrix.setPosition(-0.2 * SCALE, -1.15 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_KNEE:
+            matrix.setPosition(0.2 * SCALE, -1.15 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_ANKLE:
+            matrix.setPosition(-0.2 * SCALE, -1.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_ANKLE:
+            matrix.setPosition(0.2 * SCALE, -1.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.HEAD:
+            return matrix;
+        case JOINTS.NECK:
+            matrix.setPosition(0, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.CHEST:
+            matrix.setPosition(0, -0.4 * SCALE, 0);
+            return matrix;
+        case JOINTS.NAVEL:
+            matrix.setPosition(0, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.PELVIS:
+            matrix.setPosition(0, -0.8 * SCALE, 0);
+            return matrix;
+        default:
+            console.error(`Cannot create dummy joint for joint ${jointId}, not implemented`)
+            return matrix;
+    }
+}
+
+function getDummyBoneMatrix(bone) {
+    const matrix = new THREE.Matrix4();
+    let jointA = new THREE.Vector3().setFromMatrixPosition(getDummyJointMatrix(bone[0]));
+    let jointB = new THREE.Vector3().setFromMatrixPosition(getDummyJointMatrix(bone[1]));
+
+    let pos = new THREE.Vector3(
+        (jointA.x + jointB.x) / 2,
+        (jointA.y + jointB.y) / 2,
+        (jointA.z + jointB.z) / 2,
+    );
+
+    let diff = new THREE.Vector3(jointB.x - jointA.x, jointB.y - jointA.y,
+        jointB.z - jointA.z);
+    let scale = new THREE.Vector3(1, diff.length() / SCALE, 1);
+    diff.normalize();
+
+    let rot = new THREE.Quaternion();
+    rot.setFromUnitVectors(new THREE.Vector3(0, 1, 0),
+        diff);
+    
+    matrix.compose(pos, rot, scale);
+    
+    return matrix;
+}
+
+function createDummySkeleton() {
+    const dummySkeleton = new THREE.Group();
+    
+    dummySkeleton.joints = {};
+    const jointGeometry = new THREE.SphereGeometry(.03 * SCALE, 12, 12);
+    const material = new THREE.MeshLambertMaterial();
+    dummySkeleton.jointInstancedMesh = new THREE.InstancedMesh(jointGeometry, material, Object.values(JOINTS).length);
+    Object.values(JOINTS).forEach((jointId, i) => {
+        dummySkeleton.joints[jointId] = i;
+        dummySkeleton.jointInstancedMesh.setMatrixAt(i, getDummyJointMatrix(jointId));
+    });
+
+    const boneGeometry = new THREE.CylinderGeometry(.01 * SCALE, .01 * SCALE, SCALE, 3);
+    dummySkeleton.boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, material, Object.values(JOINT_CONNECTIONS).length);
+    Object.values(JOINT_CONNECTIONS).forEach((bone, i) => {
+        dummySkeleton.boneInstancedMesh.setMatrixAt(i, getDummyBoneMatrix(bone));
+    });
+
+    dummySkeleton.add(dummySkeleton.jointInstancedMesh);
+    dummySkeleton.add(dummySkeleton.boneInstancedMesh);
+    
+    dummySkeleton.jointNameFromIndex = (index) => {
+        return Object.keys(dummySkeleton.joints).find(key => dummySkeleton.joints[key] === index);
+    }
+
+    dummySkeleton.jointInstancedMesh.joints = dummySkeleton.joints;
+    return dummySkeleton;
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
+    SCALE,
+    getBoneName,
     isHumanPoseObject,
     makePoseFromJoints,
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
     indexOfMin,
-    getJointNodeInfo
+    getJointNodeInfo,
+    createDummySkeleton
 };

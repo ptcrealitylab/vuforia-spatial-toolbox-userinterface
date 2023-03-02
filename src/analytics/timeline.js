@@ -1,8 +1,7 @@
 import {RegionCard, RegionCardState} from './regionCard.js';
 import {
-    getHistoryPointsInTimeInterval,
     setAnimationMode,
-    AnimationMode,
+    AnimationMode, getPosesInTimeInterval,
 } from '../humanPose/draw.js';
 
 const needleTopPad = 4;
@@ -90,6 +89,18 @@ export class Timeline {
         this.canvas.addEventListener('pointerover', this.onPointerOver);
         this.canvas.addEventListener('pointerout', this.onPointerOut);
         this.canvas.addEventListener('wheel', this.onWheel);
+    }
+    
+    reset() {
+        this.poses = [];
+        this.displayRegion = null;
+        this.highlightRegion = null;
+        this.highlightStartTime = -1;
+        this.timeMin = Date.now() - DEFAULT_WIDTH_MS;
+        this.widthMs = DEFAULT_WIDTH_MS;
+        this.scrolled = false;
+        this.lastRegionCardCacheKey = '';
+        this.resetBounds();
     }
 
     draw() {
@@ -260,7 +271,7 @@ export class Timeline {
             }
             this.regionCard = null;
         }
-        this.regionCard = new RegionCard(this.container, getHistoryPointsInTimeInterval(leftTime, rightTime));
+        this.regionCard = new RegionCard(this.container, getPosesInTimeInterval(leftTime, rightTime));
 
         this.regionCard.moveTo(midX, this.height + labelPad);
     }

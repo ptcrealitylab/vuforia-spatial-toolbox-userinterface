@@ -1,0 +1,122 @@
+#hpa-settings {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transform: translateZ(1000px);
+    background-color: rgba(0, 0, 0, 0.75);
+    color: white;
+    border-radius: 10px;
+}
+
+.hpa-settings-header {
+    background-color: rgb(0, 0, 0);
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+}
+
+.hpa-settings-header:hover {
+    cursor: grab;
+    background-color: rgba(80, 80, 80, 0.75);
+}
+
+.hpa-settings-minimized .hpa-settings-header {
+    border-radius: 10px;
+    border-bottom: 0;
+}
+
+.hpa-settings-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.hpa-settings-header-icon {
+    font-size: 20px;
+    font-weight: 500;
+    padding: 5px 10px 5px 10px;
+    margin: -9px -10px -5px auto; /* -9px necessary to align + icon */
+}
+
+.hpa-settings-body {
+    padding: 15px;
+}
+
+.hpa-settings-minimized .hpa-settings-body {
+    display: none;
+}
+
+.hpa-settings-section {
+    margin-bottom: 20px;
+}
+
+.hpa-settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.hpa-settings-section-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 10px;
+}
+
+.hpa-settings-section-body {
+    padding: 0 0 0 15px;
+}
+
+.hpa-settings-section-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.hpa-settings-section-row:last-child {
+    margin-bottom: 0;
+}
+
+.hpa-settings-section-row-label {
+    display: inline-block;
+    width: 160px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.hpa-settings-section-row-checkbox {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.hpa-settings-section-row-checkbox-container {
+    cursor: pointer;
+}
+
+.hpa-settings-section-row-button {
+    background-color: black;
+    border: 1px solid red;
+    color: red;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.1s ease-in-out;
+}
+
+.hpa-settings-section-row-button:hover {
+    background-color: #660000;
+}
+
+.hpa-settings-section-row-button:active {
+    background-color: #990000;
+}
+
+.hpa-settings-section-row-select {
+    display: inline-block;
+    width: 200px;
+    font-size: 14px;
+    cursor: pointer;
+}

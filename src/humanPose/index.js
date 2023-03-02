@@ -65,7 +65,7 @@ import * as utils from './utils.js'
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderHumanPoseObjects([], Date.now());
+                    draw.renderHumanPoseObjects([], Date.now(), false, null);
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -75,7 +75,7 @@ import * as utils from './utils.js'
 
                 lastUpdateTime = Date.now();
 
-                draw.renderHumanPoseObjects(Object.values(humanPoseObjects), Date.now());
+                draw.renderHumanPoseObjects(Object.values(humanPoseObjects), Date.now(), false, null);
 
                 for (const [id, obj] of Object.entries(humanPoseObjects)) {
                     lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
@@ -122,10 +122,6 @@ import * as utils from './utils.js'
         }
         const regionStartTime = historyRegion.startTime;
         const regionEndTime = historyRegion.endTime;
-
-        // We may have already replayed the past so we must forget it
-        draw.resetHistoryLines();
-        draw.resetHistoryClones();
 
         const worldObject = realityEditor.worldObjects.getBestWorldObject();
         const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');

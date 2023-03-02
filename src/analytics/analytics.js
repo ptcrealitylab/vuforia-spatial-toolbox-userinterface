@@ -4,11 +4,12 @@ import {
     RegionCardState,
 } from './regionCard.js';
 import {
-    getHistoryPointsInTimeInterval,
     setHighlightRegion,
     setDisplayRegion,
     setCursorTime,
-    setHistoryLinesVisible,
+    clearHistoricalData,
+    showAnalyzerSettingsUI,
+    hideAnalyzerSettingsUI, getPosesInTimeInterval
 } from '../humanPose/draw.js';
 import {
     loadHistory
@@ -33,16 +34,17 @@ export class Analytics {
 
     add() {
         this.createNewPinnedRegionCardsContainer();
-
         document.body.appendChild(this.container);
-        setHistoryLinesVisible(true);
         this.added = true;
+        showAnalyzerSettingsUI();
     }
 
     remove() {
         document.body.removeChild(this.container);
-        setHistoryLinesVisible(false);
+        clearHistoricalData();
         this.added = false;
+        this.timeline.reset();
+        hideAnalyzerSettingsUI();
     }
 
     /**
@@ -160,7 +162,7 @@ export class Analytics {
             return;
         }
         for (let desc of regionCardDescriptions) {
-            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getHistoryPointsInTimeInterval(desc.startTime, desc.endTime));
+            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
             regionCard.state = RegionCardState.Pinned;
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);

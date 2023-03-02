@@ -1,17 +1,11 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS, JOINT_CONNECTIONS} from './utils.js';
-import {annotateHumanPoseRenderer} from './rebaScore.js';
 import {
-    JOINTS_PER_POSE,
-    COLOR_BASE,
-    COLOR_RED,
-    COLOR_YELLOW,
-    COLOR_GREEN,
     JOINT_TO_INDEX,
     BONE_TO_INDEX,
     SCALE,
     RENDER_CONFIDENCE_COLOR,
 } from './constants.js';
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
 /**
  * A single 3d skeleton rendered in a HumanPoseRenderer's slot
@@ -20,27 +14,23 @@ export class HumanPoseRenderInstance {
     /**
      * @param {HumanPoseRenderer} renderer
      * @param {string} id - Unique identifier of human pose being rendered
+     * @param {AnalyticsLens} lens - The initial lens to use for this instance
      */
-    constructor(renderer, id) {
+    constructor(renderer, id, lens) {
         this.renderer = renderer;
         this.id = id;
         this.updated = true;
         this.visible = true;
-        this.jointPositions = [];
-        for (let i = 0; i < JOINTS_PER_POSE; i++) {
-            this.jointPositions.push(new THREE.Vector3(0, 0, 0));
-        }
-        this.previousMatrices = null;
-        this.overallRebaScore = 1;
-        this.colorOptions = [];
+        this.lens = lens;
+        this.lensColors = {};
+        this.pose = null;
         this.slot = -1;
         this.add();
     }
 
     /**
      * Occupies a slot on the renderer, uploading initial values
-     * @param {number?} slot - manually assigned slot, taken from renderer
-     * otherwise
+     * @param {number?} slot - manually assigned slot, taken from renderer otherwise
      */
     add(slot) {
         if (typeof slot === 'number') {
@@ -49,23 +39,22 @@ export class HumanPoseRenderInstance {
             this.slot = this.renderer.takeSlot();
         }
 
-        for (const [i, _jointId] of Object.values(JOINTS).entries()) {
-            this.renderer.setJointColorAt(this.slot, i, COLOR_BASE);
-        }
+        Object.values(JOINT_TO_INDEX).forEach(index => {
+            this.renderer.setJointColorAt(this.slot, index, AnalyticsColors.base);
+        });
 
-        for (const [i, _boneName] of Object.keys(JOINT_CONNECTIONS).entries()) {
-            this.renderer.setBoneColorAt(this.slot, i, COLOR_BASE);
-        }
+        Object.values(BONE_TO_INDEX).forEach(index => {
+            this.renderer.setBoneColorAt(this.slot, index, AnalyticsColors.base);
+        });
     }
 
     /**
-     * @param {string} jointId - from utils.JOINTS
-     * @param {THREE.Vector3} position
+     * Sets the position of a joint
+     * @param {string} jointId - ID of joint to set position of
+     * @param {Vector3} position - Position to set joint to
      */
     setJointPosition(jointId, position) {
         const index = JOINT_TO_INDEX[jointId];
-        this.jointPositions[index] = position;
-
         this.renderer.setJointMatrixAt(
             this.slot,
             index,
@@ -78,144 +67,131 @@ export class HumanPoseRenderInstance {
     }
 
     /**
-     * @return {THREE.Vector3}
+     * Updates joint positions based on this.pose
      */
-    getJointPosition(jointId) {
-        const index = JOINT_TO_INDEX[jointId];
-        return this.jointPositions[index];
+    updateJointPositions() {
+        this.pose.forEachJoint(joint => {
+            this.setJointPosition(joint.name, joint.position);
+        });
     }
 
     /**
-     * @param {Array<String>} jointIds
-     * @return {{x: number, y: number, z: number}} Average position of all
-     *         joints listed in jointIds
+     * Updates bone (stick between joints) position based on this.joints' positions.
+     * @param {Object} bone - bone from this.pose
      */
-    averageJointPositions(jointIds) {
-        let avg = {x: 0, y: 0, z: 0};
-        for (let jointId of jointIds) {
-            let jointPos = this.getJointPosition(jointId);
-            avg.x += jointPos.x;
-            avg.y += jointPos.y;
-            avg.z += jointPos.z;
-        }
-        avg.x /= jointIds.length;
-        avg.y /= jointIds.length;
-        avg.z /= jointIds.length;
-        return avg;
+    updateBonePosition(bone) {
+        const boneIndex = BONE_TO_INDEX[bone.name];
+        const jointAPos = bone.joint0.position;
+        const jointBPos = bone.joint1.position;
+
+        const pos = jointAPos.clone().add(jointBPos).divideScalar(2);
+
+        const scale = jointBPos.clone().sub(jointAPos).length();
+        const scaleVector = new THREE.Vector3(1, scale / SCALE, 1);
+
+        const direction = jointBPos.clone().sub(jointAPos).normalize();
+        const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+
+        const mat = new THREE.Matrix4().compose(pos, rot, scaleVector);
+        this.renderer.setBoneMatrixAt(this.slot, boneIndex, mat);
     }
 
     /**
-     * Sets all matrices in our assigned renderer slot based on the current
-     * state of this instance
-     */
-    setAllMatrices() {
-        for (let i = 0; i < this.jointPositions.length; i++) {
-            let position = this.jointPositions[i];
-            this.renderer.setJointMatrixAt(
-                this.slot,
-                i,
-                new THREE.Matrix4().makeTranslation(
-                    position.x,
-                    position.y,
-                    position.z,
-                ),
-            );
-        }
-
-        this.updateBonePositions();
-    }
-
-    /**
-     * Updates bone (stick between joints) positions based on joint
-     * positions.
+     * Updates bone (stick between joints) positions based on this.joints' positions.
      */
     updateBonePositions() {
-        for (let boneName of Object.keys(JOINT_CONNECTIONS)) {
-            const boneIndex = BONE_TO_INDEX[boneName];
-            let jointA = this.getJointPosition(JOINT_CONNECTIONS[boneName][0]);
-            let jointB = this.getJointPosition(JOINT_CONNECTIONS[boneName][1]);
-
-            let pos = new THREE.Vector3(
-                (jointA.x + jointB.x) / 2,
-                (jointA.y + jointB.y) / 2,
-                (jointA.z + jointB.z) / 2,
-            );
-
-            let diff = new THREE.Vector3(jointB.x - jointA.x, jointB.y - jointA.y,
-                jointB.z - jointA.z);
-            let scale = new THREE.Vector3(1, diff.length() / SCALE, 1);
-            diff.normalize();
-
-            let rot = new THREE.Quaternion();
-            rot.setFromUnitVectors(new THREE.Vector3(0, 1, 0),
-                                   diff);
-
-            // bone.lookAt(this.container.localToWorld(localTarget));
-            // bone.rotateX(Math.PI / 2);
-            let mat = new THREE.Matrix4();
-            mat.compose(pos, rot, scale);
-
-            this.renderer.setBoneMatrixAt(this.slot, boneIndex, mat);
-        }
-
-        if (!RENDER_CONFIDENCE_COLOR) {
-            annotateHumanPoseRenderer(this);
-        }
+        this.pose.forEachBone(bone => {
+            this.updateBonePosition(bone);
+        });
     }
 
-    setOverallRebaScore(score) {
-        this.overallRebaScore = score;
+    /**
+     * Updates the pose displayed by the pose renderer
+     * @param {Pose} pose The pose to display
+     */
+    setPose(pose) {
+        this.pose = pose;
+
+        this.updateJointPositions();
+        this.updateBonePositions();
+        this.updateColorBuffers(this.lens);
+    }
+
+    /**
+     * Sets the active lens for pose coloring
+     * @param {AnalyticsLens} lens - lens to set
+     */
+    setLens(lens) {
+        this.lens = lens;
+        this.updateColorBuffers(this.lens);
+    }
+
+    /**
+     * Annotates joint using material based on jointColor
+     * @param {string} jointName
+     * @param {Color} jointColor
+     */
+    setJointColor(jointName, jointColor) {
+        if (typeof JOINT_TO_INDEX[jointName] === 'undefined') {
+            return;
+        }
+        const index = JOINT_TO_INDEX[jointName];
+        this.renderer.setJointColorAt(this.slot, index, jointColor);
     }
 
     /**
      * Annotates bone using material based on boneColor
      * @param {string} boneName
-     * @param {number} boneColor
+     * @param {Color} boneColor
      */
-    setBoneRebaColor(boneName, boneColor) {
+    setBoneColor(boneName, boneColor) {
         if (typeof BONE_TO_INDEX[boneName] === 'undefined') {
             return;
         }
-
-        const boneIndex = BONE_TO_INDEX[boneName];
-        const joint = JOINT_CONNECTIONS[boneName][1];
-        const jointIndex = JOINT_TO_INDEX[joint];
-
-        let color = COLOR_BASE;
-        if (boneColor === 0) {
-            color = COLOR_GREEN;
-        } else if (boneColor === 1) {
-            color = COLOR_YELLOW;
-        } else if (boneColor === 2) {
-            color = COLOR_RED;
-        }
-        this.renderer.setBoneColorAt(this.slot, boneIndex, color);
-        this.renderer.setJointColorAt(this.slot, jointIndex, color);
+        const index = BONE_TO_INDEX[boneName];
+        this.renderer.setBoneColorAt(this.slot, index, boneColor);
     }
 
     /**
-     * @param {number} confidence in range [0,1]
+     * Sets the colors of the pose based on the current lens
+     * @param {AnalyticsLens} lens - lens to use for updating colors
      */
-    setJointConfidenceColor(jointId, confidence) {
-        if (typeof JOINT_TO_INDEX[jointId] === 'undefined') {
-            return;
+    updateColorBuffers(lens) {
+        if (!this.lensColors[lens.name]) {
+            this.lensColors[lens.name] = {
+                joints: Object.values(JOINT_TO_INDEX).map(() => AnalyticsColors.undefined),
+                bones: Object.values(BONE_TO_INDEX).map(() => AnalyticsColors.undefined),
+            };
         }
-        const jointIndex = JOINT_TO_INDEX[jointId];
-
-        let baseColorHSL = {};
-        this.baseColor.getHSL(baseColorHSL);
-
-        baseColorHSL.l = baseColorHSL.l * confidence;
-
-        let color = new THREE.Color();
-        color.setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
-
-        this.renderer.setJointColorAt(this.slot, jointIndex, color);
+        this.pose.forEachJoint(joint => {
+            this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = lens.getColorForJoint(joint);
+        });
+        this.pose.forEachBone(bone => {
+            this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = lens.getColorForBone(bone);
+        });
+        if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
+            this.pose.forEachJoint(joint => {
+                this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
+            });
+            this.pose.forEachBone(bone => {
+                this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
+            });
+        }
     }
 
-    setColorOption(colorOptionIndex) {
-        this.renderer.setSlotBoneColors(this.slot, this.colorOptions[colorOptionIndex].boneColors);
-        this.renderer.setSlotJointColors(this.slot, this.colorOptions[colorOptionIndex].jointColors);
+    /**
+     * Sets joint color using pose confidence
+     * @param {string} jointName - name of joint to set color of
+     * @param {number} confidence - confidence value to set color to
+     */
+    setJointConfidenceColor(jointName, confidence) {
+        if (typeof JOINT_TO_INDEX[jointName] === 'undefined') {
+            return;
+        }
+        let baseColorHSL = AnalyticsColors.base.getHSL({});
+        baseColorHSL.l = baseColorHSL.l * confidence;
+        let color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
+        this.setJointColor(jointName, color);
     }
 
     setVisible(visible) {
@@ -223,105 +199,40 @@ export class HumanPoseRenderInstance {
             return;
         }
 
-        if (this.visible) {
-            if (!this.previousMatrices) {
-                this.previousMatrices = {
-                    boneMatrices: this.renderer.getSlotBoneMatrices(this.slot),
-                    jointMatrices: this.renderer.getSlotJointMatrices(this.slot),
-                };
-            }
-            this.renderer.hideSlot(this.slot);
+        if (visible) {
+            this.updateJointPositions();
+            this.updateBonePositions();
         } else {
-            this.renderer.setSlotBoneMatrices(this.slot, this.previousMatrices.boneMatrices);
-            this.renderer.setSlotJointMatrices(this.slot, this.previousMatrices.jointMatrices);
+            this.renderer.hideSlot(this.slot);
         }
         this.visible = visible;
     }
 
-    getOverallRebaScoreHue() {
-        let hueReba = 140 - (this.overallRebaScore - 1) * 240 / 11;
-        if (isNaN(hueReba)) {
-            hueReba = 120;
-        }
-        hueReba = (Math.min(Math.max(hueReba, -30), 120) + 360) % 360;
-        return hueReba;
-    }
-
-    cloneToRenderer(newRenderer, startingColorOption) {
-        let clone = new HumanPoseRenderInstance(newRenderer, this.id);
-        clone.copy(this, startingColorOption);
+    /**
+     * Clones itself into a new HumanPoseRenderer
+     * @param {HumanPoseRenderer} newRenderer - the renderer to clone into
+     * @return {HumanPoseRenderInstance} The new instance
+     */
+    cloneToRenderer(newRenderer) {
+        let clone = new HumanPoseRenderInstance(newRenderer, this.id, this.lens);
+        clone.copy(this);
         return clone;
     }
 
     /**
-     * Copy all elements of other pose render instance
-     * @param {HumanPoseRenderInstance}
+     * Copy all elements of the other pose render instance
+     * @param {HumanPoseRenderInstance} other - the instance to copy from
      */
-    copy(other, startingColorOption = 0) {
-        for (const jointId of Object.keys(JOINT_TO_INDEX)) {
-            this.setJointPosition(jointId, other.getJointPosition(jointId));
-        }
-        // TODO would be significantly faster to use the bulk set methods
-        this.updateBonePositions();
-
-        let colorRainbow = new THREE.Color();
-        colorRainbow.setHSL(((Date.now() / 5) % 360) / 360, 1, 0.5);
-
-        let hueReba = other.getOverallRebaScoreHue();
-        // let alphaReba = 0.3 + 0.3 * (poseRenderer.overallRebaScore - 1) / 11;
-        let colorReba = new THREE.Color();
-        colorReba.setHSL(hueReba / 360, 1, 0.5);
-
-        if (!other.colorOptions || other.colorOptions.length !== 3) {
-            // Generate color options manually if the other pose renderer
-            // hasn't already e.g. a live pose rendere only has the baseline
-            // bone/joint colors
-
-            let boneColors = other.renderer.getSlotBoneColors(other.slot);
-            let jointColors = other.renderer.getSlotJointColors(other.slot);
-
-            let boneColorsRainbow = boneColors.slice(0);
-            let jointColorsRainbow = jointColors.slice(0);
-
-            let boneColorsReba = boneColors.slice(0);
-            let jointColorsReba = jointColors.slice(0);
-
-            for (let i = 0; i < boneColors.length / 3; i++) {
-                colorRainbow.toArray(boneColorsRainbow, i * 3);
-                colorReba.toArray(boneColorsReba, i * 3);
-            }
-            for (let i = 0; i < jointColors.length / 3; i++) {
-                colorRainbow.toArray(jointColorsRainbow, i * 3);
-                colorReba.toArray(jointColorsReba, i * 3);
-            }
-
-            this.colorOptions[0] = {
-                boneColors: boneColorsReba,
-                jointColors: jointColorsReba,
+    copy(other) {
+        this.lens = other.lens;
+        this.lensColors = {};
+        Object.keys(other.lensColors).forEach(lensName => {
+            this.lensColors[lensName] = {
+                joints: other.lensColors[lensName].joints.slice(),
+                bones: other.lensColors[lensName].bones.slice(),
             };
-
-            this.colorOptions[1] = {
-                boneColors,
-                jointColors,
-            };
-
-            this.colorOptions[2] = {
-                boneColors: boneColorsRainbow,
-                jointColors: jointColorsRainbow,
-            };
-        } else {
-            for (let i = 0; i < other.colorOptions.length; i++) {
-                let colorOption = other.colorOptions[i];
-                let copiedOpt = {
-                    boneColors: colorOption.boneColors.slice(0),
-                    jointColors: colorOption.jointColors.slice(0),
-                };
-                this.colorOptions[i] = copiedOpt;
-            }
-        }
-
-        this.setColorOption(startingColorOption);
-
+        });
+        this.setPose(other.pose);
         return this;
     }
 
