@@ -203,7 +203,7 @@ export class Timeline {
         }
         let x = this.timeToX(this.cursorTime);
         this.gfx.fillStyle = 'white';
-        this.gfx.fillRect(x - needleWidth / 2, 0, needleWidth, this.height);
+        this.gfx.fillRect(x - needleWidth / 2, 0, needleWidth, boardHeight + needlePad * 2);
     }
 
     formatRangeToLabels(dateTimeFormat, dateStart, dateEnd) {
