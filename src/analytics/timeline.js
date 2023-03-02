@@ -14,6 +14,8 @@ const rowPad = 4;
 const rowHeight = 16;
 const boardHeight = 4 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
+const minimapHeight = rowHeight;
+const minimapStart = boardStart + boardHeight + minimapHeight;
 
 const labelPad = 4;
 
@@ -44,7 +46,7 @@ export class Timeline {
         this.poses = [];
         this.width = -1;
         this.displayRegion = null;
-        this.height = boardHeight + boardStart + needlePad;
+        this.height = boardHeight + boardStart + needlePad + minimapHeight;
         this.highlightRegion = null;
         this.highlightStartTime = -1;
         this.regionCard = null;
@@ -159,6 +161,8 @@ export class Timeline {
         this.drawHighlightRegion();
 
         this.drawCursor();
+
+        this.drawMinimap();
 
         this.updateBoardLabels();
         this.updateRegionCard();
@@ -456,6 +460,19 @@ export class Timeline {
 
             this.gfx.fillRect(tickX - 1, boardStart, 1, boardHeight);
         }
+    }
+
+    drawMinimap() {
+        this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        this.gfx.fillRect(0, minimapStart, this.width, minimapHeight);
+
+        this.gfx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        let min = this.minTimeMin;
+        let max = this.maxTimeMax;
+        let fullTimeWidth = max - min;
+        let startX = (this.timeMin - this.minTimeMin) / fullTimeWidth * this.width;
+        let width = this.widthMs / fullTimeWidth * this.width;
+        this.gfx.fillRect(startX, minimapStart, width, minimapHeight);
     }
 
     appendPose(pose) {
