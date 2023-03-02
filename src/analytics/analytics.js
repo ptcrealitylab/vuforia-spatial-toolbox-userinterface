@@ -217,8 +217,9 @@ export class Analytics {
     }
 
     pinRegionCard(regionCard) {
+        regionCard.state = RegionCardState.Pinned;
         setTimeout(() => {
-            regionCard.moveTo(35, 120 + (14 + 14 * 2 + 10) * this.pinnedRegionCards.length);
+            regionCard.moveTo(35, 120 + (14 + 14 * 3 + 10) * this.pinnedRegionCards.length);
         }, 10);
 
         setTimeout(() => {
@@ -229,6 +230,14 @@ export class Analytics {
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
         }, 750);
+    }
+
+    unpinRegionCard(regionCard) {
+        this.pinnedRegionCards = this.pinnedRegionCards.filter(prc => {
+            return prc !== regionCard;
+        });
+        this.updateCsvExportLink();
+        this.writeDehydratedRegionCards();
     }
 
     updateCsvExportLink() {

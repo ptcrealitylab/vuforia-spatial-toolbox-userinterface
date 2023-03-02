@@ -80,7 +80,6 @@ export class RegionCard {
             this.unpin();
             break;
         }
-
         event.stopPropagation();
     }
 
@@ -112,6 +111,7 @@ export class RegionCard {
         this.element.style.bottom = 'auto';
         this.moveTo(rect.left, rect.top);
         this.element.classList.add('pinAnimation', 'minimized');
+        this.updatePinButtonText();
 
         realityEditor.analytics.pinRegionCard(this);
     }
@@ -136,6 +136,7 @@ export class RegionCard {
         this.element.classList.add('pinned');
         this.element.style.top = 'auto';
         this.element.style.left = 'auto';
+        this.updatePinButtonText();
     }
 
     unpin() {
@@ -143,6 +144,14 @@ export class RegionCard {
         this.remove();
         if (this.displayActive) {
             realityEditor.analytics.setDisplayRegion(null);
+        }
+        realityEditor.analytics.unpinRegionCard(this);
+    }
+
+    updatePinButtonText() {
+        let pinButton = this.element.querySelector('.analytics-region-card-pin');
+        if (pinButton) {
+            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
     }
 
@@ -175,7 +184,7 @@ export class RegionCard {
         const pinButton = document.createElement('a');
         pinButton.href = '#';
         pinButton.classList.add('analytics-region-card-pin');
-        pinButton.textContent = 'Pin';
+        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
 
