@@ -119,8 +119,10 @@ export class HumanPoseAnalyzer {
         this.livePoseRenderers = [];
         this.addLivePoseRenderer();
 
-        this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
-        this.setUiDefaults();
+        if (realityEditor.device.environment.isDesktop()) {
+            this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
+            this.setUiDefaults();
+        }
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
@@ -553,7 +555,9 @@ export class HumanPoseAnalyzer {
         this.historyLineContainers.live[lens.name].visible = true;
 
         // Update UI
-        this.settingsUi.setActiveLens(lens);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveLens(lens);
+        }
     }
 
     /**
@@ -571,7 +575,9 @@ export class HumanPoseAnalyzer {
      */
     setActiveJointByName(jointName) {
         this.activeJointName = jointName;
-        this.settingsUi.setActiveJointByName(jointName);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveJointByName(jointName);
+        }
         // TODO: Create history line for joint
     }
 
