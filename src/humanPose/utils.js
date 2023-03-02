@@ -253,6 +253,31 @@ function createDummySkeleton() {
     return dummySkeleton;
 }
 
+/**
+ * Helper function to get the matrix of the ground plane relative to the world
+ * @return {Matrix4} - the matrix of the ground plane relative to the world
+ */
+function getGroundPlaneRelativeMatrix() {
+    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+    let groundPlaneRelativeMatrix = new THREE.Matrix4();
+    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+    return groundPlaneRelativeMatrix;
+}
+
+/**
+ * Helper function to set a matrix from an array
+ * @param {THREE.Matrix4} matrix - the matrix to set
+ * @param {number[]} array - the array to set the matrix from
+ */
+function setMatrixFromArray(matrix, array) {
+    matrix.set( array[0], array[4], array[8], array[12],
+        array[1], array[5], array[9], array[13],
+        array[2], array[6], array[10], array[14],
+        array[3], array[7], array[11], array[15]
+    );
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
@@ -265,6 +290,8 @@ export {
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
+    getGroundPlaneRelativeMatrix,
+    setMatrixFromArray,
     indexOfMin,
     getJointNodeInfo,
     createDummySkeleton
