@@ -81,11 +81,13 @@ export class HumanPoseAnalyzerSettingsUi {
      * Sets the initial position of the settings UI to be in the top right corner of the screen, under the navbar and menu button
      */
     setInitialPosition() {
-        const navbarHeight = document.querySelector('.desktopMenuBar').offsetHeight;
+        const navbar = document.querySelector('.desktopMenuBar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
         const sessionMenuContainer = document.querySelector('#sessionMenuContainer');
+        const sessionMenuLeft = sessionMenuContainer ? sessionMenuContainer.offsetLeft : 0; 
         if (sessionMenuContainer) { // Avoid the top right menu
             this.root.style.top = `calc(${navbarHeight}px + 2em)`;
-            this.root.style.left = `calc(${sessionMenuContainer.offsetLeft - this.root.offsetWidth}px - 6em)`;
+            this.root.style.left = `calc(${sessionMenuLeft - this.root.offsetWidth}px - 6em)`;
             return;
         }
         this.root.style.top = `calc(${navbarHeight}px + 2em)`;
