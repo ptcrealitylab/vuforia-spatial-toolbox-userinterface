@@ -105,7 +105,7 @@ export class SpaghettiMeshPath extends MeshPath {
 
     /**
      * Sets the points of the path, and also calculates the horizontal plane at the average Y height of the path
-     * @param points {SpaghettiMeshPathPoint[]} - the points to set
+     * @param {SpaghettiMeshPathPoint[]} points - the points to set
      */
     setPoints(points) {
         super.setPoints(points);

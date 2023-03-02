@@ -8,9 +8,9 @@ import AnalyticsColors from "./AnalyticsColors.js";
 
 /**
  * Clamp a value between a minimum and maximum.
- * @param value {number} The value to clamp.
- * @param min {number} The minimum value.
- * @param max {number} The maximum value.
+ * @param {number} value The value to clamp.
+ * @param {number} min The minimum value.
+ * @param {number} max The maximum value.
  * @return {number} The clamped value.
  */
 function clamp(value, min, max) {
@@ -19,8 +19,8 @@ function clamp(value, min, max) {
 
 /**
  * Calculates the angle between two vectors in degrees.
- * @param vector1 {THREE.Vector3} The first vector.
- * @param vector2 {THREE.Vector3} The second vector.
+ * @param {THREE.Vector3} vector1 The first vector.
+ * @param {THREE.Vector3} vector2 The second vector.
  * @return {number} The angle between the two vectors in degrees.
  */
 function angleBetween(vector1, vector2) {
@@ -29,7 +29,7 @@ function angleBetween(vector1, vector2) {
 
 /**
  * Sets the score and color for the neck reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function neckReba(rebaData) {
     let neckScore = 1;
@@ -93,7 +93,7 @@ function neckReba(rebaData) {
 
 /**
  * Sets the score and color for the trunk reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function trunkReba(rebaData) {
     let trunkScore = 1;
@@ -170,7 +170,7 @@ function trunkReba(rebaData) {
 
 /**
  * Sets the score and color for the arms reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function legsReba(rebaData) {
     let leftLegScore = 1;
@@ -264,7 +264,7 @@ function legsReba(rebaData) {
 
 /**
  * Sets the score and color for the upper arms reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function upperArmReba(rebaData) {
     let leftArmScore = 1;
@@ -364,7 +364,7 @@ function upperArmReba(rebaData) {
 
 /**
  * Sets the score and color for the lower arms reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function lowerArmReba(rebaData) {
     let leftArmScore = 1;
@@ -417,7 +417,7 @@ function lowerArmReba(rebaData) {
 
 /**
  * Sets the score and color for the wrist reba.
- * @param rebaData {RebaData} The rebaData to calculate the score and color for.
+ * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function wristReba(rebaData) {
     let leftWristScore = 1;
@@ -624,7 +624,7 @@ function overallRebaCalculation(rebaData) {
 
 /**
  * Generates a rebaData object from a pose
- * @param pose {Pose} The pose to extract the rebaData from
+ * @param {Pose} pose The pose to extract the rebaData from
  * @return {RebaData} The rebaData object
  */
 function extractRebaData(pose) {
@@ -681,7 +681,7 @@ function extractRebaData(pose) {
 
 /**
  * Calculates the Reba score for a given pose
- * @param pose {Pose} The pose to calculate the score for
+ * @param {Pose} pose The pose to calculate the score for
  * @return {RebaData} The rebaData object
  */
 function calculateForPose(pose) {

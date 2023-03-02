@@ -13,7 +13,7 @@ const AnalyticsColors = {
     blue: new THREE.Color(0, 0, 1),
     /**
      * Fades a color to a faded version of itself.
-     * @param color {Color} The color to fade.
+     * @param {Color} color The color to fade.
      * @return {Color} The faded color.
      */
     fade: (color) => {

@@ -77,7 +77,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Updates bone (stick between joints) position based on this.joints' positions.
-     * @param bone {Object} - bone from this.pose
+     * @param {Object} bone - bone from this.pose
      */
     updateBonePosition(bone) {
         const boneIndex = BONE_TO_INDEX[bone.name];
@@ -107,7 +107,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Updates the pose displayed by the pose renderer
-     * @param pose {Pose} The pose to display
+     * @param {Pose} pose The pose to display
      */
     setPose(pose) {
         this.pose = pose;
@@ -119,7 +119,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Sets the active lens for pose coloring
-     * @param lens {AnalyticsLens} - lens to set
+     * @param {AnalyticsLens} lens - lens to set
      */
     setLens(lens) {
         this.lens = lens;
@@ -210,7 +210,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Clones itself into a new HumanPoseRenderer
-     * @param newRenderer {HumanPoseRenderer} - the renderer to clone into
+     * @param {HumanPoseRenderer} newRenderer - the renderer to clone into
      * @return {HumanPoseRenderInstance} The new instance
      */
     cloneToRenderer(newRenderer) {
@@ -221,7 +221,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Copy all elements of the other pose render instance
-     * @param other {HumanPoseRenderInstance} - the instance to copy from
+     * @param {HumanPoseRenderInstance} other - the instance to copy from
      */
     copy(other) {
         this.lens = other.lens;

@@ -20,10 +20,15 @@ class AccelerationLens extends AnalyticsLens {
         this.previousPose = null;
         this.previousPreviousPose = null;
     }
+    
+    reset() {
+        this.previousPose = null;
+        this.previousPreviousPose = null;
+    }
 
     /**
      * Checks if the given joint has had its velocity calculated.
-     * @param joint {Object} The joint to check.
+     * @param {Object} joint The joint to check.
      * @return {boolean} True if the joint has had its velocity calculated, false otherwise.
      */
     velocityAppliedToJoint(joint) {
@@ -32,7 +37,7 @@ class AccelerationLens extends AnalyticsLens {
 
     /**
      * Checks if the given joint has had its acceleration calculated.
-     * @param joint {Object} The joint to check.
+     * @param {Object} joint The joint to check.
      * @return {boolean} True if the joint has had its acceleration calculated, false otherwise.
      */
     accelerationAppliedToJoint(joint) {
@@ -137,7 +142,7 @@ class AccelerationLens extends AnalyticsLens {
 
     /**
      * Returns the UI color for a specific acceleration value.
-     * @param acceleration {Number} The acceleration value to get the color for.
+     * @param {Number} acceleration The acceleration value to get the color for.
      * @return {Color} The color to use for the value.
      */
     getColorForAcceleration(acceleration) {

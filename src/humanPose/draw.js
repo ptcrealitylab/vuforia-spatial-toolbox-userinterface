@@ -126,7 +126,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets up the containers for the history lines and clones
-     * @param parent {Object3D} - object to add the analyzer's containers to
+     * @param {Object3D} parent - object to add the analyzer's containers to
      */
     setupContainers(parent) {
         this.historicalHistoryLineContainer = new THREE.Group();
@@ -274,9 +274,9 @@ export class HumanPoseAnalyzer {
 
     /**
      * Responds to new poses being added to the HumanPoseRenderer
-     * @param poseRendererInstance {HumanPoseRenderInstance} - the pose renderer that was updated
-     * @param timestamp {number} - the timestamp of the pose
-     * @param historical {boolean} - whether the pose is historical or live
+     * @param {HumanPoseRenderInstance} poseRendererInstance - the pose renderer that was updated
+     * @param {number} timestamp - the timestamp of the pose
+     * @param {boolean} historical - whether the pose is historical or live
      */
     poseRendererInstanceUpdated(poseRendererInstance, timestamp, historical) {
         const poseRenderer = historical ? this.getHistoricalPoseRenderer() : this.getLivePoseRenderer();
@@ -381,6 +381,9 @@ export class HumanPoseAnalyzer {
         this.resetHistoricalHistoryLines();
         this.resetHistoricalHistoryClones();
         this.resetHistoricalPoseRenderers();
+        this.lenses.forEach(lens => {
+            lens.reset();
+        })
     }
 
     /**
@@ -448,7 +451,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the active lens
-     * @param lens {AnalyticsLens} - the lens to set as active
+     * @param {AnalyticsLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
         this.activeLensIndex = this.lenses.indexOf(lens);
@@ -474,7 +477,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the active lens by name
-     * @param lensName {string} - the name of the lens to set as active
+     * @param {string} lensName - the name of the lens to set as active
      */
     setActiveLensByName(lensName) {
         const lens = this.lenses.find(lens => lens.name === lensName);
@@ -483,7 +486,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the active joint by name
-     * @param jointName {string} - the name of the joint to set as active
+     * @param {string} jointName - the name of the joint to set as active
      */
     setActiveJointByName(jointName) {
         this.activeJointName = jointName;
@@ -493,7 +496,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the active joint
-     * @param joint {Object} - the joint to set as active
+     * @param {Object} joint - the joint to set as active
      */
     setActiveJoint(joint) {
         this.setActiveJointByName(joint.name);
@@ -569,8 +572,8 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets all poses in the time interval
-     * @param firstTimestamp {number} - start of time interval in ms
-     * @param secondTimestamp {number} - end of time interval in ms
+     * @param {number} firstTimestamp - start of time interval in ms
+     * @param {number} secondTimestamp - end of time interval in ms
      * @return {Pose[]} - all poses in the time interval
      */
     getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
@@ -581,7 +584,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Makes the historical history lines visible or invisible
-     * @param visible {boolean} - whether to show the history lines
+     * @param {boolean} visible - whether to show the history lines
      */
     setHistoricalHistoryLinesVisible(visible) {
         this.historicalHistoryLineContainer.visible = visible;
@@ -590,7 +593,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Makes the live history lines visible or invisible
-     * @param visible {boolean} - whether to show the history lines
+     * @param {boolean} visible - whether to show the history lines
      */
     setLiveHistoryLinesVisible(visible) {
         this.liveHistoryLineContainer.visible = visible;
@@ -649,7 +652,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the animation mode for rendering clones
-     * @param animationMode {AnimationMode} - the animation mode to set
+     * @param {AnimationMode} animationMode - the animation mode to set
      */
     setAnimationMode(animationMode) {
         if (this.animationMode === animationMode) {
@@ -753,8 +756,8 @@ export class HumanPoseAnalyzer {
 
     /**
      * Sets the animation range, updating the animation position if necessary
-     * @param start {number} - start time of animation in ms
-     * @param end {number} - end time of animation in ms
+     * @param {number} start - start time of animation in ms
+     * @param {number} end - end time of animation in ms
      */
     setAnimationRange(start, end) {
         if (this.animationStart === start && this.animationEnd === end) {
@@ -831,9 +834,9 @@ export class HumanPoseAnalyzer {
 
     /**
      * Displays or hides all clones in a given range
-     * @param visible {boolean} - whether to show or hide the clones
-     * @param start {number} - start time of animation in ms
-     * @param end {number} - end time of animation in ms
+     * @param {boolean} visible - whether to show or hide the clones
+     * @param {number} start - start time of animation in ms
+     * @param {number} end - end time of animation in ms
      */
     setCloneVisibleInInterval(visible, start, end) {
         if (start < 0 || end < 0 ||
@@ -889,7 +892,7 @@ export class HumanPoseAnalyzer {
 
     /**
      * Displays the clone with the closest timestamp to the given timestamp
-     * @param timestamp {number} - the timestamp to display
+     * @param {number} timestamp - the timestamp to display
      */
     displayCloneByTimestamp(timestamp) {
         if (this.animationMode === AnimationMode.all || this.animationMode === AnimationMode.regionAll) { // Don't do anything if we're rendering all clones
@@ -948,8 +951,8 @@ export class HumanPoseAnalyzer {
 
 /**
  * Helper function to set a matrix from an array
- * @param matrix {THREE.Matrix4} - the matrix to set
- * @param array {number[]} - the array to set the matrix from
+ * @param {THREE.Matrix4} matrix - the matrix to set
+ * @param {number[]} array - the array to set the matrix from
  */
 function setMatrixFromArray(matrix, array) {
     matrix.set( array[0], array[4], array[8], array[12],
@@ -982,10 +985,10 @@ function getGroundPlaneRelativeMatrix() {
 
 /**
  * Processes the poseObject given and renders them into the corresponding poseRenderInstances
- * @param poseObjects {HumanPoseObject[]} - the poseObjects to render
- * @param timestamp {number} - the timestamp of the poseObjects
- * @param historical {boolean} - whether the poseObjects are historical (being played back) or not (live)
- * @param container {Object3D} - the container to place the HumanPoseRenderers into
+ * @param {HumanPoseObject[]} poseObjects - the poseObjects to render
+ * @param {number} timestamp - the timestamp of the poseObjects
+ * @param {boolean} historical - whether the poseObjects are historical (being played back) or not (live)
+ * @param {Object3D} container - the container to place the HumanPoseRenderers into
  */
 function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
@@ -1012,7 +1015,7 @@ function renderHumanPoseObjects(poseObjects, timestamp, historical, container) {
 let hidePoseRenderInstanceTimeoutIds = {};
 /**
  * Hides the pose render instance if not used for a while
- * @param poseRenderInstance {HumanPoseRenderInstance} - the pose render instance to hide
+ * @param {HumanPoseRenderInstance} poseRenderInstance - the pose render instance to hide
  */
 function hidePoseRenderInstance(poseRenderInstance) {
     poseRenderInstance.setVisible(false);
@@ -1021,9 +1024,9 @@ function hidePoseRenderInstance(poseRenderInstance) {
 
 /**
  * Updates the corresponding poseRenderer with the poseObject given
- * @param poseObject {HumanPoseObject} - the poseObject to render
- * @param timestamp {number} - the timestamp of when the poseObject was recorded
- * @param historical {boolean} - whether the poseObject is historical (being played back) or not (live)
+ * @param {HumanPoseObject} poseObject - the poseObject to render
+ * @param {number} timestamp - the timestamp of when the poseObject was recorded
+ * @param {boolean} historical - whether the poseObject is historical (being played back) or not (live)
  */
 function updatePoseRenderer(poseObject, timestamp, historical) {
     let renderer = historical ?
@@ -1050,9 +1053,9 @@ function updatePoseRenderer(poseObject, timestamp, historical) {
 
 /**
  * Updates the pose renderer with the pre-recorded pose data
- * @param poseRenderInstance {HumanPoseRenderInstance} - the pose renderer to update
- * @param poseObject {HumanPoseObject} - the pose object to get the data from
- * @param timestamp {number} - when the pose was recorded
+ * @param {HumanPoseRenderInstance} poseRenderInstance - the pose renderer to update
+ * @param {HumanPoseObject} poseObject - the pose object to get the data from
+ * @param {number} timestamp - when the pose was recorded
  */
 function updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestamp) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
@@ -1100,9 +1103,9 @@ function updateJointsAndBonesHistorical(poseRenderInstance, poseObject, timestam
 
 /**
  * Updates the pose renderer with the current pose data
- * @param poseRenderInstance {HumanPoseRenderInstance} - the pose renderer to update
- * @param poseObject {HumanPoseObject} - the pose object to get the data from
- * @param timestamp {number} - when the pose was recorded
+ * @param {HumanPoseRenderInstance} poseRenderInstance - the pose renderer to update
+ * @param {HumanPoseObject} poseObject - the pose object to get the data from
+ * @param {number} timestamp - when the pose was recorded
  */
 function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
@@ -1197,8 +1200,8 @@ function setHighlightRegion(highlightRegion, fromSpaghetti) {
 
 /**
  * Gets the poses that are within the given time interval
- * @param firstTimestamp {number} - start of time interval in ms
- * @param secondTimestamp {number} - end of time interval in ms
+ * @param {number} firstTimestamp - start of time interval in ms
+ * @param {number} secondTimestamp - end of time interval in ms
  * @return {Pose[]} - the poses that are within the given time interval
  */
 function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {

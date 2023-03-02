@@ -8,9 +8,9 @@ import {JOINT_CONNECTIONS} from "./utils.js";
 class Pose {
     /**
      * Creates a new Pose object.
-     * @param jointPositions {Object} An object that maps joint names to joint positions (in ground-plane space).
-     * @param timestamp {Number} The timestamp of when the pose was recorded.
-     * @param metadata {Object} An object that contains additional metadata about the pose.
+     * @param {Object} jointPositions An object that maps joint names to joint positions (in ground-plane space).
+     * @param {Number} timestamp The timestamp of when the pose was recorded.
+     * @param {Object} metadata An object that contains additional metadata about the pose.
      */
     constructor(jointPositions, timestamp, metadata) {
         this.joints = {}; // Maps joint names to joint data
@@ -37,7 +37,7 @@ class Pose {
 
     /**
      * Returns a specific joint in the pose.
-     * @param jointName {string} The name of the joint to return.
+     * @param {string} jointName The name of the joint to return.
      */
     getJoint(jointName) {
         return this.joints[jointName];
@@ -45,7 +45,7 @@ class Pose {
 
     /**
      * Returns a specific bone in the pose.
-     * @param boneName {string} The name of the bone to return.
+     * @param {string} boneName The name of the bone to return.
      */
     getBone(boneName) {
         return this.bones[boneName];
@@ -53,7 +53,7 @@ class Pose {
 
     /**
      * Applies a function to each joint in the pose.
-     * @param callback {Function} The function to apply to each joint.
+     * @param {Function} callback The function to apply to each joint.
      */
     forEachJoint(callback) {
         Object.keys(this.joints).forEach((jointName, index) => {
@@ -63,7 +63,7 @@ class Pose {
 
     /**
      * Applies a function to each bone in the pose.
-     * @param callback {Function} The function to apply to each bone.
+     * @param {Function} callback The function to apply to each bone.
      */
     forEachBone(callback) {
         Object.keys(this.bones).forEach((boneName, index) => {

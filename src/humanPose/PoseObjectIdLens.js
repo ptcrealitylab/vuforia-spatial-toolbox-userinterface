@@ -23,7 +23,7 @@ class PoseObjectIdLens extends AnalyticsLens {
      * values. This is necessary because we do not know ahead of time how many insertions there will be, otherwise we could
      * space the values evenly. Another benefit is that it ensures that values that are near each other in index order
      * are far apart in value order.
-     * @param index {number} The index to calculate the value for.
+     * @param {number} index The index to calculate the value for.
      */
     maximallyDifferentPositionFromIndex(index) {
         if (index === 0) {
@@ -51,7 +51,7 @@ class PoseObjectIdLens extends AnalyticsLens {
 
     /**
      * Calculates the color for a given index.
-     * @param index {number} The index to calculate the color for.
+     * @param {number} index The index to calculate the color for.
      * @return {Color} The color for the given index.
      */
     maximallyDifferentColorFromIndex(index) {
@@ -92,7 +92,7 @@ class PoseObjectIdLens extends AnalyticsLens {
 
     /**
      * Gets the color for a given pose object id.
-     * @param id {string} The pose object id.
+     * @param {string} id The pose object id.
      * @return {Color} The color for the given pose object id.
      */
     getColorFromId(id) {
