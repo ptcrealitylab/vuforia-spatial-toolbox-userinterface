@@ -22,8 +22,10 @@ export class Analytics {
     constructor() {
         this.container = document.createElement('div');
         this.container.id = 'analytics-container';
+
         this.timelineContainer = document.createElement('div');
         this.timelineContainer.id = 'analytics-timeline-container';
+
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this.timelineContainer);
         this.added = false;
@@ -31,6 +33,7 @@ export class Analytics {
         this.livePlayback = false;
         this.pinnedRegionCards = [];
         this.pinnedRegionCardsContainer = null;
+        this.pinnedRegionCardsCsvLink = null;
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
@@ -61,6 +64,12 @@ export class Analytics {
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
         this.container.appendChild(pinnedRegionCardsContainer);
+
+        this.pinnedRegionCardsCsvLink = document.createElement('a');
+        this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
+        this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
+        this.pinnedRegionCardsCsvLink.textContent = 'csv';
+        pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvLink);
 
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];
@@ -187,6 +196,8 @@ export class Analytics {
             }
         }
         this.pinnedRegionCards.push(regionCard);
+
+        this.updateCsvExportLink();
     }
 
     writeDehydratedRegionCards() {
@@ -218,5 +229,34 @@ export class Analytics {
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
         }, 750);
+    }
+
+    updateCsvExportLink() {
+        let header = [
+            'start', 'end', 'duration seconds', 'distance meters',
+            'reba avg', 'reba min', 'reba max',
+            // 'motion eco avg', 'motion eco min', 'motion eco max',
+        ];
+        let lines = [header];
+        for (let regionCard of this.pinnedRegionCards) {
+            lines.push([
+                new Date(regionCard.startTime).toISOString(),
+                new Date(regionCard.endTime).toISOString(),
+                regionCard.durationMs / 1000,
+                regionCard.distanceMm / 1000,
+                regionCard.graphSummaryValues['REBA'].average,
+                regionCard.graphSummaryValues['REBA'].minimum,
+                regionCard.graphSummaryValues['REBA'].maximum,
+                // regionCard.graphSummaryValues['MoEc'].average,
+                // regionCard.graphSummaryValues['MoEc'].minimum,
+                // regionCard.graphSummaryValues['MoEc'].maximum,
+            ]);
+        }
+        let dataUrl = 'data:text/plain;base64,' + btoa(lines.map(line => {
+            return line.join(',');
+        }).join('\n'));
+
+        this.pinnedRegionCardsCsvLink.href = dataUrl;
+        // window.open(dataUrl, '_blank');
     }
 }
