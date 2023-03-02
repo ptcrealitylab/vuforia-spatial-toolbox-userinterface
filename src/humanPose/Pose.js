@@ -5,7 +5,7 @@
  */
 import {JOINT_CONNECTIONS} from "./utils.js";
 
-class Pose {
+export class Pose {
     /**
      * Creates a new Pose object.
      * @param {Object} jointPositions An object that maps joint names to joint positions (in ground-plane space).
@@ -71,5 +71,3 @@ class Pose {
         });
     }
 }
-
-export default Pose;

@@ -5,7 +5,7 @@ import {
     SCALE,
     RENDER_CONFIDENCE_COLOR,
 } from './constants.js';
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
 /**
  * A single 3d skeleton rendered in a HumanPoseRenderer's slot

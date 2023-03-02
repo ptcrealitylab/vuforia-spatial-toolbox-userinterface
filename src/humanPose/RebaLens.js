@@ -1,12 +1,12 @@
-import AnalyticsLens from "./AnalyticsLens.js";
-import Reba from "./rebaScore.js";
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsLens} from "./AnalyticsLens.js";
+import * as Reba from "./rebaScore.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 import {JOINTS} from "./utils.js";
 
 /**
  * RebaLens is a lens that calculates the REBA score for each bone in the pose history.
  */
-class RebaLens extends AnalyticsLens {
+export class RebaLens extends AnalyticsLens {
     /**
      * Creates a new RebaLens object.
      */
@@ -66,5 +66,3 @@ class RebaLens extends AnalyticsLens {
         return pose.getJoint(JOINTS.HEAD).rebaColorOverall;
     }
 }
-
-export default RebaLens;

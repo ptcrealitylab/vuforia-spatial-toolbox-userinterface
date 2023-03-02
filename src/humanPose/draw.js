@@ -1,13 +1,13 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINTS, JOINT_PUBLIC_DATA_KEYS, getJointNodeInfo} from './utils.js';
 import {SpaghettiMeshPath} from './spaghetti.js';
-import Pose from "./Pose.js";
-import RebaLens from "./RebaLens.js";
-import OverallRebaLens from "./OverallRebaLens.js";
-import AccelerationLens from "./AccelerationLens.js";
-import TimeLens from "./TimeLens.js";
-import PoseObjectIdLens from "./PoseObjectIdLens.js";
-import HumanPoseAnalyzerSettingsUi from "./HumanPoseAnalyzerSettingsUi.js";
+import {Pose} from "./Pose.js";
+import {RebaLens} from "./RebaLens.js";
+import {OverallRebaLens} from "./OverallRebaLens.js";
+import {AccelerationLens} from "./AccelerationLens.js";
+import {TimeLens} from "./TimeLens.js";
+import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
+import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
@@ -846,7 +846,6 @@ export class HumanPoseAnalyzer {
 
         for (let i = 0; i < this.clones.all.length; i++) {
             let clone = this.clones.all[i];
-            clone.renderer.markMatrixNeedsUpdate();
             if (clone.pose.timestamp < start) {
                 continue;
             }
@@ -856,6 +855,7 @@ export class HumanPoseAnalyzer {
             if (clone.visible === visible) {
                 continue;
             }
+            clone.renderer.markMatrixNeedsUpdate();
             clone.setVisible(visible);
         }
     }
@@ -906,7 +906,7 @@ export class HumanPoseAnalyzer {
         const bestClone = this.getCloneByTimestamp(timestamp);
         if (!bestClone) {
             this.hideLastDisplayedClone();
-            this.lastDisplayedCloneIndex = -1;
+            this.lastDisplayedClone = null;
             return;
         }
 
@@ -1306,21 +1306,21 @@ function finishHistoryPlayback() {
 /**
  * Shows the HumanPoseAnalyzer's settings UI
  */
-function showAnalyzerUI() {
+function showAnalyzerSettingsUI() {
     humanPoseAnalyzer.settingsUi.show();
 }
 
 /**
  * Hides the HumanPoseAnalyzer's settings UI
  */
-function hideAnalyzerUI() {
+function hideAnalyzerSettingsUI() {
     humanPoseAnalyzer.settingsUi.hide();
 }
 
 /**
  * Toggles the HumanPoseAnalyzer's settings UI
  */
-function toggleAnalyzerUI() {
+function toggleAnalyzerSettingsUI() {
     humanPoseAnalyzer.settingsUi.toggle();
 }
 
@@ -1343,7 +1343,7 @@ export {
     advanceCloneMaterial,
     getPosesInTimeInterval,
     finishHistoryPlayback,
-    showAnalyzerUI,
-    hideAnalyzerUI,
-    toggleAnalyzerUI,
+    showAnalyzerSettingsUI,
+    hideAnalyzerSettingsUI,
+    toggleAnalyzerSettingsUI,
 };

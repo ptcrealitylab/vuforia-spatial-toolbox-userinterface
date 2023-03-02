@@ -1,6 +1,6 @@
 import {JOINTS} from "./utils.js";
 
-class HumanPoseAnalyzerSettingsUi {
+export class HumanPoseAnalyzerSettingsUi {
     constructor(humanPoseAnalyzer) {
         this.humanPoseAnalyzer = humanPoseAnalyzer;
         
@@ -33,7 +33,7 @@ class HumanPoseAnalyzerSettingsUi {
 <!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
 <!--                        </div>-->
                         <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">Toggle Spaghetti Lines</div>
+                            <div class="hpa-settings-section-row-label">View Spaghetti Lines</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-live-history-lines">
                         </div>
                         <div class="hpa-settings-section-row">
@@ -49,7 +49,7 @@ class HumanPoseAnalyzerSettingsUi {
 <!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
 <!--                        </div>-->
                         <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">Toggle Spaghetti Lines</div>
+                            <div class="hpa-settings-section-row-label">View Spaghetti Lines</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-historical-history-lines">
                         </div>
                     </div>
@@ -265,5 +265,3 @@ class HumanPoseAnalyzerSettingsUi {
         // this.root.querySelector('#hpa-settings-select-joint').value = jointName; // TODO: re-add once implemented
     }
 }
-
-export default HumanPoseAnalyzerSettingsUi;

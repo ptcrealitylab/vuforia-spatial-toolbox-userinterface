@@ -2,9 +2,9 @@
  * AnalyticsLens is a class that represents a lens in the analytics system.
  * Inherit from this class to create new lenses.
  */
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
-class AnalyticsLens {
+export class AnalyticsLens {
     /**
      * Creates a new AnalyticsLens object.
      * @param {string} name The name of the lens, used in menus.
@@ -73,5 +73,3 @@ class AnalyticsLens {
         return AnalyticsColors.undefined;
     }
 }
-
-export default AnalyticsLens;

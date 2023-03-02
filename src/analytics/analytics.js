@@ -8,8 +8,8 @@ import {
     setDisplayRegion,
     setCursorTime,
     clearHistoricalData,
-    showAnalyzerUI,
-    hideAnalyzerUI, getPosesInTimeInterval
+    showAnalyzerSettingsUI,
+    hideAnalyzerSettingsUI, getPosesInTimeInterval
 } from '../humanPose/draw.js';
 import {
     loadHistory
@@ -36,7 +36,7 @@ export class Analytics {
         this.createNewPinnedRegionCardsContainer();
         document.body.appendChild(this.container);
         this.added = true;
-        showAnalyzerUI();
+        showAnalyzerSettingsUI();
     }
 
     remove() {
@@ -44,7 +44,7 @@ export class Analytics {
         clearHistoricalData();
         this.added = false;
         this.timeline.reset();
-        hideAnalyzerUI();
+        hideAnalyzerSettingsUI();
     }
 
     /**

@@ -1,5 +1,5 @@
-import AnalyticsLens from "./AnalyticsLens.js";
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsLens} from "./AnalyticsLens.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 import {JOINTS} from "./utils.js";
 
 const TIME_INTERVAL_DURATION = 10000; // 10 seconds
@@ -69,4 +69,4 @@ class TimeLens extends AnalyticsLens {
     }
 }
 
-export default TimeLens;
+export {TimeLens};

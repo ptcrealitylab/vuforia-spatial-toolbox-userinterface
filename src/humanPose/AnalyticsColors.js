@@ -4,7 +4,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
  * A collection of colors used often in the analytics system.
  * They are created here to ensure that they are only created once.
  */
-const AnalyticsColors = {
+export const AnalyticsColors = {
     undefined: new THREE.Color(1, 0, 1),
     base: new THREE.Color(0, 0.5, 1),
     red: new THREE.Color(1, 0, 0),
@@ -21,6 +21,3 @@ const AnalyticsColors = {
         return new THREE.Color().setHSL(h, 0.8, 0.3);
     }
 };
-
-export default AnalyticsColors;
-

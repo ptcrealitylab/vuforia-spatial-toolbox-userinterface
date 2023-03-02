@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import AnalyticsLens from "./AnalyticsLens.js";
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsLens} from "./AnalyticsLens.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 import {JOINTS} from "./utils.js";
 
 const HIGH_CUTOFF = 35000 // In ???/???^2
@@ -9,7 +9,7 @@ const MED_CUTOFF = 15000 // In ???/???^2
 /**
  * AccelerationLens is a lens that calculates the acceleration of each joint in the pose history.
  */
-class AccelerationLens extends AnalyticsLens {
+export class AccelerationLens extends AnalyticsLens {
     /**
      * Creates a new AccelerationLens object.
      */
@@ -182,5 +182,3 @@ class AccelerationLens extends AnalyticsLens {
         return this.getColorForAcceleration(maxAcceleration);
     }
 }
-
-export default AccelerationLens;

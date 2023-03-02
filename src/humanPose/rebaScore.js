@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName} from './utils.js';
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
@@ -690,6 +690,6 @@ function calculateForPose(pose) {
     return rebaData;
 }
 
-export default {
+export {
     calculateForPose
 };

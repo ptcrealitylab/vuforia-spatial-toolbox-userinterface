@@ -1,12 +1,12 @@
-import AnalyticsLens from "./AnalyticsLens.js";
-import Reba from "./rebaScore.js";
-import AnalyticsColors from "./AnalyticsColors.js";
+import {AnalyticsLens} from "./AnalyticsLens.js";
+import * as Reba from "./rebaScore.js";
+import {AnalyticsColors} from "./AnalyticsColors.js";
 import {JOINTS} from "./utils.js";
 
 /**
  * OverallRebaLens is a lens that calculates the overall REBA score for the pose
  */
-class OverallRebaLens extends AnalyticsLens {
+export class OverallRebaLens extends AnalyticsLens {
     /**
      * Creates a new OverallRebaLens object.
      */
@@ -61,5 +61,3 @@ class OverallRebaLens extends AnalyticsLens {
         return this.getColorForJoint(pose.getJoint(JOINTS.HEAD));
     }
 }
-
-export default OverallRebaLens;
