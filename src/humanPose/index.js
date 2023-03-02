@@ -16,7 +16,6 @@ import {Pose} from "./Pose.js";
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
-    const SHOW_PLAYBACK = false;
 
     let myHumanPoseId = null;  // objectId
 
@@ -106,12 +105,6 @@ import {Pose} from "./Pose.js";
 
     function applyDiff(objects, diff) {
         applyDiffRecur(objects, diff);
-    }
-
-    function sleep(ms) {
-        return new Promise(res => {
-            setTimeout(res, ms);
-        });
     }
 
     /**
