@@ -1850,13 +1850,13 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.minimized > *:not(.analytics-region-card-title) {
+.analytics-region-card.minimized > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
 
 .analytics-region-card.minimized {
     padding: 14px;
-    height: 14px;
+    height: 28px;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -1881,6 +1881,17 @@ Logic Interface CSS
     pointer-events: all;
 }
 
+.analytics-pinned-region-cards-csv {
+    position: absolute;
+    top: -40px;
+    left: 140px;
+}
+
+.analytics-pinned-region-cards-csv,
+.analytics-pinned-region-cards-csv:visited {
+    color: white;
+}
+
 .analytics-region-card-title {
     grid-column-start: span 3;
 }
@@ -1890,6 +1901,10 @@ Logic Interface CSS
     border-bottom: 1px solid #999;
     padding-bottom: 4px;
     margin-bottom: 4px;
+}
+
+.analytics-region-card.minimized > .analytics-region-card-subtitle {
+    border-bottom: none;
 }
 
 .analytics-region-card-graph-section-title {

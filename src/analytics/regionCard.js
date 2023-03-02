@@ -169,6 +169,7 @@ export class RegionCard {
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(motionSummary);
 
+        this.graphSummaryValues = {};
         this.createGraphSection('REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore);
 
         const pinButton = document.createElement('a');
@@ -200,6 +201,9 @@ export class RegionCard {
             distanceMm += Math.sqrt(dx * dx + dy * dy + dz * dz);
         });
 
+        this.distanceMm = distanceMm;
+        this.durationMs = this.endTime - this.startTime;
+
         return getMeasurementTextLabel(distanceMm, this.endTime - this.startTime);
     }
 
@@ -215,6 +219,7 @@ export class RegionCard {
         sparkLine.setAttribute('xmlns', svgNS);
 
         let summaryValues = this.getSummaryValues(poseValueFunction);
+        this.graphSummaryValues[titleText] = summaryValues;
 
         let path = document.createElementNS(svgNS, 'path');
         path.setAttribute('stroke-width', '1');
