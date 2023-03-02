@@ -135,6 +135,8 @@ export class Timeline {
         }
 
         if (this.dragMode === DragMode.SELECT) {
+            // If mouse is far to either side of timeline during selection,
+            // scroll the timeline in that direction
             const dragSpeedBase = 0.5;
             const dragStart = 0.15;
             if (this.mouseX < this.width * dragStart) {
