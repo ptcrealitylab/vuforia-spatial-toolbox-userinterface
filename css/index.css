@@ -1921,8 +1921,6 @@ Logic Interface CSS
 }
 
 .analytics-region-card-pin, .analytics-region-card-view {
-    grid-column: 1;
-    text-decoration: none;
     color: white;
 }
 .analytics-region-card-pin:visited, .analytics-region-card-view:visited {
