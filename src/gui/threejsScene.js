@@ -383,7 +383,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
+    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, loadingPrompt, loadingBar, loadingText, callback) {
         const gltfLoader = new GLTFLoader();
 
         gltfLoader.load(pathToGltf, function(gltf) {
@@ -503,6 +503,25 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
             if (callback) {
               callback(gltf.scene, wireMesh);
+            }
+        }, function (xhr) {
+            if (!realityEditor.device.environment.isDesktop()) return;
+            let percentage = Math.floor(xhr.loaded / xhr.total * 100);
+            // console.log( percentage + '% loaded' );
+            
+            loadingBar.style.transform = `translateX(${percentage-100}%)`;
+            loadingText.innerHTML = 'Loading Area Target Mesh: ' + percentage + '%';
+            console.log(loadingText.innerHTML);
+            
+            if (percentage > 50 && percentage < 80) {
+                console.log('afjwoiejfeowpif');
+            }
+
+            if (percentage === 100) {
+                setTimeout(() => {
+                    loadingPrompt.classList.add('loading-prompt-anim-out');
+                }, 1000);
+                // loadingPrompt.classList.add('loading-prompt-anim-out');
             }
         });
     }
