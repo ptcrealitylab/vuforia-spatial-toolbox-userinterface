@@ -550,6 +550,7 @@ export class Timeline {
         } else {
             this.dragMode = DragMode.PAN;
         }
+        realityEditor.analytics.setCursorTime(-1);
         event.stopPropagation();
     }
 
