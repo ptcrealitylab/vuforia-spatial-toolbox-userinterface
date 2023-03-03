@@ -778,6 +778,10 @@ export class HumanPoseAnalyzer {
      * Saves the animation state while in the temporary cursor mode
      */
     saveAnimationState() {
+        if (this.animationMode === AnimationMode.cursor) {
+            return;
+        }
+
         this.prevAnimationState = {
             animationMode: this.animationMode,
             animationStart: this.animationStart,
