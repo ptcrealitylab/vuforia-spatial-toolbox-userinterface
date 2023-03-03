@@ -1,8 +1,12 @@
+import * as THREE from "../../thirdPartyCode/three/three.module.js";
+
 createNameSpace("realityEditor.humanPose");
 
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
+import {getGroundPlaneRelativeMatrix, JOINTS, setMatrixFromArray} from "./utils.js";
+import {Pose} from "./Pose.js";
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -12,7 +16,6 @@ import * as utils from './utils.js'
 
     const MAX_FPS = 20;
     const IDLE_TIMEOUT_MS = 2000;
-    const SHOW_PLAYBACK = true;
 
     let myHumanPoseId = null;  // objectId
 
@@ -65,7 +68,7 @@ import * as utils from './utils.js'
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderHumanPoseObjects([], Date.now());
+                    draw.renderLiveHumanPoseObjects([], Date.now(), null);
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -75,13 +78,13 @@ import * as utils from './utils.js'
 
                 lastUpdateTime = Date.now();
 
-                draw.renderHumanPoseObjects(Object.values(humanPoseObjects), Date.now());
+                draw.renderLiveHumanPoseObjects(Object.values(humanPoseObjects), Date.now(), null);
 
                 for (const [id, obj] of Object.entries(humanPoseObjects)) {
                     lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
                 }
             } catch (e) {
-                console.warn('error in renderHumanPoseObjects', e);
+                console.warn('error in renderLiveHumanPoseObjects', e);
             }
         });
     }
@@ -104,12 +107,6 @@ import * as utils from './utils.js'
         applyDiffRecur(objects, diff);
     }
 
-    function sleep(ms) {
-        return new Promise(res => {
-            setTimeout(res, ms);
-        });
-    }
-
     /**
      * @param {TimeRegion} historyRegion
      */
@@ -123,56 +120,91 @@ import * as utils from './utils.js'
         const regionStartTime = historyRegion.startTime;
         const regionEndTime = historyRegion.endTime;
 
+        const worldObject = realityEditor.worldObjects.getBestWorldObject();
+        const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
+        let logs = [];
         try {
-            const worldObject = realityEditor.worldObjects.getBestWorldObject();
-            const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
             const resLogs = await fetch(historyLogsUrl);
-            const logs = await resLogs.json();
-            for (const logName of logs) {
-                let matches = logName.match(/objects_(\d+)-(\d+)/);
-                if (!matches) {
-                    continue;
-                }
-                let logStartTime = parseInt(matches[1]);
-                let logEndTime = parseInt(matches[2]);
-                if (isNaN(logStartTime) || isNaN(logEndTime)) {
-                    continue;
-                }
-                if (logEndTime < regionStartTime) {
-                    continue;
-                }
-                if (logStartTime > regionEndTime && regionEndTime >= 0) {
-                    continue;
-                }
+            logs = await resLogs.json();
+        } catch (e) {
+            console.error('Unable to load list of history logs', e);
+        }
+
+        for (const logName of logs) {
+            let matches = logName.match(/objects_(\d+)-(\d+)/);
+            if (!matches) {
+                continue;
+            }
+            let logStartTime = parseInt(matches[1]);
+            let logEndTime = parseInt(matches[2]);
+            if (isNaN(logStartTime) || isNaN(logEndTime)) {
+                continue;
+            }
+            if (logEndTime < regionStartTime) {
+                continue;
+            }
+            if (logStartTime > regionEndTime && regionEndTime >= 0) {
+                continue;
+            }
+            try {
                 const resLog = await fetch(`${historyLogsUrl}/${logName}`);
                 const log = await resLog.json();
                 await replayHistory(log);
+            } catch (e) {
+                console.error('Unable to load history log', `${historyLogsUrl}/${logName}`, e);
             }
-        } catch (e) {
-            console.warn('Unable to load history', e);
         }
+
+        draw.finishHistoryPlayback();
     }
 
-    async function replayHistory(hist) {
+    async function replayHistory(history) {
         inHistoryPlayback = true;
-        let timeObjects = {};
-        for (let key of Object.keys(hist)) {
-            let diff = hist[key];
-            let presentObjectKeys = Object.keys(diff);
-            let presentHumans = presentObjectKeys.filter(k => k.startsWith('_HUMAN_'));
-            applyDiff(timeObjects, diff);
-            if (presentHumans.length === 0) {
-                continue;
+        const timeObjects = {};
+        const timestampStrings = Object.keys(history);
+        const poses = [];
+        timestampStrings.forEach(timestampString => {
+            let historyEntry = history[timestampString];
+            let objectNames = Object.keys(historyEntry);
+            let presentHumanNames = objectNames.filter(name => name.startsWith('_HUMAN_'));
+            applyDiff(timeObjects, historyEntry);
+            if (presentHumanNames.length === 0) {
+                return;
             }
-            let humanPoseObjects = [];
-            for (let key of presentHumans) {
-                humanPoseObjects.push(timeObjects[key]);
+            for (let objectName of presentHumanNames) {
+                const poseObject = timeObjects[objectName];
+                if (!poseObject.uuid) {
+                    poseObject.uuid = poseObject.objectId;
+                }
+                let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
+                const jointPositions = {};
+                if (poseObject.matrix && poseObject.matrix.length > 0) {
+                    let objectRootMatrix = new THREE.Matrix4();
+                    setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+                    groundPlaneRelativeMatrix.multiply(objectRootMatrix);
+                }
+                for (let jointId of Object.values(JOINTS)) {
+                    let frame = poseObject.frames[poseObject.uuid + jointId];
+                    if (!frame.ar.matrix) {
+                        continue;
+                    }
+                    // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
+                    let jointMatrixThree = new THREE.Matrix4();
+                    setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
+                    jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
+                    let jointPosition = new THREE.Vector3();
+                    jointPosition.setFromMatrixPosition(jointMatrixThree);
+                    jointPositions[jointId] = jointPosition;
+                }
+                if (Object.keys(jointPositions).length === 0) {
+                    return;
+                }
+                const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+                const pose = new Pose(jointPositions, parseInt(timestampString), {poseObjectId: identifier});
+                poses.push(pose);
             }
-            draw.renderHumanPoseObjects(humanPoseObjects, parseInt(key), true, null);
-            if (SHOW_PLAYBACK) {
-                await sleep(0);
-            }
-        }
+        });
+        draw.bulkRenderHistoricalPoses(poses, null);
         inHistoryPlayback = false;
     }
 

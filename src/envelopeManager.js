@@ -21,6 +21,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @property {Array.<string>} compatibleFrameTypes
      * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
+     * @property {boolean} isMinimized
      */
 
     /**
@@ -116,10 +117,15 @@ createNameSpace("realityEditor.envelopeManager");
         if (typeof eventData.open !== 'undefined') {
             openEnvelope(fullMessageContent.frame, true);
         }
-        
+
         // responds to an envelope closing
         if (typeof eventData.close !== 'undefined') {
             closeEnvelope(fullMessageContent.frame, true);
+        }
+
+        // responds to an envelope closing
+        if (typeof eventData.minimize !== 'undefined') {
+            minimizeEnvelope(fullMessageContent.frame, true);
         }
         
         // keeps mapping of envelopes -> containedFrames up to date
@@ -130,6 +136,8 @@ createNameSpace("realityEditor.envelopeManager");
                 // if we added any new frames, and they are visible but the envelope is closed, then hide them
                 if (!knownEnvelopes[fullMessageContent.frame].isOpen) {
                     closeEnvelope(fullMessageContent.frame, true);
+                } else if (knownEnvelopes[fullMessageContent.frame].isMinimized) {
+                    minimizeEnvelope(fullMessageContent.frame, true);
                 }
             }
         }
@@ -142,6 +150,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
         knownEnvelopes[frameId].isOpen = true;
+        knownEnvelopes[frameId].isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -174,6 +183,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
         knownEnvelopes[frameId].isOpen = false;
+        knownEnvelopes[frameId].isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -197,6 +207,25 @@ createNameSpace("realityEditor.envelopeManager");
                 element.classList.add('hiddenEnvelopeContents');
             }
         });
+
+        // adjust exit/cancel/back buttons for # of open frames
+        updateExitButton();
+    }
+
+    /**
+     * Minimizes an envelope by hiding controls and/or responds to an envelope closing to update UI and other frames appropriately
+     * @param {string} frameId
+     * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
+     */
+    function minimizeEnvelope(frameId, wasTriggeredByEnvelope) {
+        knownEnvelopes[frameId].isMinimized = true;
+
+        // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
+        if (!wasTriggeredByEnvelope) {
+            sendMessageToEnvelope(frameId, {
+                minimize: true
+            });
+        }
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
@@ -256,7 +285,7 @@ createNameSpace("realityEditor.envelopeManager");
                 minimizeButton.addEventListener('pointerup', function() {
                     // TODO: only minimize the envelope that has focus, not all of them
                     getOpenEnvelopes().forEach(function(envelope) {
-                        closeEnvelope(envelope.frame);
+                        minimizeEnvelope(envelope.frame);
                     });
                 });
             }
@@ -558,7 +587,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function getOpenEnvelopes() {
         return Object.values(knownEnvelopes).filter(function(envelope) {
-            return envelope.isOpen;
+            return envelope.isOpen && !envelope.isMinimized;
         });
     }
 
@@ -634,12 +663,14 @@ createNameSpace("realityEditor.envelopeManager");
     }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
-    
+
     exports.getKnownEnvelopes = function() {
         return knownEnvelopes;
     }
     
     exports.showBlurredBackground = showBlurredBackground;
     exports.hideBlurredBackground = hideBlurredBackground;
+
+    exports.getOpenEnvelopes = getOpenEnvelopes;
 
 }(realityEditor.envelopeManager));

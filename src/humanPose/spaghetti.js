@@ -1,6 +1,10 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
 import * as utils from './utils.js'
+import {
+    setAnimationMode,
+    AnimationMode,
+} from './draw.js';
 
 // Approximate milliseconds between points (10 fps)
 const POINT_RES_MS = 100;
@@ -72,6 +76,7 @@ class MeasurementLabel {
 export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
         super(path, params);
+        this.allPoints = this.currentPoints;
 
         this.pathId = realityEditor.device.utilities.uuidTime();
         this.comparer = new KeyframeComparer();
@@ -94,6 +99,20 @@ export class SpaghettiMeshPath extends MeshPath {
         });
     }
     
+    setAllPoints(points) {
+        this.allPoints = points;
+        this.setPoints(points);
+    }
+
+    /**
+     * @typedef {MeshPathPoint} SpaghettiMeshPathPoint
+     * @property {number} timestamp - the time in milliseconds since the start of the path
+     */
+
+    /**
+     * Sets the points of the path, and also calculates the horizontal plane at the average Y height of the path
+     * @param {SpaghettiMeshPathPoint[]} points - the points to set
+     */
     setPoints(points) {
         super.setPoints(points);
         
@@ -119,18 +138,21 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
+        // If we're clicking the spaghetti at the end of a selection (selecting
+        // second point), we want to freeze the current highlight interval
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
         if (intersects.length > 0 &&
             this.comparer.selectionState === SelectionState.SECOND) {
             this.comparer.selectionState = SelectionState.TIMELINE;
             this.frozen = true;
+            setAnimationMode(AnimationMode.region);
             return;
         }
 
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
     }
-    
+
     onPointerMove(e) {
         if (this.frozen) {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
@@ -153,6 +175,7 @@ export class SpaghettiMeshPath extends MeshPath {
                 this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
                 this.comparer.setEndPoint(this.prevState.secondPointIndex);
                 this.comparer.selectionState = SelectionState.TIMELINE;
+                setAnimationMode(AnimationMode.region);
                 this.updateMeshWithComparer();
             }
 
@@ -163,6 +186,9 @@ export class SpaghettiMeshPath extends MeshPath {
 
         // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
         let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
+        if (!pointOnPlane) {
+            return;
+        }
         this.cursorDestination = [pointOnPlane.x, pointOnPlane.y, pointOnPlane.z];
         this.cursor.material.color.setHex(0xffffff);
         this.cursor.scale.set(1,1,1);
@@ -198,7 +224,16 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     isVisible() {
-        return this.visible && this.parent && this.parent.visible;
+        let ancestorsAllVisible = true;
+        let parent = this.parent;
+        while (parent) {
+            if (!parent.visible) {
+                ancestorsAllVisible = false;
+                break;
+            }
+            parent = parent.parent;
+        }
+        return this.visible && ancestorsAllVisible;
     }
 
     setupPointerEvents() {
@@ -226,6 +261,9 @@ export class SpaghettiMeshPath extends MeshPath {
         let pointOnPlane = realityEditor.gui.ar.utilities.getPointOnPlaneFromScreenXY(this.planeOrigin, this.planeNormal, cameraNode, screenX, screenY);
         let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
         let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
+        if (!pointOnPlane) {
+            return;
+        }
         return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
     }
     
@@ -247,6 +285,7 @@ export class SpaghettiMeshPath extends MeshPath {
             this.cursor.visible = false;
         } else {
             this.comparer.setFirstPoint(pointIndex, isHover);
+            setAnimationMode(AnimationMode.regionAll);
         }
         this.updateMeshWithComparer();
         this.updateAnalyticsHighlightRegion();
@@ -287,12 +326,14 @@ export class SpaghettiMeshPath extends MeshPath {
             const firstTimestamp = points[comparer.firstPointIndex].timestamp;
             if (comparer.secondPointIndex !== null) {
                 const secondTimestamp = points[comparer.secondPointIndex].timestamp;
+                realityEditor.analytics.setCursorTime(-1, true);
                 realityEditor.analytics.setHighlightRegion({
                     startTime: Math.min(firstTimestamp, secondTimestamp),
                     endTime: Math.max(firstTimestamp, secondTimestamp),
                 }, true);
             } else {
                 realityEditor.analytics.setCursorTime(firstTimestamp, true);
+                setAnimationMode(AnimationMode.cursor);
             }
         }
     }
@@ -360,7 +401,7 @@ export class SpaghettiMeshPath extends MeshPath {
     /**
      * @param {number} timestamp - time that is hovered in ms
      */
-    setHoverTime(timestamp) {
+    setCursorTime(timestamp) {
         let index = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
             let point = this.currentPoints[i];
@@ -378,16 +419,18 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        this.comparer.selectionState = SelectionState.FIRST;
+        this.comparer.selectionState = SelectionState.TIMELINE;
         this.comparer.setFirstPoint(index, true);
         this.updateMeshWithComparer();
     }
 
     /**
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - end of interval in ms
+     * @param {{startTime: number, endTime: number}} highlightRegion
      */
-    setHighlightTimeInterval(firstTimestamp, secondTimestamp) {
+    setHighlightRegion(highlightRegion) {
+        const firstTimestamp = highlightRegion.startTime;
+        const secondTimestamp = highlightRegion.endTime;
+
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
@@ -415,13 +458,15 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     /**
-     * Limits currentPoints to a subset of allPoints based on firstTimestamp
-     * and secondTimestamp
+     * Limits currentPoints to a subset of allPoints based on the display
+     * region
      *
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - end of interval in ms
+     * @param {{startTime: number, endTime: number}} displayRegion
      */
-    setDisplayTimeInterval(firstTimestamp, secondTimestamp) {
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.allPoints.length; i++) {

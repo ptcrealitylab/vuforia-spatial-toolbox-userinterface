@@ -12,7 +12,7 @@ createNameSpace("realityEditor.avatar");
 
     let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
-    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 10 * 1000; // once per 10 seconds
+    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 1000; // once per 1 second
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
     const RAYCAST_AGAINST_GROUNDPLANE = false;
 
@@ -193,6 +193,14 @@ createNameSpace("realityEditor.avatar");
     // initialize the avatar object representing my own device, and those representing other devices
     function handleDiscoveredObject(object, objectKey) {
         if (!utils.isAvatarObject(object)) { return; }
+
+        // ignore objects from other worlds if we have a primaryWorld set
+        let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
+        if (primaryWorldInfo && primaryWorldInfo.id &&
+            object.worldId && object.worldId !== primaryWorldInfo.id) {
+            return;
+        }
+
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
         connectedAvatarNames[objectKey] = { name: null };

@@ -246,7 +246,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (moveToCursor) {
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else {
-            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+            let info = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+            if (info.didFindCenterPoint) {
+                spatialCursorMatrix = info.matrix;
+            }
         }
 
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
@@ -263,6 +266,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
             realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
         }
+
+        return addedElement;
     }
 
     let screenX, screenY;
@@ -587,21 +592,22 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     function getOrientedCursorIfItWereAtScreenCenter() {
         // move cursor to center, then get the matrix, then move the cursor back to where it was
-        let worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
-        updateSpatialCursor(worldIntersectPoint);
-        updateTestSpatialCursor(worldIntersectPoint);
+        worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        updateSpatialCursor();
+        updateTestSpatialCursor();
         indicator1.updateMatrixWorld(); // update immediately before doing the calculations
 
         let result = getOrientedCursorRelativeToWorldObject();
+        let didFindCenterPoint = !!worldIntersectPoint.point;
 
         // move it back
         let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        let prevWorldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
-        updateSpatialCursor(prevWorldIntersectPoint);
-        updateTestSpatialCursor(prevWorldIntersectPoint);
+        worldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        updateSpatialCursor();
+        updateTestSpatialCursor();
         indicator1.updateMatrixWorld();
 
-        return result;
+        return { matrix: result, didFindCenterPoint: didFindCenterPoint };
     }
 
     // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is

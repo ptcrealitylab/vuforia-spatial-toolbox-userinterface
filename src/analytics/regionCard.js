@@ -1,12 +1,10 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
+import {JOINTS} from "../humanPose/utils.js";
 
 const cardWidth = 200;
 const rowHeight = 22;
 
 const svgNS = 'http://www.w3.org/2000/svg';
-
-const pinnedRegionCards = [];
-let pinnedRegionCardsContainer;
 
 export const RegionCardState = {
     Tooltip: 'Tooltip', // an ephemeral tooltip on the timeline
@@ -28,12 +26,11 @@ export const RegionCardState = {
 export class RegionCard {
     /**
      * @param {Element} container
-     * @param {Array<SpaghettiMeshPoint>} points - Each point should have x, y,
-     *                                    z, color, overallRebaScore, timestamp
+     * @param {Array<Pose>} poses - the poses to process in this region card
      */
-    constructor(container, points) {
+    constructor(container, poses) {
         this.container = container;
-        this.points = points;
+        this.poses = poses;
         this.element = document.createElement('div');
         this.dateTimeFormat = new Intl.DateTimeFormat('default', {
             // dateStyle: 'short',
@@ -47,7 +44,7 @@ export class RegionCard {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onClickPin = this.onClickPin.bind(this);
-        this.onClickEnter = this.onClickEnter.bind(this);
+        this.onClickView = this.onClickView.bind(this);
 
         this.createCard();
 
@@ -55,13 +52,6 @@ export class RegionCard {
         this.element.addEventListener('pointerdown', this.onPointerDown);
         this.element.addEventListener('pointerout', this.onPointerOut);
         this.container.appendChild(this.element);
-
-        if (!pinnedRegionCardsContainer) {
-            pinnedRegionCardsContainer = document.createElement('div');
-            pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
-            const analyticsContainer = document.getElementById('analytics-container');
-            analyticsContainer.appendChild(pinnedRegionCardsContainer);
-        }
     }
 
     onPointerOver() {
@@ -90,20 +80,19 @@ export class RegionCard {
             this.unpin();
             break;
         }
-
         event.stopPropagation();
     }
 
-    onClickEnter() {
+    onClickView() {
         switch (this.state) {
         case RegionCardState.Tooltip:
             this.pin();
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                realityEditor.analytics.setDisplayRegion(null);
+                realityEditor.analytics.setHighlightRegion(null);
             } else {
-                realityEditor.analytics.setDisplayRegion({
+                realityEditor.analytics.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
                 });
@@ -122,36 +111,53 @@ export class RegionCard {
         this.element.style.bottom = 'auto';
         this.moveTo(rect.left, rect.top);
         this.element.classList.add('pinAnimation', 'minimized');
-        setTimeout(() => {
-            this.moveTo(35, 120 + (14 + 14 * 2 + 10) * pinnedRegionCards.length);
-            // this.element.classList.add('minimized');
-        }, 10);
+        this.updatePinButtonText();
 
-        setTimeout(() => {
-            this.element.classList.remove('pinAnimation');
-            this.element.classList.add('pinned');
-            this.element.style.top = 'auto';
-            this.element.style.left = 'auto';
-            pinnedRegionCards.push(this);
+        realityEditor.analytics.pinRegionCard(this);
+    }
 
-            this.switchContainer(pinnedRegionCardsContainer);
-        }, 750);
+    save() {
+        let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
+        const frameKey = addedTool.uuid;
+        const publicData = {
+            startTime: this.startTime,
+            endTime: this.endTime,
+            summary: this.element.outerHTML,
+        };
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(addedTool.objectId, frameKey, frameKey + 'storage', 'status', publicData);
+        };
+        setTimeout(write, 1000);
+        setTimeout(write, 2000);
+    }
+
+    removePinAnimation() {
+        this.element.classList.remove('pinAnimation');
+        this.element.classList.add('pinned');
+        this.element.style.top = 'auto';
+        this.element.style.left = 'auto';
+        this.updatePinButtonText();
     }
 
     unpin() {
         console.log('unpin');
         this.remove();
-        if (this.displayActive) {
-            realityEditor.analytics.setDisplayRegion(null);
+        realityEditor.analytics.unpinRegionCard(this);
+    }
+
+    updatePinButtonText() {
+        let pinButton = this.element.querySelector('.analytics-region-card-pin');
+        if (pinButton) {
+            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
     }
 
     createCard() {
-        if (this.points.length === 0) {
+        if (this.poses.length === 0) {
             return;
         }
-        this.startTime = this.points[0].timestamp;
-        this.endTime = this.points[this.points.length - 1].timestamp;
+        this.startTime = this.poses[0].timestamp;
+        this.endTime = this.poses[this.poses.length - 1].timestamp;
         this.element.classList.add('analytics-region-card');
         this.element.classList.add('minimized');
 
@@ -169,39 +175,45 @@ export class RegionCard {
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(motionSummary);
 
-        this.createGraphSection('REBA', 'overallRebaScore');
+        this.graphSummaryValues = {};
+        this.createGraphSection('REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore);
 
         const pinButton = document.createElement('a');
         pinButton.href = '#';
         pinButton.classList.add('analytics-region-card-pin');
-        pinButton.textContent = 'Pin';
+        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
 
-        const enterButton = document.createElement('a');
-        enterButton.href = '#';
-        enterButton.classList.add('analytics-region-card-enter');
-        enterButton.textContent = 'Enter';
-        enterButton.addEventListener('click', this.onClickEnter);
-        this.element.appendChild(enterButton);
+        const viewButton = document.createElement('a');
+        viewButton.href = '#';
+        viewButton.classList.add('analytics-region-card-view');
+        viewButton.textContent = 'View';
+        viewButton.addEventListener('click', this.onClickView);
+        this.element.appendChild(viewButton);
     }
 
     getMotionSummaryText() {
         let distanceMm = 0;
-
-        for (let i = 1; i < this.points.length; i++) {
-            const prev = this.points[i - 1];
-            const point = this.points[i];
-            let dx = point.x - prev.x;
-            let dy = point.y - prev.y;
-            let dz = point.z - prev.z;
+        
+        this.poses.forEach((pose, index) => {
+            if (index === 0) return;
+            const previousPose = this.poses[index - 1];
+            const joint = pose.getJoint(JOINTS.HEAD);
+            const previousJoint = previousPose.getJoint(JOINTS.HEAD);
+            const dx = joint.position.x - previousJoint.position.x;
+            const dy = joint.position.y - previousJoint.position.y;
+            const dz = joint.position.z - previousJoint.position.z;
             distanceMm += Math.sqrt(dx * dx + dy * dy + dz * dz);
-        }
+        });
+
+        this.distanceMm = distanceMm;
+        this.durationMs = this.endTime - this.startTime;
 
         return getMeasurementTextLabel(distanceMm, this.endTime - this.startTime);
     }
 
-    createGraphSection(titleText, pointKey) {
+    createGraphSection(titleText, poseValueFunction) {
         let title = document.createElement('div');
         title.classList.add('analytics-region-card-graph-section-title');
         title.textContent = titleText;
@@ -212,11 +224,12 @@ export class RegionCard {
         sparkLine.setAttribute('height', rowHeight);
         sparkLine.setAttribute('xmlns', svgNS);
 
-        let summaryValues = this.getSummaryValues(pointKey);
+        let summaryValues = this.getSummaryValues(poseValueFunction);
+        this.graphSummaryValues[titleText] = summaryValues;
 
         let path = document.createElementNS(svgNS, 'path');
         path.setAttribute('stroke-width', '1');
-        path.setAttribute('d', this.getSparkLinePath(pointKey, summaryValues));
+        path.setAttribute('d', this.getSparkLinePath(poseValueFunction, summaryValues));
 
         sparkLine.appendChild(path);
 
@@ -259,7 +272,7 @@ export class RegionCard {
         return span;
     }
 
-    getSparkLinePath(pointKey, summaryValues) {
+    getSparkLinePath(poseValueFunction, summaryValues) {
         let minX = this.startTime;
         let maxX = this.endTime;
         let minY = summaryValues.minimum - 0.5;
@@ -267,15 +280,15 @@ export class RegionCard {
         let width = cardWidth / 3;
         let height = rowHeight;
         let path = 'M ';
-        for (let i = 0; i < this.points.length; i++) {
-            const point = this.points[i];
-            const val = point[pointKey];
-            const x = Math.round((point.timestamp - minX) / (maxX - minX) * width);
+        for (let i = 0; i < this.poses.length; i++) {
+            const pose = this.poses[i];
+            const val = poseValueFunction(pose);
+            const x = Math.round((pose.timestamp - minX) / (maxX - minX) * width);
             const y = Math.round((maxY - val) / (maxY - minY) * height);
             path += x + ' ' + y;
-            if (i < this.points.length - 1) {
-                let nextPoint = this.points[i + 1];
-                if (nextPoint.timestamp - point.timestamp < 500) {
+            if (i < this.poses.length - 1) {
+                let nextPose = this.poses[i + 1];
+                if (nextPose.timestamp - pose.timestamp < 500) {
                     path += ' L ';
                 } else {
                     path += ' M ';
@@ -285,17 +298,17 @@ export class RegionCard {
         return path;
     }
 
-    getSummaryValues(pointKey) {
+    getSummaryValues(poseValueFunction) {
         let average = 0;
         let minimum = 9001 * 9001;
         let maximum = -minimum;
-        for (const point of this.points) {
-            const val = point[pointKey];
+        for (const pose of this.poses) {
+            const val = poseValueFunction(pose);
             average += val;
             minimum = Math.min(minimum, val);
             maximum = Math.max(maximum, val);
         }
-        average /= this.points.length;
+        average /= this.poses.length;
         return {
             average,
             minimum,
