@@ -248,31 +248,20 @@ export class HumanPoseAnalyzer {
      * Runs every frame to update the animation state
      */
     update() {
-        let minTimestamp = -1;
-        let maxTimestamp = -1;
-        for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-            let comparer = spaghettiMesh.comparer;
-            let points = spaghettiMesh.currentPoints;
-            if (comparer.firstPointIndex === null) {
-                continue;
+        if (this.animationMode === AnimationMode.cursor) {
+            let anySpaghettiHovered = false;
+            for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                let comparer = spaghettiMesh.comparer;
+                if (comparer.firstPointIndex === null) {
+                    continue;
+                }
+                anySpaghettiHovered = true;
+                break;
             }
-            let firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            let secondTimestamp = firstTimestamp + 1;
-            if (comparer.secondPointIndex) {
-                secondTimestamp = points[comparer.secondPointIndex].timestamp;
+            if (!anySpaghettiHovered) {
+                this.restoreAnimationState();
             }
-            if (minTimestamp < 0) {
-                minTimestamp = firstTimestamp;
-            }
-            minTimestamp = Math.min(minTimestamp, firstTimestamp, secondTimestamp);
-            maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
-        }
-        if (this.animationMode === AnimationMode.region ||
-            this.animationMode === AnimationMode.regionAll) {
-            this.setAnimationRange(minTimestamp, maxTimestamp);
-        }
-
-        if (this.animationMode === AnimationMode.region) {
+        } else if (this.animationMode === AnimationMode.region) {
             this.updateAnimation();
         }
 
