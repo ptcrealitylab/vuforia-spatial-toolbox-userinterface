@@ -123,11 +123,14 @@ import {Pose} from "./Pose.js";
         const worldObject = realityEditor.worldObjects.getBestWorldObject();
         const historyLogsUrl = realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/history/logs');
         let logs = [];
-        try {
-            const resLogs = await fetch(historyLogsUrl);
-            logs = await resLogs.json();
-        } catch (e) {
-            console.error('Unable to load list of history logs', e);
+        for (let retry = 0; retry < 3; retry++) {
+            try {
+                const resLogs = await fetch(historyLogsUrl);
+                logs = await resLogs.json();
+                break;
+            } catch (e) {
+                console.error('Unable to load list of history logs', e);
+            }
         }
 
         for (const logName of logs) {
@@ -146,12 +149,20 @@ import {Pose} from "./Pose.js";
             if (logStartTime > regionEndTime && regionEndTime >= 0) {
                 continue;
             }
-            try {
-                const resLog = await fetch(`${historyLogsUrl}/${logName}`);
-                const log = await resLog.json();
+            let log;
+            for (let retry = 0; retry < 3; retry++) {
+                try {
+                    const resLog = await fetch(`${historyLogsUrl}/${logName}`);
+                    log = await resLog.json();
+                    break;
+                } catch (e) {
+                    console.error('Unable to fetch history log', `${historyLogsUrl}/${logName}`, e);
+                }
+            }
+            if (log) {
                 await replayHistory(log);
-            } catch (e) {
-                console.error('Unable to load history log', `${historyLogsUrl}/${logName}`, e);
+            } else {
+                console.error('Unable to load history log after retries', `${historyLogsUrl}/${logName}`);
             }
         }
 
