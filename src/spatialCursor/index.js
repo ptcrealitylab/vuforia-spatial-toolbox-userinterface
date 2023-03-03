@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.spatialCursor");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { CSS3DObject, CSS3DSprite, CSS3DRenderer } from '../../thirdPartyCode/three/CSS3DRenderer.module.js';
 
 (function(exports) {
 
@@ -222,6 +223,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
 
+        initCSSRenderer();
+        getThreejsSceneInfo();
+        setupCSSKeyboardEvents();
+        renderCSS();
+
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
 
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
@@ -263,6 +269,61 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
             realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
         }
+    }
+
+    let cssRenderer;
+    let scene, camera;
+    let button3DCss = null;
+    let cssLerpClock = new THREE.Clock(false);
+    let cssLerpDuration = 0.3;
+    let buttonPosition = new THREE.Vector3(), buttonDirection;
+    function initCSSRenderer() {
+        cssRenderer = new CSS3DRenderer();
+        cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        let cssRendererDom = cssRenderer.domElement;
+        cssRendererDom.classList.add('three-js-css3d-renderer-canvas');
+        cssRendererDom.style.position = 'absolute';
+        cssRendererDom.style.top = '0px';
+        cssRendererDom.style.left = '0px';
+        cssRendererDom.style.pointerEvents = 'none';
+        document.body.appendChild(cssRendererDom);
+    }
+
+    function getThreejsSceneInfo() {
+        let info = realityEditor.gui.threejsScene.getInternals();
+        scene = info.scene;
+        camera = info.camera;
+    }
+
+    function setupCSSKeyboardEvents() {
+        window.addEventListener('keydown', (e) => {
+            if (e.key === "g" || e.key === "G") {
+                realityEditor.gui.threejsScene.removeFromScene(button3DCss);
+                button3DCss = null;
+            }
+        })
+    }
+
+    function renderCSS() {
+        requestAnimationFrame(renderCSS);
+        if (button3DCss === null) return;
+        // button3DCss.position.copy(indicator2.position);
+        // button3DCss.quaternion.copy(indicator2.quaternion);
+        let timeElapsed = cssLerpClock.getElapsedTime();
+        button3DCss.position.lerpVectors(buttonPosition, indicator2.position, remap(timeElapsed, 0, cssLerpDuration, 0, 1));
+        button3DCss.quaternion.copy(indicator2.quaternion);
+        // button3DCss.quaternion.slerpQuaternions(buttonDirection, indicator2.quaternion)
+        cssRenderer.render(scene, camera);
+    }
+    
+    // when in desktop, copy the tool icon into a css3d object, and then slowly interpolate it to the spatial cursor position
+    function copyToolToSpatialCursor(toolDiv) {
+        toolDiv.style.zIndex = 5000;
+        button3DCss = new CSS3DObject(toolDiv);
+        buttonPosition = realityEditor.gui.threejsScene.getPointAtDistanceFromCamera(screenX, screenY, 1000);
+        //camera.getWorldDirection(buttonDirection);
+        cssLerpClock.start();
+        realityEditor.gui.threejsScene.addToScene(button3DCss);
     }
 
     let screenX, screenY;
@@ -669,6 +730,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
+    exports.copyToolToSpatialCursor = copyToolToSpatialCursor;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
 }(realityEditor.spatialCursor));

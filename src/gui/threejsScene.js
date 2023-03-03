@@ -553,6 +553,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      * @param {number} distance - in millimeters
      * @returns {Vector3} - position relative to camera
      */
+    // todo Steve: this function might be buggy, doesn't return the point in front of the camera. Re-write its logic.
     function getPointAtDistanceFromCamera(clientX, clientY, distance) {
         distanceRaycastVector.set(
             ( clientX / window.innerWidth ) * 2 - 1,
