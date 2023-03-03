@@ -142,9 +142,6 @@ export class RegionCard {
     unpin() {
         console.log('unpin');
         this.remove();
-        if (this.displayActive) {
-            realityEditor.analytics.setDisplayRegion(null);
-        }
         realityEditor.analytics.unpinRegionCard(this);
     }
 
