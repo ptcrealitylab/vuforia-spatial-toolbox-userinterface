@@ -244,7 +244,7 @@ export class Analytics {
         let header = [
             'start', 'end', 'duration seconds', 'distance meters',
             'reba avg', 'reba min', 'reba max',
-            // 'motion eco avg', 'motion eco min', 'motion eco max',
+            'accel avg', 'accel min', 'accel max',
         ];
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
@@ -256,9 +256,9 @@ export class Analytics {
                 regionCard.graphSummaryValues['REBA'].average,
                 regionCard.graphSummaryValues['REBA'].minimum,
                 regionCard.graphSummaryValues['REBA'].maximum,
-                // regionCard.graphSummaryValues['MoEc'].average,
-                // regionCard.graphSummaryValues['MoEc'].minimum,
-                // regionCard.graphSummaryValues['MoEc'].maximum,
+                regionCard.graphSummaryValues['Accel'].average,
+                regionCard.graphSummaryValues['Accel'].minimum,
+                regionCard.graphSummaryValues['Accel'].maximum,
             ]);
         }
         let dataUrl = 'data:text/plain;base64,' + btoa(lines.map(line => {
