@@ -47,6 +47,8 @@ createNameSpace("realityEditor.avatar");
         isWorldOcclusionObjectAdded: false,
         didCreationFail: false
     }
+    
+    let onMyAvatarInitializedCallbacks = [];
 
     // these are just used for debugging purposes
     let DEBUG_MODE = false; // can be toggled from remote operator's Develop menu
@@ -376,6 +378,14 @@ createNameSpace("realityEditor.avatar");
             };
             lastPointerState.timestamp = Date.now();
         });
+
+        onMyAvatarInitializedCallbacks.forEach((callback) => {
+            callback();
+        })
+    }
+    
+    function addOnMyAvatarInitializedCallback(callback) {
+        onMyAvatarInitializedCallbacks.push(callback);
     }
 
     // name is one property within the avatar node's userProfile public data 
@@ -520,5 +530,6 @@ createNameSpace("realityEditor.avatar");
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
+    exports.addOnMyAvatarInitializedCallback = addOnMyAvatarInitializedCallback;
 
 }(realityEditor.avatar));
