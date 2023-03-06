@@ -12,7 +12,7 @@ createNameSpace("realityEditor.avatar");
 
     let network, draw, utils; // shortcuts to access realityEditor.avatar._____
 
-    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 1000; // once per 1 second
+    const KEEP_ALIVE_HEARTBEAT_INTERVAL = 3 * 1000; // once per 3 seconds
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
     const RAYCAST_AGAINST_GROUNDPLANE = false;
 
