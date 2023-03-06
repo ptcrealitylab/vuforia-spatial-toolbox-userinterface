@@ -290,7 +290,7 @@ a.modalLink:active { color: #757575; }
 .notificationPortrait {
     left: 40px !important;
     top: calc(50vh - 50px) !important;
-    width: calc(100vw - 80px) !important;
+    width: min(600px, calc(100vw - 80px)) !important;
     height: 100px !important;
 }
 #modalHeaderNotification {
@@ -300,11 +300,11 @@ a.modalLink:active { color: #757575; }
     width: 100%;
     height: 10vh;
     top: 5vh;
-    font-size: 3vw;
+    font-size: min(3vw, 24px);
 }
 .notificationHeaderPortrait {
     top: 3vh !important;
-    font-size: 4vw !important;
+    font-size: min(4vw, 32px) !important;
     height: unset !important;
 }
 #modalDescriptionNotification {
@@ -314,15 +314,15 @@ a.modalLink:active { color: #757575; }
     /*left: 5%;*/
     top: 15vh;
     display: table;
-    font-size: 2vw;
+    font-size: min(2vw, 16px);
 }
 .notificationDescriptionPortrait {
-    font-size: 3vw !important;
+    font-size: min(3vw, 24px) !important;
 }
 /* Buttons for the modal */
 .modalButtonNotification {
     position: absolute;
-    width: calc(100vw - 160px);
+    width: min(540px, calc(100vw - 160px));
     left: 0;
     top: 35vh;
     height: 5vh;
@@ -332,7 +332,7 @@ a.modalLink:active { color: #757575; }
     border-radius: 5px;
     background-color: white;
     color: rgb(80,80,80);
-    font-size: 2vw;
+    font-size: min(2vw, 16px);
     text-align: center;
 }
 .modalButtonNotification:active {
