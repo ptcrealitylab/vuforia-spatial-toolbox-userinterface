@@ -636,7 +636,7 @@ createNameSpace("realityEditor.envelopeManager");
             blur.style.webkitTransformStyle = 'preserve-3d';
             blur.style.transformStyle = 'preserve-3d';
             blur.style.zIndex = '1';
-            blur.style.transform = 'translateZ(1000px)';
+            // blur.style.transform = 'translateZ(1000px)';
             // document.body.appendChild(blur);
         }
         let GUI = document.getElementById('GUI');
