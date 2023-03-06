@@ -288,9 +288,9 @@ a.modalLink:active { color: #757575; }
     color: black;
 }
 .notificationPortrait {
-    left: 40px !important;
+    left: calc((100vw - min(800px, calc(100vw - 80px))) / 2) !important;
     top: calc(50vh - 50px) !important;
-    width: min(600px, calc(100vw - 80px)) !important;
+    width: min(800px, calc(100vw - 80px)) !important;
     height: 100px !important;
 }
 #modalHeaderNotification {
@@ -300,11 +300,11 @@ a.modalLink:active { color: #757575; }
     width: 100%;
     height: 10vh;
     top: 5vh;
-    font-size: min(3vw, 24px);
+    font-size: 16px;
 }
 .notificationHeaderPortrait {
     top: 3vh !important;
-    font-size: min(4vw, 32px) !important;
+    font-size: 24px !important;
     height: unset !important;
 }
 #modalDescriptionNotification {
@@ -312,17 +312,17 @@ a.modalLink:active { color: #757575; }
     width: 100%;
     height: 25vh;
     /*left: 5%;*/
-    top: 15vh;
+    top: 50%;
     display: table;
-    font-size: min(2vw, 16px);
+    font-size: 12px;
 }
 .notificationDescriptionPortrait {
-    font-size: min(3vw, 24px) !important;
+    font-size: 16px !important;
 }
 /* Buttons for the modal */
 .modalButtonNotification {
     position: absolute;
-    width: min(540px, calc(100vw - 160px));
+    width: min(720px, calc(100vw - 160px));
     left: 0;
     top: 35vh;
     height: 5vh;
@@ -332,7 +332,7 @@ a.modalLink:active { color: #757575; }
     border-radius: 5px;
     background-color: white;
     color: rgb(80,80,80);
-    font-size: min(2vw, 16px);
+    font-size: 12px;
     text-align: center;
 }
 .modalButtonNotification:active {
@@ -347,14 +347,14 @@ a.modalLink:active { color: #757575; }
 }
 
 .loaderContainerPortrait {
-    height: 32vh !important;
-    top: calc(50vh - 16vh) !important;
+    height: max(32vh, 32vw) !important;
+    top: calc(50vh - max(32vh, 32vw)/2) !important;
 }
 
 .loader {
     position: relative;
     left: calc(50% - 20px);
-    top: 10vh;
+    top: calc(50% - 70px);
     border: 6px solid #f3f3f377;
     border-top: 6px solid black;
     border-radius: 50%;
@@ -366,4 +366,24 @@ a.modalLink:active { color: #757575; }
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+#scanGenerateProgressBarContainer {
+    position: absolute;
+    left: calc((100vw - min(800px, calc(100vw - 80px))) / 2);
+    width: min(800px, calc(100vw - 80px));
+    height: 15px;
+    background-color: rgba(255,255,255, 0.3);
+    border-radius: 15px;
+    overflow: hidden;
+    transform: translateZ(8991px); /* in front of blurred modalFadeNotification */
+}
+
+#scanGenerateProgressBar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background-color: rgba(255,255,255, 0.9);
 }
