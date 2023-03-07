@@ -45,7 +45,8 @@ createNameSpace("realityEditor.avatar");
         isMyAvatarCreated: false,
         isMyAvatarInitialized: false,
         isWorldOcclusionObjectAdded: false,
-        didCreationFail: false
+        didCreationFail: false,
+        isConnectionAttemptInProgress: false
     }
 
     // these are just used for debugging purposes
@@ -77,31 +78,15 @@ createNameSpace("realityEditor.avatar");
             refreshStatusUI();
             network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
 
-            // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
-            let thisAvatarName = utils.getAvatarName();
-            let worldObject = realityEditor.getObject(worldObjectKey);
-            // cachedWorldObject = worldObject;
-            realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
-                network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
-                    console.log('added new avatar object', data);
-                    myAvatarId = data.id;
-                    connectionStatus.isMyAvatarCreated = true;
-                    refreshStatusUI();
+            attemptToCreateAvatarOnServer(worldObjectKey);
 
-                    // ping the server to discover the object more quickly
-                    for (let i = 0; i < 3; i++) {
-                        setTimeout(() => realityEditor.app.sendUDPMessage({action: 'ping'}), 300 * i * i);
-                    }
-                }, (err) => {
-                    console.warn('unable to add avatar object to server', err);
-                    connectionStatus.didCreationFail = true;
-                    refreshStatusUI();
-                });
-            }, () => {
-                console.warn('avatar already exists on server');
-                connectionStatus.didCreationFail = true;
-                refreshStatusUI();
-            });
+            setInterval(() => {
+                try {
+                    reestablishAvatarIfNeeded();
+                } catch (e) {
+                    console.warn('error trying to reestablish avatar', e);
+                }
+            }, 1000);
 
             // if it takes longer than 10 seconds to load the avatar, hide the "loading" UI - todo: retry if timeout
             setTimeout(() => {
@@ -125,6 +110,11 @@ createNameSpace("realityEditor.avatar");
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarNames);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
+
+            if (objectKey === myAvatarId) {
+                myAvatarId = null;
+                myAvatarObject = null;
+            }
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
@@ -134,7 +124,7 @@ createNameSpace("realityEditor.avatar");
 
             try {
                 updateMyAvatar();
-                
+
                 sendMySpatialCursorPosition();
 
                 // send updated ray even if the touch doesn't move, because the camera might have moved
@@ -188,6 +178,54 @@ createNameSpace("realityEditor.avatar");
                 network.keepObjectAlive(myAvatarId);
             }
         }, KEEP_ALIVE_HEARTBEAT_INTERVAL);
+    }
+
+    function reestablishAvatarIfNeeded() {
+        if (myAvatarId || myAvatarObject) return;
+        if (connectionStatus.isConnectionAttemptInProgress) return;
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!worldObject || worldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) return;
+
+        attemptToCreateAvatarOnServer(worldObject.objectId);
+    }
+
+    function attemptToCreateAvatarOnServer(worldObjectKey) {
+        if (!worldObjectKey) return;
+
+        // in theory there shouldn't be an avatar object for this device on the server yet, but verify that before creating a new one
+        let thisAvatarName = utils.getAvatarName();
+        let worldObject = realityEditor.getObject(worldObjectKey);
+
+        if (!worldObject) return;
+
+        connectionStatus.isConnectionAttemptInProgress = true;
+        console.log('attempt to create new avatar on server');
+
+        // cachedWorldObject = worldObject;
+        realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
+            network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
+                console.log('added new avatar object', data);
+                myAvatarId = data.id;
+                connectionStatus.isMyAvatarCreated = true;
+                connectionStatus.isConnectionAttemptInProgress = false;
+                refreshStatusUI();
+
+                // ping the server to discover the object more quickly
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => realityEditor.app.sendUDPMessage({action: 'ping'}), 300 * i * i);
+                }
+            }, (err) => {
+                console.warn('unable to add avatar object to server', err);
+                connectionStatus.didCreationFail = true;
+                connectionStatus.isConnectionAttemptInProgress = false;
+                refreshStatusUI();
+            });
+        }, () => {
+            console.warn('avatar already exists on server');
+            connectionStatus.didCreationFail = true;
+            connectionStatus.isConnectionAttemptInProgress = false;
+            refreshStatusUI();
+        });
     }
 
     // initialize the avatar object representing my own device, and those representing other devices
