@@ -88,10 +88,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
-            const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
-            gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, colorGrid, maxVisibilityDistanceInMm);
+            const colorGrid = new THREE.Color('rgb(255, 240, 0)');
+            gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
-            gridHelper.layers.set(1);
+            gridHelper.layers.set(2);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 
