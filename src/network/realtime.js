@@ -12,7 +12,7 @@ createNameSpace("realityEditor.network.realtime");
     const DEBUG = false;
     const PROXY = /(\w+\.)?toolboxedge.net/.test(window.location.host);
 
-    const BATCHED_UPDATE_FRAMERATE = 3;
+    const BATCHED_UPDATE_FRAMERATE = updateFramerate;
 
     var desktopSocket;
     var sockets = {};
