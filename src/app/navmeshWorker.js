@@ -268,7 +268,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     addTriangle(faceData, vertexVector1, vertexVector2, vertexVector3, weight, ignoreWeight);
   }
   
-  const floorOffset = floorOffsetDown < 0 ? floorOffsetDown : (floorOffsetUp > 0 ? floorOffsetUp : minY);
+  const floorOffset = floorOffsetDown < 0 ? floorOffsetDown : minY;
   
   // Calculate average weight of faces within pixels
   mapGrid(faceData, value => [value[1] === 0 ? 0 : value[0] / value[1], value[2], 0]);
