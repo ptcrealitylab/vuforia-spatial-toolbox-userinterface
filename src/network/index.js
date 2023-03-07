@@ -953,7 +953,7 @@ realityEditor.network.onAction = function (action) {
 
                 _this.cout("got object");
 
-            });
+            }, { dontCache: true });
         }
     }
 
@@ -1215,7 +1215,7 @@ realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMess
         }
 
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
-    });
+    }, { dontCache: true });
 }
 
 /**
@@ -2740,13 +2740,18 @@ realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, fra
  * @param {string|undefined} nodeKey
  * @param {string} url
  * @param {function<string, string, string, object>} callback
+ * @param {*} options
  */
-realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback) {
+realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback, options = {dontCache: false}) {
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
     var req = new XMLHttpRequest();
+    let urlSuffix = options.dontCache ? `?timestamp=${new Date().getTime()}` : '';
     try {
-        req.open('GET', url, true);
+        req.open('GET', url + urlSuffix, true);
+        if (options.dontCache) {
+            req.setRequestHeader('Cache-control', 'no-cache');
+        }
         // Just like regular ol' XHR
         req.onreadystatechange = function () {
             if (req.readyState === 4) {
