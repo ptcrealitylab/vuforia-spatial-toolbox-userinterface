@@ -1898,6 +1898,10 @@ Logic Interface CSS
 
 .analytics-region-card-subtitle {
     grid-column-start: span 3;
+}
+
+.analytics-region-card-label {
+    grid-column-start: span 3;
     border-bottom: 1px solid #999;
     padding-bottom: 4px;
     margin-bottom: 4px;
