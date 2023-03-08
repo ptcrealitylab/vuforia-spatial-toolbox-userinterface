@@ -147,7 +147,7 @@ export class Timeline {
             } else if (this.mouseX > this.width * (1 - dragStart)) {
                 let velX = this.mouseX - this.width * (1 - dragStart - 0.05);
                 let velTime = velX / this.pixelsPerMs * dragSpeedBase;
-                this.timeMin -= velTime * dt / 1000;
+                this.timeMin += velTime * dt / 1000;
                 this.limitTimeMin();
             }
         }
