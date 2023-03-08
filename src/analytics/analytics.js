@@ -32,6 +32,7 @@ export class Analytics {
         this.loadingHistory = false;
         this.livePlayback = false;
         this.pinnedRegionCards = [];
+        this.nextStepNumber = 1;
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
         this.draw = this.draw.bind(this);
@@ -182,6 +183,8 @@ export class Analytics {
         for (let desc of regionCardDescriptions) {
             let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
             regionCard.state = RegionCardState.Pinned;
+            regionCard.setLabel(desc.label || ('Step ' + this.nextStepNumber));
+            this.nextStepNumber += 1;
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
@@ -218,6 +221,10 @@ export class Analytics {
 
     pinRegionCard(regionCard) {
         regionCard.state = RegionCardState.Pinned;
+        if (regionCard.getLabel() === 'Step') {
+            regionCard.setLabel('Step ' + this.nextStepNumber);
+            this.nextStepNumber += 1;
+        }
         setTimeout(() => {
             regionCard.moveTo(35, 120 + (14 + 14 * 3 + 10) * this.pinnedRegionCards.length);
         }, 10);
@@ -242,6 +249,7 @@ export class Analytics {
 
     updateCsvExportLink() {
         let header = [
+            'label',
             'start', 'end', 'duration seconds', 'distance meters',
             'reba avg', 'reba min', 'reba max',
             'accel avg', 'accel min', 'accel max',
@@ -249,6 +257,7 @@ export class Analytics {
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
             lines.push([
+                regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
                 new Date(regionCard.endTime).toISOString(),
                 regionCard.durationMs / 1000,

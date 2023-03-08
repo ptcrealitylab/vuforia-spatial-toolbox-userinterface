@@ -95,6 +95,7 @@ export class RegionCard {
                 realityEditor.analytics.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
+                    label: this.getLabel(),
                 });
             }
             this.displayActive = !this.displayActive;
@@ -174,6 +175,13 @@ export class RegionCard {
 
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(motionSummary);
+
+        this.labelElement = document.createElement('div');
+        this.labelElement.classList.add('analytics-region-card-label');
+        this.labelElement.setAttribute('contenteditable', true);
+        this.setLabel('Step');
+
+        this.element.appendChild(this.labelElement);
 
         this.graphSummaryValues = {};
         const minReba = 1;
@@ -324,6 +332,14 @@ export class RegionCard {
             minimum,
             maximum,
         };
+    }
+
+    getLabel() {
+        return this.labelElement.textContent;
+    }
+
+    setLabel(label) {
+        this.labelElement.textContent = label;
     }
 
     moveTo(x, y) {
