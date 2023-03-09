@@ -407,7 +407,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      */
     function addOtherSpatialCursor(cursorColorHSL) {
         const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
-        const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial);
+        // todo Steve: use ShaderMaterial.clone() to prevent the other cursor inner circles from playing the same expanding animation
+        // todo Steve: probably a better idea to separate the inner & outer circles of all indicator1's, and animate the scale property, b/c that way animation can reflect to other clients when I click
+        const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial.clone());
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
         const material2 = new THREE.ShaderMaterial({
