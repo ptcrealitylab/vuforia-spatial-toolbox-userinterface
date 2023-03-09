@@ -15,6 +15,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let worldIntersectPoint = {};
     let opacityFactor = 1;
+    let innerRadius = 0.1;
+    let innerRadiusSpeed = -0.01;
     let scaleFactor = 0;
     let indicator1;
     let indicator2;
@@ -29,6 +31,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         'EPSILON': {value: Number.EPSILON},
         'time': {value: 0},
         'opacityFactor': {value: opacityFactor},
+        'innerRadius': {value: innerRadius},
     };
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
@@ -55,16 +58,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     `;
     const normalFragmentShader = `
+    #define innerRadiusLow 0.1
+    #define innerRadiusHigh 0.5
     ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
     varying vec2 vUv;
     uniform float opacityFactor;
+    uniform float innerRadius;
     
     void main(void) {
         ${THREE.ShaderChunk.logdepthbuf_fragment}
         vec2 position = -1.0 + 2.0 * vUv;
         vec2 origin = vec2(0.0);
-        float color = distance(position, origin) > 0.9 || distance(position, origin) < 0.1 ? 1.0 : 0.0;
-        float alpha = distance(position, origin) > 0.9 || distance(position, origin) < 0.1 ? 1.0 : 0.0;
+        float innerRadiusCopy = clamp(innerRadius, innerRadiusLow, innerRadiusHigh);
+        float color = distance(position, origin) > 0.9 || distance(position, origin) < innerRadiusCopy ? 1.0 : 0.0;
+        float alpha = distance(position, origin) > 0.9 || distance(position, origin) < innerRadiusCopy ? 1.0 : 0.0;
         gl_FragColor = vec4(color, color, color, alpha * opacityFactor);
     }
     `;
@@ -223,6 +230,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         uniforms2['avatarColor'].value = finalColor;
 
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
+        
+        document.addEventListener('pointerdown', () => {
+            // make the spatial cursor inner white circle pulse
+            innerRadiusSpeed += 0.15;
+        })
 
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {
@@ -316,6 +328,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
             updateScaleFactor();
             updateOpacityFactor();
+            updateInnerRadius();
             updateSpatialCursor();
             updateTestSpatialCursor();
             tweenCursorDirection();
@@ -480,6 +493,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (typeof worldIntersectPoint.distance !== 'undefined') {
             opacityFactor = remap(worldIntersectPoint.distance, fadeOutDistance, maxOpacityDistance, opacityLow, opacityHigh);
         }
+    }
+    
+    function updateInnerRadius() {
+        innerRadiusSpeed -= 0.003;
+        innerRadiusSpeed = clamp(innerRadiusSpeed, -0.01, 0.3);
+        innerRadius += innerRadiusSpeed;
+        innerRadius = clamp(innerRadius, 0.1, 0.3);
+        indicator1.material.uniforms.innerRadius.value = innerRadius;
     }
     
     let cursorDirections = [];
