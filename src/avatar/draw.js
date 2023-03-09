@@ -345,6 +345,12 @@ createNameSpace("realityEditor.avatar.draw");
         avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
+        // if laser beam is off screen, add an arrow pointing to the laser beam destination position
+        let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey)) || '#ffff00';
+        // get the world position of the laser pointer sphere, and draw arrow to it if off screen
+        let endWorldPosition = new THREE.Vector3();
+        avatarMeshes[objectKey].pointer.getWorldPosition(endWorldPosition);
+        realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
     }
 
     // helper to create a box mesh
