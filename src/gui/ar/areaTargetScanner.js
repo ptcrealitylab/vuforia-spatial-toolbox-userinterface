@@ -340,29 +340,15 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (!div) {
             div = document.createElement('div');
             div.id = 'scanGenerateProgressBarContainer';
-            div.style.position = 'absolute';
-            div.style.left = '40px';
-            div.style.width = 'calc(100vw - 80px)';
             if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-                div.style.bottom = 'calc(32vh - 25px)';
+                div.style.top = 'calc(50vh + max(32vh, 32vw)/2 + 25px)';
             } else {
                 div.style.bottom = '30px';
             }
-            div.style.height = '15px';
-            div.style.backgroundColor = 'rgba(255,255,255, 0.3)';
-            div.style.borderRadius = '15px';
-            div.style.overflow = 'hidden';
-            div.style.transform = 'translateZ(8991px)'; // in front of blurred modalFadeNotification
             document.body.appendChild(div);
 
             let bar = document.createElement('div');
             bar.id = 'scanGenerateProgressBar';
-            bar.style.position = 'absolute';
-            bar.style.left = '0';
-            bar.style.top = '0';
-            bar.style.height = '100%';
-            bar.style.width = '0';
-            bar.style.backgroundColor = 'rgba(255,255,255, 0.9)'
             div.appendChild(bar);
         }
         return div;

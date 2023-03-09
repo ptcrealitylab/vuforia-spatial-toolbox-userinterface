@@ -264,6 +264,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
         }
 
+        // verify that the matrix is valid, otherwise tool can init with NaN values
+        if (!realityEditor.gui.ar.utilities.isValidMatrix4x4(spatialCursorMatrix)) {
+            spatialCursorMatrix = null;
+        }
+
         let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
             noUserInteraction: true,
             pageX: window.innerWidth / 2,

@@ -572,6 +572,18 @@ realityEditor.gui.ar.utilities.getAllVisibleFrames = function() {
     return visibleFrames;
 };
 
+realityEditor.gui.ar.utilities.isValidMatrix4x4 = function(mat) {
+    if (!mat) return false;
+    if (typeof mat !== 'object') return false;
+    if (typeof mat.length !== 'number') return false;
+    if (mat.length !== 16) return false;
+    for (let i = 0; i < 16; i++) {
+        if (typeof mat[i] !== 'number') return false;
+        if (isNaN(mat[i])) return false;
+    }
+    return true;
+}
+
 /**
  * Helper method for creating a new 4x4 identity matrix
  * @return {Array.<number>}

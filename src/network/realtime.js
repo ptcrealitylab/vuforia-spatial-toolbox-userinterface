@@ -12,6 +12,8 @@ createNameSpace("realityEditor.network.realtime");
     const DEBUG = false;
     const PROXY = /(\w+\.)?toolboxedge.net/.test(window.location.host);
 
+    const BATCHED_UPDATE_FRAMERATE = updateFramerate;
+
     var desktopSocket;
     var sockets = {};
 
@@ -76,11 +78,11 @@ createNameSpace("realityEditor.network.realtime");
 
 
     function loop() {
-        if(typeof updateFramerate !== 'undefined') {
+        if (typeof BATCHED_UPDATE_FRAMERATE !== 'undefined') {
             setInterval(() => {
                 sendBatchedUpdates();
                 batchedUpdates = {};
-            }, 1000 / updateFramerate);
+            }, 1000 / BATCHED_UPDATE_FRAMERATE);
         } else {
             sendBatchedUpdates();
             batchedUpdates = {};

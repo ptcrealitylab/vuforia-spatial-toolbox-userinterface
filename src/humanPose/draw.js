@@ -119,8 +119,10 @@ export class HumanPoseAnalyzer {
         this.livePoseRenderers = [];
         this.addLivePoseRenderer();
 
-        this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
-        this.setUiDefaults();
+        if (realityEditor.device.environment.isDesktop()) {
+            this.settingsUi = new HumanPoseAnalyzerSettingsUi(this);
+            this.setUiDefaults();
+        }
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
@@ -246,31 +248,20 @@ export class HumanPoseAnalyzer {
      * Runs every frame to update the animation state
      */
     update() {
-        let minTimestamp = -1;
-        let maxTimestamp = -1;
-        for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-            let comparer = spaghettiMesh.comparer;
-            let points = spaghettiMesh.currentPoints;
-            if (comparer.firstPointIndex === null) {
-                continue;
+        if (this.animationMode === AnimationMode.cursor) {
+            let anySpaghettiHovered = false;
+            for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                let comparer = spaghettiMesh.comparer;
+                if (comparer.firstPointIndex === null) {
+                    continue;
+                }
+                anySpaghettiHovered = true;
+                break;
             }
-            let firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            let secondTimestamp = firstTimestamp + 1;
-            if (comparer.secondPointIndex) {
-                secondTimestamp = points[comparer.secondPointIndex].timestamp;
+            if (!anySpaghettiHovered) {
+                this.restoreAnimationState();
             }
-            if (minTimestamp < 0) {
-                minTimestamp = firstTimestamp;
-            }
-            minTimestamp = Math.min(minTimestamp, firstTimestamp, secondTimestamp);
-            maxTimestamp = Math.max(maxTimestamp, firstTimestamp, secondTimestamp);
-        }
-        if (this.animationMode === AnimationMode.region ||
-            this.animationMode === AnimationMode.regionAll) {
-            this.setAnimationRange(minTimestamp, maxTimestamp);
-        }
-
-        if (this.animationMode === AnimationMode.region) {
+        } else if (this.animationMode === AnimationMode.region) {
             this.updateAnimation();
         }
 
@@ -553,7 +544,9 @@ export class HumanPoseAnalyzer {
         this.historyLineContainers.live[lens.name].visible = true;
 
         // Update UI
-        this.settingsUi.setActiveLens(lens);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveLens(lens);
+        }
     }
 
     /**
@@ -571,7 +564,9 @@ export class HumanPoseAnalyzer {
      */
     setActiveJointByName(jointName) {
         this.activeJointName = jointName;
-        this.settingsUi.setActiveJointByName(jointName);
+        if (this.settingsUi) {
+            this.settingsUi.setActiveJointByName(jointName);
+        }
         // TODO: Create history line for joint
     }
 
@@ -669,7 +664,9 @@ export class HumanPoseAnalyzer {
      */
     setHistoricalHistoryLinesVisible(visible) {
         this.historicalHistoryLineContainer.visible = visible;
-        this.settingsUi.setHistoricalHistoryLinesVisible(visible);
+        if (this.settingsUi) {
+            this.settingsUi.setHistoricalHistoryLinesVisible(visible);
+        }
     }
 
     /**
@@ -678,7 +675,9 @@ export class HumanPoseAnalyzer {
      */
     setLiveHistoryLinesVisible(visible) {
         this.liveHistoryLineContainer.visible = visible;
-        this.settingsUi.setLiveHistoryLinesVisible(visible);
+        if (this.settingsUi) {
+            this.settingsUi.setLiveHistoryLinesVisible(visible);
+        }
     }
 
     /**
@@ -779,6 +778,10 @@ export class HumanPoseAnalyzer {
      * Saves the animation state while in the temporary cursor mode
      */
     saveAnimationState() {
+        if (this.animationMode === AnimationMode.cursor) {
+            return;
+        }
+
         this.prevAnimationState = {
             animationMode: this.animationMode,
             animationStart: this.animationStart,
@@ -1314,21 +1317,27 @@ function finishHistoryPlayback() {
  * Shows the HumanPoseAnalyzer's settings UI
  */
 function showAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.show();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.show();
+    }
 }
 
 /**
  * Hides the HumanPoseAnalyzer's settings UI
  */
 function hideAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.hide();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.hide();
+    }
 }
 
 /**
  * Toggles the HumanPoseAnalyzer's settings UI
  */
 function toggleAnalyzerSettingsUI() {
-    humanPoseAnalyzer.settingsUi.toggle();
+    if (humanPoseAnalyzer.settingsUi) {
+        humanPoseAnalyzer.settingsUi.toggle();
+    }
 }
 
 // TODO: Remove deprecated API use
