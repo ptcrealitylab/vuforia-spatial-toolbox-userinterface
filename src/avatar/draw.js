@@ -349,7 +349,13 @@ createNameSpace("realityEditor.avatar.draw");
         let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey)) || '#ffff00';
         // get the world position of the laser pointer sphere, and draw arrow to it if off screen
         let endWorldPosition = new THREE.Vector3();
-        avatarMeshes[objectKey].pointer.getWorldPosition(endWorldPosition);
+        if (avatarMeshes[objectKey].pointer.visible) {
+            avatarMeshes[objectKey].pointer.getWorldPosition(endWorldPosition);
+        } else {
+            let endWorldPositionArray = [endPosition.x, endPosition.y, endPosition.z];
+            endWorldPositionArray = realityEditor.sceneGraph.convertToNewCoordSystem(endWorldPositionArray, groundPlaneSceneNode, worldSceneNode);
+            endWorldPosition.set(endWorldPositionArray[0], endWorldPositionArray[1], endWorldPositionArray[2]);
+        }
         realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
     }
 

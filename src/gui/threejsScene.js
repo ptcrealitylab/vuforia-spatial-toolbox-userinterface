@@ -868,6 +868,13 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let projScreenMat = new THREE.Matrix4();
         projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         pos.applyMatrix4(projScreenMat);
+        
+        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
+        let meshPosWrtCamera = meshPosition.clone();
+        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
+        if (meshPosWrtCamera.z > 0) {
+            pos.negate();
+        }
 
         return {
             x: ( pos.x + 1 ) * window.innerWidth / 2,
