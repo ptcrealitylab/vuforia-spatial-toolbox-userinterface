@@ -329,6 +329,12 @@ import * as utils from './utils.js'
     let objectsInProgress = {};
 
     function tryCreatingObjectFromPose(pose, poseObjectName) {
+
+        // if no pose is detected, cannot create new human object
+        if (pose.joints.length <= 0) {    
+            return; 
+        }
+
         if (objectsInProgress[poseObjectName]) { return; }
         objectsInProgress[poseObjectName] = true;
 
