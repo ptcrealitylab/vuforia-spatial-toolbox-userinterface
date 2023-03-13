@@ -359,7 +359,7 @@ class WorkerGLProxy {
 
         // get the resource command buffer for this frame if there is one
         let localCommandBuffer = this.buffer.getResourceCommandBuffer();
-        if ((localCommandBuffer !== null) && (localCommandBuffer.commands.length !== 0)) {
+        if ((localCommandBuffer !== null) && localCommandBuffer.commands && (localCommandBuffer.commands.length !== 0)) {
             // execute the resource commandbuffer
             let commandId = 1;
             // is the client locked and awaiting a response
