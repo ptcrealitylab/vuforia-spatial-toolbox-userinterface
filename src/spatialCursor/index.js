@@ -222,7 +222,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         await getMyAvatarColor();
         uniforms2['avatarColor'].value = finalColor;
 
-        const ADD_SEARCH_TOOL_WITH_CURSOR = true;
+        const ADD_SEARCH_TOOL_WITH_CURSOR = false;
 
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {

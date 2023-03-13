@@ -624,20 +624,6 @@ createNameSpace("realityEditor.envelopeManager");
         if (!blur) {
             blur = document.createElement('div');
             blur.id = 'blurredEnvelopeBackground';
-            blur.style.backgroundColor = '#67676760';
-            blur.style.webkitBackdropFilter = 'blur(30px)';
-            blur.style.backdropFilter = 'blur(30px)';
-            blur.style.pointerEvents = 'none';
-            blur.style.position = 'absolute';
-            blur.style.width = '100vw';
-            blur.style.height = '100vh';
-            blur.style.top = '0';
-            // -webkit-transform-style: preserve-3d;
-            blur.style.webkitTransformStyle = 'preserve-3d';
-            blur.style.transformStyle = 'preserve-3d';
-            blur.style.zIndex = '1';
-            // blur.style.transform = 'translateZ(1000px)';
-            // document.body.appendChild(blur);
         }
         let GUI = document.getElementById('GUI');
         // let focusedElement = document.getElementById('object' + focusedFrameId);
@@ -646,7 +632,7 @@ createNameSpace("realityEditor.envelopeManager");
         blur.style.display = 'inline';
 
         if (globalDOMCache[focusedFrameId]) {
-            globalDOMCache[focusedFrameId].classList.add('exclusiveFullScreen');
+            globalDOMCache[focusedFrameId].classList.add('deactivatedIframeOverlay');
         }
     }
     
@@ -658,7 +644,7 @@ createNameSpace("realityEditor.envelopeManager");
         }
 
         if (globalDOMCache[focusedFrameId]) {
-            globalDOMCache[focusedFrameId].classList.remove('exclusiveFullScreen');
+            globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
         }
     }
 
