@@ -1633,6 +1633,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (msgContent.fullScreen === false) {
             if (!msgContent.node) { // ignore messages from nodes of this frame
                 realityEditor.gui.ar.draw.removeFullscreenFromFrame(msgContent.object, msgContent.frame, msgContent.fullScreenAnimated);
+                realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
             }
         }
 
@@ -1676,6 +1677,14 @@ realityEditor.network.onInternalPostMessage = function (e) {
                         envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
                     }, 250);
                 }, 10);
+            }
+            
+            if (typeof msgContent.fullScreenFull2D !== 'undefined') {
+                if (msgContent.fullScreenFull2D) {
+                    realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
+                } else {
+                    realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
+                }
             }
 
             // make the div invisible while it switches to fullscreen mode, so we don't see a jump in content vs mode
