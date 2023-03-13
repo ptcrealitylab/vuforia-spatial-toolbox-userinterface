@@ -26,12 +26,27 @@ let toolIdToProxy = {};
 let proxies = [];
 let rendering = false;
 
+const functions = [];
+const constants = {};
+
 const MAX_PROXIES = 32; // maximum number that can be safely rendered each frame
 
 /**
  * Mediator between the worker iframe and the gl implementation
  */
 class WorkerGLProxy {
+    static STATE_CONSTRUCTED = 0;
+    static STATE_BOOTSTRAP = 1;
+    static STATE_BOOTSTRAP_DONE = 2;
+    static STATE_BOOTSTRAP_SYNC = 3;
+    static STATE_FRAME = 4;
+    static STATE_FRAME_DONE = 5;
+    static STATE_FRAME_SYNC = 6;
+    static STATE_CONTEXT_LOST = 7;
+    static STATE_CONTEXT_RESTORED = 8;
+    static STATE_CONTEXT_RESTORED_DONE = 9;
+    static STATE_CONTEXT_RESTORED_SYNC = 10;
+
     /**
      * @param {Window} worker - worker iframe contentWindow
      * @param {WebGL} gl webGL rendering context used for excuting the received webgl commands
@@ -58,6 +73,11 @@ class WorkerGLProxy {
          * @type {string}
          */
         this.toolId = toolId;
+
+        /**
+         * @type {number}
+         */
+        this.serverState = WorkerGLProxy.STATE_CONSTRUCTED;
 
         /**
          * list of handles opened by the client and used for argument resolution
@@ -98,6 +118,36 @@ class WorkerGLProxy {
     }
 
     /**
+     * bootstraps the client by starting the communication
+     */
+    bootstrap() {
+        if (this.serverState === WorkerGLProxy.STATE_CONSTRUCTED) {
+            this.worker.postMessage(JSON.stringify({
+                workerId: this.workerId
+            }), '*');
+        
+            const {width, height} = globalStates;
+        
+            // create gl context
+            // we repeat the workerId for the graphics subsytem to receive all information in one message
+            this.serverState = WorkerGLProxy.STATE_BOOTSTRAP;
+            this.worker.postMessage({
+                name: 'bootstrap',
+                functions,
+                constants,
+                workerId: this.workerId,
+                width: height,
+                height: width,
+                glState: JSON.stringify(defaultGLState),
+                deviceDesc: JSON.stringify(new DeviceDescription(gl)),
+                synclock: this.synclock
+            }, '*');
+        } else {
+            console.error("Worker " + this.workerId + " wrong state to run bootstrap " + this.serverState);
+        }
+    }
+
+    /**
      * Receives messages from the client
      * @param {MessageEvent<any>} e 
      */
@@ -108,14 +158,68 @@ class WorkerGLProxy {
             return;
         }
 
-        // make sure we stop waiting form more command buffers when the client indicates the work for this frame is done
-        if (this.frameEndListener && message.isFrameEnd) {
-            this.frameEndListener(true);
-            return;
+        switch (this.serverState) {
+            case WorkerGLProxy.STATE_BOOTSTRAP:
+            case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
+            case WorkerGLProxy.STATE_FRAME: 
+            case WorkerGLProxy.STATE_FRAME_SYNC:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
+                if (message.isFrameEnd) {
+                    switch (this.serverState) {
+                        case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
+                        case WorkerGLProxy.STATE_FRAME_SYNC:
+                        case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
+                            // we only send the endframe command to indicate no more frames will be send until the client is unlocked 
+                            break;
+                        case WorkerGLProxy.STATE_BOOTSTRAP:
+                            this.serverState = WorkerGLProxy.STATE_BOOTSTRAP_DONE;
+                            break;
+                        case WorkerGLProxy.STATE_FRAME:
+                            this.serverState = WorkerGLProxy.STATE_FRAME_DONE;
+                            break;
+                        case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+                            this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE;
+                            break;
+                        default:
+                            console.error("received end frame in wrong state");
+                            break;
+                    }
+                    // make sure we stop waiting form more command buffers when the client indicates the work for this frame is done
+                    if (this.frameEndListener) {
+                        this.frameEndListener(true);
+                    }
+                    return;
+                }
+                break;
+            default:
+                break;
         }
-
-        // if the message is none of the above, it's a command buffer. notify the commandbuffermanager about the received command buffer.
-        this.buffer.onCommandBufferReceived(message)
+        switch (this.serverState) {
+            case WorkerGLProxy.STATE_FRAME:
+            case WorkerGLProxy.STATE_BOOTSTRAP:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+                // if the message is none of the above, it's a command buffer. notify the commandbuffermanager about the received command buffer.
+                this.buffer.onCommandBufferReceived(message);
+                if (Atomics.load(this.synclock, 0) === 0) {
+                    switch (this.serverState) {
+                        case WorkerGLProxy.STATE_BOOTSTRAP:
+                            this.serverState = WorkerGLProxy.STATE_BOOTSTRAP_SYNC;
+                            break;
+                        case WorkerGLProxy.STATE_FRAME:
+                            this.serverState = WorkerGLProxy.STATE_FRAME_SYNC;
+                            break;
+                        case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+                            this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -249,7 +353,7 @@ class WorkerGLProxy {
      * @param {GLState} glState The current state of the WebGL context
      * @returns {GLState} The of the WebGL context after execution
      */
-    executeFrameCommands(glState) {
+    onRenderFrame(glState) {
         // restore the opengl state to the last known state of this proxy
         this.lastState.applyDiff(glState);
 
@@ -265,7 +369,7 @@ class WorkerGLProxy {
                 for (let command of localCommandBuffer.commands) {
                     const id = new CommandId(this.workerId, localCommandBuffer.commandBufferId, commandId++);
                     this.executeOneCommand(command, id);
-                } 
+                }
             } else {
                 // the worker is locked and can't send additional buffers
                 // loop all resource command buffers
@@ -278,6 +382,17 @@ class WorkerGLProxy {
                     } 
                     // get next resource commandbuffer form the manager
                     localCommandBuffer = this.buffer.getResourceCommandBuffer();
+                }
+                switch(this.serverState) {
+                    case WorkerGLProxy.STATE_FRAME_SYNC:
+                        this.serverState = WorkerGLProxy.STATE_FRAME;
+                        break;
+                    case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
+                        this.serverState = WorkerGLProxy.STATE_BOOTSTRAP;
+                        break;
+                    case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
+                        this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED;
+                        break;
                 }
                 // unlock the thread to signal that all responsebuffers have been filled
                 Atomics.store(this.synclock, 0, 1);
@@ -303,11 +418,29 @@ class WorkerGLProxy {
     // the client is able to create one or more resource command buffers and/or one render commandbuffer.
     // incase the client generates a command which locks the client for a response, all scheduled resource command buffers will be executed immediatly, to unlock the client and progress the frame rendering.
     // when the client has send all the command buffers it wants to schedule it will end the frame with an endframe message, for which we schedule a Promise to wait for that message
-    getFrameCommands() {
-        this.worker.postMessage({name: 'frame', time: Date.now(), workerId: this.workerId}, '*');
-        return new Promise((res) => {
-            this.frameEndListener = res;
-        });
+    /**
+     * 
+     */
+    async onRequestFrameCommands() {
+        switch (this.serverState) {
+            case WorkerGLProxy.STATE_CONSTRUCTED:
+                this.bootstrap();
+                return Promise.race([this.makeWatchdog(), new Promise((res) => {this.frameEndListener = res;})]);
+            case WorkerGLProxy.STATE_BOOTSTRAP_DONE:
+            case WorkerGLProxy.STATE_FRAME_DONE: 
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE:
+                this.serverState = WorkerGLProxy.STATE_FRAME;
+                this.worker.postMessage({name: 'frame', time: Date.now(), workerId: this.workerId}, '*');
+                return Promise.race([this.makeWatchdog(), new Promise((res) => {this.frameEndListener = res;})]);
+            case WorkerGLProxy.STATE_FRAME:
+            case WorkerGLProxy.STATE_BOOTSTRAP:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+                // execute without asking for additional buffers
+                return true;
+            default:
+                console.error("Server is in a wrong state to ask for more frames. serverState: " + this.serverState);
+                return true;
+        }
     }
 
     /**
@@ -317,6 +450,68 @@ class WorkerGLProxy {
     remove() {
         this.frameEndListener = null;
         window.removeEventListener('message', this.onMessage);
+        // unlock the thread if needed
+        if (Atomics.load(this.synclock, 0) === 0) {
+            Atomics.store(this.synclock, 0, 1);
+            Atomics.notify(this.synclock, 0, 1);
+        }
+    }
+
+    /**
+     * 
+     * @param {WebGLContextEvent} e 
+     */
+    onContextLost(e) {
+        e.preventDefault();
+        switch (this.serverState) {
+            case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
+            case WorkerGLProxy.STATE_FRAME_SYNC:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
+                Atomics.store(this.synclock, 0, 1);
+                Atomics.notify(this.synclock, 0, 1);
+            case WorkerGLProxy.STATE_BOOTSTRAP_DONE:
+            case WorkerGLProxy.STATE_FRAME_DONE:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE:
+            case WorkerGLProxy.STATE_BOOTSTRAP:
+            case WorkerGLProxy.STATE_CONTEXT_RESTORED:
+            case WorkerGLProxy.STATE_FRAME:
+                this.serverState = WorkerGLProxy.STATE_CONTEXT_LOST;
+                break;
+            case WorkerGLProxy.STATE_CONSTRUCTED:
+                // do nothing since no buffers have been received yet so nothing changed in this brand new webgl context
+                break;
+            default:
+                console.log("unexpected state for context lost: " + this.serverState);
+                break;
+        }
+        this.worker.postMessage({name: "context_lost", workerId: this.workerId}, '*');
+        this.buffer.onContextLost();
+        this.unclonables.clear();
+        this.lastState.onContextLost();
+    }
+
+    /**
+     * 
+     * @param {WebGLContextEvent} e 
+     */
+    onContextRestored(e) {
+        if (this.serverState === WorkerGLProxy.STATE_CONTEXT_LOST) {
+            this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED;
+        } else {
+            console.log("enexpected state for context restored: " + this.serverState);
+        }
+        const {width, height} = globalStates;
+        this.worker.postMessage({name: "context_restored", workerId: this.workerId, width: width, height: height}, '*');
+    }
+
+    /**
+     * 
+     * @returns {Promise<boolean>}
+     */
+    makeWatchdog() {
+        return new Promise((res) => {
+            setTimeout(res, 3000, false);
+        });
     }
 }
 
@@ -329,8 +524,6 @@ let canvas;
  * @type {WebGL2RenderingContext | null}
  */
 let gl;
-const functions = [];
-const constants = {};
 let lastRender = Date.now();
 
 /**
@@ -347,6 +540,9 @@ function initService() {
         canvas.height = globalStates.width;
         canvas.style.width = canvas.width + 'px';
         canvas.style.height = canvas.height + 'px';
+        canvas.addEventListener("webglcontextlost", (e) => {for (const proxy of proxies) proxy.onContextLost(e);}, false);
+        canvas.addEventListener("webglcontextrestored", (e) => {for (const proxy of proxies) proxy.onContextRestored(e);}, false);
+        canvas.addEventListener("webglcontextcreationerror", (e) => {console.log("can't create context: " + (e.statusMessage || "Unknown error"))}, false);
         //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
         gl = canvas.getContext('webgl2');
        
@@ -439,11 +635,7 @@ async function renderFrame() {
      * @type {WorkerGLProxy[]}
      */
     let proxiesToConsider = [];
-    function makeWatchdog() {
-        return new Promise((res) => {
-            setTimeout(res, 3000, false);
-        });
-    }
+    
     proxies.forEach(function(thisProxy) {
         let toolId = thisProxy.toolId;
         let element = globalDOMCache['object' + toolId];
@@ -455,7 +647,7 @@ async function renderFrame() {
     let proxiesToBeRenderedThisFrame = getSafeProxySubset(proxiesToConsider);
 
     // Get all the commands from the worker iframes
-    let prommies = proxiesToBeRenderedThisFrame.map(proxy => Promise.race([makeWatchdog(), proxy.getFrameCommands()]));
+    let prommies = proxiesToBeRenderedThisFrame.map(proxy => proxy.onRequestFrameCommands());
     let res = await Promise.all(prommies);
     if (!res) {
         console.warn('glRenderer watchdog is barking');
@@ -463,6 +655,7 @@ async function renderFrame() {
         return;
     }
 
+    // we start rendering synchroneously, don't use async here or the commands will be executed between frames, which the next few lines will throw away
     if (gl !== null) {
         gl.enable(gl.DEPTH_TEST);           // Enable depth testing
         gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -471,21 +664,16 @@ async function renderFrame() {
         gl.clearColor(0.0, 0.0, 0.0, 0.0);  // Clear to black, fully opaque
         gl.clearDepth(1.0);                 // Clear everything
        
-
         // Clear the canvas before we start drawing on it.
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
-
+    
     let glState = defaultGLState;
     if (glState !== null) {
         glState.applyAll();
-        // Execute all pending commands for this frame
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
-            if (!res[i]) {
-                console.warn('dropped proxy frame due to large delay', proxy);
-            }
-            glState = proxy.executeFrameCommands(glState);
+            glState = proxy.onRenderFrame(glState);
         }
     }
 
@@ -538,28 +726,6 @@ function addWebGlProxy(toolId) {
     let proxy = new WorkerGLProxy(worker, gl, generateWorkerIdForTool(toolId), toolId);
     proxies.push(proxy);
     toolIdToProxy[toolId] = proxy;
-
-    worker.postMessage(JSON.stringify({
-        workerId: workerIds[toolId]
-    }), '*');
-
-    const {width, height} = globalStates;
-
-    // create gl context
-    // we repeat the workerId for the graphics subsytem to receive all information in one message
-    setTimeout(() => {
-        worker.postMessage({
-            name: 'bootstrap',
-            functions,
-            constants,
-            workerId: workerIds[toolId],
-            width: height,
-            height: width,
-            glState: JSON.stringify(defaultGLState),
-            deviceDesc: JSON.stringify(new DeviceDescription(gl)),
-            synclock: proxy.synclock
-        }, '*');
-    }, 200);
 }
 
 function removeWebGlProxy(toolId) {
@@ -580,6 +746,19 @@ function onVehicleDeleted(params) {
         }
     }
 }
+
+let contextManipulation = null;
+
+document.addEventListener("keydown", (e) => {
+    if (contextManipulation == null) {
+        contextManipulation = gl?.getExtension("WEBGL_lose_context");
+    }
+    if (e.key === 'l') {
+        contextManipulation.loseContext();
+    } else if (e.key === 'r') {
+        contextManipulation.restoreContext();
+    }
+}, false);
 
 realityEditor.gui.glRenderer.initService = initService;
 realityEditor.gui.glRenderer.addWebGlProxy = addWebGlProxy;
