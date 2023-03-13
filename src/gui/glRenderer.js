@@ -747,19 +747,6 @@ function onVehicleDeleted(params) {
     }
 }
 
-let contextManipulation = null;
-
-document.addEventListener("keydown", (e) => {
-    if (contextManipulation == null) {
-        contextManipulation = gl?.getExtension("WEBGL_lose_context");
-    }
-    if (e.key === 'l') {
-        contextManipulation.loseContext();
-    } else if (e.key === 'r') {
-        contextManipulation.restoreContext();
-    }
-}, false);
-
 realityEditor.gui.glRenderer.initService = initService;
 realityEditor.gui.glRenderer.addWebGlProxy = addWebGlProxy;
 realityEditor.gui.glRenderer.removeWebGlProxy = removeWebGlProxy;
