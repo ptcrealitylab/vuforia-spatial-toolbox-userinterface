@@ -2004,7 +2004,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-object-key", objectKey);
     addIframe.setAttribute("data-node-key", nodeKey);
     addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
-    addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
+    // if we include this 'sandbox' attribute, we can't embed iframes within iframes, which causes issues for some tools:
+    // addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
     addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
