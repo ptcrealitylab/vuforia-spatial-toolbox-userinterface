@@ -228,6 +228,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.clear();
+            // render the ground plane visualizer first
+            camera.layers.set(2);
+            renderer.render(scene, camera);
+            renderer.clearDepth();
             if (hasGltfScene) {
                 // Set rendered layer to 1: only the background, i.e. the
                 // static gltf mesh
@@ -854,8 +858,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return transformControls;
     }
 
-    exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance);
+    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
+        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
     }
 
     // source: https://github.com/mrdoob/three.js/issues/78

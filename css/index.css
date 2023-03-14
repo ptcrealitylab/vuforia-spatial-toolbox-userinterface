@@ -859,6 +859,10 @@ body {
     display: none;
 }
 
+.hidden {
+    display: none;
+}
+
 .displayNone {
     display: none;
 }
@@ -1408,7 +1412,7 @@ Logic Interface CSS
     text-align: center;
     vertical-align: middle;
     background-color: rgba(0,0,0,0.5);
-    color: rgba(0,255,255);
+    color: rgb(0,255,255);
 }
 
 .snappableFrame {
@@ -1512,16 +1516,16 @@ Logic Interface CSS
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
-    z-index: 290;
+    z-index: 2900;
 }
 
 #exitEnvelopeButton {
-    left: 10px;
+    left: 30px;
     top: 0;
 }
 
 #minimizeEnvelopeButton {
-    left: 70px;
+    left: 90px;
     top: 0;
 }
 
@@ -1707,11 +1711,6 @@ Logic Interface CSS
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     font-size: 24px;
     background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 22px;
-    height: 44px;
-    text-align: center;
-    vertical-align: middle;
-    line-height: 44px;
     z-index: 3000;
     transform-style: preserve-3d;
     /* translateZ puts it above web interfaces, below side buttons */
@@ -1725,20 +1724,20 @@ Logic Interface CSS
     pointer-events: none;
     color: white;
     width: 44px;
+    height: 44px;
+    line-height: 44px;
+    border-radius: 22px;
+    text-align: center;
+    vertical-align: middle;
 }
 
 .timelineBoardLabel {
     width: auto;
-    padding: 0 14px;
     font-size: 14px;
-    transform: translate3d(-50%, 0, 3000px);
-    opacity: 0;
+    padding: 0 4px;
+    transform: translate3d(0, 0, 3000px);
     transition: opacity 0.5s;
     white-space: nowrap;
-}
-
-.timelineBoardLabel.shown {
-    opacity: 1;
 }
 
 .topLeftInfoText {
@@ -1809,21 +1808,24 @@ Logic Interface CSS
 
 #analytics-container {
     position: absolute;
-    top: 30;
+    top: 30px;
     left: 0;
     width: 100%;
     height: 100%;
+
+    z-index: 2800;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    pointer-events: none;
 }
 
 #analytics-timeline-container {
     position: absolute;
-    bottom: calc(30px + 30px + 68px + 30px - 12px);
+    bottom: calc(30px + 68px + 30px - 12px);
     left: 50%;
-    z-index: 10000;
-    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
-    -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 10000, 1) translateX(-50%);
     max-width: 1024px;
     width: 100%;
+    transform: translateX(-50%);
+    pointer-events: all;
 }
 
 .analytics-timeline {
@@ -1848,13 +1850,13 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.minimized > *:not(.analytics-region-card-title) {
+.analytics-region-card.minimized > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
 
 .analytics-region-card.minimized {
     padding: 14px;
-    height: 14px;
+    height: 28px;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -1876,6 +1878,18 @@ Logic Interface CSS
     top: 80px;
     left: 35px;
     padding: 0;
+    pointer-events: all;
+}
+
+.analytics-pinned-region-cards-csv {
+    position: absolute;
+    top: -34px;
+    left: 56px;
+}
+
+.analytics-pinned-region-cards-csv,
+.analytics-pinned-region-cards-csv:visited {
+    color: white;
 }
 
 .analytics-region-card-title {
@@ -1884,9 +1898,17 @@ Logic Interface CSS
 
 .analytics-region-card-subtitle {
     grid-column-start: span 3;
+}
+
+.analytics-region-card-label {
+    grid-column-start: span 3;
     border-bottom: 1px solid #999;
     padding-bottom: 4px;
     margin-bottom: 4px;
+}
+
+.analytics-region-card.minimized > .analytics-region-card-subtitle {
+    border-bottom: none;
 }
 
 .analytics-region-card-graph-section-title {
@@ -1900,4 +1922,30 @@ Logic Interface CSS
 }
 
 .analytics-region-card-graph-section-value {
+}
+
+.analytics-region-card-pin, .analytics-region-card-view {
+    color: white;
+}
+.analytics-region-card-pin:visited, .analytics-region-card-view:visited {
+    color: white;
+}
+
+#blurredEnvelopeBackground {
+    background-color: #67676760;
+    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(30px);
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    z-index: 1;
+}
+
+.deactivatedIframeOverlay {
+    pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
 }

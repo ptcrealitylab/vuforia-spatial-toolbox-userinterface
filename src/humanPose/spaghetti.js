@@ -1,6 +1,13 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
 import * as utils from './utils.js'
+import {
+    setAnimationMode,
+    AnimationMode,
+} from './draw.js';
+
+// Approximate milliseconds between points (10 fps)
+const POINT_RES_MS = 100;
 
 // we will lazily instantiate a shared label that all SpaghettiMeshPaths can use
 let sharedMeasurementLabel = null;
@@ -69,6 +76,7 @@ class MeasurementLabel {
 export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
         super(path, params);
+        this.allPoints = this.currentPoints;
 
         this.pathId = realityEditor.device.utilities.uuidTime();
         this.comparer = new KeyframeComparer();
@@ -91,6 +99,20 @@ export class SpaghettiMeshPath extends MeshPath {
         });
     }
     
+    setAllPoints(points) {
+        this.allPoints = points;
+        this.setPoints(points);
+    }
+
+    /**
+     * @typedef {MeshPathPoint} SpaghettiMeshPathPoint
+     * @property {number} timestamp - the time in milliseconds since the start of the path
+     */
+
+    /**
+     * Sets the points of the path, and also calculates the horizontal plane at the average Y height of the path
+     * @param {SpaghettiMeshPathPoint[]} points - the points to set
+     */
     setPoints(points) {
         super.setPoints(points);
         
@@ -116,18 +138,21 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
+        // If we're clicking the spaghetti at the end of a selection (selecting
+        // second point), we want to freeze the current highlight interval
         let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
         if (intersects.length > 0 &&
             this.comparer.selectionState === SelectionState.SECOND) {
             this.comparer.selectionState = SelectionState.TIMELINE;
             this.frozen = true;
+            setAnimationMode(AnimationMode.region);
             return;
         }
 
         const isHover = false;
         this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
     }
-    
+
     onPointerMove(e) {
         if (this.frozen) {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
@@ -150,6 +175,7 @@ export class SpaghettiMeshPath extends MeshPath {
                 this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
                 this.comparer.setEndPoint(this.prevState.secondPointIndex);
                 this.comparer.selectionState = SelectionState.TIMELINE;
+                setAnimationMode(AnimationMode.region);
                 this.updateMeshWithComparer();
             }
 
@@ -160,6 +186,9 @@ export class SpaghettiMeshPath extends MeshPath {
 
         // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
         let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
+        if (!pointOnPlane) {
+            return;
+        }
         this.cursorDestination = [pointOnPlane.x, pointOnPlane.y, pointOnPlane.z];
         this.cursor.material.color.setHex(0xffffff);
         this.cursor.scale.set(1,1,1);
@@ -193,17 +222,36 @@ export class SpaghettiMeshPath extends MeshPath {
 
         this.selectSecondPathPoint(e.pageX, e.pageY, snapIndex);
     }
-    
+
+    isVisible() {
+        let ancestorsAllVisible = true;
+        let parent = this.parent;
+        while (parent) {
+            if (!parent.visible) {
+                ancestorsAllVisible = false;
+                break;
+            }
+            parent = parent.parent;
+        }
+        return this.visible && ancestorsAllVisible;
+    }
+
     setupPointerEvents() {
         document.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) {
                 this.getMeasurementLabel().requestVisible(false, this.pathId);
                 return;
             }
+            if (!this.isVisible()) {
+                return;
+            }
             this.onPointerDown(e);
         });
         document.addEventListener('pointermove', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            if (!this.isVisible()) {
+                return;
+            }
             this.onPointerMove(e);
         });
     }
@@ -213,6 +261,9 @@ export class SpaghettiMeshPath extends MeshPath {
         let pointOnPlane = realityEditor.gui.ar.utilities.getPointOnPlaneFromScreenXY(this.planeOrigin, this.planeNormal, cameraNode, screenX, screenY);
         let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
         let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
+        if (!pointOnPlane) {
+            return;
+        }
         return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
     }
     
@@ -234,6 +285,7 @@ export class SpaghettiMeshPath extends MeshPath {
             this.cursor.visible = false;
         } else {
             this.comparer.setFirstPoint(pointIndex, isHover);
+            setAnimationMode(AnimationMode.regionAll);
         }
         this.updateMeshWithComparer();
         this.updateAnalyticsHighlightRegion();
@@ -274,12 +326,14 @@ export class SpaghettiMeshPath extends MeshPath {
             const firstTimestamp = points[comparer.firstPointIndex].timestamp;
             if (comparer.secondPointIndex !== null) {
                 const secondTimestamp = points[comparer.secondPointIndex].timestamp;
+                realityEditor.analytics.setCursorTime(-1, true);
                 realityEditor.analytics.setHighlightRegion({
                     startTime: Math.min(firstTimestamp, secondTimestamp),
                     endTime: Math.max(firstTimestamp, secondTimestamp),
                 }, true);
             } else {
                 realityEditor.analytics.setCursorTime(firstTimestamp, true);
+                setAnimationMode(AnimationMode.cursor);
             }
         }
     }
@@ -345,10 +399,38 @@ export class SpaghettiMeshPath extends MeshPath {
     }
 
     /**
-     * @param {number} firstTimestamp - start of interval in ms
-     * @param {number} secondTimestamp - start of interval in ms or -1 for unspecified (hover mode)
+     * @param {number} timestamp - time that is hovered in ms
      */
-    setTimeInterval(firstTimestamp, secondTimestamp) {
+    setCursorTime(timestamp) {
+        let index = -1;
+        for (let i = 0; i < this.currentPoints.length; i++) {
+            let point = this.currentPoints[i];
+            if (Math.abs(point.timestamp - timestamp) < 0.9 * POINT_RES_MS) {
+                index = i;
+                break;
+            }
+            if (point.timestamp > timestamp) {
+                // Exit early if we will never find a matching point
+                break;
+            }
+        }
+
+        if (index < 0) {
+            return;
+        }
+
+        this.comparer.selectionState = SelectionState.TIMELINE;
+        this.comparer.setFirstPoint(index, true);
+        this.updateMeshWithComparer();
+    }
+
+    /**
+     * @param {{startTime: number, endTime: number}} highlightRegion
+     */
+    setHighlightRegion(highlightRegion) {
+        const firstTimestamp = highlightRegion.startTime;
+        const secondTimestamp = highlightRegion.endTime;
+
         let firstIndex = -1;
         let secondIndex = -1;
         for (let i = 0; i < this.currentPoints.length; i++) {
@@ -375,11 +457,66 @@ export class SpaghettiMeshPath extends MeshPath {
         this.updateMeshWithComparer();
     }
 
+    /**
+     * Limits currentPoints to a subset of allPoints based on the display
+     * region
+     *
+     * @param {{startTime: number, endTime: number}} displayRegion
+     */
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
+        let firstIndex = -1;
+        let secondIndex = -1;
+        for (let i = 0; i < this.allPoints.length; i++) {
+            let point = this.allPoints[i];
+            if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
+                firstIndex = i;
+            }
+            if (secondIndex < 0 && point.timestamp >= secondTimestamp) {
+                secondIndex = i;
+                break;
+            }
+        }
+        if (firstIndex >= 0 && secondIndex < 0) {
+            secondIndex = this.allPoints.length - 1;
+        }
+        if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
+            return;
+        }
+
+        this.setPoints(this.allPoints.slice(firstIndex, secondIndex + 1));
+        this.comparer.reset();
+        this.updateMeshWithComparer();
+    }
+
+
     createCursor(radius = 50) {
         let cursorMesh = new THREE.Mesh(new THREE.SphereGeometry(radius,12,12), new THREE.MeshBasicMaterial({color:0xff0000})); // new THREE.MeshNormalMaterial());
         cursorMesh.visible = false;
         this.add(cursorMesh);
         return cursorMesh;
+    }
+
+    /**
+     * @return {number} start time of mesh path or -1 if zero-length
+     */
+    getStartTime() {
+        if (!this.currentPoints || this.currentPoints.length === 0) {
+            return -1;
+        }
+        return this.currentPoints[0].timestamp;
+    }
+
+    /**
+     * @return {number} end time of mesh path or -1 if zero-length
+     */
+    getEndTime() {
+        if (!this.currentPoints || this.currentPoints.length === 0) {
+            return -1;
+        }
+        return this.currentPoints[this.currentPoints.length - 1].timestamp;
     }
 }
 

@@ -21,10 +21,14 @@ createNameSpace("realityEditor.avatar.draw");
     const ICON_GAP = 10;
 
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
-    function renderOtherAvatars(avatarTouchStates, avatarNames) {
+    function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
         try {
             for (const [objectKey, avatarTouchState] of Object.entries(avatarTouchStates)) {
                 renderAvatar(objectKey, avatarTouchState, avatarNames[objectKey]);
+            }
+            for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
+                realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);

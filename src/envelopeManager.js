@@ -10,6 +10,9 @@ createNameSpace("realityEditor.envelopeManager");
 
 (function(exports) {
 
+    // in addition to the X button, adds another button next to it (purpose not fully determined)
+    const INCLUDE_MINIMIZE_BUTTON = false;
+
     /**
      * @typedef {Object} Envelope
      * @property {string} object
@@ -18,6 +21,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @property {Array.<string>} compatibleFrameTypes
      * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
+     * @property {boolean} isMinimized
      */
 
     /**
@@ -113,10 +117,15 @@ createNameSpace("realityEditor.envelopeManager");
         if (typeof eventData.open !== 'undefined') {
             openEnvelope(fullMessageContent.frame, true);
         }
-        
+
         // responds to an envelope closing
         if (typeof eventData.close !== 'undefined') {
             closeEnvelope(fullMessageContent.frame, true);
+        }
+
+        // responds to an envelope closing
+        if (typeof eventData.minimize !== 'undefined') {
+            minimizeEnvelope(fullMessageContent.frame, true);
         }
         
         // keeps mapping of envelopes -> containedFrames up to date
@@ -127,6 +136,8 @@ createNameSpace("realityEditor.envelopeManager");
                 // if we added any new frames, and they are visible but the envelope is closed, then hide them
                 if (!knownEnvelopes[fullMessageContent.frame].isOpen) {
                     closeEnvelope(fullMessageContent.frame, true);
+                } else if (knownEnvelopes[fullMessageContent.frame].isMinimized) {
+                    minimizeEnvelope(fullMessageContent.frame, true);
                 }
             }
         }
@@ -139,6 +150,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
         knownEnvelopes[frameId].isOpen = true;
+        knownEnvelopes[frameId].isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -171,6 +183,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
         knownEnvelopes[frameId].isOpen = false;
+        knownEnvelopes[frameId].isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -194,6 +207,25 @@ createNameSpace("realityEditor.envelopeManager");
                 element.classList.add('hiddenEnvelopeContents');
             }
         });
+
+        // adjust exit/cancel/back buttons for # of open frames
+        updateExitButton();
+    }
+
+    /**
+     * Minimizes an envelope by hiding controls and/or responds to an envelope closing to update UI and other frames appropriately
+     * @param {string} frameId
+     * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
+     */
+    function minimizeEnvelope(frameId, wasTriggeredByEnvelope) {
+        knownEnvelopes[frameId].isMinimized = true;
+
+        // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
+        if (!wasTriggeredByEnvelope) {
+            sendMessageToEnvelope(frameId, {
+                minimize: true
+            });
+        }
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
@@ -236,6 +268,11 @@ createNameSpace("realityEditor.envelopeManager");
             }
             exitButton.style.display = 'inline';
 
+            if (!INCLUDE_MINIMIZE_BUTTON) {
+                callbacks.onExitButtonShown.forEach(cb => cb(exitButton, null));
+                return;
+            }
+
             let minimizeButton = document.getElementById('minimizeEnvelopeButton');
             if (!minimizeButton) {
                 minimizeButton = document.createElement('img');
@@ -248,7 +285,7 @@ createNameSpace("realityEditor.envelopeManager");
                 minimizeButton.addEventListener('pointerup', function() {
                     // TODO: only minimize the envelope that has focus, not all of them
                     getOpenEnvelopes().forEach(function(envelope) {
-                        closeEnvelope(envelope.frame);
+                        minimizeEnvelope(envelope.frame);
                     });
                 });
             }
@@ -452,7 +489,14 @@ createNameSpace("realityEditor.envelopeManager");
                 };
 
                 if (envelopeData) {
-                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y, true);
+                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, {
+                        startPositionOffset: envelopeData.startPositionOffset,
+                        width: envelopeData.width,
+                        height: envelopeData.height,
+                        pageX: touchPosition.x,
+                        pageY: touchPosition.y,
+                        noUserInteraction: true
+                    });
 
                     console.log('added an envelope (maybe in time?)', addedElement);
 
@@ -543,7 +587,7 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function getOpenEnvelopes() {
         return Object.values(knownEnvelopes).filter(function(envelope) {
-            return envelope.isOpen;
+            return envelope.isOpen && !envelope.isMinimized;
         });
     }
 
@@ -573,11 +617,46 @@ createNameSpace("realityEditor.envelopeManager");
         var frame = realityEditor.getFrame(objectKey, frameKey);
         return frame.src;
     }
+    
+    function showBlurredBackground(focusedFrameId) {
+        // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (!blur) {
+            blur = document.createElement('div');
+            blur.id = 'blurredEnvelopeBackground';
+        }
+        let GUI = document.getElementById('GUI');
+        // let focusedElement = document.getElementById('object' + focusedFrameId);
+        // focusedElement.parentNode.insertBefore(blur, focusedElement);
+        GUI.parentNode.insertBefore(blur, GUI);
+        blur.style.display = 'inline';
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.add('deactivatedIframeOverlay');
+        }
+    }
+    
+    function hideBlurredBackground(focusedFrameId) {
+        // hide the fullscreen blurred div, if it exists
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (blur) {
+            blur.style.display = 'none';
+        }
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
+        }
+    }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
-    
+
     exports.getKnownEnvelopes = function() {
         return knownEnvelopes;
     }
+    
+    exports.showBlurredBackground = showBlurredBackground;
+    exports.hideBlurredBackground = hideBlurredBackground;
+
+    exports.getOpenEnvelopes = getOpenEnvelopes;
 
 }(realityEditor.envelopeManager));
