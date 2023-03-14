@@ -523,23 +523,26 @@ realityEditor.network.addHeartbeatObject = function (beat) {
 
     if (beat && beat.id) {
         if (!objects[beat.id]) {
+
+            // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
+            // we make sure to ignore it before triggering the GET request, otherwise we might overload the network
+            let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
+            let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
+            let isWorldBeat = realityEditor.worldObjects.isWorldObjectKey(beat.id);
+            if (primaryWorldInfo && isWorldBeat && !isLocalWorld) {
+                let hasIpInfo = primaryWorldInfo.ip;
+                if (beat.id !== primaryWorldInfo.id || (hasIpInfo && beat.ip !== primaryWorldInfo.ip)) {
+                    // console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match primary world ' + primaryWorldInfo.id);
+                    return;
+                }
+            }
+
             console.log('got heartbeat for new object ' + beat.id);
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
             let queryParams = '?excludeUnpinned=true';
             this.getData(beat.id,  null, null, baseUrl+queryParams, function (objectKey, frameKey, nodeKey, msg) {
                 if (msg && objectKey && !objects[objectKey]) {
-
-                    // ignore this object if it's a world object and the primaryWorld is set but not equal to this one
-                    let primaryWorldInfo = realityEditor.network.discovery.getPrimaryWorldInfo();
-                    let isLocalWorld = beat.id === realityEditor.worldObjects.getLocalWorldId();
-                    if (primaryWorldInfo && (msg.isWorldObject || msg.type === 'world') && !isLocalWorld) {
-                        let hasIpInfo = primaryWorldInfo.ip;
-                        if (beat.id !== primaryWorldInfo.id || (hasIpInfo && beat.ip !== primaryWorldInfo.ip)) {
-                            console.warn('ignoring adding world object ' + beat.id + ' because it doesnt match primary world ' + primaryWorldInfo.id);
-                            return;
-                        }
-                    }
 
                     console.log('instantiating new object with server data' + beat.id, msg);
                     
@@ -950,72 +953,20 @@ realityEditor.network.onAction = function (action) {
 
                 _this.cout("got object");
 
-            });
+            }, { bypassCache: true });
         }
     }
 
     if (typeof thisAction.reloadFrame !== "undefined") {
         let thisFrame = realityEditor.getFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame);
-        if (!thisFrame) {
-            console.log('reloadFrame new frame', thisAction.reloadFrame);
 
-            // actionSender({reloadFrame: {object: objectID, frame: frameID, propertiesToIgnore: propertiesToIgnore}, lastEditor: body.lastEditor});
-            thisFrame = new Frame();
-
-            let thisObject = realityEditor.getObject(thisAction.reloadFrame.object);
-            thisObject.frames[thisAction.reloadFrame.frame] = thisFrame;
-        }
-
+        // only reload the frame if it already exists – if it doesn't, it needs to be added with reloadObject in order to intialize properly
         if (thisFrame) {
-
-            let urlEndpoint = realityEditor.network.getURL(objects[thisAction.reloadFrame.object].ip, realityEditor.network.getPort(objects[thisAction.reloadFrame.object]), '/object/' + thisAction.reloadFrame.object + '/frame/' + thisAction.reloadFrame.frame);
-            this.getData(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction.reloadFrame.node, urlEndpoint, function(objectKey, frameKey, nodeKey, res) {
-
-                for (let thisKey in res) {
-                    if (!res.hasOwnProperty(thisKey)) continue;
-                    if (!thisFrame.hasOwnProperty(thisKey)) continue;
-                    if (thisAction.reloadFrame.propertiesToIgnore) {
-                        if (thisAction.reloadFrame.propertiesToIgnore.indexOf(thisKey) > -1) continue;
-
-                        // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
-                        if (thisKey === 'ar' &&
-                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.x') > -1 &&
-                            thisAction.reloadFrame.propertiesToIgnore.indexOf('ar.y') > -1) {
-
-                            // this wasn't scaled -> update the x and y but not the scale
-                            if (thisFrame.ar.scale === res.ar.scale && !thisAction.reloadFrame.wasTriggeredFromEditor) {
-                                thisFrame.ar.x = res.ar.x;
-                                thisFrame.ar.y = res.ar.y;
-                            } else {
-                                // this was scaled -> update the scale but not the x and y
-                                thisFrame.ar.scale = res.ar.scale;
-                            }
-                            continue;
-                        }
-
-                        // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
-                        if (thisKey === 'nodes') {
-                            for (let nodeKey in res.nodes) {
-                                if (!thisFrame.nodes.hasOwnProperty(nodeKey)) {
-                                    thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
-                                } else {
-                                    for (let propertyKey in res.nodes[nodeKey]) {
-                                        if (propertyKey === 'loaded') { continue; }
-                                        thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
-                                    }
-                                }
-                            }
-                            continue;
-                        }
-                    }
-
-                    thisFrame[thisKey] = res[thisKey];
-                }
-
-                // TODO: invert dependency
-                realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
-
-            });
+            realityEditor.network.reloadFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction);
+        } else {
+            setTimeout(() => {
+                realityEditor.network.reloadFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction);
+            }, 500);
         }
     }
 
@@ -1210,6 +1161,62 @@ realityEditor.network.onAction = function (action) {
         this.cout("found action: " + JSON.stringify(key));
     }
 };
+
+realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMessage) {
+    let thisObject = realityEditor.getObject(objectKey);
+    let thisFrame = realityEditor.getFrame(objectKey, frameKey);
+    if (!thisObject || !thisFrame) return;
+
+    let urlEndpoint = realityEditor.network.getURL(thisObject.ip, realityEditor.network.getPort(thisObject), '/object/' + objectKey + '/frame/' + frameKey);
+    this.getData(objectKey, frameKey, null, urlEndpoint, (objectKey, frameKey, nodeKey, res) => {
+
+        let propertiesToIgnore = fullActionMessage.reloadFrame.propertiesToIgnore;
+        let wasTriggeredFromEditor = fullActionMessage.reloadFrame.wasTriggeredFromEditor;
+
+        for (let thisKey in res) {
+            if (!res.hasOwnProperty(thisKey)) continue;
+            if (!thisFrame.hasOwnProperty(thisKey)) continue;
+            if (propertiesToIgnore) {
+                if (propertiesToIgnore.indexOf(thisKey) > -1) continue;
+
+                // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
+                if (thisKey === 'ar' &&
+                    propertiesToIgnore.indexOf('ar.x') > -1 &&
+                    propertiesToIgnore.indexOf('ar.y') > -1) {
+
+                    // this wasn't scaled -> update the x and y but not the scale
+                    if (thisFrame.ar.scale === res.ar.scale && !wasTriggeredFromEditor) {
+                        thisFrame.ar.x = res.ar.x;
+                        thisFrame.ar.y = res.ar.y;
+                    } else {
+                        // this was scaled -> update the scale but not the x and y
+                        thisFrame.ar.scale = res.ar.scale;
+                    }
+                    continue;
+                }
+
+                // only rewrite existing properties of nodes, otherwise node.loaded gets removed and another element added
+                if (thisKey === 'nodes') {
+                    for (let nodeKey in res.nodes) {
+                        if (!thisFrame.nodes.hasOwnProperty(nodeKey)) {
+                            thisFrame.nodes[nodeKey] = res.nodes[nodeKey];
+                        } else {
+                            for (let propertyKey in res.nodes[nodeKey]) {
+                                if (propertyKey === 'loaded') { continue; }
+                                thisFrame.nodes[nodeKey][propertyKey] = res.nodes[nodeKey][propertyKey];
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
+
+            thisFrame[thisKey] = res[thisKey];
+        }
+
+        realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, thisFrame);
+    }, { bypassCache: true });
+}
 
 /**
  * Gets triggered when an iframe makes a POST request to communicate with the Reality Editor via the object.js API
@@ -2733,13 +2740,18 @@ realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, fra
  * @param {string|undefined} nodeKey
  * @param {string} url
  * @param {function<string, string, string, object>} callback
+ * @param {*} options
  */
-realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback) {
+realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback, options = {bypassCache: false}) {
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
     var req = new XMLHttpRequest();
+    let urlSuffix = options.bypassCache ? `?timestamp=${new Date().getTime()}` : '';
     try {
-        req.open('GET', url, true);
+        req.open('GET', url + urlSuffix, true);
+        if (options.bypassCache) {
+            req.setRequestHeader('Cache-control', 'no-cache');
+        }
         // Just like regular ol' XHR
         req.onreadystatechange = function () {
             if (req.readyState === 4) {

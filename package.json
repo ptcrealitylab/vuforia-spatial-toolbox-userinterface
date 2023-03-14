@@ -4,7 +4,7 @@
   "description": "User interface of the Reality Editor",
   "main": "src/index.js",
   "devDependencies": {
-    "eslint": "^8.33.0"
+    "eslint": "^8.35.0"
   },
   "scripts": {
     "test": "npm run lint",
