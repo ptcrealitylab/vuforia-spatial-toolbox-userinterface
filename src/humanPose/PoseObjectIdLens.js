@@ -73,6 +73,7 @@ export class PoseObjectIdLens extends AnalyticsLens {
         });
         pose.forEachBone(bone => {
             bone.poseObjectId = pose.metadata.poseObjectId;
+            bone.poseHasParent = pose.metadata.poseHasParent;
         });
         return true;
     }
@@ -111,7 +112,8 @@ export class PoseObjectIdLens extends AnalyticsLens {
     }
 
     getColorForBone(bone) {
-        return this.getColorFromId(bone.poseObjectId);
+        const color = this.getColorFromId(bone.poseObjectId);
+        return (bone.poseHasParent) ? AnalyticsColors.fade(color, 0.3) : color;
     }
 
     getColorForPose(pose) {

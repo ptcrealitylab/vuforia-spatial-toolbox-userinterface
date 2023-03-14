@@ -1168,7 +1168,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
         }
     }
 
-    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid});
+    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: Boolean(poseObject.parent)});
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);

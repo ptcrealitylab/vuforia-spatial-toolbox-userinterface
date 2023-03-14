@@ -16,8 +16,8 @@ export const AnalyticsColors = {
      * @param {Color} color The color to fade.
      * @return {Color} The faded color.
      */
-    fade: (color) => {
+    fade: (color, s = 0.8) => {
         const h = color.getHSL({}).h;
-        return new THREE.Color().setHSL(h, 0.8, 0.3);
+        return new THREE.Color().setHSL(h, s, 0.3);
     }
 };
