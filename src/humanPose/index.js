@@ -7,6 +7,7 @@ import * as draw from './draw.js'
 import * as utils from './utils.js'
 import {getGroundPlaneRelativeMatrix, JOINTS, setMatrixFromArray} from "./utils.js";
 import {Pose} from "./Pose.js";
+import {JOINT_TO_INDEX} from './constants.js';
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -189,6 +190,7 @@ import {Pose} from "./Pose.js";
                 }
                 let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
                 const jointPositions = {};
+                const jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
                     setMatrixFromArray(objectRootMatrix, poseObject.matrix);
@@ -206,12 +208,23 @@ import {Pose} from "./Pose.js";
                     let jointPosition = new THREE.Vector3();
                     jointPosition.setFromMatrixPosition(jointMatrixThree);
                     jointPositions[jointId] = jointPosition;
+
+                    let keys = utils.getJointNodeInfo(poseObject, JOINT_TO_INDEX[jointId]);
+                    // zero confidence if node's public data are not available
+                    let confidence = 0.0;
+                    if (keys) {
+                        const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+                        if (node && node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
+                            confidence = node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data].confidence;
+                        }
+                    }
+                    jointConfidences[jointId] = confidence;
                 }
                 if (Object.keys(jointPositions).length === 0) {
                     return;
                 }
                 const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
-                const pose = new Pose(jointPositions, parseInt(timestampString), {poseObjectId: identifier});
+                const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {poseObjectId: identifier});
                 poses.push(pose);
             }
         });

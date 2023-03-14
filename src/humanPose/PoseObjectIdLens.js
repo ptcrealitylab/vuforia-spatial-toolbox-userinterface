@@ -104,7 +104,10 @@ export class PoseObjectIdLens extends AnalyticsLens {
     }
     
     getColorForJoint(joint) {
-        return this.getColorFromId(joint.poseObjectId);
+        const baseColor = this.getColorFromId(joint.poseObjectId);
+        let baseColorHSL = baseColor.getHSL({});
+        baseColorHSL.l = baseColorHSL.l * joint.confidence;
+        return new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
     }
 
     getColorForBone(bone) {

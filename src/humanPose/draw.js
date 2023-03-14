@@ -1135,6 +1135,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
     const jointPositions = {};
+    const jointConfidences = {};
     
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
@@ -1150,21 +1151,24 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
         jointPositions[jointId] = jointPosition;
 
-        if (RENDER_CONFIDENCE_COLOR) {
-            let keys = getJointNodeInfo(poseObject, i);
-            // zero confidence if node's public data are not available
-            let confidence = 0.0;
-            if (keys) {
-                const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
-                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
-                    confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
-                }
+        let keys = getJointNodeInfo(poseObject, i);
+        // zero confidence if node's public data are not available
+        let confidence = 0.0;
+        if (keys) {
+            const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+            if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
+                confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
             }
+        }
+        jointConfidences[jointId] = confidence;
+
+        if (RENDER_CONFIDENCE_COLOR) {
+            
             poseRenderInstance.setJointConfidenceColor(jointId, confidence);
         }
     }
 
-    const pose = new Pose(jointPositions, timestamp, {poseObjectId: poseObject.uuid});
+    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid});
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);
