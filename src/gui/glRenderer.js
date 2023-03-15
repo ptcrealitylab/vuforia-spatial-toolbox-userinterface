@@ -49,7 +49,7 @@ class WorkerGLProxy {
 
     /**
      * @param {Window} worker - worker iframe contentWindow
-     * @param {WebGL} gl webGL rendering context used for excuting the received webgl commands
+     * @param {WebGL} gl - webGL rendering context used for excuting the received webgl commands
      * @param {number} workerId - unique identifier of worker
      * @param {string} toolId - unique identifier of associated tool
      */
@@ -223,10 +223,10 @@ class WorkerGLProxy {
     }
 
     /**
-     * Executes an WebGL command on the server context and does basi error checking when debugging is enabled
+     * Executes an WebGL command on the server context and does basic error checking when debugging is enabled
      * @param {string} name The function to call
      * @param {Array<any>} args contains the internal arguments used by the WebGL instance (Handles translated to internal objects)
-     * @param {Array<any>} displayArgs contains the arguments received from the client (Handles etc...)
+     * @param {Array<any>} displayArgs contains the arguments received from the client (Handles etc...), displaying handles is more relevant when debugging than the real arguments that the handle represents. Handles can be traced back to the client code, the real parameters only exist on the server side.
      * @returns {any}
      */
     executeGL(name, args, displayArgs) {
@@ -320,6 +320,7 @@ class WorkerGLProxy {
         // in theory we can execute several commands in succession and fill the assigned SharedArrayBuffer responseBuffers and then unlock the client.
         if (localCommand.name === "getActiveAttrib_bufferSize") {
             // send the size of the required buffer instead of the struct itself
+            // the struct itself contains a name with zero termination, a size attribute and a type attribute. Size and Type are both 32-bit so with the zero termination we need to reserve an aditional 9 bytes to store the returned structure.
             new Int32Array(localCommand.responseBuffer)[0] = res.name.length + 9;   
         } else if (localCommand.name === "getActiveAttrib") {
             let utf8TextEncoder = new TextEncoder();
@@ -331,6 +332,7 @@ class WorkerGLProxy {
             new Uint8Array(localCommand.responseBuffer, res.name.length + 1, 8).set(new Uint8Array(sizeTypeBufMem));   
         } else if (localCommand.name === "getActiveUniform_bufferSize") {
             // send the size of the required buffer instead of the struct itself
+             // the struct itself contains a name with zero termination, a size attribute and a type attribute. Size and Type are both 32-bit so with the zero termination we need to reserve an aditional 9 bytes to store the returned structure.
             new Int32Array(localCommand.responseBuffer)[0] = res.name.length + 9;   
         } else if (localCommand.name === "getActiveUniform") {
             let utf8TextEncoder = new TextEncoder();
@@ -498,7 +500,7 @@ class WorkerGLProxy {
         if (this.serverState === WorkerGLProxy.STATE_CONTEXT_LOST) {
             this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED;
         } else {
-            console.log("enexpected state for context restored: " + this.serverState);
+            console.log("unexpected state for context restored: " + this.serverState);
         }
         const {width, height} = globalStates;
         this.worker.postMessage({name: "context_restored", workerId: this.workerId, width: width, height: height}, '*');
@@ -545,38 +547,39 @@ function initService() {
         canvas.addEventListener("webglcontextcreationerror", (e) => {console.log("can't create context: " + (e.statusMessage || "Unknown error"))}, false);
         //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
         gl = canvas.getContext('webgl2');
-       
+
         // If we don't have a GL context, give up now
 
         if (!gl) {
             alert('Unable to initialize WebGL2. Your browser or machine may not support it.');
             return;
-        } else {
-            for (let key in gl) {
-                switch (typeof gl[key]) {
-                case 'function':
-                    functions.push(key);
-                    break;
-                case 'number':
-                    constants[key] = gl[key];
-                    break;
-                }
-                if (key === 'canvas') {
-                    constants[key] = {
-                        width: gl[key].width,
-                        height: gl[key].height,
-                    };
-                }
-            }
-
-            defaultGLState = GLState.createFromGLContext(gl, new Map());
-
-            setTimeout(renderFrame, 500);
-            setInterval(watchpuppy, 1000);
-
-            realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
-            realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
         }
+
+        for (let key in gl) {
+            switch (typeof gl[key]) {
+            case 'function':
+                functions.push(key);
+                break;
+            case 'number':
+                constants[key] = gl[key];
+                break;
+            }
+            if (key === 'canvas') {
+                constants[key] = {
+                    width: gl[key].width,
+                    height: gl[key].height,
+                };
+            }
+        }
+
+        defaultGLState = GLState.createFromGLContext(gl, new Map());
+
+        setTimeout(renderFrame, 500);
+        setInterval(watchpuppy, 1000);
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
+        
     }
 
     setTimeout(() => {
