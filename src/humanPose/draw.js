@@ -22,6 +22,7 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
+let childHumanObjectsVisible = false;
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -182,6 +183,7 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setLiveHistoryLinesVisible(this.liveHistoryLineContainer.visible);
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
+        this.settingsUi.setChildHumanPosesVisible(childHumanObjectsVisible);
     }
 
     /**
@@ -1168,11 +1170,12 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
         }
     }
 
-    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: Boolean(poseObject.parent)});
+    const poseHasParent = Boolean(poseObject.parent);
+    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: poseHasParent});
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);
-    poseRenderInstance.setVisible(true);
+    poseRenderInstance.setVisible(childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
     humanPoseAnalyzer.poseUpdated(pose, false);
@@ -1366,6 +1369,18 @@ function setHumanPosesVisible(visible) {
     humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
 }
 
+/**
+ * Sets the visibility of the child human pose objects
+ * Note: Used in live mode so far
+ * @param {boolean} visible - whether to show or not
+ */
+function setChildHumanPosesVisible(visible) {
+    childHumanObjectsVisible = visible;
+    if (this.settingsUi) {
+        this.settingsUi.setChildHumanPosesVisible(visible);
+    }
+}
+
 // TODO: Remove deprecated API use
 export {
     bulkRenderHistoricalPoses,
@@ -1389,5 +1404,6 @@ export {
     showAnalyzerSettingsUI,
     hideAnalyzerSettingsUI,
     toggleAnalyzerSettingsUI,
-    setHumanPosesVisible
+    setHumanPosesVisible,
+    setChildHumanPosesVisible
 };

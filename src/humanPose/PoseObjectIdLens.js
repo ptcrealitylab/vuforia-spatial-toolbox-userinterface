@@ -113,7 +113,7 @@ export class PoseObjectIdLens extends AnalyticsLens {
 
     getColorForBone(bone) {
         const color = this.getColorFromId(bone.poseObjectId);
-        return (bone.poseHasParent) ? AnalyticsColors.fade(color, 0.3) : color;
+        return (bone.poseHasParent) ? AnalyticsColors.fade(color, 0.1) : color;
     }
 
     getColorForPose(pose) {
