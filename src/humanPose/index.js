@@ -74,16 +74,27 @@ import {JOINT_TO_INDEX} from './constants.js';
                     return;
                 }
 
-                // further reduce rendering redundant poses by only rendering if any pose data has been updated
-                if (!areAnyPosesUpdated(humanPoseObjects)) return;
+                // further reduce rendering redundant poses by only rendering pose data that has been updated
+                let updatedHumanPoseObjects = [];
+                for (const [id, obj] of Object.entries(humanPoseObjects)) {
+                    let newPoseHash = utils.getPoseStringFromObject(obj);
+                    if (typeof lastRenderedPoses[id] === 'undefined') {
+                        updatedHumanPoseObjects.push(obj);
+                        lastRenderedPoses[id] = newPoseHash;
+                    }
+                    else {
+                        if (newPoseHash !== lastRenderedPoses[id]) {
+                            updatedHumanPoseObjects.push(obj);
+                            lastRenderedPoses[id] = newPoseHash;
+                        }
+                    }
+                }                
+                if (updatedHumanPoseObjects.length == 0) return;
 
                 lastUpdateTime = Date.now();
 
-                draw.renderLiveHumanPoseObjects(Object.values(humanPoseObjects), Date.now(), null);
+                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now(), null);
 
-                for (const [id, obj] of Object.entries(humanPoseObjects)) {
-                    lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
-                }
             } catch (e) {
                 console.warn('error in renderLiveHumanPoseObjects', e);
             }
@@ -230,17 +241,6 @@ import {JOINT_TO_INDEX} from './constants.js';
         });
         draw.bulkRenderHistoricalPoses(poses, null);
         inHistoryPlayback = false;
-    }
-
-    function areAnyPosesUpdated(poseObjects) {
-        for (const [id, obj] of Object.entries(poseObjects)) {
-            if (typeof lastRenderedPoses[id] === 'undefined') return true;
-            let newPoseHash = utils.getPoseStringFromObject(obj);
-            if (newPoseHash !== lastRenderedPoses[id]) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
