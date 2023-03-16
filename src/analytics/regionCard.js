@@ -181,6 +181,28 @@ export class RegionCard {
         this.labelElement.setAttribute('contenteditable', true);
         this.setLabel('Step');
 
+        let debouncedSave = null;
+        this.labelElement.addEventListener('keydown', (event) => {
+            const code = event.keyCode || event.which;
+            // 13 is Enter
+            if (code === 13) {
+                event.preventDefault();
+                this.labelElement.blur();
+            }
+            event.stopPropagation();
+        });
+        this.labelElement.addEventListener('keyup', (event) => {
+            event.stopPropagation();
+
+            if (debouncedSave) {
+                clearTimeout(debouncedSave);
+            }
+            debouncedSave = setTimeout(() => {
+                realityEditor.analytics.writeDehydratedRegionCards();
+                debouncedSave = null;
+            }, 1000);
+        });
+
         this.element.appendChild(this.labelElement);
 
         this.graphSummaryValues = {};
