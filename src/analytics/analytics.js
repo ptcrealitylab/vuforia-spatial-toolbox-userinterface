@@ -210,6 +210,7 @@ export class Analytics {
             return {
                 startTime: regionCard.startTime,
                 endTime: regionCard.endTime,
+                label: regionCard.getLabel(),
             };
         });
         for (let envelope of openEnvelopes) {
