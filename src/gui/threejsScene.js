@@ -327,6 +327,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             gltf.scene.traverse(obj => {
                 if (obj.geometry) {
                     obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                    obj.geometry.deleteAttribute('uv2'); // Messes with merge if present in some geometries but not others
                     geometries.push(obj.geometry);
                 }
             });
@@ -463,6 +464,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
                   let geo = child.geometry.clone();
                   geo.deleteAttribute('uv');
+                  geo.deleteAttribute('uv2');
                   return geo;
                 }));
                 mergedGeometry.computeVertexNormals();
