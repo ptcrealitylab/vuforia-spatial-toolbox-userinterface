@@ -1850,11 +1850,11 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.minimized > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
+.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
 
-.analytics-region-card.minimized {
+.analytics-region-card.minimized:not(.pinned) {
     padding: 14px;
     height: 28px;
     line-height: 14px;
