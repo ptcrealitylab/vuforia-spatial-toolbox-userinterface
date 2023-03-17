@@ -64,6 +64,10 @@ export class Analytics {
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+        // Prevent camera control from stealing attempts to scroll the container
+        pinnedRegionCardsContainer.addEventListener('wheel', (event) => {
+            event.stopPropagation();
+        });
         this.container.appendChild(pinnedRegionCardsContainer);
 
         this.pinnedRegionCardsCsvLink = document.createElement('a');

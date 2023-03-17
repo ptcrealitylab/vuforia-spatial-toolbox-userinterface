@@ -191,6 +191,9 @@ export class RegionCard {
             }
             event.stopPropagation();
         });
+        this.labelElement.addEventListener('keypress', (event) => {
+            event.stopPropagation();
+        });
         this.labelElement.addEventListener('keyup', (event) => {
             event.stopPropagation();
 
