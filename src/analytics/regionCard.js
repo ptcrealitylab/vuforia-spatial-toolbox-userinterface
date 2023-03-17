@@ -308,7 +308,20 @@ export class RegionCard {
         if (max < 1000) {
             span.textContent = val.toFixed(1);
         } else {
-            span.textContent = val.toFixed(0);
+            if (val < 1000) {
+                span.textContent = val.toFixed(0);
+            } else {
+                // limit to thousands, e.g. 1234 -> 1.2k
+                let valThousands = (val / 1000).toFixed(1);
+                if (val > 100000) {
+                    valThousands = (val / 1000).toFixed(0);
+                }
+                span.textContent = `${valThousands}K`;
+            }
+        }
+        if (val > max) {
+            // Prevent overflowing scale
+            val = max;
         }
         let hue = (max - val) / (max - min) * 120;
         span.style.color = `hsl(${hue}, 100%, 50%)`;
