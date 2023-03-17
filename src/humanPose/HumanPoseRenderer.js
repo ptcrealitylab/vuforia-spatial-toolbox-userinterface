@@ -58,6 +58,10 @@ export class HumanPoseRenderer {
         // A stack of free instance slots (indices) that a PoseRenderInstance
         // can reuse
         this.freeInstanceSlots = [];
+        this.shownSlots = new Array(maxInstances);
+        for (let i = 0; i < maxInstances; i++) {
+            this.shownSlots[i] = false;
+        }
         this.nextInstanceSlot = 0;
         this.maxInstances = maxInstances;
         this.material = material;
@@ -113,14 +117,20 @@ export class HumanPoseRenderer {
      */
     takeSlot() {
         if (this.freeInstanceSlots.length > 0) {
-            return this.freeInstanceSlots.pop();
+            const takenSlot = this.freeInstanceSlots.pop();
+            this.showSlot(takenSlot);
+            return takenSlot;
         }
+
         if (this.nextInstanceSlot >= this.maxInstances) {
             console.error('out of instances');
             return 0;
         }
+
         const takenSlot = this.nextInstanceSlot;
         this.nextInstanceSlot += 1;
+
+        this.showSlot(takenSlot);
 
         this.jointsMesh.count = JOINTS_PER_POSE * this.nextInstanceSlot;
         this.bonesMesh.count = BONES_PER_POSE * this.nextInstanceSlot;
@@ -128,7 +138,30 @@ export class HumanPoseRenderer {
         return takenSlot;
     }
 
+    showSlot(slot) {
+        this.shownSlots[slot] = true;
+
+        this.setVisible(true);
+    }
+
     hideSlot(slot) {
+        if (!this.shownSlots[slot]) {
+            return;
+        }
+
+        this.shownSlots[slot] = false;
+
+        let anyShown = false;
+        for (let i = 0; i < this.maxInstances; i++) {
+            if (this.shownSlots[i]) {
+                anyShown = true;
+                break;
+            }
+        }
+        if (!anyShown) {
+            this.setVisible(false);
+        }
+
         let zeros = new THREE.Matrix4().set(
             0, 0, 0, 0,
             0, 0, 0, 0,
@@ -150,6 +183,15 @@ export class HumanPoseRenderer {
     leaveSlot(slot) {
         this.freeInstanceSlots.push(slot);
         this.hideSlot(slot);
+    }
+
+    /**
+     * Sets global visibility of human pose renderer
+     * @param {boolean} visible
+     */
+    setVisible(visible) {
+        this.jointsMesh.visible = visible;
+        this.bonesMesh.visible = visible;
     }
 
     /**
@@ -281,7 +323,7 @@ export class HumanPoseRenderer {
             realityEditor.gui.threejsScene.addToScene(this.container);
         }
     }
-    
+
     removeFromParent() {
         this.removeFromScene(this.container.parent);
     }
