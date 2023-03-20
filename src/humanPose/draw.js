@@ -585,6 +585,10 @@ export class HumanPoseAnalyzer {
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
+            this.setAnimationMode(AnimationMode.cursor);
+            // Clear prevAnimationState because we're no longer in a
+            // highlighting state
+            this.prevAnimationState = null;
             return;
         }
         if (this.animationMode !== AnimationMode.region &&
@@ -636,12 +640,12 @@ export class HumanPoseAnalyzer {
             }
             if (!fromSpaghetti) {
                 mesh.setCursorTime(timestamp);
+
+                if (this.animationMode !== AnimationMode.cursor) {
+                    this.setAnimationMode(AnimationMode.cursor);
+                }
             }
-            if (this.animationMode !== AnimationMode.cursor) {
-                this.setAnimationMode(AnimationMode.cursor);
-            }
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+
             this.displayCloneByTimestamp(timestamp);
         }
     }
@@ -781,6 +785,10 @@ export class HumanPoseAnalyzer {
         if (this.animationMode === AnimationMode.cursor) {
             return;
         }
+        // May have not set an animation state
+        if (this.animationStart < 0 || this.animationEnd < 0) {
+            return;
+        }
 
         this.prevAnimationState = {
             animationMode: this.animationMode,
@@ -793,6 +801,7 @@ export class HumanPoseAnalyzer {
      * Resets to the saved animation state after exiting the temporary cursor mode
      */
     restoreAnimationState() {
+        this.hideLastDisplayedClone();
         if (!this.prevAnimationState) {
             return;
         }
@@ -903,7 +912,7 @@ export class HumanPoseAnalyzer {
         let animationDuration = this.animationEnd - this.animationStart;
         let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
         this.animationPosition = this.animationStart + progressClamped;
-        this.displayCloneByTimestamp(this.animationPosition);
+        realityEditor.analytics.setCursorTime(this.animationPosition, true);
     }
 
     /**

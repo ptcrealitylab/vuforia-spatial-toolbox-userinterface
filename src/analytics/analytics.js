@@ -117,9 +117,7 @@ export class Analytics {
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         this.timeline.setHighlightRegion(highlightRegion);
-        if (highlightRegion) {
-            setHighlightRegion(highlightRegion, fromSpaghetti);
-        }
+        setHighlightRegion(highlightRegion, fromSpaghetti);
     }
 
     /**

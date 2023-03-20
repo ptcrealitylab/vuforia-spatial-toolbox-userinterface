@@ -702,10 +702,10 @@ export class Timeline {
 
         if (this.dragMode === DragMode.SELECT &&
             Math.abs(this.timeToX(this.highlightStartTime) - this.mouseX) < 3) {
-            this.setHighlightRegion(null);
+            realityEditor.analytics.setHighlightRegion(null);
+        } else {
+            setAnimationMode(AnimationMode.region);
         }
-
-        setAnimationMode(AnimationMode.region);
 
         this.dragMode = DragMode.NONE;
         realityEditor.analytics.setCursorTime(-1);

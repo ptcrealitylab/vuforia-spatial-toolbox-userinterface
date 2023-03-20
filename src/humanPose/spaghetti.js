@@ -285,7 +285,6 @@ export class SpaghettiMeshPath extends MeshPath {
             this.cursor.visible = false;
         } else {
             this.comparer.setFirstPoint(pointIndex, isHover);
-            setAnimationMode(AnimationMode.regionAll);
         }
         this.updateMeshWithComparer();
         this.updateAnalyticsHighlightRegion();
@@ -301,9 +300,12 @@ export class SpaghettiMeshPath extends MeshPath {
         } else if (typeof possibleSnapIndex === 'number') {
             this.cursorDestination = this.cursorSnapDestination;
         }
+
         this.comparer.setEndPoint(pointIndex);
         this.cursor.visible = true;
         this.updateMeshWithComparer();
+
+        setAnimationMode(AnimationMode.regionAll);
         this.updateAnalyticsHighlightRegion();
         this.prevState = null;
     }
@@ -332,8 +334,8 @@ export class SpaghettiMeshPath extends MeshPath {
                     endTime: Math.max(firstTimestamp, secondTimestamp),
                 }, true);
             } else {
-                realityEditor.analytics.setCursorTime(firstTimestamp, true);
                 setAnimationMode(AnimationMode.cursor);
+                realityEditor.analytics.setCursorTime(firstTimestamp, true);
             }
         }
     }
