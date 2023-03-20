@@ -61,6 +61,7 @@ export class Analytics {
     createNewPinnedRegionCardsContainer() {
         if (this.pinnedRegionCardsContainer) {
             this.container.removeChild(this.pinnedRegionCardsContainer);
+            this.container.removeChild(this.pinnedRegionCardsCsvLink);
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
@@ -74,7 +75,7 @@ export class Analytics {
         this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
         this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
         this.pinnedRegionCardsCsvLink.textContent = 'csv';
-        pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.container.appendChild(this.pinnedRegionCardsCsvLink);
 
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];

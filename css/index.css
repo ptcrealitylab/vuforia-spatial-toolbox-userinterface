@@ -1879,14 +1879,16 @@ Logic Interface CSS
     bottom: 320px; /* guess at timeline top */
     left: 35px;
     padding: 0;
+    padding-right: 8px;
     pointer-events: all;
     overflow-y: scroll;
 }
 
 .analytics-pinned-region-cards-csv {
     position: absolute;
-    top: -34px;
-    left: 56px;
+    top: 46px;
+    left: 92px;
+    pointer-events: all;
 }
 
 .analytics-pinned-region-cards-csv,
