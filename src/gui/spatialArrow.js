@@ -210,6 +210,25 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             
             drawArrowBasedOnWorldPosition(worldPos, indicator.avatarColor, indicator.avatarColorLighter);
         })
+        
+        // displaying off screen arrows for laser beams
+        for (let idx in laserBeamIndicators) {
+            let laserBeam = laserBeamIndicators[idx];
+            drawArrowBasedOnWorldPosition(laserBeam.worldPos, laserBeam.color, laserBeam.colorLighter);
+        }
+    }
+    
+    let laserBeamIndicators = {};
+    function addLaserBeamIndicator(id, worldPos, color, colorLighter) {
+        laserBeamIndicators[id] = {
+            worldPos,
+            color,
+            colorLighter
+        };
+    }
+    
+    function deleteLaserBeamIndicator(id) {
+        delete laserBeamIndicators[id];
     }
     
     function drawIndicatorArrows() {
@@ -225,5 +244,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     exports.initService = initService;
     exports.drawArrowBasedOnWorldPosition = drawArrowBasedOnWorldPosition;
+    exports.addLaserBeamIndicator = addLaserBeamIndicator;
+    exports.deleteLaserBeamIndicator = deleteLaserBeamIndicator;
 
 })(realityEditor.gui.spatialArrow);

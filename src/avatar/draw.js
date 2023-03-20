@@ -207,6 +207,7 @@ createNameSpace("realityEditor.avatar.draw");
                 avatarMeshes[objectKey].pointer.visible = false;
                 avatarMeshes[objectKey].beam.visible = false;
                 avatarMeshes[objectKey].textLabel.style.display = 'none';
+                realityEditor.gui.spatialArrow.deleteLaserBeamIndicator(objectKey);
             }
             return;
         }
@@ -356,7 +357,8 @@ createNameSpace("realityEditor.avatar.draw");
             endWorldPositionArray = realityEditor.sceneGraph.convertToNewCoordSystem(endWorldPositionArray, groundPlaneSceneNode, worldSceneNode);
             endWorldPosition.set(endWorldPositionArray[0], endWorldPositionArray[1], endWorldPositionArray[2]);
         }
-        realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
+        // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
+        realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
     }
 
     // helper to create a box mesh
