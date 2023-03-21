@@ -183,6 +183,11 @@ export class Analytics {
             }, 100);
             return;
         }
+
+        regionCardDescriptions.sort((rcDescA, rcDescB) => {
+            return rcDescA.startTime - rcDescB.startTime;
+        });
+
         for (let desc of regionCardDescriptions) {
             let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
             regionCard.state = RegionCardState.Pinned;
@@ -216,6 +221,11 @@ export class Analytics {
                 label: regionCard.getLabel(),
             };
         });
+
+        allCards.sort((rcDescA, rcDescB) => {
+            return rcDescA.startTime - rcDescB.startTime;
+        });
+
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
