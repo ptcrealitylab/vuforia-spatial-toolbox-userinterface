@@ -44,7 +44,7 @@ export class RegionCard {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onClickPin = this.onClickPin.bind(this);
-        this.onClickView = this.onClickView.bind(this);
+        this.onClickShow = this.onClickShow.bind(this);
 
         this.createCard();
 
@@ -83,7 +83,7 @@ export class RegionCard {
         event.stopPropagation();
     }
 
-    onClickView() {
+    onClickShow() {
         switch (this.state) {
         case RegionCardState.Tooltip:
             this.pin();
@@ -91,6 +91,7 @@ export class RegionCard {
         case RegionCardState.Pinned:
             if (this.displayActive) {
                 realityEditor.analytics.setHighlightRegion(null);
+                realityEditor.analytics.setCursorTime(-1);
             } else {
                 realityEditor.analytics.setHighlightRegion({
                     startTime: this.startTime,
@@ -101,6 +102,7 @@ export class RegionCard {
             this.displayActive = !this.displayActive;
             break;
         }
+        this.updateShowButton();
     }
 
     pin() {
@@ -151,6 +153,23 @@ export class RegionCard {
         if (pinButton) {
             pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
+        this.updateShowButton();
+    }
+
+    updateShowButton() {
+        let showButton = this.element.querySelector('.analytics-region-card-show');
+        if (!showButton) {
+            console.warn('regioncard missing element');
+            return;
+        }
+
+        if (this.state === RegionCardState.Pinned) {
+            showButton.style.display = 'inline';
+        } else {
+            showButton.style.display = 'none';
+        }
+
+        showButton.textContent = this.displayActive ? 'Hide' : 'Show';
     }
 
     createCard() {
@@ -227,12 +246,12 @@ export class RegionCard {
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
 
-        const viewButton = document.createElement('a');
-        viewButton.href = '#';
-        viewButton.classList.add('analytics-region-card-view');
-        viewButton.textContent = 'View';
-        viewButton.addEventListener('click', this.onClickView);
-        this.element.appendChild(viewButton);
+        const showButton = document.createElement('a');
+        showButton.href = '#';
+        showButton.classList.add('analytics-region-card-show');
+        showButton.addEventListener('click', this.onClickShow);
+        this.element.appendChild(showButton);
+        this.updateShowButton();
     }
 
     getMotionSummaryText() {
