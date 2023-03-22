@@ -281,8 +281,8 @@ createNameSpace("realityEditor.gui.glRenderer");
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
-            // you would think you should update canvas.width and canvas.height too, but that breaks
-            // the coordinate system, for a reason I don't understand. Just update style.width and style.height
+            // note: don't need to update canvas.width and height, just style.width and height
+            // because there's no mechanism for sending the new canvas pixel dimensions to the proxied frame
         });
 
         // If we don't have a GL context, give up now

@@ -91,6 +91,8 @@ export class Timeline {
         this.canvas.addEventListener('pointerover', this.onPointerOver);
         this.canvas.addEventListener('pointerout', this.onPointerOut);
         this.canvas.addEventListener('wheel', this.onWheel);
+
+        realityEditor.device.layout.onWindowResized(this.recomputeSize.bind(this));
     }
     
     reset() {
@@ -105,23 +107,27 @@ export class Timeline {
         this.resetBounds();
     }
 
+    recomputeSize() {
+        let rect = this.canvas.getBoundingClientRect();
+        if (rect.width <= 0) {
+            return;
+        }
+
+        this.width = rect.width;
+        this.pixelsPerMs = rect.width / this.widthMs;
+
+        this.canvas.width = rect.width;
+        this.canvas.height = this.height;
+        this.gfx.width = rect.width;
+        this.gfx.height = this.height;
+    }
+
     draw() {
         let dt = Date.now() - this.lastDraw;
         this.lastDraw += dt;
 
         if (this.width < 0) {
-            let rect = this.canvas.getBoundingClientRect();
-            if (rect.width <= 0) {
-                return;
-            }
-
-            this.width = rect.width;
-            this.pixelsPerMs = this.width / this.widthMs;
-
-            this.canvas.width = this.width;
-            this.canvas.height = this.height;
-            this.gfx.width = this.width;
-            this.gfx.height = this.height;
+            this.recomputeSize();
         }
 
         if (this.timeMin > 0 && !this.scrolled) {
