@@ -279,10 +279,10 @@ createNameSpace("realityEditor.gui.glRenderer");
         gl = canvas.getContext('webgl2');
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
-            canvas.width = width;
-            canvas.height = height;
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
+            // you would think you should update canvas.width and canvas.height too, but that breaks
+            // the coordinate system, for a reason I don't understand. Just update style.width and style.height
         });
 
         // If we don't have a GL context, give up now
