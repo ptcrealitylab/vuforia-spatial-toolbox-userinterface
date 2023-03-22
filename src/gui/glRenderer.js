@@ -278,6 +278,13 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.style.height = canvas.height + 'px';
         gl = canvas.getContext('webgl2');
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        });
+
         // If we don't have a GL context, give up now
 
         if (!gl) {
