@@ -55,6 +55,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            renderer.setSize(width, height);
+        });
+
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();

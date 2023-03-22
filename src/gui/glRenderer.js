@@ -278,6 +278,13 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.style.height = canvas.height + 'px';
         gl = canvas.getContext('webgl2');
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            // note: don't need to update canvas.width and height, just style.width and height
+            // because there's no mechanism for sending the new canvas pixel dimensions to the proxied frame
+        });
+
         // If we don't have a GL context, give up now
 
         if (!gl) {
