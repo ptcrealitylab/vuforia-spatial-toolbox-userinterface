@@ -198,22 +198,33 @@ export class Analytics {
         for (let desc of regionCardDescriptions) {
             let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
             regionCard.state = RegionCardState.Pinned;
-            regionCard.setLabel(desc.label || ('Step ' + this.nextStepNumber));
-            this.nextStepNumber += 1;
+            if (desc.label) {
+                regionCard.setLabel(desc.label);
+            }
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
     }
 
     addRegionCard(regionCard) {
+        // Allow for a small amount of inaccuracy in timestamps, e.g. when
+        // switching from live to historical clone source
+        const tolerance = 500;
         for (let pinnedRegionCard of this.pinnedRegionCards) {
-            if (pinnedRegionCard.startTime === regionCard.startTime &&
-                pinnedRegionCard.endTime === regionCard.endTime) {
+            if ((Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
+               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
                 // New region card already exists in the list
+                regionCard.remove();
                 return;
             }
         }
         this.pinnedRegionCards.push(regionCard);
+
+        if (regionCard.getLabel().length === 0) {
+            regionCard.setLabel('Step ' + this.nextStepNumber);
+        }
+
+        this.nextStepNumber += 1;
 
         this.updateCsvExportLink();
     }

@@ -146,7 +146,6 @@ export class RegionCard {
     }
 
     unpin() {
-        console.log('unpin');
         this.remove();
         realityEditor.analytics.unpinRegionCard(this);
     }
@@ -197,7 +196,7 @@ export class RegionCard {
         this.labelElement = document.createElement('div');
         this.labelElement.classList.add('analytics-region-card-label');
         this.labelElement.setAttribute('contenteditable', true);
-        this.setLabel('Step');
+        this.setLabel('');
 
         let debouncedSave = null;
         this.labelElement.addEventListener('keydown', (event) => {
