@@ -1928,10 +1928,10 @@ Logic Interface CSS
 .analytics-region-card-graph-section-value {
 }
 
-.analytics-region-card-pin, .analytics-region-card-view {
+.analytics-region-card-pin, .analytics-region-card-show {
     color: white;
 }
-.analytics-region-card-pin:visited, .analytics-region-card-view:visited {
+.analytics-region-card-pin:visited, .analytics-region-card-show:visited {
     color: white;
 }
 

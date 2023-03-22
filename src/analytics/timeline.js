@@ -94,7 +94,7 @@ export class Timeline {
 
         realityEditor.device.layout.onWindowResized(this.recomputeSize.bind(this));
     }
-    
+
     reset() {
         this.poses = [];
         this.displayRegion = null;
@@ -286,6 +286,8 @@ export class Timeline {
         this.regionCard = new RegionCard(this.container, getPosesInTimeInterval(leftTime, rightTime));
 
         this.regionCard.moveTo(midX, this.height + labelPad);
+
+        realityEditor.analytics.setTimelineRegionCard(this.regionCard);
     }
 
     timeToX(timeMs) {
