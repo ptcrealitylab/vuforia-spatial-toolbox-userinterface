@@ -785,7 +785,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 inverted: inverted
             });
 
-            material.transparent = (Object.keys(materialCullingFrustums).length > 0);
+            material.transparent = true;
+
+            material.onBeforeCompile = function (shader) {
+                console.log("Compiled shader:");
+                console.log(shader.program);
+            };
+
+            // material.transparent = (Object.keys(materialCullingFrustums).length > 0);
             areaTargetMaterials.push(material);
 
             if (animateOnLoad) {

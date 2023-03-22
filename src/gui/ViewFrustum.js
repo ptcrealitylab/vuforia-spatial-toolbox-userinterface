@@ -264,6 +264,24 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
 
                          #include <clipping_planes_fragment>`)
         .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+        
+            float cutoff = 0.25;
+            float maxSaturation = 0.001;
+            bool clipBrightness = gl_FragColor.r > (1.0 - cutoff) && gl_FragColor.g > (1.0 - cutoff) && gl_FragColor.b > (1.0 - cutoff);
+            float maxComponentDifference = max( max(abs(gl_FragColor.r - gl_FragColor.g), abs(gl_FragColor.r - gl_FragColor.b)), abs(gl_FragColor.g - gl_FragColor.b));
+            bool clipSaturation = maxComponentDifference < maxSaturation;
+
+// this is the first try
+            // if (clipBrightness) {
+            //     float brightness = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;
+            //     gl_FragColor.a *= pow(((1.0 - brightness) / cutoff), 2.0);
+            // }
+
+// this is the better one
+            // if (clipSaturation && clipBrightness) {
+            //     gl_FragColor.a *= 1.0 - (maxSaturation - maxComponentDifference) / maxSaturation;
+            // }
+
             // make the texture darker if a client connects
             if (numFrustums > 0 && !clipped) {
                 gl_FragColor.r *= 0.8;
