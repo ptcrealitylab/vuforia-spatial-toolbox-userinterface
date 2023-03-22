@@ -32,6 +32,7 @@ export class Analytics {
         this.loadingHistory = false;
         this.livePlayback = false;
         this.pinnedRegionCards = [];
+        this.activeRegionCard = null;
         this.nextStepNumber = 1;
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
@@ -116,6 +117,12 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
+        if (!highlightRegion && this.activeRegionCard) {
+            // Unexpectedly deactivated from outside of region card logic
+            this.activeRegionCard.displayActive = false;
+            this.activeRegionCard.updateShowButton();
+            this.activeRegionCard = null;
+        }
         this.timeline.setHighlightRegion(highlightRegion);
         setHighlightRegion(highlightRegion, fromSpaghetti);
     }
@@ -290,5 +297,21 @@ export class Analytics {
 
         this.pinnedRegionCardsCsvLink.href = dataUrl;
         // window.open(dataUrl, '_blank');
+    }
+
+    /**
+     * @param {RegionCard} activeRegionCard
+     */
+    setActiveRegionCard(activeRegionCard) {
+        this.activeRegionCard = activeRegionCard;
+    }
+
+    /**
+     * @param {RegionCard} timelineRegionCard
+     */
+    setTimelineRegionCard(timelineRegionCard) {
+        if (this.activeRegionCard) {
+            this.activeRegionCard.setPoses(timelineRegionCard.poses);
+        }
     }
 }
