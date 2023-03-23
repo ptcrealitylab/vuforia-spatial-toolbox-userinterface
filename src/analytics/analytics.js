@@ -196,7 +196,11 @@ export class Analytics {
         });
 
         for (let desc of regionCardDescriptions) {
-            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
+            const poses = getPosesInTimeInterval(desc.startTime, desc.endTime);
+            if (poses.length === 0) {
+                continue;
+            }
+            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, poses);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);
