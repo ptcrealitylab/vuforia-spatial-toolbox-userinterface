@@ -658,16 +658,21 @@ export class HumanPoseAnalyzer {
      * @return {Pose[]} - all poses in the time interval
      */
     getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
-        let clonesList = this.clones.all;
-        if (this.clones.historical.length >= this.clones.live.length) {
-            clonesList = this.clones.historical;
+        function getPoses(clonesList) {
+            const poses = clonesList.map(clone => clone.pose).filter(pose => {
+                return pose.timestamp >= firstTimestamp &&
+                    pose.timestamp <= secondTimestamp;
+            });
+            poses.sort((a, b) => a.timestamp - b.timestamp);
+            return poses;
         }
-        const poses = clonesList.map(clone => clone.pose).filter(pose => {
-            return pose.timestamp >= firstTimestamp &&
-                pose.timestamp <= secondTimestamp;
-        });
-        poses.sort((a, b) => a.timestamp - b.timestamp);
-        return poses;
+
+        const live = getPoses(this.clones.live);
+        if (live.length > 0) {
+            return live;
+        }
+
+        return getPoses(this.clones.historical);
     }
 
     /**
