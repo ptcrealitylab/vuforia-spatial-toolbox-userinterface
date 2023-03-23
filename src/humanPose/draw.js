@@ -658,7 +658,7 @@ export class HumanPoseAnalyzer {
      * @return {Pose[]} - all poses in the time interval
      */
     getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
-        let clonesList = this.clones.all;
+        let clonesList = this.clones.live;
         if (this.clones.historical.length >= this.clones.live.length) {
             clonesList = this.clones.historical;
         }
