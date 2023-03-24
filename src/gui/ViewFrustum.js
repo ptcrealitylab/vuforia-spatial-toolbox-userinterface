@@ -278,9 +278,9 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
             // }
 
 // this is the better one
-            // if (clipSaturation && clipBrightness) {
-            //     gl_FragColor.a *= 1.0 - (maxSaturation - maxComponentDifference) / maxSaturation;
-            // }
+            if (clipSaturation && clipBrightness) {
+                gl_FragColor.a *= 1.0 - (maxSaturation - maxComponentDifference) / maxSaturation;
+            }
 
             // make the texture darker if a client connects
             if (numFrustums > 0 && !clipped) {
