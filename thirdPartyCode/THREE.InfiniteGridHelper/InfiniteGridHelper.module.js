@@ -47,6 +47,9 @@ class InfiniteGridHelper extends Mesh {
                 }
             },
             transparent: true,
+            // depthWrite: false,
+            // depthTest: false,
+            // depthFunc: THREE.LessDepth,
             vertexShader: `
                 varying vec3 worldPosition;
                 uniform float uDistance;

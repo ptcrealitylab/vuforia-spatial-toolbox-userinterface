@@ -229,6 +229,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         if (isProjectionMatrixSet) {
             renderer.clear();
             // render the ground plane visualizer first
+            camera.layers.set(3);
+            renderer.render(scene, camera);
+            renderer.clearDepth();
+            // remote operator CameraVis shader mesh layer is set to 2, therefore we want to set groundPlane holo deck to 3
             camera.layers.set(2);
             renderer.render(scene, camera);
             renderer.clearDepth();

@@ -91,8 +91,10 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorGrid = new THREE.Color('rgb(255, 240, 0)');
             gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
-            gridHelper.layers.set(2);
-            realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+            gridHelper.layers.set(1);
+            console.log('%c rendering the ground plane', 'color: red');
+            realityEditor.gui.threejsScene.addToScene(gridHelper);
+            // realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 
         // don't show origin on devices that don't support AR tracking, because it's to help debug the groundplane tracker
