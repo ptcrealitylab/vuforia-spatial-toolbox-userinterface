@@ -88,7 +88,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
-            const colorGrid = new THREE.Color('rgb(255, 240, 0)');
+            const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
             gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
             gridHelper.layers.set(1);
@@ -197,6 +197,18 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             target.position.set(raycastIntersects[0].point.x, 0, raycastIntersects[0].point.z);
         }
     }
+
+    exports.updateGridStyle = ({color, thickness}) => {
+        if (!gridHelper) return;
+        const THREE = realityEditor.gui.threejsScene.THREE;
+        if (typeof color !== 'undefined') {
+            gridHelper.material.color = new THREE.Color(color);
+            gridHelper.material.uniforms.uColor.value = new THREE.Color(color);
+        }
+        if (typeof thickness !== 'undefined') {
+            gridHelper.material.uniforms.uThickness.value = thickness;
+        }
+    };
 
     exports.initService = initService;
     exports.startVisualization = startVisualization;

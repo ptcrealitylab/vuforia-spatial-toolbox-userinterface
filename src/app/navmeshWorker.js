@@ -62,6 +62,7 @@ const createNavmeshFromFile = (fileName) => {
         gltf.scene.traverse(obj => {
             if (obj.geometry) {
                 obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                obj.geometry.deleteAttribute('uv2'); // Messes with merge if present in some geometries but not others
                 geometries.push(obj.geometry);
             }
         });

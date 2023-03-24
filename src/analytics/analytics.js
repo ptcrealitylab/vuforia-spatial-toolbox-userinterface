@@ -32,6 +32,7 @@ export class Analytics {
         this.loadingHistory = false;
         this.livePlayback = false;
         this.pinnedRegionCards = [];
+        this.activeRegionCard = null;
         this.nextStepNumber = 1;
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
@@ -61,16 +62,21 @@ export class Analytics {
     createNewPinnedRegionCardsContainer() {
         if (this.pinnedRegionCardsContainer) {
             this.container.removeChild(this.pinnedRegionCardsContainer);
+            this.container.removeChild(this.pinnedRegionCardsCsvLink);
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+        // Prevent camera control from stealing attempts to scroll the container
+        pinnedRegionCardsContainer.addEventListener('wheel', (event) => {
+            event.stopPropagation();
+        });
         this.container.appendChild(pinnedRegionCardsContainer);
 
         this.pinnedRegionCardsCsvLink = document.createElement('a');
         this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
         this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
         this.pinnedRegionCardsCsvLink.textContent = 'csv';
-        pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.container.appendChild(this.pinnedRegionCardsCsvLink);
 
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];
@@ -111,10 +117,14 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
-        this.timeline.setHighlightRegion(highlightRegion);
-        if (highlightRegion) {
-            setHighlightRegion(highlightRegion, fromSpaghetti);
+        if (!highlightRegion && this.activeRegionCard) {
+            // Unexpectedly deactivated from outside of region card logic
+            this.activeRegionCard.displayActive = false;
+            this.activeRegionCard.updateShowButton();
+            this.activeRegionCard = null;
         }
+        this.timeline.setHighlightRegion(highlightRegion);
+        setHighlightRegion(highlightRegion, fromSpaghetti);
     }
 
     /**
@@ -180,25 +190,45 @@ export class Analytics {
             }, 100);
             return;
         }
+
+        regionCardDescriptions.sort((rcDescA, rcDescB) => {
+            return rcDescA.startTime - rcDescB.startTime;
+        });
+
         for (let desc of regionCardDescriptions) {
-            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, getPosesInTimeInterval(desc.startTime, desc.endTime));
+            const poses = getPosesInTimeInterval(desc.startTime, desc.endTime);
+            if (poses.length === 0) {
+                continue;
+            }
+            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, poses);
             regionCard.state = RegionCardState.Pinned;
-            regionCard.setLabel(desc.label || ('Step ' + this.nextStepNumber));
-            this.nextStepNumber += 1;
+            if (desc.label) {
+                regionCard.setLabel(desc.label);
+            }
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
     }
 
     addRegionCard(regionCard) {
+        // Allow for a small amount of inaccuracy in timestamps, e.g. when
+        // switching from live to historical clone source
+        const tolerance = 500;
         for (let pinnedRegionCard of this.pinnedRegionCards) {
-            if (pinnedRegionCard.startTime === regionCard.startTime &&
-                pinnedRegionCard.endTime === regionCard.endTime) {
+            if ((Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
+               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
                 // New region card already exists in the list
+                regionCard.remove();
                 return;
             }
         }
         this.pinnedRegionCards.push(regionCard);
+
+        if (regionCard.getLabel().length === 0) {
+            regionCard.setLabel('Step ' + this.nextStepNumber);
+        }
+
+        this.nextStepNumber += 1;
 
         this.updateCsvExportLink();
     }
@@ -210,8 +240,14 @@ export class Analytics {
             return {
                 startTime: regionCard.startTime,
                 endTime: regionCard.endTime,
+                label: regionCard.getLabel(),
             };
         });
+
+        allCards.sort((rcDescA, rcDescB) => {
+            return rcDescA.startTime - rcDescB.startTime;
+        });
+
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
@@ -276,5 +312,21 @@ export class Analytics {
 
         this.pinnedRegionCardsCsvLink.href = dataUrl;
         // window.open(dataUrl, '_blank');
+    }
+
+    /**
+     * @param {RegionCard} activeRegionCard
+     */
+    setActiveRegionCard(activeRegionCard) {
+        this.activeRegionCard = activeRegionCard;
+    }
+
+    /**
+     * @param {RegionCard} timelineRegionCard
+     */
+    setTimelineRegionCard(timelineRegionCard) {
+        if (this.activeRegionCard) {
+            this.activeRegionCard.setPoses(timelineRegionCard.poses);
+        }
     }
 }
