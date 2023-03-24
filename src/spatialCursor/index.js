@@ -288,22 +288,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     let screenX, screenY;
-    let lastScreenX, lastScreenY;
     let isFlying = false;
     function registerKeyboardFlyMode() {
         realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
             isFlying = params.isFlying;
-            let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-            lastScreenX = mousePosition.x;
-            lastScreenY = mousePosition.y;
-            screenX = window.innerWidth / 2;
-            screenY = window.innerHeight / 2;
+            screenX = params.screenX;
+            screenY = params.screenY;
         });
 
         realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
             isFlying = params.isFlying;
-            screenX = lastScreenX;
-            screenY = lastScreenY;
+            screenX = params.screenX;
+            screenY = params.screenY;
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -696,6 +692,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.getRaycastCoordinates = getRaycastCoordinates;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;

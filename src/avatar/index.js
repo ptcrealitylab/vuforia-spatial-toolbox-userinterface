@@ -388,13 +388,27 @@ createNameSpace("realityEditor.avatar");
             writeUsername(myUsername);
         }
 
+        let isFlying = false;
+        let screenX, screenY;
+        realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
+            isFlying = params.isFlying;
+            screenX = params.screenX;
+            screenY = params.screenY;
+        });
+
+        realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
+            isFlying = params.isFlying;
+            screenX = params.screenX;
+            screenY = params.screenY;
+        });
+
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
-                setBeamOn(e.pageX, e.pageY);
+                setBeamOn(screenX, screenY);
                 lastPointerState.position = {
-                    x: e.pageX,
-                    y: e.pageY
+                    x: screenX,
+                    y: screenY
                 };
                 lastPointerState.timestamp = Date.now();
             }
@@ -409,16 +423,20 @@ createNameSpace("realityEditor.avatar");
         });
 
         document.body.addEventListener('pointermove', (e) => {
+            if (!isFlying) {
+                screenX = e.pageX;
+                screenY = e.pageY;
+            }
             if (!isPointerDown || realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (network.isTouchStateFpsLimited()) {
                 return;
             }
             // update the beam position even if not hitting background, as long as we started on the background
-            setBeamOn(e.pageX, e.pageY);
+            setBeamOn(screenX, screenY);
 
             lastPointerState.position = {
-                x: e.pageX,
-                y: e.pageY
+                x: screenX,
+                y: screenY
             };
             lastPointerState.timestamp = Date.now();
         });
@@ -559,6 +577,10 @@ createNameSpace("realityEditor.avatar");
                 }
             }, 100);
         });
+    }
+    
+    exports.getConnectionStatus = function () {
+        return connectionStatus;
     }
 
     exports.initService = initService;

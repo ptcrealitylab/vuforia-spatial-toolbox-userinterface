@@ -12,7 +12,7 @@ createNameSpace("realityEditor.device.keyboardEvents");
     let keyboardCurrentlyOpen = false;
 
     // register normal/flying mode callbacks, so that when enter fly mode in remote operator, spatialCursor & spatialIndicator's screenX & screenY also switches to screen center
-    let isFlying = false;
+    let isFlying = false, lastScreenX, lastScreenY;
 
     /**
      * Public init method sets up module and registers callbacks in other modules
@@ -72,9 +72,20 @@ createNameSpace("realityEditor.device.keyboardEvents");
         if (e.key === 'f' || e.key === 'F') {
             isFlying = !isFlying;
             if (isFlying) {
-                callbackHandler.triggerCallbacks('enterFlyMode', {isFlying: true});
+                let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+                lastScreenX = mousePosition.x;
+                lastScreenY = mousePosition.y;
+                callbackHandler.triggerCallbacks('enterFlyMode', {
+                    isFlying: true,
+                    screenX: window.innerWidth / 2,
+                    screenY: window.innerHeight / 2
+                });
             } else {
-                callbackHandler.triggerCallbacks('enterNormalMode', {isFlying: false});
+                callbackHandler.triggerCallbacks('enterNormalMode', {
+                    isFlying: false,
+                    screenX: lastScreenX,
+                    screenY: lastScreenY
+                });
             }
         }
     }
