@@ -11,7 +11,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let feedbackInterval = null;
     let feedbackTick = 0;
 
-    const MAX_SCAN_TIME = 120;
+    const MAX_SCAN_TIME = 300;
     let timeLeftSeconds = MAX_SCAN_TIME;
 
     let loadingDialog = null;
