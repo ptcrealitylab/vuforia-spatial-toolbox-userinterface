@@ -1125,7 +1125,7 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {HumanPoseRenderInstance} poseRenderInstance - the pose render instance to hide
  */
 function hidePoseRenderInstance(poseRenderInstance) {
-    poseRenderInstance.setVisible(false);
+    poseRenderInstance.setVisible(false); // TODO: delete the instance rather than hide, performance impact of setting up a new instance max every second is negligible
     poseRenderInstance.renderer.markNeedsUpdate();
 }
 
