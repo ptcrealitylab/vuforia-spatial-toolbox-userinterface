@@ -195,9 +195,12 @@ export class HumanPoseRenderInstance {
     }
 
     setVisible(visible) {
+        // MK HACK: too strict to do nothing if the visibility did not change. Other code can 'unhide' the slot
+        /*
         if (this.visible === visible) {
             return;
         }
+        */
 
         if (visible) {
             this.renderer.showSlot(this.slot);
