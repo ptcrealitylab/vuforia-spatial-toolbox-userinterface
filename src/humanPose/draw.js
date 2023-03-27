@@ -1092,12 +1092,18 @@ export class HumanPoseAnalyzer {
             const objectId = clone.pose.metadata.poseObjectId;
             const bestDatum = bestData.find(data => data.objectId === objectId);
             if (!bestDatum) {
+                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
+                    continue;
+                }
                 bestData.push({
                     clone,
                     distance: Math.abs(clone.pose.timestamp - timestamp),
                     objectId
                 });
             } else {
+                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
+                    continue;
+                }
                 const distance = Math.abs(clone.pose.timestamp - timestamp);
                 if (distance < bestDatum.distance) {
                     bestDatum.clone = clone;
