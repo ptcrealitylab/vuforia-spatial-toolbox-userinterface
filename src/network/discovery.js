@@ -68,7 +68,6 @@ createNameSpace("realityEditor.network.discovery");
     function processNewObjectDiscovery(ip, port, id) {
         let url = realityEditor.network.getURL(ip, port, '/object/' + id);
         realityEditor.network.getData(id,  null, null, url, function (objectKey, frameKey, nodeKey, msg) {
-            if (!msg) return;
             if (typeof discoveryMap[ip][id] !== 'undefined') {
                 discoveryMap[ip][id].metadata = {
                     name: msg.name,
@@ -135,50 +134,11 @@ createNameSpace("realityEditor.network.discovery");
         }
     }
 
-    // /**
-    //  * This lets the remote operator or the phone app discover the primary world + all other objects on the primary world server,
-    //  * in the cases where UDP messages aren't working -> the primary world cannot be loaded by typical means
-    //  */
-    // function discoverPrimaryWorldIfNeeded() {
-    //     if (typeof objects[primaryWorld.id] !== 'undefined') return;
-    //
-    //     console.log('TRY TO LOAD OBJECTS DIRECTLY');
-    //
-    //     let netState = realityEditor.network.state;
-    //
-    //     console.log('netState = ', netState);
-    //
-    //     if (!netState) return;
-    //
-    //     let url;
-    //     if (netState.proxyUrl) {
-    //         let ip = netState.proxyUrl; // actually doesn't matter what we pass in, getURL assembles the right URL regardless
-    //         let port = 'direct'; // the value doesn't matter in this implementation, as long as it's not a number
-    //         url = realityEditor.network.getURL(ip, port, '/allObjects/');
-    //     } else {
-    //         let primaryWorldIP = primaryWorld.ip || window.location.hostname || '127.0.0.1';
-    //         url = realityEditor.network.getURL(primaryWorldIP, realityEditor.network.getPortByIp(primaryWorldIP), '/allObjects/');
-    //     }
-    //
-    //     console.log('url = ', url);
-    //
-    //     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
-    //         console.log('discoverObjectsFromServer got all objects', msg);
-    //
-    //         msg.forEach(function(heartbeat) {
-    //             console.log('addHeartbeatObject from /allObjects/', heartbeat);
-    //             realityEditor.network.addHeartbeatObject(heartbeat);
-    //         });
-    //     });
-    // }
-
     exports.setPrimaryWorld = (ip, id) => {
         primaryWorld = {
             ip: ip,
             id: id
         };
-
-        // setTimeout(discoverPrimaryWorldIfNeeded, 5000);
     }
 
     exports.getPrimaryWorldInfo = () => {
