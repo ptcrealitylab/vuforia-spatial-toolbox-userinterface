@@ -193,7 +193,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             createPendingWorldObject(serverIp);
         } else {
             let detectedServers = realityEditor.network.discovery.getDetectedServerIPs({limitToWorldService: true});
-            let randomServerIP = Object.keys(detectedServers)[0];
+            let randomServerIP = Object.keys(detectedServers)[0] || '127.0.0.1';
             //.filter(detectedServer => {
             //    return detectedServer !== '127.0.0.1';
             //})[0];
