@@ -1016,7 +1016,6 @@ export class HumanPoseAnalyzer {
      * @param {number} timestamp - the timestamp to display
      */
     displayClonesByTimestamp(timestamp) {
-        console.log(timestamp);
         if (this.animationMode === AnimationMode.all || this.animationMode === AnimationMode.regionAll) { // Don't do anything if we're rendering all clones
             return;
         }
