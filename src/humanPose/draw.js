@@ -91,7 +91,7 @@ export class HumanPoseAnalyzer {
             live: []
         }; // Array of all clones, entry format: Object3Ds with a pose child
         this.recordingClones = realityEditor.device.environment.isDesktop();
-        this.lastDisplayedClone = null;
+        this.lastDisplayedClones = [];
 
         this.prevAnimationState = null;
         this.animationStart = -1;
@@ -497,8 +497,8 @@ export class HumanPoseAnalyzer {
      */
     resetHistoricalHistoryClones() {
         this.clones.historical.forEach(clone => {
-            if (this.lastDisplayedClone === clone) {
-                this.lastDisplayedClone = null;
+            if (this.lastDisplayedClones.includes(clone)) {
+                this.lastDisplayedClones.splice(this.lastDisplayedClones.indexOf(clone), 1);
             }
             clone.remove();
             this.clones.all.splice(this.clones.all.indexOf(clone), 1);
@@ -513,8 +513,8 @@ export class HumanPoseAnalyzer {
      */
     resetLiveHistoryClones() {
         this.clones.live.forEach(clone => {
-            if (this.lastDisplayedClone === clone) {
-                this.lastDisplayedClone = null;
+            if (this.lastDisplayedClones.includes(clone)) {
+                this.lastDisplayedClones.splice(this.lastDisplayedClones.indexOf(clone), 1);
             }
             clone.remove();
             this.clones.all.splice(this.clones.all.indexOf(clone), 1);
@@ -648,7 +648,7 @@ export class HumanPoseAnalyzer {
                 }
             }
 
-            this.displayCloneByTimestamp(timestamp);
+            this.displayClonesByTimestamp(timestamp);
         }
     }
 
@@ -830,7 +830,7 @@ export class HumanPoseAnalyzer {
      * Resets to the saved animation state after exiting the temporary cursor mode
      */
     restoreAnimationState() {
-        this.hideLastDisplayedClone();
+        this.hideLastDisplayedClones();
         if (!this.prevAnimationState) {
             return;
         }
@@ -889,8 +889,8 @@ export class HumanPoseAnalyzer {
         switch (this.animationMode) {
         case AnimationMode.region:
             // Fully reset the animation when changing
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+            this.hideLastDisplayedClones();
+            this.lastDisplayedClones = [];
             break;
         case AnimationMode.regionAll: {
             this.hideAllClones();
@@ -951,7 +951,7 @@ export class HumanPoseAnalyzer {
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
-        this.hideLastDisplayedClone();
+        this.hideLastDisplayedClones();
     }
 
     /**
@@ -1003,20 +1003,20 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * Hides the current single displayed clone
+     * Hides the current displayed clones
      */
-    hideLastDisplayedClone() {
-        if (this.lastDisplayedClone) {
-            this.lastDisplayedClone.setVisible(false);
-            this.lastDisplayedClone.renderer.markMatrixNeedsUpdate();
-        }
+    hideLastDisplayedClones() {
+        this.lastDisplayedClones.forEach(clone => {
+            clone.setVisible(false);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
     }
 
     /**
-     * Displays the clone with the closest timestamp to the given timestamp
+     * Displays the clones with the closest timestamp to the given timestamp per objectId
      * @param {number} timestamp - the timestamp to display
      */
-    displayCloneByTimestamp(timestamp) {
+    displayClonesByTimestamp(timestamp) {
         if (this.animationMode === AnimationMode.all || this.animationMode === AnimationMode.regionAll) { // Don't do anything if we're rendering all clones
             return;
         }
@@ -1025,23 +1025,30 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        const bestClone = this.getCloneByTimestamp(timestamp);
-        if (!bestClone) {
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+        const bestClones = this.getClonesByTimestamp(timestamp);
+        if (bestClones.length === 0) {
+            this.hideLastDisplayedClones();
+            this.lastDisplayedClones = [];
             return;
         }
-
-        if (this.lastDisplayedClone !== bestClone) {
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = bestClone;
-            bestClone.setVisible(true);
-            bestClone.renderer.markMatrixNeedsUpdate();
-        }
+        
+        const clonesToHide = this.lastDisplayedClones.filter(clone => !bestClones.includes(clone));
+        const clonesToShow = bestClones.filter(clone => !this.lastDisplayedClones.includes(clone));
+        
+        clonesToHide.forEach(clone => {
+            clone.setVisible(false);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
+        clonesToShow.forEach(clone => {
+            clone.setVisible(true);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
+        
+        this.lastDisplayedClones = bestClones;
     }
 
     /**
-     * Returns the clone with the closest timestamp to the given timestamp
+     * Returns the clone with the closest timestamp to the given timestamp, independent of objectId
      * @param {number} timestamp - time in ms
      * @return {HumanPoseRenderInstance} - the clone with the closest timestamp
      */
@@ -1050,24 +1057,55 @@ export class HumanPoseAnalyzer {
             return null;
         }
 
-        let bestClone = null;
-        let distance = 0;
+        let bestClone = this.clones.all[0];
+        let bestDeltaT = Math.abs(this.clones.all[0].pose.timestamp - timestamp);
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
-            if (!bestClone) {
-                bestClone = this.clones.all[i];
-                distance = Math.abs(bestClone.pose.timestamp - timestamp);
-                continue;
-            }
-            let clone = this.clones.all[i];
-            let cloneDistance = Math.abs(clone.pose.timestamp - timestamp);
-            if (cloneDistance < distance) {
+            const clone = this.clones.all[i];
+            const deltaT = Math.abs(clone.pose.timestamp - timestamp);
+            if (deltaT < bestDeltaT) {
                 bestClone = clone;
-                distance = cloneDistance;
+                bestDeltaT = deltaT;
             }
         }
+
         return bestClone;
+    }
+
+    /**
+     * Returns the clones per objectId with the closest timestamp to the given timestamp
+     * @param {number} timestamp - time in ms
+     * @return {HumanPoseRenderInstance[]} - the clones with the closest timestamp per objectId
+     */
+    getClonesByTimestamp(timestamp) {
+        if (this.clones.all.length < 2) {
+            return [];
+        }
+
+        const maxDeltaT = 1000; // ms, don't show clones that are more than 1 second away from the current time
+        let bestData = [];
+
+        // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
+        for (let i = 0; i < this.clones.all.length; i++) {
+            const clone = this.clones.all[i];
+            const objectId = clone.pose.metadata.poseObjectId;
+            const bestDatum = bestData.find(data => data.objectId === objectId);
+            if (!bestDatum) {
+                bestData.push({
+                    clone,
+                    distance: Math.abs(clone.pose.timestamp - timestamp),
+                    objectId
+                });
+            } else {
+                const distance = Math.abs(clone.pose.timestamp - timestamp);
+                if (distance < bestDatum.distance) {
+                    bestDatum.clone = clone;
+                    bestDatum.distance = distance;
+                }
+            }
+        }
+        return bestData.map(bestDatum => bestDatum.clone);
     }
 }
 
