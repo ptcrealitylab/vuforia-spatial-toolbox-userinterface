@@ -1083,7 +1083,7 @@ export class HumanPoseAnalyzer {
             return [];
         }
 
-        const maxDeltaT = 1000; // ms, don't show clones that are more than 1 second away from the current time
+        const maxDeltaT = 100; // ms, don't show clones that are more than 1 second away from the current time
         let bestData = [];
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
