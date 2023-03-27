@@ -68,6 +68,7 @@ createNameSpace("realityEditor.network.discovery");
     function processNewObjectDiscovery(ip, port, id) {
         let url = realityEditor.network.getURL(ip, port, '/object/' + id);
         realityEditor.network.getData(id,  null, null, url, function (objectKey, frameKey, nodeKey, msg) {
+            if (!msg) return;
             if (typeof discoveryMap[ip][id] !== 'undefined') {
                 discoveryMap[ip][id].metadata = {
                     name: msg.name,
