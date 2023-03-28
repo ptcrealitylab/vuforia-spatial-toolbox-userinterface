@@ -1850,11 +1850,11 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.minimized > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
+.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
 
-.analytics-region-card.minimized {
+.analytics-region-card.minimized:not(.pinned) {
     padding: 14px;
     height: 28px;
     line-height: 14px;
@@ -1870,21 +1870,25 @@ Logic Interface CSS
     position: relative;
     margin: 10px 0;
     transform: translateZ(3000px);
-    width: fit-content;
+    width: 15rem;
 }
 
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 80px;
+    bottom: 320px; /* guess at timeline top */
     left: 35px;
     padding: 0;
+    padding-right: 8px;
     pointer-events: all;
+    overflow-y: scroll;
 }
 
 .analytics-pinned-region-cards-csv {
     position: absolute;
-    top: -34px;
-    left: 56px;
+    top: 46px;
+    left: 92px;
+    pointer-events: all;
 }
 
 .analytics-pinned-region-cards-csv,
@@ -1924,9 +1928,28 @@ Logic Interface CSS
 .analytics-region-card-graph-section-value {
 }
 
-.analytics-region-card-pin, .analytics-region-card-view {
+.analytics-region-card-pin, .analytics-region-card-show {
     color: white;
 }
-.analytics-region-card-pin:visited, .analytics-region-card-view:visited {
+.analytics-region-card-pin:visited, .analytics-region-card-show:visited {
     color: white;
+}
+
+#blurredEnvelopeBackground {
+    background-color: #67676760;
+    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(30px);
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    z-index: 1;
+}
+
+.deactivatedIframeOverlay {
+    pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
 }

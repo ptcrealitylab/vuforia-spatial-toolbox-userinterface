@@ -55,6 +55,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            renderer.setSize(width, height);
+        });
+
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
@@ -327,6 +331,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             gltf.scene.traverse(obj => {
                 if (obj.geometry) {
                     obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                    obj.geometry.deleteAttribute('uv2'); // Messes with merge if present in some geometries but not others
                     geometries.push(obj.geometry);
                 }
             });
@@ -463,6 +468,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
                   let geo = child.geometry.clone();
                   geo.deleteAttribute('uv');
+                  geo.deleteAttribute('uv2');
                   return geo;
                 }));
                 mergedGeometry.computeVertexNormals();
@@ -868,6 +874,13 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let projScreenMat = new THREE.Matrix4();
         projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         pos.applyMatrix4(projScreenMat);
+        
+        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
+        let meshPosWrtCamera = meshPosition.clone();
+        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
+        if (meshPosWrtCamera.z > 0) {
+            pos.negate();
+        }
 
         return {
             x: ( pos.x + 1 ) * window.innerWidth / 2,

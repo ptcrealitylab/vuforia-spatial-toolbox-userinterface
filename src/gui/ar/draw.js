@@ -2004,6 +2004,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-object-key", objectKey);
     addIframe.setAttribute("data-node-key", nodeKey);
     addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
+    // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
     addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
     addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
@@ -2225,6 +2226,7 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
     }
 
     globalDOMCache['iframe' + frame.uuid].classList.remove('webGlFrame');
+    globalDOMCache[frame.uuid].classList.remove('deactivatedIframeOverlay');
 
     globalDOMCache['object' + frame.uuid].style.zIndex = '';
 

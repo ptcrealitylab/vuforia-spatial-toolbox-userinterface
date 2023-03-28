@@ -203,6 +203,7 @@ export class HumanPoseRenderInstance {
         */
 
         if (visible) {
+            this.renderer.showSlot(this.slot);
             this.updateJointPositions();
             this.updateBonePositions();
         } else {

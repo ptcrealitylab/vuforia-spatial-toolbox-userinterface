@@ -54,6 +54,7 @@ import {JOINT_TO_INDEX} from './constants.js';
 
             delete nameIdMap[objectToDelete.name];
             delete humanPoseObjects[objectKey];
+            // TODO: clean out live pose render instance for this object
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {

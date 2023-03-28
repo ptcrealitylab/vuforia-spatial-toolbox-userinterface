@@ -125,87 +125,110 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicators = realityEditor.gui.threejsScene.getObjectsByName('cylinderIndicator');
     }
     
-    let finalPosX = 0, finalPosY = 0;
-    
-    function drawArrowsAtIndicatorScreenPositions() {
-        
-        let worldPos = new THREE.Vector3();
+    function drawArrowBasedOnWorldPosition(worldPos, color, colorLighter) {
+        let finalPosX = 0, finalPosY = 0;
         let screenX, screenY;
         let screenBorderFactor = 0.97;
         let desX = 0, desY = 0;
         let angle = 0;
         let k;
         
+        // if the object is off screen, then reverse its original screen position, then add the indicator
+        if (!realityEditor.gui.threejsScene.isPointOnScreen(worldPos)) {
+            let screenXY = realityEditor.gui.threejsScene.getScreenXY(worldPos);
+
+            screenX = screenXY.x;
+            screenY = screenXY.y;
+
+            desX = remap(screenX, 0, screenW, -screenW/2, screenW/2);
+            desY = remap(screenY, 0, screenH, -screenH/2, screenH/2);
+
+            angle = Math.atan2(desY, desX);
+            angle += Math.PI / 2;
+
+            k = (screenY - screenH / 2) / (screenX - screenW / 2);
+
+            if (k < 0) {
+                if (Math.abs(k) < screenRatio) {
+                    if (screenX < screenW / 2) {
+                        // left side bottom half
+                        finalPosX = - screenW / 2;
+                        finalPosY = finalPosX * k;
+                    } else {
+                        // right side top half
+                        finalPosX = screenW / 2;
+                        finalPosY = finalPosX * k;
+                    }
+                } else {
+                    if (screenX < screenW / 2) {
+                        // bottom side left half
+                        finalPosY = screenH / 2;
+                        finalPosX = finalPosY / k;
+                    } else {
+                        // top side right half
+                        finalPosY = - screenH / 2;
+                        finalPosX = finalPosY / k;
+                    }
+                }
+            } else {
+                if (Math.abs(k) < screenRatio) {
+                    if (screenX < screenW / 2) {
+                        // left side top half
+                        finalPosX = - screenW / 2;
+                        finalPosY = finalPosX * k;
+                    } else {
+                        // right side bottom half
+                        finalPosX = screenW / 2;
+                        finalPosY = finalPosX * k;
+                    }
+                } else {
+                    if (screenX < screenW / 2) {
+                        // top side left half
+                        finalPosY = - screenH / 2;
+                        finalPosX = finalPosY / k;
+                    } else {
+                        // bottom side right half
+                        finalPosY = screenH / 2;
+                        finalPosX = finalPosY / k;
+                    }
+                }
+            }
+
+            finalPosX *= screenBorderFactor;
+            finalPosY *= screenBorderFactor;
+
+            drawArrow(finalPosX, finalPosY, angle, 5, color, colorLighter);
+        }
+    }
+    
+    function drawArrowsAtIndicatorScreenPositions() {
+        
+        let worldPos = new THREE.Vector3();
+        
         indicators.forEach((indicator) => {
             indicator.getWorldPosition(worldPos);
             
-            // if the object is off screen, then reverse its original screen position, then add the indicator
-            if (!realityEditor.gui.threejsScene.isPointOnScreen(worldPos)) {
-                let screenXY = realityEditor.gui.threejsScene.getScreenXY(worldPos);
-                
-                screenX = screenXY.x;
-                screenY = screenXY.y;
-
-                desX = remap(screenX, 0, screenW, -screenW/2, screenW/2);
-                desY = remap(screenY, 0, screenH, -screenH/2, screenH/2);
-                
-                angle = Math.atan2(desY, desX);
-                angle += Math.PI / 2;
-
-                k = (screenY - screenH / 2) / (screenX - screenW / 2);
-
-                if (k < 0) {
-                    if (Math.abs(k) < screenRatio) {
-                        if (screenX < screenW / 2) {
-                            // left side bottom half
-                            finalPosX = - screenW / 2;
-                            finalPosY = finalPosX * k;
-                        } else {
-                            // right side top half
-                            finalPosX = screenW / 2;
-                            finalPosY = finalPosX * k;
-                        }
-                    } else {
-                        if (screenX < screenW / 2) {
-                            // bottom side left half
-                            finalPosY = screenH / 2;
-                            finalPosX = finalPosY / k;
-                        } else {
-                            // top side right half
-                            finalPosY = - screenH / 2;
-                            finalPosX = finalPosY / k;
-                        }
-                    }
-                } else {
-                    if (Math.abs(k) < screenRatio) {
-                        if (screenX < screenW / 2) {
-                            // left side top half
-                            finalPosX = - screenW / 2;
-                            finalPosY = finalPosX * k;
-                        } else {
-                            // right side bottom half
-                            finalPosX = screenW / 2;
-                            finalPosY = finalPosX * k;
-                        }
-                    } else {
-                        if (screenX < screenW / 2) {
-                            // top side left half
-                            finalPosY = - screenH / 2;
-                            finalPosX = finalPosY / k;
-                        } else {
-                            // bottom side right half
-                            finalPosY = screenH / 2;
-                            finalPosX = finalPosY / k;
-                        }
-                    }
-                }
-
-                finalPosX *= screenBorderFactor;
-                finalPosY *= screenBorderFactor;
-
-                drawArrow(finalPosX, finalPosY, angle, 5, indicator.avatarColor, indicator.avatarColorLighter);
-            }
+            drawArrowBasedOnWorldPosition(worldPos, indicator.avatarColor, indicator.avatarColorLighter);
         })
+        
+        // displaying off screen arrows for laser beams
+        for (let idx in laserBeamIndicators) {
+            let laserBeam = laserBeamIndicators[idx];
+            drawArrowBasedOnWorldPosition(laserBeam.worldPos, laserBeam.color, laserBeam.colorLighter);
+        }
+    }
+    
+    let laserBeamIndicators = {};
+    function addLaserBeamIndicator(id, worldPos, color, colorLighter) {
+        laserBeamIndicators[id] = {
+            worldPos,
+            color,
+            colorLighter
+        };
+    }
+    
+    function deleteLaserBeamIndicator(id) {
+        delete laserBeamIndicators[id];
     }
     
     function drawIndicatorArrows() {
@@ -220,4 +243,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.drawArrowBasedOnWorldPosition = drawArrowBasedOnWorldPosition;
+    exports.addLaserBeamIndicator = addLaserBeamIndicator;
+    exports.deleteLaserBeamIndicator = deleteLaserBeamIndicator;
+
 })(realityEditor.gui.spatialArrow);
