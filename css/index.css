@@ -1555,9 +1555,29 @@ Logic Interface CSS
     -webkit-transition: all 0.5s ease-out;
 }
 
+.animateAllProperties2000ms {
+    transition: all 2s ease-out;
+    -webkit-transition: all 2s ease-out;
+}
+
 .envelopeAnimationDiv {
     background-color: rgba(255, 255, 255, 0.5);
     visibility: visible;
+}
+
+.temp-anim-div-2 {
+    display: inline-block;
+    position: absolute;
+    background-color: rgb(255,255,255);
+    pointer-events: none;
+    opacity: 0.2;
+    visibility: visible;
+    z-index: 4;
+    transition: all 5s ease-out;
+}
+
+.temp-anim-div-2-anim {
+    opacity: 0;
 }
 
 .transitioningToFullscreen {

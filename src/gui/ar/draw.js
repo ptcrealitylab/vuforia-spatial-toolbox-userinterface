@@ -2246,33 +2246,56 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
             }, 1000);
         }, 50);
         
-        // create a temporary, semi-transparent DOM element in , which then animates to minimize down to the same transform as the frame
-        var envelopeAnimationDiv = document.createElement('div');
-        envelopeAnimationDiv.classList.add('main', 'envelopeAnimationDiv', 'ignorePointerEvents');
-        envelopeAnimationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
-        envelopeAnimationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height;
-        // start with a hard-coded MVP matrix that covers the full screen
-        envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
-        envelopeAnimationDiv.style.opacity = 0.5;
-        document.getElementById('GUI').appendChild(envelopeAnimationDiv);
-
-        // wait a small delay so the transition CSS property applies
-        envelopeAnimationDiv.classList.add('animateAllProperties500ms');
-        setTimeout(function() {
-            // animate the transformation matrix
-            var destinationMatrix = globalDOMCache['object' + frame.uuid].style.webkitTransform.split('(')[1].split(')')[0].split(',').map(function(val) {
-                return parseFloat(val);
-            });
-            destinationMatrix[0] *= 0.5; // scale it down a bit so it minimizes even smaller than the non-fullscreen frame
-            destinationMatrix[5] *= 0.5;
-            envelopeAnimationDiv.style.transform = 'matrix3d(' + destinationMatrix.toString() + ')';
-            
-            // also fade it out and remove it entirely when done
-            envelopeAnimationDiv.style.opacity = 0;
-            setTimeout(function() {
-                envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
-            }, 250);
-        }, 50);
+        // // create a temporary, semi-transparent DOM element in , which then animates to minimize down to the same transform as the frame
+        // var envelopeAnimationDiv = document.createElement('div');
+        // envelopeAnimationDiv.classList.add('main', 'envelopeAnimationDiv', 'ignorePointerEvents');
+        // envelopeAnimationDiv.style.width = globalDOMCache['object' + frame.uuid].style.width;
+        // envelopeAnimationDiv.style.height = globalDOMCache['object' + frame.uuid].style.height;
+        // // start with a hard-coded MVP matrix that covers the full screen
+        // envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+        // envelopeAnimationDiv.style.opacity = 0.5;
+        // document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+        //
+        // // wait a small delay so the transition CSS property applies
+        // envelopeAnimationDiv.classList.add('animateAllProperties2000ms');
+        // setTimeout(function() {
+        //     // animate the transformation matrix
+        //     var destinationMatrix = globalDOMCache['object' + frame.uuid].style.webkitTransform.split('(')[1].split(')')[0].split(',').map(function(val) {
+        //         return parseFloat(val);
+        //     });
+        //     destinationMatrix[0] *= 0.5; // scale it down a bit so it minimizes even smaller than the non-fullscreen frame
+        //     destinationMatrix[5] *= 0.5;
+        //     envelopeAnimationDiv.style.transform = 'matrix3d(' + destinationMatrix.toString() + ')';
+        //    
+        //     // also fade it out and remove it entirely when done
+        //     envelopeAnimationDiv.style.opacity = 0;
+        //     setTimeout(function() {
+        //         envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
+        //     }, 2000);
+        // }, 50);
+        
+        // todo Steve: animate a temp frame fading out, add a removeChild node script at the end
+        // console.log(globalDOMCache['object' + frame.uuid]);
+        const parentDiv = globalDOMCache['object' + frame.uuid];
+        let tempAnimDiv = document.createElement('div');
+        tempAnimDiv.classList.add('temp-anim-div-2');
+        tempAnimDiv.style.transform = 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1)';
+        tempAnimDiv.style.top = '0';
+        tempAnimDiv.style.left = '0';
+        tempAnimDiv.style.width = parentDiv.style.width;
+        tempAnimDiv.style.height = parentDiv.style.height;
+        document.getElementById('GUI').appendChild(tempAnimDiv);
+        setTimeout(() => {
+            tempAnimDiv.style.transform = globalDOMCache['object' + frame.uuid].style.transform;
+            tempAnimDiv.style.width = globalDOMCache['object' + frame.uuid].childNodes[0].style.width;
+            tempAnimDiv.style.height = globalDOMCache['object' + frame.uuid].childNodes[0].style.height;
+            tempAnimDiv.style.top = globalDOMCache['object' + frame.uuid].childNodes[0].style.top;
+            tempAnimDiv.style.left = globalDOMCache['object' + frame.uuid].childNodes[0].style.left;
+            tempAnimDiv.classList.add('temp-anim-div-2-anim');
+            setTimeout(() => {
+                tempAnimDiv.parentElement.removeChild(tempAnimDiv);
+            }, 500);
+        }, 10);
     }
 };
 

@@ -1657,25 +1657,47 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
-                // create a duplicate, temporary DOM element in the same place as the frame
-                var envelopeAnimationDiv = document.createElement('div');
-                envelopeAnimationDiv.classList.add('main');
-                envelopeAnimationDiv.classList.add('envelopeAnimationDiv');
-                envelopeAnimationDiv.classList.add('ignorePointerEvents');
-                envelopeAnimationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
-                envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
-                envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
-                document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+                // // create a duplicate, temporary DOM element in the same place as the frame
+                // var envelopeAnimationDiv = document.createElement('div');
+                // envelopeAnimationDiv.classList.add('main');
+                // envelopeAnimationDiv.classList.add('envelopeAnimationDiv');
+                // envelopeAnimationDiv.classList.add('ignorePointerEvents');
+                // envelopeAnimationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
+                // envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
+                // envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
+                // document.getElementById('GUI').appendChild(envelopeAnimationDiv);
+                //
+                // // wait a small delay so the transition CSS property applies
+                // envelopeAnimationDiv.classList.add('animateAllProperties2000ms');
+                // setTimeout(function() {
+                //     // give it a hard-coded MVP matrix that makes it fill the screen
+                //     envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
+                //     envelopeAnimationDiv.style.opacity = 0;
+                //     setTimeout(function() {
+                //         envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
+                //     }, 2000);
+                // }, 10);
 
-                // wait a small delay so the transition CSS property applies
-                envelopeAnimationDiv.classList.add('animateAllProperties250ms');
-                setTimeout(function() {
-                    // give it a hard-coded MVP matrix that makes it fill the screen
-                    envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
-                    envelopeAnimationDiv.style.opacity = 0;
-                    setTimeout(function() {
-                        envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
-                    }, 250);
+                // todo Steve: add a removeChild node script at the end
+                const parentDiv = globalDOMCache['object' + msgContent.frame];
+                let tempAnimDiv = document.createElement('div');
+                tempAnimDiv.classList.add('temp-anim-div-2');
+                tempAnimDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform;
+                tempAnimDiv.style.width = globalDOMCache['object' + msgContent.frame].childNodes[0].style.width;
+                tempAnimDiv.style.height = globalDOMCache['object' + msgContent.frame].childNodes[0].style.height;
+                tempAnimDiv.style.top = globalDOMCache['object' + msgContent.frame].childNodes[0].style.top;
+                tempAnimDiv.style.left = globalDOMCache['object' + msgContent.frame].childNodes[0].style.left;
+                document.getElementById('GUI').appendChild(tempAnimDiv);
+                setTimeout(() => {
+                    tempAnimDiv.style.transform = 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1)';
+                    tempAnimDiv.style.top = '0';
+                    tempAnimDiv.style.left = '0';
+                    tempAnimDiv.style.width = parentDiv.style.width;
+                    tempAnimDiv.style.height = parentDiv.style.height;
+                    tempAnimDiv.classList.add('temp-anim-div-2-anim');
+                    setTimeout(() => {
+                        // tempAnimDiv.parentElement.removeChild(tempAnimDiv);
+                    }, 500);
                 }, 10);
             }
             
