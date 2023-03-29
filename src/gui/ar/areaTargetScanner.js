@@ -11,7 +11,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     let feedbackInterval = null;
     let feedbackTick = 0;
 
-    const MAX_SCAN_TIME = 120;
+    const MAX_SCAN_TIME = 180;
     let timeLeftSeconds = MAX_SCAN_TIME;
 
     let loadingDialog = null;
@@ -341,7 +341,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             div = document.createElement('div');
             div.id = 'scanGenerateProgressBarContainer';
             if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-                div.style.top = 'calc(50vh + max(32vh, 32vw)/2 + 25px)';
+                div.style.top = 'calc(50vh + max(36vh, 36vw)/2 + 25px)';
             } else {
                 div.style.bottom = '30px';
             }
