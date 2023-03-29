@@ -330,6 +330,7 @@ createNameSpace("realityEditor.avatar");
             if (!connectedAvatarUserProfiles[msgContent.object]) {
                 connectedAvatarUserProfiles[msgContent.object] = {};
             }
+
             // Copy over any present keys
             Object.assign(connectedAvatarUserProfiles[msgContent.object], userProfile);
 
@@ -400,9 +401,7 @@ createNameSpace("realityEditor.avatar");
         connectionStatus.isMyAvatarInitialized = true;
         refreshStatusUI();
 
-        if (isUsernameActive && myUsername) {
-            writeUsername(myUsername);
-        }
+        writeUsername(myUsername);
 
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
