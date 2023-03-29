@@ -80,8 +80,8 @@ createNameSpace('realityEditor.app.callbacks');
                 callback();
             }
             
-            let headerText = 'Needs camera access';
-            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and try again.';
+            let headerText = 'Needs camera and microphone access';
+            let descriptionText = `Please enable camera and microphone access in your device's Settings app, and try again.`;
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
                 headerText, descriptionText, function () {
