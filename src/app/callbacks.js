@@ -88,6 +88,7 @@ createNameSpace('realityEditor.app.callbacks');
                     console.log('closed...');
                 }, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            notification.domElements.container.classList.add('loaderContainerPortraitTall');
             return;
         }
         // projection matrix only needs to be retrieved once
