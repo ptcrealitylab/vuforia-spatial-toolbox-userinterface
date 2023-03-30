@@ -2018,6 +2018,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
     addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
+    // addOverlay.style.background = 'rgba(256, 0, 0, 0.5)';
+    addOverlay.classList.add("tool-color-gradient");
     addOverlay.style.visibility = "hidden";
     addOverlay.style.zIndex = "3";
     if (activeVehicle.developer) {
@@ -2279,7 +2281,7 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
         const parentDiv = globalDOMCache['object' + frame.uuid];
         let tempAnimDiv = document.createElement('div');
         tempAnimDiv.classList.add('temp-anim-div-2');
-        tempAnimDiv.style.transform = 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1)';
+        tempAnimDiv.style.transform = 'matrix3d(643.374, -0.373505, 0.000212662, 0.000212647, 0.372554, 643.38, 0.000554764, 0.000554727, -2.77404, 4.28636, 0.500033, 0.5, -1406.67, 2173.54, 34481.6, 253.541)';
         tempAnimDiv.style.top = '0';
         tempAnimDiv.style.left = '0';
         tempAnimDiv.style.width = parentDiv.style.width;
@@ -2294,8 +2296,8 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
             tempAnimDiv.classList.add('temp-anim-div-2-anim');
             setTimeout(() => {
                 tempAnimDiv.parentElement.removeChild(tempAnimDiv);
-            }, 500);
-        }, 10);
+            },  500);
+        }, 50);
     }
 };
 
