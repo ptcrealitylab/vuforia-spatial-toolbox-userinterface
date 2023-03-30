@@ -60,6 +60,10 @@ createNameSpace("realityEditor.gui.ar.draw");
  ******************************************** update and draw the 3D Interface ****************************************
  **********************************************************************************************************************/
 
+const DEBUG_LOG_DRAW = true;
+function drawLog(str) {
+    if (DEBUG_LOG_DRAW) console.log('%c ' + str, 'color: #990099');
+}
 
 realityEditor.gui.ar.draw.globalCanvas = globalCanvas;
 
@@ -759,6 +763,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             globalDOMCache['iframe' + newNodeKey].setAttribute("onload", 'realityEditor.network.onElementLoad("' + newObjectKey + '","' + newFrameKey + '","' + newNodeKey + '")');
             try {
                 let reloadSrc = globalDOMCache['iframe' + newNodeKey].src;
+                drawLog(`globalDOMCache['iframe' + newNodeKey].src = reloadSrc;`);
                 globalDOMCache['iframe' + newNodeKey].src = reloadSrc; // this is intentionally the same src
             } catch (e) {
                 console.warn('error reloading node src for ' + newNodeKey);
@@ -811,6 +816,8 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         
         var newSrc = realityEditor.network.availableFrames.getFrameSrc(newObjectKey, frame.src);
         try {
+            drawLog(`globalDOMCache['iframe' + newFrameKey].src = newSrc;`);
+
             globalDOMCache['iframe' + newFrameKey].src = newSrc;
         } catch (e) {
             console.warn('error reloading frame src for ' + newFrameKey);
@@ -1237,6 +1244,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             activeElt.classList.add('outsideOfViewport');
                             let iframe = globalDOMCache['iframe' + activeKey];
                             if (iframe) {
+                                drawLog(`iframe.dataset.src = iframe.src;`);
+
                                 iframe.dataset.src = iframe.src;
                                 delete iframe.src;
                                 delete iframe.dataset.doneLoading;
@@ -1250,6 +1259,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                             let iframe = globalDOMCache['iframe' + activeKey];
                             if (iframe && iframe.dataset.src) {
+                                drawLog(`iframe.src = iframe.dataset.src;`);
+
                                 iframe.src = iframe.dataset.src;
                                 delete iframe.dataset.src;
                                 // can detect in onElementLoad whether loaded for first time or reloaded
@@ -1879,7 +1890,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
         
-        console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
+        drawLog("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
 
         this.notLoading = activeKey;
         
@@ -1910,7 +1921,7 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         if (isFrameElement && activeVehicle.location === 'global') {
             // loads frames from server of the object it is being added to
             thisUrl = realityEditor.network.availableFrames.getFrameSrc(objectKey, activeVehicle.src);
-            console.log('addElement with url = ' + thisUrl);
+            drawLog('addElement with url = ' + thisUrl);
         }
         
         // Create DOM elements for everything associated with this frame/node
@@ -1999,6 +2010,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addIframe.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addIframe.classList.add('hiddenFrame');
+    drawLog(`addIframe.src = iframeSrc;`)
     addIframe.src = iframeSrc;
     addIframe.setAttribute("data-frame-key", frameKey);
     addIframe.setAttribute("data-object-key", objectKey);
