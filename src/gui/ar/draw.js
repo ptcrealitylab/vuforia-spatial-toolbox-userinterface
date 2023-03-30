@@ -2248,7 +2248,7 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
 
         const parentDiv = globalDOMCache['object' + frame.uuid];
         let tempAnimDiv = document.createElement('div');
-        tempAnimDiv.classList.add('temp-anim-div-2');
+        tempAnimDiv.classList.add('temp-anim-div');
         tempAnimDiv.style.transform = 'matrix3d(643.374, -0.373505, 0.000212662, 0.000212647, 0.372554, 643.38, 0.000554764, 0.000554727, -2.77404, 4.28636, 0.500033, 0.5, -1406.67, 2173.54, 34481.6, 253.541)';
         tempAnimDiv.style.top = '0';
         tempAnimDiv.style.left = '0';
@@ -2261,7 +2261,7 @@ realityEditor.gui.ar.draw.removeFullscreenFromFrame = function(objectKey, frameK
             tempAnimDiv.style.height = globalDOMCache['object' + frame.uuid].childNodes[0].style.height;
             tempAnimDiv.style.top = globalDOMCache['object' + frame.uuid].childNodes[0].style.top;
             tempAnimDiv.style.left = globalDOMCache['object' + frame.uuid].childNodes[0].style.left;
-            tempAnimDiv.classList.add('temp-anim-div-2-anim');
+            tempAnimDiv.classList.add('temp-anim-div-anim');
             setTimeout(() => {
                 tempAnimDiv.parentElement.removeChild(tempAnimDiv);
             },  500);

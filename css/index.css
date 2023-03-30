@@ -1560,6 +1560,21 @@ Logic Interface CSS
     visibility: visible;
 }
 
+.temp-anim-div {
+    display: inline-block;
+    position: absolute;
+    background-color: rgb(255,255,255);
+    pointer-events: none;
+    opacity: 0.2;
+    visibility: visible;
+    z-index: 4;
+    transition: all 0.3s ease-out;
+}
+
+.temp-anim-div-anim {
+    opacity: 0;
+}
+
 .transitioningToFullscreen {
     display: none;
 }

@@ -1659,7 +1659,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
                 const parentDiv = globalDOMCache['object' + msgContent.frame];
                 let tempAnimDiv = document.createElement('div');
-                tempAnimDiv.classList.add('temp-anim-div-2');
+                tempAnimDiv.classList.add('temp-anim-div');
                 tempAnimDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform;
                 tempAnimDiv.style.width = globalDOMCache['object' + msgContent.frame].childNodes[0].style.width;
                 tempAnimDiv.style.height = globalDOMCache['object' + msgContent.frame].childNodes[0].style.height;
@@ -1672,7 +1672,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
                     tempAnimDiv.style.left = '0';
                     tempAnimDiv.style.width = parentDiv.style.width;
                     tempAnimDiv.style.height = parentDiv.style.height;
-                    tempAnimDiv.classList.add('temp-anim-div-2-anim');
+                    tempAnimDiv.classList.add('temp-anim-div-anim');
                     setTimeout(() => {
                         tempAnimDiv.parentElement.removeChild(tempAnimDiv);
                     }, 500);
