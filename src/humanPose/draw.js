@@ -22,7 +22,7 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
-let childHumanObjectsVisible = false;
+let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -274,11 +274,11 @@ export class HumanPoseAnalyzer {
      * Processes new poses being added to the HumanPoseRenderer
      * @param {Pose} pose - the pose renderer that was updated
      * @param {boolean} historical - whether the pose is historical or live
-     * @param {boolean} skipLine - whether to add to history line
      */
     poseUpdated(pose, historical, skipLine) {
         this.addCloneFromPose(pose, historical);
-        if(!skipLine) {
+        if(!pose.metadata.poseHasParent) {  
+            // add to history line non-auxiliary poses
             this.updateHistoryLines(pose, historical);
         }
     }
@@ -320,8 +320,9 @@ export class HumanPoseAnalyzer {
             this.clones.live.push(poseRenderInstance);
         }
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
+        const canBeVisible = childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
-            poseRenderInstance.setVisible(true);
+            poseRenderInstance.setVisible(canBeVisible);
         } else {
             poseRenderInstance.setVisible(false);
         }
@@ -788,7 +789,8 @@ export class HumanPoseAnalyzer {
 
         if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clones.all) {
-                clone.setVisible(true);
+                const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+                clone.setVisible(canBeVisible);
                 clone.renderer.markMatrixNeedsUpdate();
             }
             return;
@@ -979,11 +981,12 @@ export class HumanPoseAnalyzer {
             if (clone.pose.timestamp > end) {
                 break;
             }
-            if (clone.visible === visible) {
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            if (clone.visible === (visible && canBeVisible)) {
                 continue;
             }
             clone.renderer.markMatrixNeedsUpdate();
-            clone.setVisible(visible);
+            clone.setVisible(visible && canBeVisible);
         }
     }
 
@@ -992,7 +995,8 @@ export class HumanPoseAnalyzer {
      */
     showAllClones() {
         this.clones.all.forEach(clone => {
-            clone.setVisible(true);
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
     }
@@ -1045,7 +1049,8 @@ export class HumanPoseAnalyzer {
             clone.renderer.markMatrixNeedsUpdate();
         });
         clonesToShow.forEach(clone => {
-            clone.setVisible(true);
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
         
@@ -1055,7 +1060,7 @@ export class HumanPoseAnalyzer {
     /**
      * Returns the clone with the closest timestamp to the given timestamp, independent of objectId
      * @param {number} timestamp - time in ms
-     * @return {HumanPoseRenderInstance} - the clone with the closest timestamp
+     * @return {HumanPoseRenderInstance | null} - the clone with the closest timestamp
      */
     getCloneByTimestamp(timestamp) {
         if (this.clones.all.length < 2) {
@@ -1068,6 +1073,8 @@ export class HumanPoseAnalyzer {
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
             const clone = this.clones.all[i];
+            if (clone.pose.metadata.poseHasParent)
+                continue;
             const deltaT = Math.abs(clone.pose.timestamp - timestamp);
             if (deltaT < bestDeltaT) {
                 bestClone = clone;
@@ -1255,7 +1262,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     poseRenderInstance.setVisible(childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
-    humanPoseAnalyzer.poseUpdated(pose, false, poseHasParent);
+    humanPoseAnalyzer.poseUpdated(pose, false);
     if (realityEditor.analytics) {
         realityEditor.analytics.appendPose({
             time: timestamp,
