@@ -1082,7 +1082,7 @@ export class HumanPoseAnalyzer {
             return [];
         }
 
-        const maxDeltaT = 100; // ms, don't show clones that are more than 1 second away from the current time
+        const maxDeltaT = 100; // ms, don't show clones that are more than some time interval away from the current time
         let bestData = [];
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
@@ -1168,8 +1168,13 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {HumanPoseRenderInstance} poseRenderInstance - the pose render instance to hide
  */
 function hidePoseRenderInstance(poseRenderInstance) {
+    /*
     poseRenderInstance.setVisible(false); // TODO: delete the instance rather than hide, performance impact of setting up a new instance max every second is negligible
     poseRenderInstance.renderer.markNeedsUpdate();
+    */
+    poseRenderInstance.remove();
+    poseRenderInstance.renderer.markNeedsUpdate();
+    delete poseRenderInstances[poseRenderInstance.id];  
 }
 
 /**
@@ -1190,6 +1195,7 @@ function updatePoseRenderer(poseObject, timestamp) {
         hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = null;
     }
     hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => hidePoseRenderInstance(poseRenderInstance), 1000);
+    renderer.markNeedsUpdate();
 }
 
 /**
@@ -1235,7 +1241,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
         }
     }
 
-    const poseHasParent = Boolean(poseObject.parent);
+    const poseHasParent = !!poseObject.parent;
     const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: poseHasParent});
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);

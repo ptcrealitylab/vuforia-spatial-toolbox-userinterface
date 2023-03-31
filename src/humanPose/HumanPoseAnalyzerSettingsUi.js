@@ -24,6 +24,10 @@ export class HumanPoseAnalyzerSettingsUi {
                                 <option value="Sample Option">This should only display if something is broken with this.populateSelects()</option>
                             </select>
                         </div>
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">View auxiliary poses</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-child-human-poses">
+                        </div>
                     </div>
                 </div>
                 <div class="hpa-settings-section">
@@ -36,10 +40,6 @@ export class HumanPoseAnalyzerSettingsUi {
                         <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
                             <div class="hpa-settings-section-row-label">View Spaghetti Lines</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-live-history-lines">
-                        </div>
-                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">View auxiliary poses</div>
-                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-child-human-poses">
                         </div>
                         <div class="hpa-settings-section-row">
                             <div class="hpa-settings-section-row-button" id="hpa-settings-reset-history">Clear Live Data</div>
