@@ -274,10 +274,13 @@ export class HumanPoseAnalyzer {
      * Processes new poses being added to the HumanPoseRenderer
      * @param {Pose} pose - the pose renderer that was updated
      * @param {boolean} historical - whether the pose is historical or live
+     * @param {boolean} skipLine - whether to add to history line
      */
-    poseUpdated(pose, historical) {
+    poseUpdated(pose, historical, skipLine) {
         this.addCloneFromPose(pose, historical);
-        this.updateHistoryLines(pose, historical);
+        if(!skipLine) {
+            this.updateHistoryLines(pose, historical);
+        }
     }
 
     /**
@@ -360,6 +363,9 @@ export class HumanPoseAnalyzer {
         const updatedHistoryLines = [];
         this.lenses.forEach(lens => {
             poses.forEach(pose => {
+                if (pose.metadata.poseHasParent) {
+                    return;
+                }
                 const updatedHistoryLine = this.addPointToHistoryLine(lens, pose, historical, false);
                 if (!updatedHistoryLines.includes(updatedHistoryLine)) {
                     updatedHistoryLines.push(updatedHistoryLine);
@@ -1249,7 +1255,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     poseRenderInstance.setVisible(childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
-    humanPoseAnalyzer.poseUpdated(pose, false);
+    humanPoseAnalyzer.poseUpdated(pose, false, poseHasParent);
     if (realityEditor.analytics) {
         realityEditor.analytics.appendPose({
             time: timestamp,
