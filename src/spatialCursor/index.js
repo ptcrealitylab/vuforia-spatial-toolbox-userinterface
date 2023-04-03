@@ -314,10 +314,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
     }
 
-    let hasUpdated = false;
+    let hasSubscribedToUpdates = false;
     function update() {
-        if (hasUpdated) return;
-        hasUpdated = true;
+        if (hasSubscribedToUpdates) return;
+        hasSubscribedToUpdates = true;
         realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
     }
 
