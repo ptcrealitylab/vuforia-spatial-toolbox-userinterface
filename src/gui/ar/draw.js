@@ -2019,7 +2019,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     // addOverlay.style.background = 'rgba(256, 0, 0, 0.5)';
-    addOverlay.classList.add("tool-color-gradient");
+    // addOverlay.classList.add("tool-color-gradient");
     addOverlay.style.visibility = "hidden";
     addOverlay.style.zIndex = "3";
     if (activeVehicle.developer) {
