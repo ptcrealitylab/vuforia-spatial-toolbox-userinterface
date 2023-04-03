@@ -2019,7 +2019,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addOverlay.style.left = ((globalStates.height - activeVehicle.frameSizeX) / 2) + "px";
     addOverlay.style.top = ((globalStates.width - activeVehicle.frameSizeY) / 2) + "px";
     addOverlay.style.visibility = "hidden";
-    addOverlay.style.zIndex = "3";
+    addOverlay.style.zIndex = "-1";
+    // addOverlay.classList.add('tool-color-gradient');
     if (activeVehicle.developer) {
         addOverlay.style["touch-action"] = "none";
     }
