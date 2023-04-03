@@ -1657,31 +1657,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
-                // // create a duplicate, temporary DOM element in the same place as the frame
-                // var envelopeAnimationDiv = document.createElement('div');
-                // envelopeAnimationDiv.classList.add('main');
-                // envelopeAnimationDiv.classList.add('envelopeAnimationDiv');
-                // envelopeAnimationDiv.classList.add('ignorePointerEvents');
-                // envelopeAnimationDiv.style.width = globalDOMCache['object' + msgContent.frame].style.width;
-                // envelopeAnimationDiv.style.height = globalDOMCache['object' + msgContent.frame].style.height;
-                // envelopeAnimationDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform; // start with same transform as the iframe
-                // document.getElementById('GUI').appendChild(envelopeAnimationDiv);
-                //
-                // // wait a small delay so the transition CSS property applies
-                // envelopeAnimationDiv.classList.add('animateAllProperties2000ms');
-                // setTimeout(function() {
-                //     // give it a hard-coded MVP matrix that makes it fill the screen
-                //     envelopeAnimationDiv.style.transform = "matrix3d(284.7391935492032, 3.070340532377773, 0.0038200291675306924, 0.003834921258919453, -3.141247565648438, 284.35804025980104, 0.011905637861498192, 0.011900616291666024, 20.568534190244556, 9.715687705148639, -0.6879540871592961, -0.6869158438452686, -1268.420885449479, 86.38923398120664, 100200, 260.67004803237324)";
-                //     envelopeAnimationDiv.style.opacity = 0;
-                //     setTimeout(function() {
-                //         envelopeAnimationDiv.parentElement.removeChild(envelopeAnimationDiv);
-                //     }, 2000);
-                // }, 10);
-
-                
                 const parentDiv = globalDOMCache['object' + msgContent.frame];
                 let tempAnimDiv = document.createElement('div');
-                tempAnimDiv.classList.add('temp-anim-div-2');
+                tempAnimDiv.classList.add('temp-anim-div');
                 tempAnimDiv.style.transform = globalDOMCache['object' + msgContent.frame].style.transform;
                 tempAnimDiv.style.width = globalDOMCache['object' + msgContent.frame].childNodes[0].style.width;
                 tempAnimDiv.style.height = globalDOMCache['object' + msgContent.frame].childNodes[0].style.height;
@@ -1689,12 +1667,15 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempAnimDiv.style.left = globalDOMCache['object' + msgContent.frame].childNodes[0].style.left;
                 document.getElementById('GUI').appendChild(tempAnimDiv);
                 setTimeout(() => {
+                    // To obtain this hard-coded matrix3d(), I added a tool, closed it to reveal the icon, and moved the camera towards the tool, 
+                    // so that it almost fills up the screen in the center. And then I get the matrix3d of the object that the tool is attached to. 
+                    // Very hacky, hope to make it procedural in the future
                     tempAnimDiv.style.transform = 'matrix3d(643.374, -0.373505, 0.000212662, 0.000212647, 0.372554, 643.38, 0.000554764, 0.000554727, -2.77404, 4.28636, 0.500033, 0.5, -1406.67, 2173.54, 34481.6, 253.541)';
                     tempAnimDiv.style.top = '0';
                     tempAnimDiv.style.left = '0';
                     tempAnimDiv.style.width = parentDiv.style.width;
                     tempAnimDiv.style.height = parentDiv.style.height;
-                    tempAnimDiv.classList.add('temp-anim-div-2-anim');
+                    tempAnimDiv.classList.add('temp-anim-div-anim');
                     setTimeout(() => {
                         tempAnimDiv.parentElement.removeChild(tempAnimDiv);
                     }, 500);
