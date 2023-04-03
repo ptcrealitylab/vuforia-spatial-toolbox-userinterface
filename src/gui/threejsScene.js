@@ -95,7 +95,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
         scene.environment = neutralEnvironment;
 
-        renderScene(); // update loop
+        // this triggers with a requestAnimationFrame on remote operator,
+        // or at frequency of Vuforia updates on mobile
+        realityEditor.gui.ar.draw.addUpdateListener(renderScene);
 
         if (DISPLAY_ORIGIN_BOX) {
             realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
@@ -160,6 +162,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
+        // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
         });
@@ -249,8 +252,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             camera.layers.set(0);
             renderer.render(scene, camera);
         }
-
-        requestAnimationFrame(renderScene);
     }
 
     function toggleDisplayOriginBoxes(newValue) {

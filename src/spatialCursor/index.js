@@ -318,7 +318,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function update() {
         if (hasUpdated) return;
         hasUpdated = true;
-        realityEditor.gui.ar.draw.addUpdateListener(updateLoop);
+        realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
     }
 
     function updateLoop() {
