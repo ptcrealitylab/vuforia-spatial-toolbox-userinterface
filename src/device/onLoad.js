@@ -453,7 +453,16 @@ realityEditor.device.onload = function () {
     
     if (realityEditor.device.initFunctions.length === 0) {
         realityEditor.app.promises.didGrantNetworkPermissions().then(success => {
-            realityEditor.app.callbacks.receiveNetworkPermissions(success);
+            // network permissions are no longer required for the app to function, but we can
+            // provide UI feedback if they try to use a feature (discovering unknown servers) that relies on this
+            if (typeof success === 'boolean') {
+                realityEditor.device.environment.variables.hasLocalNetworkAccess = success;
+            }
+
+            // start the AR framework in native iOS
+            realityEditor.app.promises.getVuforiaReady().then(success => {
+                realityEditor.app.callbacks.vuforiaIsReady(success);
+            });
         });
     } else {
         realityEditor.device.initFunctions.forEach(function(initFunction) {

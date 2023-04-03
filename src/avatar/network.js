@@ -135,11 +135,16 @@ createNameSpace("realityEditor.avatar.network");
         return Date.now() - lastWriteSpatialCursorTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
     }
 
-    // write the username into the avatar object's storage node
-    function sendUserProfile(keys, name) {
+    /**
+     * write the user profile into the avatar object's storage node
+     * @param {Object} keys - where to store avatar's data
+     * @param {string} name
+     * @param {string?} providerId - optional associated webrtc provider id
+     */
+    function sendUserProfile(keys, name, providerId) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
-            // right now the profile only contains a name, but this can be extended in the future
-            name: name
+            name: name,
+            providerId: providerId,
         });
     }
 

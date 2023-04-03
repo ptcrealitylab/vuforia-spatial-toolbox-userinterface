@@ -696,6 +696,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.getRaycastCoordinates = getRaycastCoordinates;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
