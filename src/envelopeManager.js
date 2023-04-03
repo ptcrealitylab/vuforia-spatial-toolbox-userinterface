@@ -149,6 +149,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
+        if (knownEnvelopes[frameId].isOpen) return;
+
         knownEnvelopes[frameId].isOpen = true;
         knownEnvelopes[frameId].isMinimized = false;
 
@@ -182,6 +184,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
+        if (!knownEnvelopes[frameId].isOpen) return;
+
         knownEnvelopes[frameId].isOpen = false;
         knownEnvelopes[frameId].isMinimized = false;
 

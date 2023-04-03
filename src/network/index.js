@@ -625,7 +625,9 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    console.log('updateObject', origin, remote, objectKey);
+    const oldCount = Object.keys(origin.frames).length;
+    const newCount = Object.keys(remote.frames).length;
+    console.log(`updateObject ${objectKey} - old has ${oldCount} frames, new has ${newCount}`);
 
     origin.x = remote.x;
     origin.y = remote.y;
@@ -637,6 +639,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
     // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
     for (let frameKey in remote.frames) {
+        let prevVisualization = origin.frames[frameKey] ? origin.frames[frameKey].visualization : null;
+        let newVisualization = remote.frames[frameKey] ? remote.frames[frameKey].visualization : null;
+
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
@@ -683,8 +688,11 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         // TODO: invert dependency
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
 
-        if (globalDOMCache["iframe" + frameKey]) {
+        // this makes the tools load properly when pulling out of screens, pushing into screens
+        let visualizationChanged = prevVisualization && newVisualization && prevVisualization !== newVisualization;
+        if (globalDOMCache["iframe" + frameKey] && visualizationChanged) {
             if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
+                console.log('reload the frame because visualization changed');
                 realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
@@ -926,7 +934,6 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (typeof thisAction.reloadObject !== "undefined") {
-        console.log("gotdata");
 
         if (thisAction.reloadObject.object in objects) {
 
@@ -1771,62 +1778,6 @@ realityEditor.network.onInternalPostMessage = function (e) {
         }
     }
 
-    if (typeof msgContent.createNode !== "undefined") {
-
-        if (msgContent.createNode.noDuplicate) {
-            // check if a node with this name already exists on this frame
-            var frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-            let matchingNodeKey = null;
-            var nodeNames = Object.keys(frame.nodes).map(function(nodeKey) {
-                matchingNodeKey = nodeKey;
-                return frame.nodes[nodeKey].name;
-            });
-
-            // ensure loyalty of this node is changed to groundplane even if it already exists
-            if (msgContent.createNode.attachToGroundPlane && matchingNodeKey) {
-                realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, matchingNodeKey);
-            }
-
-            if (nodeNames.indexOf(msgContent.createNode.name) > -1) {
-                console.log('don\'t duplicate node');
-                return;
-            }
-        }
-
-        let node = new Node();
-        node.name = msgContent.createNode.name;
-        node.frameId = msgContent.frame;
-        node.objectId = msgContent.object;
-        var nodeKey = node.frameId + msgContent.createNode.name;// + realityEditor.device.utilities.uuidTime();
-        node.uuid = nodeKey;
-        var thisObject = realityEditor.getObject(msgContent.object);
-        let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-        if (typeof msgContent.createNode.x !== 'undefined') {
-            node.x = msgContent.createNode.x;
-        } else {
-            node.x = (-200 + Math.random() * 400);
-        }
-        if (typeof msgContent.createNode.y !== 'undefined') {
-            node.y = msgContent.createNode.y;
-        } else {
-            node.y = (-200 + Math.random() * 400);
-        }
-
-        if (typeof msgContent.createNode.nodeType !== 'undefined') {
-            node.type = msgContent.createNode.nodeType;
-        }
-
-        thisFrame.nodes[nodeKey] = node;
-
-        realityEditor.sceneGraph.addNode(node.objectId, node.frameId, nodeKey, node);
-
-        if (msgContent.createNode.attachToGroundPlane) {
-            realityEditor.sceneGraph.attachToGroundPlane(msgContent.object, msgContent.frame, nodeKey);
-        }
-
-        realityEditor.network.postNewNode(thisObject.ip, msgContent.object, msgContent.frame, nodeKey, node);
-    }
-
     if (typeof msgContent.moveNode !== "undefined") {
         let thisFrame = realityEditor.getFrame(msgContent.object, msgContent.frame);
 
@@ -2043,55 +1994,14 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if (typeof msgContent.initNode !== 'undefined') {
         let nodeData = msgContent.initNode.nodeData;
         let nodeKey = msgContent.frame + nodeData.name;
+        realityEditor.network.createNode(msgContent.object, msgContent.frame, nodeKey, nodeData);
+    }
 
-        let frame = realityEditor.getFrame(msgContent.object, msgContent.frame);
-
-        // this function can be called multiple times... only set up the new node if it doesnt already exist
-        if (frame && typeof frame.nodes[nodeKey] === 'undefined') {
-            console.log('creating node ' + nodeKey);
-            var newNode = new Node();
-            frame.nodes[nodeKey] = newNode;
-            newNode.objectId = msgContent.object;
-            newNode.frameId = msgContent.frame;
-            newNode.name = nodeData.name;
-
-            if (typeof nodeData.type !== 'undefined') {
-                newNode.type = nodeData.type;
-            }
-            if (typeof nodeData.x !== 'undefined') {
-                newNode.x = nodeData.x;
-            } else {
-                newNode.x = realityEditor.device.utilities.randomIntInc(0, 200) - 100; // nodes are given a random position if not specified
-            }
-            if (typeof nodeData.y !== 'undefined') {
-                newNode.y = nodeData.y;
-            } else {
-                newNode.y = realityEditor.device.utilities.randomIntInc(0, 200) - 100;
-            }
-            if (typeof nodeData.scaleFactor !== 'undefined') {
-                newNode.scale = nodeData.scaleFactor;
-            }
-            if (typeof nodeData.defaultValue !== 'undefined') {
-                newNode.data.value = nodeData.defaultValue;
-            }
-
-            realityEditor.sceneGraph.addNode(newNode.objectId, newNode.frameId, nodeKey, newNode);
-
-            // post node to server
-            let object = realityEditor.getObject(msgContent.object);
-            realityEditor.network.postNewNode(object.ip, msgContent.object, msgContent.frame, nodeKey, newNode, function(response) {
-                // node data from server, taken from template (e.g. invisible status)
-                console.log('postNewNode response: ', response);
-
-                if (response.node) {
-                    let serverNode = JSON.parse(response.node);
-                    let thisNode = object.frames[msgContent.frame].nodes[nodeKey];
-                    for (let key in serverNode) {
-                        thisNode[key] = serverNode[key];
-                    }
-                }
-            });
-        }
+    // this is deprecated alias that can be used instead of initNode
+    if (typeof msgContent.createNode !== "undefined") {
+        let nodeData = msgContent.createNode;
+        let nodeKey = msgContent.frame + nodeData.name;
+        realityEditor.network.createNode(msgContent.object, msgContent.frame, nodeKey, nodeData);
     }
 
     if (typeof msgContent.useWebGlWorker !== 'undefined') {
@@ -2206,6 +2116,56 @@ realityEditor.network.onInternalPostMessage = function (e) {
         realityEditor.network.setPinned(msgContent.object, msgContent.frame, msgContent.setPinned);
     }
 };
+
+/**
+ * Call this when a tool uses initNode or sendCreateNode to add a new node to the tool
+ * @param {string} objectKey
+ * @param {string} frameKey
+ * @param {string} nodeKey
+ * @param {Object} nodeData
+ */
+realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeData) {
+    let frame = realityEditor.getFrame(objectKey, frameKey);
+    if (!frame) return;
+    if (typeof frame.nodes[nodeKey] !== 'undefined') return; // don't create the node if it already exists
+    console.log('creating node ' + nodeKey);
+
+    let node = new Node();
+    frame.nodes[nodeKey] = node;
+    
+    node.objectId = objectKey;
+    node.frameId = frameKey;
+    node.name = nodeData.name;
+    
+    function getRandomPosition() {
+        return realityEditor.device.utilities.randomIntInc(0, 200) - 100;
+    }
+    
+    // assign properties from the nodeData, but only if they exist
+    node.type = (typeof nodeData.type !== 'undefined' && nodeData.type) || node.type;
+    node.x = (typeof nodeData.x !== 'undefined' && nodeData.x) || getRandomPosition();
+    node.y = (typeof nodeData.y !== 'undefined' && nodeData.y) || getRandomPosition();
+    node.scale = (typeof nodeData.scaleFactor !== 'undefined' && nodeData.scaleFactor) || node.scale;
+    node.data.value = (typeof nodeData.defaultValue !== 'undefined' && nodeData.defaultValue) || node.data.value;
+    
+    realityEditor.sceneGraph.addNode(objectKey, frameKey, nodeKey, node);
+    
+    if (nodeData.attachToGroundPlane) {
+        realityEditor.sceneGraph.attachToGroundPlane(objectKey, frameKey, nodeKey);
+    }
+    
+    // post node to server
+    let object = realityEditor.getObject(objectKey);
+    realityEditor.network.postNewNode(object.ip, objectKey, frameKey, nodeKey, node, (response) => {
+        console.log('postNewNode response: ', response);
+        if (!response.node) return;
+        
+        let serverNode = JSON.parse(response.node);
+        for (let key in serverNode) {
+            node[key] = serverNode[key]; // update local node to match server node
+        }
+    });
+}
 
 realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName, msgContent) {
     let tempThisObject = realityEditor.getFrame(objectKey, frameKey);
