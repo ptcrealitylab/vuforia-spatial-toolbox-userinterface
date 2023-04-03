@@ -275,7 +275,7 @@ export class HumanPoseAnalyzer {
      * @param {Pose} pose - the pose renderer that was updated
      * @param {boolean} historical - whether the pose is historical or live
      */
-    poseUpdated(pose, historical, skipLine) {
+    poseUpdated(pose, historical) {
         this.addCloneFromPose(pose, historical);
         if(!pose.metadata.poseHasParent) {  
             // add to history line non-auxiliary poses
