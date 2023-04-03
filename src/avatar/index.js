@@ -21,8 +21,8 @@ createNameSpace("realityEditor.avatar");
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
     let avatarCursorStates = {}; // data received from avatars' cursorState property in their storage node
-    let avatarUserProfiles = {}; // data received from avatars' userProfile property in their storage node
-    let connectedAvatarNames = {}; // similar to avatarObjects, but maps objectKey -> name or null
+    let avatarNames = {}; // names received from avatars' userProfile property in their storage node
+    let connectedAvatarUserProfiles = {}; // similar to avatarObjects, but maps objectKey -> user profile or undefined
     let isPointerDown = false;
     let lastPointerState = {
         position: null,
@@ -34,6 +34,7 @@ createNameSpace("realityEditor.avatar");
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let isUsernameActive = false;
     let myUsername = null;
+    let myProviderId = '';
 
     // these are used for raycasting against the environment when sending laser beams
     let cachedWorldObject = null;
@@ -98,17 +99,17 @@ createNameSpace("realityEditor.avatar");
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
-            draw.renderAvatarIconList(connectedAvatarNames);
+            draw.renderAvatarIconList(connectedAvatarUserProfiles);
         });
 
         network.onAvatarDeleted((objectKey) => {
             delete avatarObjects[objectKey];
-            delete connectedAvatarNames[objectKey];
+            delete connectedAvatarUserProfiles[objectKey];
             delete avatarTouchStates[objectKey];
             delete avatarCursorStates[objectKey];
-            delete avatarUserProfiles[objectKey];
+            delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
-            draw.renderAvatarIconList(connectedAvatarNames);
+            draw.renderAvatarIconList(connectedAvatarUserProfiles);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
             if (objectKey === myAvatarId) {
@@ -118,7 +119,7 @@ createNameSpace("realityEditor.avatar");
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
-            draw.renderOtherAvatars(avatarTouchStates, avatarUserProfiles, avatarCursorStates);
+            draw.renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates);
 
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
@@ -178,6 +179,13 @@ createNameSpace("realityEditor.avatar");
                 network.keepObjectAlive(myAvatarId);
             }
         }, KEEP_ALIVE_HEARTBEAT_INTERVAL);
+
+
+        realityEditor.app.promises.getProviderId().then(providerId => {
+            myProviderId = providerId;
+            // write user name will also persist providerId
+            writeUsername(myUsername);
+        });
     }
 
     function reestablishAvatarIfNeeded() {
@@ -241,7 +249,10 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        connectedAvatarNames[objectKey] = { name: null };
+        connectedAvatarUserProfiles[objectKey] = {
+            name: null,
+            providerId: '',
+        };
 
         if (objectKey === myAvatarId) {
             myAvatarObject = object;
@@ -314,11 +325,17 @@ createNameSpace("realityEditor.avatar");
         };
 
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
-            let name = msgContent.publicData.userProfile.name;
-            avatarUserProfiles[msgContent.object] = name;
-            connectedAvatarNames[msgContent.object].name = name;
-            draw.updateAvatarName(msgContent.object, name);
-            draw.renderAvatarIconList(connectedAvatarNames);
+            const userProfile = msgContent.publicData.userProfile;
+            avatarNames[msgContent.object] = userProfile.name;
+            if (!connectedAvatarUserProfiles[msgContent.object]) {
+                connectedAvatarUserProfiles[msgContent.object] = {};
+            }
+
+            // Copy over any present keys
+            Object.assign(connectedAvatarUserProfiles[msgContent.object], userProfile);
+
+            draw.updateAvatarName(msgContent.object, userProfile.name);
+            draw.renderAvatarIconList(connectedAvatarUserProfiles);
             debugDataReceived();
         };
 
@@ -384,9 +401,7 @@ createNameSpace("realityEditor.avatar");
         connectionStatus.isMyAvatarInitialized = true;
         refreshStatusUI();
 
-        if (isUsernameActive && myUsername) {
-            writeUsername(myUsername);
-        }
+        writeUsername(myUsername);
 
         let isFlying = false;
         let screenX, screenY;
@@ -445,13 +460,13 @@ createNameSpace("realityEditor.avatar");
     // name is one property within the avatar node's userProfile public data 
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
-        connectedAvatarNames[myAvatarId].name = name;
+        connectedAvatarUserProfiles[myAvatarId].name = name;
         draw.updateAvatarName(myAvatarId, name);
-        draw.renderAvatarIconList(connectedAvatarNames);
+        draw.renderAvatarIconList(connectedAvatarUserProfiles);
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            network.sendUserProfile(info, name);
+            network.sendUserProfile(info, name, myProviderId);
         }
     }
 
@@ -583,10 +598,28 @@ createNameSpace("realityEditor.avatar");
         return connectionStatus;
     }
 
+    /**
+     * @param {string} providerId
+     * @return {string?} color
+     */
+    function getAvatarColorFromProviderId(providerId) {
+        for (let objectKey in connectedAvatarUserProfiles) {
+            if (!connectedAvatarUserProfiles[objectKey]) {
+                return;
+            }
+            let userProfile = connectedAvatarUserProfiles[objectKey];
+            if (userProfile.providerId !== providerId) {
+                continue;
+            }
+            return utils.getColor(realityEditor.getObject(objectKey));
+        }
+    }
+
     exports.initService = initService;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
+    exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
 
 }(realityEditor.avatar));

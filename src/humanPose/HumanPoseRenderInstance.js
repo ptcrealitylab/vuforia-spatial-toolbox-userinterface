@@ -20,23 +20,26 @@ export class HumanPoseRenderInstance {
         this.renderer = renderer;
         this.id = id;
         this.updated = true;
-        this.visible = true;
         this.lens = lens;
         this.lensColors = {};
         this.pose = null;
         this.slot = -1;
-        this.add();
+        this.visible = this.add();
     }
 
     /**
      * Occupies a slot on the renderer, uploading initial values
      * @param {number?} slot - manually assigned slot, taken from renderer otherwise
+     * @param {boolean} Success
      */
     add(slot) {
         if (typeof slot === 'number') {
             this.slot = slot;
         } else {
             this.slot = this.renderer.takeSlot();
+        }
+        if (this.slot < 0) {
+            return false;
         }
 
         Object.values(JOINT_TO_INDEX).forEach(index => {
@@ -46,6 +49,8 @@ export class HumanPoseRenderInstance {
         Object.values(BONE_TO_INDEX).forEach(index => {
             this.renderer.setBoneColorAt(this.slot, index, AnalyticsColors.base);
         });
+
+        return true;
     }
 
     /**
@@ -70,6 +75,9 @@ export class HumanPoseRenderInstance {
      * Updates joint positions based on this.pose
      */
     updateJointPositions() {
+        if (this.slot < 0) {
+            return;
+        }
         this.pose.forEachJoint(joint => {
             this.setJointPosition(joint.name, joint.position);
         });
@@ -100,6 +108,10 @@ export class HumanPoseRenderInstance {
      * Updates bone (stick between joints) positions based on this.joints' positions.
      */
     updateBonePositions() {
+        if (this.slot < 0) {
+            return;
+        }
+
         this.pose.forEachBone(bone => {
             this.updateBonePosition(bone);
         });
@@ -157,6 +169,10 @@ export class HumanPoseRenderInstance {
      * @param {AnalyticsLens} lens - lens to use for updating colors
      */
     updateColorBuffers(lens) {
+        if (this.slot < 0) {
+            return;
+        }
+
         if (!this.lensColors[lens.name]) {
             this.lensColors[lens.name] = {
                 joints: Object.values(JOINT_TO_INDEX).map(() => AnalyticsColors.undefined),
@@ -195,7 +211,14 @@ export class HumanPoseRenderInstance {
     }
 
     setVisible(visible) {
+        // MK HACK: too strict to do nothing if the visibility did not change. Other code can 'unhide' the slot
+        /*
         if (this.visible === visible) {
+            return;
+        }
+        */
+
+        if (this.slot < 0) {
             return;
         }
 
@@ -242,6 +265,8 @@ export class HumanPoseRenderInstance {
      */
     remove() {
         this.renderer.leaveSlot(this.slot);
+        this.slot = -1;
+        this.visible = false;
     }
 }
 

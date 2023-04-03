@@ -14,10 +14,11 @@ export const AnalyticsColors = {
     /**
      * Fades a color to a faded version of itself.
      * @param {Color} color The color to fade.
+     * @param {number} saturation Target saturation.
      * @return {Color} The faded color.
      */
-    fade: (color) => {
+    fade: (color, saturation = 0.8) => {
         const h = color.getHSL({}).h;
-        return new THREE.Color().setHSL(h, 0.8, 0.3);
+        return new THREE.Color().setHSL(h, saturation, 0.3);
     }
 };

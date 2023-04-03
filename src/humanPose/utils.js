@@ -108,7 +108,7 @@ function indexOfMin(arr) {
     return minIndex;
 }
 
-// returns the {objectKey, frameKey, nodeKey} address of the avatar storeData node on this avatar object
+// returns the {objectKey, frameKey, nodeKey} address of the storeData node on this object
 function getJointNodeInfo(humanObject, jointIndex) {
     if (!humanObject) { return null; }
 

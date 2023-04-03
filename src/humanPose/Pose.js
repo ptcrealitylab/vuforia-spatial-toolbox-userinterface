@@ -9,14 +9,16 @@ export class Pose {
     /**
      * Creates a new Pose object.
      * @param {Object} jointPositions An object that maps joint names to joint positions (in ground-plane space).
+     * @param {Object} jointConfidences An object that maps joint names to joint confidences.
      * @param {Number} timestamp The timestamp of when the pose was recorded.
      * @param {Object} metadata An object that contains additional metadata about the pose.
      */
-    constructor(jointPositions, timestamp, metadata) {
+    constructor(jointPositions, jointConfidences, timestamp, metadata) {
         this.joints = {}; // Maps joint names to joint data
         Object.keys(jointPositions).forEach(jointName => {
             this.joints[jointName] = {
                 position: jointPositions[jointName],
+                confidence: jointConfidences[jointName],
                 name: jointName
             }
         });

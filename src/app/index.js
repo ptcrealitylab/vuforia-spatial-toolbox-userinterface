@@ -498,6 +498,15 @@ realityEditor.app.onAreaTargetGenerateProgress = function (callBack) {
 }
 
 /**
+ * Response with a callback that indicates the device provider id.
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getProviderId = function(callBack) {
+    this.appFunctionCall('getProviderId', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+
+/**
  **************UTILITIES****************
  **/
 
