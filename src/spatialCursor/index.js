@@ -314,8 +314,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
     }
 
+    let hasUpdated = false;
     function update() {
-        window.requestAnimationFrame(update);
+        if (hasUpdated) return;
+        hasUpdated = true;
+        realityEditor.gui.ar.draw.addUpdateListener(updateLoop);
+    }
+
+    function updateLoop() {
         if (!isCursorEnabled || !isMyColorDetermined) {
             isUpdateLoopRunning = false;
             indicator1.visible = false;
