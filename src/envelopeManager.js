@@ -9,11 +9,6 @@ createNameSpace("realityEditor.envelopeManager");
  */
 
 (function(exports) {
-    
-    const DEBUG_LOG = true;
-    function log(str) {
-        if (DEBUG_LOG) console.log('%c ' + str, 'color: #bada55');
-    }
 
     // in addition to the X button, adds another button next to it (purpose not fully determined)
     const INCLUDE_MINIMIZE_BUTTON = false;
@@ -75,7 +70,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameKey
      */
     function onEnvelopeRegistered(objectKey, frameKey) {
-        log('onEnvelopeRegistered');
         
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
@@ -100,8 +94,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
      */
     function handleEnvelopeMessage(eventData, fullMessageContent) {
-        log('handleEnvelopeMessage');
-
+        
         // registers new envelopes with the system
         if (typeof eventData.isEnvelope !== 'undefined') {
             if (eventData.isEnvelope) {
@@ -156,8 +149,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
-        log('openEnvelope');
-
         if (knownEnvelopes[frameId].isOpen) return;
 
         knownEnvelopes[frameId].isOpen = true;
@@ -193,8 +184,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
-        log('closeEnvelope');
-
         if (!knownEnvelopes[frameId].isOpen) return;
 
         knownEnvelopes[frameId].isOpen = false;
@@ -233,8 +222,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
      */
     function minimizeEnvelope(frameId, wasTriggeredByEnvelope) {
-        log('minimizeEnvelope');
-
         knownEnvelopes[frameId].isMinimized = true;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
@@ -252,8 +239,6 @@ createNameSpace("realityEditor.envelopeManager");
      * Creates/renders an [X] button in the top left corner if there are any open envelopes, which can be used to close them
      */
     function updateExitButton() {
-        log('updateExitButton');
-
         var numberOfOpenEnvelopes = getOpenEnvelopes().length;
         if (numberOfOpenEnvelopes === 0) {
             // hide exit and minimize buttons
@@ -315,14 +300,10 @@ createNameSpace("realityEditor.envelopeManager");
     }
     
     exports.onExitButtonHidden = (callback) => {
-        log('onExitButtonHidden');
-
         callbacks.onExitButtonHidden.push(callback);
     }
 
     exports.onExitButtonShown = (callback) => {
-        log('onExitButtonShown');
-
         callbacks.onExitButtonShown.push(callback);
     }
 
@@ -331,8 +312,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{objectKey: string, frameKey: string, frameType: string}} params
      */
     function onFrameAdded(params) {
-        log('onFrameAdded');
-
         try {
             addRequiredEnvelopeIfNeeded(params.objectKey, params.frameKey, params.frameType);
         } catch (e) {
@@ -353,8 +332,6 @@ createNameSpace("realityEditor.envelopeManager");
     }
 
     function attemptWithRetransmission(callback, conditionToProceed, timeBetweenAttempts, numAttemptsLeft) {
-        log('attemptWithRetransmission');
-
         if (typeof conditionToProceed === 'undefined' || conditionToProceed()) {
             console.log('attempt transmission');
             callback();
@@ -377,8 +354,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{objectKey: string, frameKey: string, additionalInfo:{frameType: string}|undefined }} params
      */
     function onVehicleDeleted(params) {
-        log('onVehicleDeleted');
-
         if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
             // right now messages all envelopes, not just the one that contained the deleted frame
             // TODO: test with more than one envelope open at a time (stackable envelopes)
@@ -409,8 +384,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{objectKey: string, frameKey: string, nodeKey: string}} params
      */
     function onElementReloaded(params) {
-        log('onElementReloaded');
-
         if (params.nodeKey) { return; } // for now only frames can be in envelopes
 
         // see if it belongs to a closed envelope
@@ -440,7 +413,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {{oldObjectKey: string, oldFrameKey: string, newObjectKey: string, newFrameKey: string, frameType: string}} params
      */
     function onVehicleReattached(params) {
-        log('onVehicleReattached');
 
         attemptWithRetransmission(function() {
             updateContainedFrameId(params.oldObjectKey, params.oldFrameKey, params.newObjectKey, params.newFrameKey, params.frameType);
@@ -452,8 +424,6 @@ createNameSpace("realityEditor.envelopeManager");
     }
 
     function updateContainedFrameId(oldObjectKey, oldFrameKey, newObjectKey, newFrameKey, frameType) {
-        log('updateContainedFrameId');
-
         // check if the old id belongs to any envelope
         Object.values(knownEnvelopes).filter(function(envelope) {
             return envelope.containedFrameIds.includes(oldFrameKey);
@@ -492,7 +462,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameType - used to retrieve metadata for the frame type that was added
      */
     function addRequiredEnvelopeIfNeeded(objectKey, frameKey, frameType) {
-        log('addRequiredEnvelopeIfNeeded');
 
         var realityElements = realityEditor.gui.pocket.getRealityElements();
         var realityElement = realityElements.find(function(elt) { return elt.properties.name === frameType; });
@@ -562,8 +531,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {Array.<string>|undefined} compatibilityTypeRequirement
      */
     function sendMessageToEnvelope(envelopeFrameKey, message, compatibilityTypeRequirement) {
-        log('sendMessageToEnvelope');
-
         var envelope = knownEnvelopes[envelopeFrameKey];
 
         // if we specify that the message should only be sent to envelopes of a certain type, make other envelopes ignore the message
@@ -587,8 +554,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string|undefined} compatibilityTypeRequirement
      */
     function sendMessageToOpenEnvelopes(message, compatibilityTypeRequirement) {
-        log('sendMessageToOpenEnvelopes');
-
         for (var frameKey in knownEnvelopes) {
             var envelope = knownEnvelopes[frameKey];
             if (envelope.isOpen) {
@@ -603,8 +568,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {Object} message
      */
     function sendMessageToEnvelopeContents(envelopeFrameKey, message) {
-        log('sendMessageToEnvelopeContents');
-
         var envelope = knownEnvelopes[envelopeFrameKey];
         if (!envelope) {
             console.warn('couldn\'t find the envelope you are trying to message (' + envelopeFrameKey + ')');
@@ -627,8 +590,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @return {Array.<Envelope>}
      */
     function getOpenEnvelopes() {
-        log('getOpenEnvelopes');
-
         return Object.values(knownEnvelopes).filter(function(envelope) {
             return envelope.isOpen && !envelope.isMinimized;
         });
@@ -639,8 +600,6 @@ createNameSpace("realityEditor.envelopeManager");
      * @return {Array.<string>}
      */
     function getCurrentCompatibleFrameTypes() {
-        log('getCurrentCompatibleFrameTypes');
-
         var allCompatibleFrameTypes = [];
         getOpenEnvelopes().forEach(function(envelope) {
             envelope.compatibleFrameTypes.forEach(function(frameType) {
@@ -659,15 +618,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @return {string}
      */
     function getFrameTypeFromKey(objectKey, frameKey) {
-        log('getFrameTypeFromKey');
-
         var frame = realityEditor.getFrame(objectKey, frameKey);
         return frame.src;
     }
     
     function showBlurredBackground(focusedFrameId) {
-        log('showBlurredBackground');
-
         // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown
         let blur = document.getElementById('blurredEnvelopeBackground');
         if (!blur) {
@@ -686,8 +641,6 @@ createNameSpace("realityEditor.envelopeManager");
     }
     
     function hideBlurredBackground(focusedFrameId) {
-        log('hideBlurredBackground');
-
         // hide the fullscreen blurred div, if it exists
         let blur = document.getElementById('blurredEnvelopeBackground');
         if (blur) {
@@ -702,8 +655,6 @@ createNameSpace("realityEditor.envelopeManager");
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
 
     exports.getKnownEnvelopes = function() {
-        log('getKnownEnvelopes');
-
         return knownEnvelopes;
     }
     

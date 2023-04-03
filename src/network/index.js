@@ -537,7 +537,7 @@ realityEditor.network.addHeartbeatObject = function (beat) {
                 }
             }
 
-            // console.log('got heartbeat for new object ' + beat.id);
+            console.log('got heartbeat for new object ' + beat.id);
             // download the object data from its server
             let baseUrl = realityEditor.network.getURL(beat.ip, realityEditor.network.getPort(beat), '/object/' + beat.id);
             let queryParams = '?excludeUnpinned=true';
@@ -625,8 +625,9 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
-    // console.log('updateObject', origin, remote, objectKey);
-    console.log(`%c updateObject ${objectKey} - old has ${Object.keys(origin.frames).length} frames, new has ${Object.keys(remote.frames).length}`, 'color: orange');
+    const oldCount = Object.keys(origin.frames).length;
+    const newCount = Object.keys(remote.frames).length;
+    console.log(`updateObject ${objectKey} - old has ${oldCount} frames, new has ${newCount}`);
 
     origin.x = remote.x;
     origin.y = remote.y;
@@ -638,6 +639,9 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
     // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
     for (let frameKey in remote.frames) {
+        let prevVisualization = origin.frames[frameKey] ? origin.frames[frameKey].visualization : null;
+        let newVisualization = remote.frames[frameKey] ? remote.frames[frameKey].visualization : null;
+
         if (!remote.frames.hasOwnProperty(frameKey)) continue;
         if (!origin.frames[frameKey]) {
             origin.frames[frameKey] = remote.frames[frameKey];
@@ -684,10 +688,12 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         // TODO: invert dependency
         realityEditor.gui.ar.grouping.reconstructGroupStruct(frameKey, origin.frames[frameKey]);
 
-        if (globalDOMCache["iframe" + frameKey]) {
+        // this makes the tools load properly when pulling out of screens, pushing into screens
+        let visualizationChanged = prevVisualization && newVisualization && prevVisualization !== newVisualization;
+        if (globalDOMCache["iframe" + frameKey] && visualizationChanged) {
             if (globalDOMCache["iframe" + frameKey].getAttribute('loaded')) {
-                console.log('old version would have reloaded the iframe, new version doesnt');
-                // realityEditor.network.onElementLoad(objectKey, frameKey, null);
+                console.log('reload the frame because visualization changed');
+                realityEditor.network.onElementLoad(objectKey, frameKey, null);
             }
         }
     }
@@ -928,7 +934,6 @@ realityEditor.network.onAction = function (action) {
     }
 
     if (typeof thisAction.reloadObject !== "undefined") {
-        // console.log("gotdata");
 
         if (thisAction.reloadObject.object in objects) {
 
@@ -1073,7 +1078,6 @@ realityEditor.network.onAction = function (action) {
             frame.frameSizeY = thisAction.addFrame.frameSizeY;
 
             frame.location = thisAction.addFrame.location;
-            console.log('frame.src = thisAction.addFrame.src');
             frame.src = thisAction.addFrame.src;
 
             // set other properties
@@ -3241,10 +3245,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
 
     if (globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading) {
         delete globalDOMCache['iframe' + (nodeKey || frameKey)].dataset.isReloading;
-        networkLog('iframe is reloaded');
         realityEditor.network.callbackHandler.triggerCallbacks('elementReloaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     } else {
-        networkLog('iframe is loaded: ' + (nodeKey || frameKey));
         realityEditor.network.callbackHandler.triggerCallbacks('elementLoaded', {objectKey: objectKey, frameKey: frameKey, nodeKey: nodeKey});
     }
 
@@ -3253,11 +3255,6 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
 
     this.cout("on_load");
 };
-
-const DEBUG_LOG_NETWORK = true;
-function networkLog(str) {
-    if (DEBUG_LOG_NETWORK) console.log('%c' + str, 'color: #55bada');
-}
 
 /**
  * Makes a POST request to add a lock to the specified node. Whether or not you are actually allowed to add the

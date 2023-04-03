@@ -1034,7 +1034,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         frame.name = frameUniqueName;
         frame.uuid = frame.objectId + frameUniqueName;
         frame.location = 'global';
-        console.log('frame.src = name');
         frame.src = name;
 
         console.log('created frame with name ' + frame.name);

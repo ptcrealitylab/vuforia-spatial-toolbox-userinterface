@@ -129,7 +129,7 @@ createNameSpace("realityEditor.worldObjects");
             tcs: null,
             zone: '',
         };
-        // console.log('try loading local world object...', worldObjectBeat);
+        console.log('try loading local world object...', worldObjectBeat);
 
         // process the heartbeat automatically, in case UDP isn't allowed on this network (e.g. cellular)
         realityEditor.network.discovery.processHeartbeat(worldObjectBeat);
