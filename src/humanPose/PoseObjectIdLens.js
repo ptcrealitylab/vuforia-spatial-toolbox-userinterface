@@ -73,6 +73,7 @@ export class PoseObjectIdLens extends AnalyticsLens {
         });
         pose.forEachBone(bone => {
             bone.poseObjectId = pose.metadata.poseObjectId;
+            bone.poseHasParent = pose.metadata.poseHasParent;
         });
         return true;
     }
@@ -104,11 +105,15 @@ export class PoseObjectIdLens extends AnalyticsLens {
     }
     
     getColorForJoint(joint) {
-        return this.getColorFromId(joint.poseObjectId);
+        const baseColor = this.getColorFromId(joint.poseObjectId);
+        let baseColorHSL = baseColor.getHSL({});
+        baseColorHSL.l = baseColorHSL.l * joint.confidence;
+        return new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
     }
 
     getColorForBone(bone) {
-        return this.getColorFromId(bone.poseObjectId);
+        const color = this.getColorFromId(bone.poseObjectId);
+        return (bone.poseHasParent) ? AnalyticsColors.fade(color, 0.1) : color;
     }
 
     getColorForPose(pose) {

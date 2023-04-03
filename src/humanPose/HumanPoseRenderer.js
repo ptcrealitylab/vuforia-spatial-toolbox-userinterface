@@ -123,8 +123,8 @@ export class HumanPoseRenderer {
         }
 
         if (this.nextInstanceSlot >= this.maxInstances) {
-            console.error('out of instances');
-            return 0;
+            console.error('out of render instances');
+            return -1;
         }
 
         const takenSlot = this.nextInstanceSlot;
@@ -145,9 +145,10 @@ export class HumanPoseRenderer {
     }
 
     hideSlot(slot) {
+        /* MK HACK - auxiliary poses get quickly shown again even if disabled
         if (!this.shownSlots[slot]) {
             return;
-        }
+        } */
 
         this.shownSlots[slot] = false;
 

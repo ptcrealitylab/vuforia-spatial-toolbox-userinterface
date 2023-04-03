@@ -1,4 +1,5 @@
 import {JOINTS} from "./utils.js";
+import {setChildHumanPosesVisible} from "./draw.js"
 
 export class HumanPoseAnalyzerSettingsUi {
     constructor(humanPoseAnalyzer) {
@@ -22,6 +23,10 @@ export class HumanPoseAnalyzerSettingsUi {
                             <select class="hpa-settings-section-row-select" id="hpa-settings-select-lens">
                                 <option value="Sample Option">This should only display if something is broken with this.populateSelects()</option>
                             </select>
+                        </div>
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">View auxiliary poses</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-child-human-poses">
                         </div>
                     </div>
                 </div>
@@ -124,6 +129,10 @@ export class HumanPoseAnalyzerSettingsUi {
 
         this.root.querySelector('#hpa-settings-toggle-live-history-lines').addEventListener('change', (event) => {
             this.humanPoseAnalyzer.setLiveHistoryLinesVisible(event.target.checked);
+        });
+        
+        this.root.querySelector('#hpa-settings-toggle-child-human-poses').addEventListener('change', (event) => {
+            setChildHumanPosesVisible(event.target.checked);
         });
 
         this.root.querySelector('#hpa-settings-toggle-historical-history-lines').addEventListener('change', (event) => {
@@ -257,6 +266,10 @@ export class HumanPoseAnalyzerSettingsUi {
 
     setLiveHistoryLinesVisible(historyLinesVisible) {
         this.root.querySelector('#hpa-settings-toggle-live-history-lines').checked = historyLinesVisible;
+    }
+
+    setChildHumanPosesVisible(visible) {
+        this.root.querySelector('#hpa-settings-toggle-child-human-poses').checked = visible;
     }
 
     setHistoricalHistoryLinesVisible(historyLinesVisible) {
