@@ -236,7 +236,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                     return;
                 }
                 const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
-                const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {poseObjectId: identifier, poseHasParent: !!poseObject.parent});
+                const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {poseObjectId: identifier, poseHasParent: (poseObject.parent != 'none')});
                 poses.push(pose);
             }
         });
