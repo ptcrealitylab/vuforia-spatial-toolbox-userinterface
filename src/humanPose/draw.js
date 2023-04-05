@@ -277,7 +277,7 @@ export class HumanPoseAnalyzer {
      */
     poseUpdated(pose, historical) {
         this.addCloneFromPose(pose, historical);
-        if(!pose.metadata.poseHasParent) {  
+        if(!pose.metadata.poseHasParent) {
             // add to history line non-auxiliary poses
             this.updateHistoryLines(pose, historical);
         }
@@ -1040,10 +1040,10 @@ export class HumanPoseAnalyzer {
             this.lastDisplayedClones = [];
             return;
         }
-        
+
         const clonesToHide = this.lastDisplayedClones.filter(clone => !bestClones.includes(clone));
         const clonesToShow = bestClones.filter(clone => !this.lastDisplayedClones.includes(clone));
-        
+
         clonesToHide.forEach(clone => {
             clone.setVisible(false);
             clone.renderer.markMatrixNeedsUpdate();
@@ -1053,7 +1053,7 @@ export class HumanPoseAnalyzer {
             clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
-        
+
         this.lastDisplayedClones = bestClones;
     }
 
@@ -1187,7 +1187,7 @@ function hidePoseRenderInstance(poseRenderInstance) {
     */
     poseRenderInstance.remove();
     poseRenderInstance.renderer.markNeedsUpdate();
-    delete poseRenderInstances[poseRenderInstance.id];  
+    delete poseRenderInstances[poseRenderInstance.id];
 }
 
 /**
@@ -1222,7 +1222,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
     const jointPositions = {};
     const jointConfidences = {};
-    
+
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
@@ -1249,7 +1249,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
         jointConfidences[jointId] = confidence;
 
         if (RENDER_CONFIDENCE_COLOR) {
-            
+
             poseRenderInstance.setJointConfidenceColor(jointId, confidence);
         }
     }
