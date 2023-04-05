@@ -346,6 +346,12 @@ class WorkerGLProxy {
             new Int32Array(localCommand.responseBuffer)[0] = res;
         } else if (localCommand.name === "getAttribLocation") {
             new Int32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "checkFramebufferStatus") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "clientWaitSync") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "getUniformBlockIndex") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
         }
     }
 
