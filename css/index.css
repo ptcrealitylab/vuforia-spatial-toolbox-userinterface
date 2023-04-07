@@ -1968,3 +1968,17 @@ Logic Interface CSS
 .deactivatedIframeOverlay {
     pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
 }
+
+.ru-container {
+    position: absolute;
+    top: 60px;
+    left: calc(30px + 54px + 30px);
+    transform: translateZ(1100px);
+    z-index: 1100;
+}
+
+.ru-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 12px;
+}
