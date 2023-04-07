@@ -149,10 +149,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
-        if (knownEnvelopes[frameId].isOpen) return;
+        const envelope = knownEnvelopes[frameId];
+        if (envelope.isOpen) return;
 
-        knownEnvelopes[frameId].isOpen = true;
-        knownEnvelopes[frameId].isMinimized = false;
+        envelope.isOpen = true;
+        envelope.isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -160,13 +161,13 @@ createNameSpace("realityEditor.envelopeManager");
                 open: true
             });
         }
-        
+
         // show all contained frames
         sendMessageToEnvelopeContents(frameId, {
             showContainedFrame: true
         });
 
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -176,6 +177,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onOpen(envelope);
     }
 
     /**
@@ -662,5 +665,6 @@ createNameSpace("realityEditor.envelopeManager");
     exports.hideBlurredBackground = hideBlurredBackground;
 
     exports.getOpenEnvelopes = getOpenEnvelopes;
+    exports.openEnvelope = openEnvelope;
 
 }(realityEditor.envelopeManager));
