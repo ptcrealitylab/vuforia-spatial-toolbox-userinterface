@@ -1211,6 +1211,8 @@ function updatePoseRenderer(poseObject, timestamp) {
     renderer.markNeedsUpdate();
 }
 
+const mostRecentPoseByObjectId = {};
+
 /**
  * Updates the pose renderer with the current pose data
  * @param {HumanPoseRenderInstance} poseRenderInstance - the pose renderer to update
@@ -1256,6 +1258,10 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
     const poseHasParent = poseObject.parent && (poseObject.parent !== 'none');
     const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: poseHasParent});
+    pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.uuid];
+    if (!poseHasParent) {
+        mostRecentPoseByObjectId[poseObject.uuid] = pose;
+    }
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);

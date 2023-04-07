@@ -271,7 +271,7 @@ export class RegionCard {
                 maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude || 0);
             });
             return maxAcceleration;
-        }, 0, 40000);
+        }, 0, 40);
     }
 
     getMotionSummaryText() {

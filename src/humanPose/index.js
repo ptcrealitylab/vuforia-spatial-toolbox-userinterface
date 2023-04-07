@@ -187,6 +187,7 @@ import {JOINT_TO_INDEX} from './constants.js';
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
         const poses = [];
+        const mostRecentPoseByObjectId = {};
         timestampStrings.forEach(timestampString => {
             let historyEntry = history[timestampString];
             let objectNames = Object.keys(historyEntry);
@@ -240,6 +241,10 @@ import {JOINT_TO_INDEX} from './constants.js';
                     poseObjectId: identifier,
                     poseHasParent: poseObject.parent && (poseObject.parent !== 'none'),
                 });
+                pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.uuid];
+                if (!pose.metadata.poseHasParent) {
+                    mostRecentPoseByObjectId[poseObject.uuid] = pose;
+                }
                 poses.push(pose);
             }
         });
