@@ -58,8 +58,7 @@ export class AccelerationLens extends AnalyticsLens {
                 const previousJoint = previousPose.getJoint(joint.name);
                 joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
                 joint.speed = joint.velocity.length();
-                const previousPreviousJoint = previousPreviousPose.getJoint(joint.name);
-                joint.acceleration = joint.velocity.clone().sub(previousPreviousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000); // Divide by 2 to get the average time between the two poses, and divide by 1000 to convert from ms to s
+                joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
                 joint.accelerationMagnitude = joint.acceleration.length();
             });
         }

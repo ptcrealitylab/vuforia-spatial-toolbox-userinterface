@@ -1197,7 +1197,7 @@ function hidePoseRenderInstance(poseRenderInstance) {
  */
 function updatePoseRenderer(poseObject, timestamp) {
     let renderer = humanPoseAnalyzer.opaquePoseRenderer;
-    const identifier = poseObject.uuid;
+    const identifier = poseObject.objectId;
     if (!poseRenderInstances[identifier]) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, humanPoseAnalyzer.activeLens);
     }
@@ -1227,7 +1227,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
-        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.objectId}${jointId}`);
 
         // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
@@ -1257,11 +1257,9 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     }
 
     const poseHasParent = poseObject.parent && (poseObject.parent !== 'none');
-    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.uuid, poseHasParent: poseHasParent});
-    pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.uuid];
-    if (!poseHasParent) {
-        mostRecentPoseByObjectId[poseObject.uuid] = pose;
-    }
+    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.objectId, poseHasParent: poseHasParent});
+    pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
+    mostRecentPoseByObjectId[poseObject.objectId] = pose;
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);
