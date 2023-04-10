@@ -14,6 +14,10 @@ class RecentlyUsedBar {
         const iconElt = event.target;
         const frameId = iconElt.dataset.frameId;
         iconElt.dataset.lastActive = Date.now();
+
+        realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
+            realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+        });
         realityEditor.envelopeManager.openEnvelope(frameId, false);
     }
 
