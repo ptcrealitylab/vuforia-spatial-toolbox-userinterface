@@ -39,17 +39,33 @@ class RecentlyUsedBar {
             return;
         }
         this.updateIcon(frame, Date.now());
+
+        const icon = this.getIcon(envelope.frame);
+        if (!icon) {
+            return;
+        }
+        icon.classList.add('ru-icon-active');
+    }
+
+    onClose(envelope) {
+        const icon = this.getIcon(envelope.frame);
+        if (!icon) {
+            return;
+        }
+        icon.classList.remove('ru-icon-active');
+    }
+
+    getIcon(frameId) {
+        for (let i = 0; i < this.iconElts.length; i++) {
+            if (this.iconElts[i].dataset.frameId === frameId) {
+                return this.iconElts[i];
+            }
+        }
     }
 
     updateIcon(frame, lastActive) {
         let object = objects[frame.objectId];
-        let icon;
-        for (let i = 0; i < this.iconElts.length; i++) {
-            if (this.iconElts[i].dataset.frameId === frame.uuid) {
-                icon = this.iconElts[i];
-                break;
-            }
-        }
+        let icon = this.getIcon(frame.uuid);
 
         if (!icon) {
             // Don't bother adding icons that won't appear in the final list

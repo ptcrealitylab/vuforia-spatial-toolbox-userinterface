@@ -189,10 +189,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
-        if (!knownEnvelopes[frameId].isOpen) return;
+        const envelope = knownEnvelopes[frameId];
+        if (!envelope.isOpen) return;
 
-        knownEnvelopes[frameId].isOpen = false;
-        knownEnvelopes[frameId].isMinimized = false;
+        envelope.isOpen = false;
+        envelope.isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -209,7 +210,7 @@ createNameSpace("realityEditor.envelopeManager");
         // TODO: hide contained frames at a higher level by giving them some property or CSS class
         // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
         
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -219,6 +220,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onClose(envelope);
     }
 
     /**
@@ -668,5 +671,6 @@ createNameSpace("realityEditor.envelopeManager");
 
     exports.getOpenEnvelopes = getOpenEnvelopes;
     exports.openEnvelope = openEnvelope;
+    exports.closeEnvelope = closeEnvelope;
 
 }(realityEditor.envelopeManager));
