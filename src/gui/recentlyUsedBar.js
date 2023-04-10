@@ -17,26 +17,44 @@ class RecentlyUsedBar {
         realityEditor.envelopeManager.openEnvelope(frameId, false);
     }
 
+    onEnvelopeRegistered(frame) {
+        const publicData = publicDataCache[frame.uuid];
+        if (!publicData || !publicData.storage) {
+            return;
+        }
+        if (typeof publicData.storage.envelopeLastOpen !== 'number') {
+            return;
+        }
+
+        this.updateIcon(frame, publicData.storage.envelopeLastOpen);
+    }
+
     onOpen(envelope) {
-        let object = objects[envelope.object];
+        const object = objects[envelope.object];
         if (!object) {
             return;
         }
-        let frame = object.frames[envelope.frame];
+        const frame = object.frames[envelope.frame];
         if (!frame) {
             return;
         }
+        this.updateIcon(frame, Date.now());
+    }
+
+    updateIcon(frame, lastActive) {
+        let object = objects[frame.objectId];
         let icon;
         for (let i = 0; i < this.iconElts.length; i++) {
-            if (this.iconElts[i].dataset.frameId === envelope.frame) {
+            if (this.iconElts[i].dataset.frameId === frame.uuid) {
                 icon = this.iconElts[i];
                 break;
             }
         }
+
         if (!icon) {
             icon = document.createElement('img');
             icon.classList.add('ru-icon');
-            icon.dataset.frameId = envelope.frame;
+            icon.dataset.frameId = frame.uuid;
             icon.dataset.newlyAdded = true;
             icon.style.position = 'absolute';
             // width-ish amount to make the animation look good
@@ -52,7 +70,7 @@ class RecentlyUsedBar {
             this.container.prepend(icon);
         }
 
-        icon.dataset.lastActive = Date.now();
+        icon.dataset.lastActive = lastActive;
 
         this.updateIconPositions();
     }

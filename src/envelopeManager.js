@@ -70,7 +70,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameKey
      */
     function onEnvelopeRegistered(objectKey, frameKey) {
-        
+
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
 
@@ -87,8 +87,10 @@ createNameSpace("realityEditor.envelopeManager");
                 frameType: frame.autoAddedEnvelope.containedFrameToAdd.frameType
             }); // todo: can simplify to just frame.autoAddedEnvelope.containedFrameToAdd
         }
+
+        realityEditor.gui.recentlyUsedBar.onEnvelopeRegistered(frame);
     }
-    
+
     /**
      * @param {Object} eventData - contents of 'envelopeMessage' object
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
