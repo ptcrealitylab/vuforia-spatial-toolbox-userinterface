@@ -67,8 +67,8 @@ class RecentlyUsedBar {
             icon.dataset.frameId = frame.uuid;
             icon.dataset.newlyAdded = true;
             icon.style.position = 'absolute';
-            // width-ish amount to make the animation look good
-            icon.style.left = '-54px';
+            // arbitrary amount to make the animation look good
+            icon.style.top = '66px';
 
             let name = frame.src;
             icon.src = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + name + '/icon.gif');
@@ -86,7 +86,7 @@ class RecentlyUsedBar {
     }
 
     updateIconPositions() {
-        const animDur = 1000;
+        const animDur = 200;
 
         this.iconElts.sort((a, b) => {
             return parseFloat(b.dataset.lastActive) -
@@ -105,7 +105,7 @@ class RecentlyUsedBar {
             }
         }, {
             duration: animDur,
-            // easing: 'linear',
+            easing: 'ease-out',
         });
 
         if (this.iconElts.length > this.capacity) {
@@ -115,12 +115,13 @@ class RecentlyUsedBar {
             }, {
                 opacity: 0,
             }], {
-                duration: animDur,
+                duration: animDur * 0.5,
+                fill: 'both',
             });
 
             setTimeout(() => {
                 this.container.removeChild(last);
-            }, animDur);
+            }, animDur * 0.5);
         }
     }
 }
