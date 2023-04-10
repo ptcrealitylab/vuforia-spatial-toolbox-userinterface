@@ -52,6 +52,16 @@ class RecentlyUsedBar {
         }
 
         if (!icon) {
+            // Don't bother adding icons that won't appear in the final list
+            // due to being old
+            if (this.iconElts.length === this.capacity) {
+                let oldestIcon = this.iconElts[this.iconElts.length - 1];
+                let oldestTime = parseFloat(oldestIcon.dataset.lastActive);
+                if (oldestTime > lastActive) {
+                    return;
+                }
+            }
+
             icon = document.createElement('img');
             icon.classList.add('ru-icon');
             icon.dataset.frameId = frame.uuid;
