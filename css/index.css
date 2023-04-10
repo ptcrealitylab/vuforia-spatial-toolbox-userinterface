@@ -1968,3 +1968,7 @@ Logic Interface CSS
 .deactivatedIframeOverlay {
     pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
 }
+
+.iframeOverlayWithoutFocus {
+    pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
+}
