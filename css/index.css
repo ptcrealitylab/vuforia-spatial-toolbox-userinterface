@@ -1981,4 +1981,10 @@ Logic Interface CSS
     width: 54px;
     height: 54px;
     margin: 0 12px;
+    border: 2px solid rgba(0, 0, 0, 0);
+    border-radius: 8px;
+}
+
+.ru-icon.ru-icon-active {
+    border-color: white;
 }
