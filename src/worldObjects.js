@@ -399,6 +399,11 @@ createNameSpace("realityEditor.worldObjects");
     let localizedWithinWorldCallbacks = [];
     function onLocalizedWithinWorld(callback) {
         localizedWithinWorldCallbacks.push(callback);
+
+        let bestWorld = getBestWorldObject();
+        if (bestWorld && bestWorld.objectId !== getLocalWorldId()) {
+            callback(bestWorld.objectId); // trigger immediately if we're already localized
+        }
     }
 
     /**
