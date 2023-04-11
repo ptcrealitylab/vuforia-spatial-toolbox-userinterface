@@ -1972,7 +1972,7 @@ Logic Interface CSS
 .ru-container {
     position: absolute;
     top: 60px;
-    left: calc(30px + 54px + 30px);
+    left: 150px;
     transform: translateZ(1100px);
     z-index: 1100;
 }
@@ -1980,9 +1980,9 @@ Logic Interface CSS
 .ru-icon {
     width: 54px;
     height: 54px;
-    margin: 0 12px;
+    margin: 0 6px;
     border: 2px solid rgba(0, 0, 0, 0);
-    border-radius: 8px;
+    border-radius: 12.8px;
 }
 
 .ru-icon.ru-icon-active {
