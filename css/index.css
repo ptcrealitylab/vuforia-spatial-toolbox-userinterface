@@ -1988,3 +1988,13 @@ Logic Interface CSS
 .ru-icon.ru-icon-active {
     border-color: white;
 }
+
+/* RESPONSIVE DESIGN */
+
+@media screen and (max-width: 768px) {
+    .ru-container {
+        top: unset;
+        bottom: 40px;
+        left: calc(30px + 68px + 30px);
+    }
+}
