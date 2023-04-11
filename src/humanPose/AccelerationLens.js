@@ -3,8 +3,8 @@ import {AnalyticsLens} from "./AnalyticsLens.js";
 import {AnalyticsColors} from "./AnalyticsColors.js";
 import {JOINTS} from "./utils.js";
 
-const HIGH_CUTOFF = 35000 // In ???/???^2
-const MED_CUTOFF = 15000 // In ???/???^2
+const HIGH_CUTOFF = 35 // In m/s^2
+const MED_CUTOFF = 15 // In m/s^2
 
 /**
  * AccelerationLens is a lens that calculates the acceleration of each joint in the pose history.
@@ -15,15 +15,6 @@ export class AccelerationLens extends AnalyticsLens {
      */
     constructor() {
         super("Acceleration");
-        
-        // For live rendering
-        this.previousPose = null;
-        this.previousPreviousPose = null;
-    }
-    
-    reset() {
-        this.previousPose = null;
-        this.previousPreviousPose = null;
     }
 
     /**
@@ -45,37 +36,31 @@ export class AccelerationLens extends AnalyticsLens {
     }
     
     applyLensToPose(pose) {
-        // Since this function is only used for sequential data, we can manually keep track of previous poses and do the calculations after two poses have been recorded
-        // TODO: there might be a bug with this logic when loading historical data after other data has been recorded
-        if (!this.previousPose) {
+        const previousPose = pose.metadata.previousPose;
+        const previousPreviousPose = previousPose ? previousPose.metadata.previousPose : null;
+        if (!previousPose) {
             pose.forEachJoint(joint => {
                 joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose
                 joint.speed = 0;
                 joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
                 joint.accelerationMagnitude = 0;
             });
-            this.previousPose = pose;
-        } else if (!this.previousPreviousPose) {
+        } else if (!previousPreviousPose) {
             pose.forEachJoint(joint => {
-                const previousJoint = this.previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - this.previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
+                const previousJoint = previousPose.getJoint(joint.name);
+                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
                 joint.speed = joint.velocity.length();
                 joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
                 joint.accelerationMagnitude = 0;
             });
-            this.previousPreviousPose = this.previousPose;
-            this.previousPose = pose;
         } else {
             pose.forEachJoint(joint => {
-                const previousJoint = this.previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - this.previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
+                const previousJoint = previousPose.getJoint(joint.name);
+                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
                 joint.speed = joint.velocity.length();
-                const previousPreviousJoint = this.previousPreviousPose.getJoint(joint.name);
-                joint.acceleration = joint.velocity.clone().sub(previousPreviousJoint.velocity).divideScalar(((pose.timestamp - this.previousPreviousPose.timestamp) / 2) / 1000); // Divide by 2 to get the average time between the two poses, and divide by 1000 to convert from ms to s
+                joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
                 joint.accelerationMagnitude = joint.acceleration.length();
             });
-            this.previousPreviousPose = this.previousPose;
-            this.previousPose = pose;
         }
         return true;
     }
@@ -85,58 +70,14 @@ export class AccelerationLens extends AnalyticsLens {
             return [];
         }
         const pose = poseHistory[poseHistory.length - 1];
-        if (poseHistory.length === 1) {
-            pose.forEachJoint(joint => {
-                if (!this.velocityAppliedToJoint(joint)) {
-                    joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose
-                    joint.speed = 0;
-                    joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
-                    joint.accelerationMagnitude = 0;
-                    return [true];
-                }
-            });
-            return [false];
-        } else if (poseHistory.length === 2) {
-            const previousPose = poseHistory[0];
-            pose.forEachJoint(joint => {
-                if (!this.velocityAppliedToJoint(joint)) {
-                    const previousJoint = previousPose.getJoint(joint.name);
-                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
-                    joint.speed = joint.velocity.length();
-                    joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
-                    joint.accelerationMagnitude = 0;
-                    return [false, true];
-                }
-            })
-            return [false, false];
-        } else {
-            const previousPose = poseHistory[poseHistory.length - 2];
-            const previousPreviousPose = poseHistory[poseHistory.length - 3];
-            let modified = false;
-            pose.forEachJoint(joint => {
-                if (!this.velocityAppliedToJoint(joint)) {
-                    const previousJoint = previousPose.getJoint(joint.name);
-                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar((pose.timestamp - previousPose.timestamp) / 1000); // Divide by 1000 to convert from ms to s
-                    joint.speed = joint.velocity.length();
-                    modified = true;
-                }
-                if (!this.accelerationAppliedToJoint(joint)) {
-                    const previousJoint = previousPose.getJoint(joint.name);
-                    joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar(((pose.timestamp - previousPreviousPose.timestamp) / 2) / 1000); // Divide by 2 to get the average time between the two poses, and divide by 1000 to convert from ms to s
-                    joint.accelerationMagnitude = joint.acceleration.length();
-                    modified = true;
-                }
-            });
-            const modifiedResults = poseHistory.map(() => false);
-            modifiedResults[modifiedResults.length - 1] = modified;
-            return modifiedResults;
-        }
+        this.applyLensToPose(pose);
+        return poseHistory.map((pose, index) => index === poseHistory.length - 1); // Only last pose was modified
     }
 
     applyLensToHistory(poseHistory) {
-        return poseHistory.map((pose, index) => {
-            // Apply to all poses in sequence up to and including the most recent pose
-            return this.applyLensToHistoryMinimally(poseHistory.slice(0, index + 1))[index];
+        return poseHistory.map((pose) => {
+            this.applyLensToPose(pose);
+            return true;
         });
     }
 
