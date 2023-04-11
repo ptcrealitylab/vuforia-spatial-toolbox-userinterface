@@ -70,7 +70,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameKey
      */
     function onEnvelopeRegistered(objectKey, frameKey) {
-        
+
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
 
@@ -87,8 +87,10 @@ createNameSpace("realityEditor.envelopeManager");
                 frameType: frame.autoAddedEnvelope.containedFrameToAdd.frameType
             }); // todo: can simplify to just frame.autoAddedEnvelope.containedFrameToAdd
         }
+
+        realityEditor.gui.recentlyUsedBar.onEnvelopeRegistered(frame);
     }
-    
+
     /**
      * @param {Object} eventData - contents of 'envelopeMessage' object
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
@@ -149,8 +151,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
-        knownEnvelopes[frameId].isOpen = true;
-        knownEnvelopes[frameId].isMinimized = false;
+        const envelope = knownEnvelopes[frameId];
+        if (envelope.isOpen) return;
+
+        envelope.isOpen = true;
+        envelope.isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -158,13 +163,13 @@ createNameSpace("realityEditor.envelopeManager");
                 open: true
             });
         }
-        
+
         // show all contained frames
         sendMessageToEnvelopeContents(frameId, {
             showContainedFrame: true
         });
 
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -174,6 +179,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onOpen(envelope);
     }
 
     /**
@@ -182,8 +189,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
-        knownEnvelopes[frameId].isOpen = false;
-        knownEnvelopes[frameId].isMinimized = false;
+        const envelope = knownEnvelopes[frameId];
+        if (!envelope.isOpen) return;
+
+        envelope.isOpen = false;
+        envelope.isMinimized = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -200,7 +210,7 @@ createNameSpace("realityEditor.envelopeManager");
         // TODO: hide contained frames at a higher level by giving them some property or CSS class
         // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
         
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -210,6 +220,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onClose(envelope);
     }
 
     /**
@@ -658,5 +670,7 @@ createNameSpace("realityEditor.envelopeManager");
     exports.hideBlurredBackground = hideBlurredBackground;
 
     exports.getOpenEnvelopes = getOpenEnvelopes;
+    exports.openEnvelope = openEnvelope;
+    exports.closeEnvelope = closeEnvelope;
 
 }(realityEditor.envelopeManager));

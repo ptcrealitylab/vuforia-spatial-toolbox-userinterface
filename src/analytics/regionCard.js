@@ -44,9 +44,10 @@ export class RegionCard {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onClickPin = this.onClickPin.bind(this);
-        this.onClickView = this.onClickView.bind(this);
+        this.onClickShow = this.onClickShow.bind(this);
 
         this.createCard();
+        this.setPoses(poses);
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -83,15 +84,18 @@ export class RegionCard {
         event.stopPropagation();
     }
 
-    onClickView() {
+    onClickShow() {
         switch (this.state) {
         case RegionCardState.Tooltip:
             this.pin();
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
+                realityEditor.analytics.setActiveRegionCard(null);
                 realityEditor.analytics.setHighlightRegion(null);
+                realityEditor.analytics.setCursorTime(-1);
             } else {
+                realityEditor.analytics.setActiveRegionCard(this);
                 realityEditor.analytics.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
@@ -101,6 +105,7 @@ export class RegionCard {
             this.displayActive = !this.displayActive;
             break;
         }
+        this.updateShowButton();
     }
 
     pin() {
@@ -141,7 +146,6 @@ export class RegionCard {
     }
 
     unpin() {
-        console.log('unpin');
         this.remove();
         realityEditor.analytics.unpinRegionCard(this);
     }
@@ -151,27 +155,40 @@ export class RegionCard {
         if (pinButton) {
             pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
+        this.updateShowButton();
+    }
+
+    updateShowButton() {
+        let showButton = this.element.querySelector('.analytics-region-card-show');
+        if (!showButton) {
+            console.warn('regioncard missing element');
+            return;
+        }
+
+        if (this.state === RegionCardState.Pinned) {
+            showButton.style.display = 'inline';
+        } else {
+            showButton.style.display = 'none';
+        }
+
+        showButton.textContent = this.displayActive ? 'Hide' : 'Show';
     }
 
     createCard() {
-        if (this.poses.length === 0) {
-            return;
-        }
-        this.startTime = this.poses[0].timestamp;
-        this.endTime = this.poses[this.poses.length - 1].timestamp;
         this.element.classList.add('analytics-region-card');
         this.element.classList.add('minimized');
 
         const dateTimeTitle = document.createElement('div');
-        dateTimeTitle.classList.add('analytics-region-card-title');
-        dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
-            new Date(this.startTime),
-            new Date(this.endTime),
+        dateTimeTitle.classList.add(
+            'analytics-region-card-title',
+            'analytics-region-card-date-time'
         );
 
         const motionSummary = document.createElement('div');
-        motionSummary.classList.add('analytics-region-card-subtitle');
-        motionSummary.textContent = this.getMotionSummaryText();
+        motionSummary.classList.add(
+            'analytics-region-card-subtitle',
+            'analytics-region-card-motion-summary'
+        );
 
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(motionSummary);
@@ -179,21 +196,38 @@ export class RegionCard {
         this.labelElement = document.createElement('div');
         this.labelElement.classList.add('analytics-region-card-label');
         this.labelElement.setAttribute('contenteditable', true);
-        this.setLabel('Step');
+        this.setLabel('');
+
+        let debouncedSave = null;
+        this.labelElement.addEventListener('keydown', (event) => {
+            const code = event.keyCode || event.which;
+            // 13 is Enter
+            if (code === 13) {
+                event.preventDefault();
+                this.labelElement.blur();
+            }
+            event.stopPropagation();
+        });
+        this.labelElement.addEventListener('keypress', (event) => {
+            event.stopPropagation();
+        });
+        this.labelElement.addEventListener('keyup', (event) => {
+            event.stopPropagation();
+
+            if (debouncedSave) {
+                clearTimeout(debouncedSave);
+            }
+            debouncedSave = setTimeout(() => {
+                realityEditor.analytics.writeDehydratedRegionCards();
+                debouncedSave = null;
+            }, 1000);
+        });
 
         this.element.appendChild(this.labelElement);
 
         this.graphSummaryValues = {};
-        const minReba = 1;
-        const maxReba = 12;
-        this.createGraphSection('REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore, minReba, maxReba);
-        this.createGraphSection('Accel', pose => {
-            let maxAcceleration = 0;
-            pose.forEachJoint(joint => {
-                maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude || 0);
-            });
-            return maxAcceleration;
-        }, 0, 40000);
+        this.createGraphSection('reba', 'REBA');
+        this.createGraphSection('accel', 'Accel');
 
         const pinButton = document.createElement('a');
         pinButton.href = '#';
@@ -202,17 +236,47 @@ export class RegionCard {
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
 
-        const viewButton = document.createElement('a');
-        viewButton.href = '#';
-        viewButton.classList.add('analytics-region-card-view');
-        viewButton.textContent = 'View';
-        viewButton.addEventListener('click', this.onClickView);
-        this.element.appendChild(viewButton);
+        const showButton = document.createElement('a');
+        showButton.href = '#';
+        showButton.classList.add('analytics-region-card-show');
+        showButton.addEventListener('click', this.onClickShow);
+        this.element.appendChild(showButton);
+        this.updateShowButton();
+    }
+
+    setPoses(poses) {
+        this.poses = poses;
+        if (this.poses.length === 0) {
+            return;
+        }
+        this.startTime = this.poses[0].timestamp;
+        this.endTime = this.poses[this.poses.length - 1].timestamp;
+
+        const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
+        dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
+            new Date(this.startTime),
+            new Date(this.endTime),
+        );
+
+        const motionSummary = this.element.querySelector('.analytics-region-card-motion-summary');
+        motionSummary.textContent = this.getMotionSummaryText();
+
+        this.graphSummaryValues = {};
+        const minReba = 1;
+        const maxReba = 12;
+        this.updateGraphSection('reba', 'REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore, minReba, maxReba);
+        this.updateGraphSection('accel', 'Accel', pose => {
+            let maxAcceleration = 0;
+            pose.forEachJoint(joint => {
+                maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude || 0);
+            });
+            return maxAcceleration;
+        }, 0, 40);
     }
 
     getMotionSummaryText() {
         let distanceMm = 0;
-        
+
         this.poses.forEach((pose, index) => {
             if (index === 0) return;
             const previousPose = this.poses[index - 1];
@@ -230,7 +294,7 @@ export class RegionCard {
         return getMeasurementTextLabel(distanceMm, this.endTime - this.startTime);
     }
 
-    createGraphSection(titleText, poseValueFunction, minValue, maxValue) {
+    createGraphSection(id, titleText) {
         let title = document.createElement('div');
         title.classList.add('analytics-region-card-graph-section-title');
         title.textContent = titleText;
@@ -241,35 +305,56 @@ export class RegionCard {
         sparkLine.setAttribute('height', rowHeight);
         sparkLine.setAttribute('xmlns', svgNS);
 
-        let summaryValues = this.getSummaryValues(poseValueFunction);
-        this.graphSummaryValues[titleText] = summaryValues;
-
         let path = document.createElementNS(svgNS, 'path');
+        path.classList.add('analytics-region-card-graph-section-sparkline-path-' + id);
         path.setAttribute('stroke-width', '1');
-        path.setAttribute('d', this.getSparkLinePath(poseValueFunction, summaryValues));
 
         sparkLine.appendChild(path);
 
         let average = document.createElement('div');
-        average.classList.add('analytics-region-card-graph-section-value');
-        average.textContent = 'Avg: ';
-        average.appendChild(this.makeSummaryValue(summaryValues.average, minValue, maxValue));
+        average.classList.add(
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-average-' + id
+        );
 
         let minimum = document.createElement('div');
-        minimum.classList.add('analytics-region-card-graph-section-value');
-        minimum.textContent = 'Min: ';
-        minimum.appendChild(this.makeSummaryValue(summaryValues.minimum, minValue, maxValue));
+        minimum.classList.add(
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-minimum-' + id
+        );
 
         let maximum = document.createElement('div');
-        maximum.classList.add('analytics-region-card-graph-section-value');
-        maximum.textContent = 'Max: ';
-        maximum.appendChild(this.makeSummaryValue(summaryValues.maximum, minValue, maxValue));
+        maximum.classList.add(
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-maximum-' + id
+        );
 
         this.element.appendChild(title);
         this.element.appendChild(sparkLine);
         this.element.appendChild(average);
         this.element.appendChild(minimum);
         this.element.appendChild(maximum);
+    }
+
+    updateGraphSection(id, titleText, poseValueFunction, minValue, maxValue) {
+        let summaryValues = this.getSummaryValues(poseValueFunction);
+        this.graphSummaryValues[titleText] = summaryValues;
+
+        let path = this.element.querySelector('.analytics-region-card-graph-section-sparkline-path-' + id);
+        path.setAttribute('d', this.getSparkLinePath(poseValueFunction, summaryValues));
+
+        let average = this.element.querySelector('.analytics-region-card-graph-section-average-' + id);
+        // average.innerHTML = '';
+        average.textContent = 'Avg: ';
+        average.appendChild(this.makeSummaryValue(summaryValues.average, minValue, maxValue));
+
+        let minimum = this.element.querySelector('.analytics-region-card-graph-section-minimum-' + id);
+        minimum.textContent = 'Min: ';
+        minimum.appendChild(this.makeSummaryValue(summaryValues.minimum, minValue, maxValue));
+
+        let maximum = this.element.querySelector('.analytics-region-card-graph-section-maximum-' + id);
+        maximum.textContent = 'Max: ';
+        maximum.appendChild(this.makeSummaryValue(summaryValues.maximum, minValue, maxValue));
     }
 
     /**
@@ -283,7 +368,20 @@ export class RegionCard {
         if (max < 1000) {
             span.textContent = val.toFixed(1);
         } else {
-            span.textContent = val.toFixed(0);
+            if (val < 1000) {
+                span.textContent = val.toFixed(0);
+            } else {
+                // limit to thousands, e.g. 1234 -> 1.2k
+                let valThousands = (val / 1000).toFixed(1);
+                if (val > 100000) {
+                    valThousands = (val / 1000).toFixed(0);
+                }
+                span.textContent = `${valThousands}K`;
+            }
+        }
+        if (val > max) {
+            // Prevent overflowing scale
+            val = max;
         }
         let hue = (max - val) / (max - min) * 120;
         span.style.color = `hsl(${hue}, 100%, 50%)`;

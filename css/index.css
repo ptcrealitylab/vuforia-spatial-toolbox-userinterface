@@ -1560,6 +1560,21 @@ Logic Interface CSS
     visibility: visible;
 }
 
+.temp-anim-div {
+    display: inline-block;
+    position: absolute;
+    background-color: rgb(255,255,255);
+    pointer-events: none;
+    opacity: 0.2;
+    visibility: visible;
+    z-index: 4;
+    transition: all 0.3s ease-out;
+}
+
+.temp-anim-div-anim {
+    opacity: 0;
+}
+
 .transitioningToFullscreen {
     display: none;
 }
@@ -1850,11 +1865,11 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
-.analytics-region-card.minimized > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
+.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
 
-.analytics-region-card.minimized {
+.analytics-region-card.minimized:not(.pinned) {
     padding: 14px;
     height: 28px;
     line-height: 14px;
@@ -1870,21 +1885,25 @@ Logic Interface CSS
     position: relative;
     margin: 10px 0;
     transform: translateZ(3000px);
-    width: fit-content;
+    width: 15rem;
 }
 
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 80px;
+    bottom: 320px; /* guess at timeline top */
     left: 35px;
     padding: 0;
+    padding-right: 8px;
     pointer-events: all;
+    overflow-y: scroll;
 }
 
 .analytics-pinned-region-cards-csv {
     position: absolute;
-    top: -34px;
-    left: 56px;
+    top: 46px;
+    left: 92px;
+    pointer-events: all;
 }
 
 .analytics-pinned-region-cards-csv,
@@ -1924,10 +1943,10 @@ Logic Interface CSS
 .analytics-region-card-graph-section-value {
 }
 
-.analytics-region-card-pin, .analytics-region-card-view {
+.analytics-region-card-pin, .analytics-region-card-show {
     color: white;
 }
-.analytics-region-card-pin:visited, .analytics-region-card-view:visited {
+.analytics-region-card-pin:visited, .analytics-region-card-show:visited {
     color: white;
 }
 
@@ -1948,4 +1967,24 @@ Logic Interface CSS
 
 .deactivatedIframeOverlay {
     pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
+}
+
+.ru-container {
+    position: absolute;
+    top: 60px;
+    left: calc(30px + 54px + 30px);
+    transform: translateZ(1100px);
+    z-index: 1100;
+}
+
+.ru-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 12px;
+    border: 2px solid rgba(0, 0, 0, 0);
+    border-radius: 8px;
+}
+
+.ru-icon.ru-icon-active {
+    border-color: white;
 }

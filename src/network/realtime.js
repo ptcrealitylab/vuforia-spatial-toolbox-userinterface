@@ -111,7 +111,6 @@ createNameSpace("realityEditor.network.realtime");
             // if we haven't already created a socket connection to that IP, create a new one,
             //   and register update listeners, and emit a /subscribe message so it can connect back to us
             realityEditor.network.realtime.createSocketInSet('realityServers', serverAddress, function(_socket) {
-                if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
                 sockets['realityServers'][serverAddress].emit(realityEditor.network.getIoTitle(object.port, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
                 addServerUpdateListener(serverAddress);
             });
@@ -242,6 +241,23 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} serverAddress
      */
     function addServerUpdateListener(serverAddress) {
+
+        let hasCloudProxySocket = realityEditor.cloud.socket;
+
+        if (!hasCloudProxySocket) {
+            console.log('No cloud socket – add /udp/beat and /udp/action listeners to existing realtime socket');
+            // this allows the app to receive heartbeats when not on a Wi-Fi network that supports UDP
+            addServerSocketMessageListener(serverAddress, '/udp/beat', (msg) => {
+                // console.log('realtime socket got beat', msg);
+                realityEditor.app.callbacks.receivedUDPMessage(msg);
+            });
+
+            // this allows the app to receive action messages when not on a Wi-Fi network that supports UDP
+            addServerSocketMessageListener(serverAddress, '/udp/action', (msg) => {
+                // console.log('realtime socket got action', msg);
+                realityEditor.app.callbacks.receivedUDPMessage(msg);
+            });
+        }
 
         addServerSocketMessageListener(serverAddress, '/batchedUpdate', function(msg) {
             var msgContent = typeof msg === 'string' ? JSON.parse(msg) : msg;

@@ -131,6 +131,9 @@ createNameSpace("realityEditor.worldObjects");
         };
         console.log('try loading local world object...', worldObjectBeat);
 
+        // process the heartbeat automatically, in case UDP isn't allowed on this network (e.g. cellular)
+        realityEditor.network.discovery.processHeartbeat(worldObjectBeat);
+
         if (!realityEditor.network.state.isCloudInterface) {
             realityEditor.network.addHeartbeatObject(worldObjectBeat);
         }
@@ -396,6 +399,11 @@ createNameSpace("realityEditor.worldObjects");
     let localizedWithinWorldCallbacks = [];
     function onLocalizedWithinWorld(callback) {
         localizedWithinWorldCallbacks.push(callback);
+
+        let bestWorld = getBestWorldObject();
+        if (bestWorld && bestWorld.objectId !== getLocalWorldId()) {
+            callback(bestWorld.objectId); // trigger immediately if we're already localized
+        }
     }
 
     /**

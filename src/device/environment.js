@@ -54,6 +54,7 @@ createNameSpace("realityEditor.device.environment");
         layoutUIForPortrait: false,
         defaultShowGroundPlane: false,
         supportsMemoryCreation: true,
+        hasLocalNetworkAccess: true, // set to false if iOS device permissions disabled
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10

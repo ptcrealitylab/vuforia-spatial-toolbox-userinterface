@@ -22,6 +22,7 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
+let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -52,7 +53,7 @@ export class HumanPoseAnalyzer {
      */
     constructor(parent) {
         this.setupContainers(parent);
-        
+
         /** @type {AnalyticsLens[]} */
         this.lenses = [
             new RebaLens(),
@@ -64,7 +65,7 @@ export class HumanPoseAnalyzer {
         this.activeLensIndex = 0;
 
         this.activeJointName = ""; // Used in the UI
-        
+
         this.historyLines = {}; // Dictionary of {poseRenderer.id: {lensName: SpaghettiMeshPath}}, separated by historical and live
         this.historyLineContainers = {
             historical: {},
@@ -90,19 +91,19 @@ export class HumanPoseAnalyzer {
             live: []
         }; // Array of all clones, entry format: Object3Ds with a pose child
         this.recordingClones = realityEditor.device.environment.isDesktop();
-        this.lastDisplayedClone = null;
-        
+        this.lastDisplayedClones = [];
+
         this.prevAnimationState = null;
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
         this.animationMode = AnimationMode.region;
         this.lastAnimationTime = Date.now();
-        
+
         // The renderer for poses that need to be rendered opaquely
         this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES);
         this.opaquePoseRenderer.addToScene(this.opaqueContainer);
-        
+
         // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
         this.selectionMarkPoseRenderInstances = {
             start: new HumanPoseRenderInstance(this.opaquePoseRenderer, 'selectionMarkStart', this.activeLens),
@@ -114,7 +115,7 @@ export class HumanPoseAnalyzer {
         if (realityEditor.device.environment.isDesktop()) {
             this.addHistoricalPoseRenderer();
         }
-        
+
         // Contains all live-recorded poses
         this.livePoseRenderers = [];
         this.addLivePoseRenderer();
@@ -127,7 +128,7 @@ export class HumanPoseAnalyzer {
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
     }
-    
+
     get activeLens() {
         return this.lenses[this.activeLensIndex];
     }
@@ -182,6 +183,7 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setLiveHistoryLinesVisible(this.liveHistoryLineContainer.visible);
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
+        this.settingsUi.setChildHumanPosesVisible(childHumanObjectsVisible);
     }
 
     /**
@@ -209,7 +211,7 @@ export class HumanPoseAnalyzer {
         }
         return hpr;
     }
-    
+
     resetHistoricalPoseRenderers() {
         this.historicalPoseRenderers.forEach((renderer) => {
             renderer.removeFromParent();
@@ -275,7 +277,10 @@ export class HumanPoseAnalyzer {
      */
     poseUpdated(pose, historical) {
         this.addCloneFromPose(pose, historical);
-        this.updateHistoryLines(pose, historical);
+        if(!pose.metadata.poseHasParent) {
+            // add to history line non-auxiliary poses
+            this.updateHistoryLines(pose, historical);
+        }
     }
 
     /**
@@ -307,7 +312,7 @@ export class HumanPoseAnalyzer {
         if (historical) {
             historicalPoseRenderInstanceList.push(poseRenderInstance);
         }
-        
+
         this.clones.all.push(poseRenderInstance);
         if (historical) {
             this.clones.historical.push(poseRenderInstance);
@@ -315,8 +320,9 @@ export class HumanPoseAnalyzer {
             this.clones.live.push(poseRenderInstance);
         }
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
+        const canBeVisible = childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
-            poseRenderInstance.setVisible(true);
+            poseRenderInstance.setVisible(canBeVisible);
         } else {
             poseRenderInstance.setVisible(false);
         }
@@ -358,6 +364,9 @@ export class HumanPoseAnalyzer {
         const updatedHistoryLines = [];
         this.lenses.forEach(lens => {
             poses.forEach(pose => {
+                if (pose.metadata.poseHasParent) {
+                    return;
+                }
                 const updatedHistoryLine = this.addPointToHistoryLine(lens, pose, historical, false);
                 if (!updatedHistoryLines.includes(updatedHistoryLine)) {
                     updatedHistoryLines.push(updatedHistoryLine);
@@ -416,7 +425,7 @@ export class HumanPoseAnalyzer {
         if (shouldUpdate) {
             historyLine.setPoints(historyLine.currentPoints);
         }
-        
+
         return historyLine;
     }
 
@@ -495,8 +504,8 @@ export class HumanPoseAnalyzer {
      */
     resetHistoricalHistoryClones() {
         this.clones.historical.forEach(clone => {
-            if (this.lastDisplayedClone === clone) {
-                this.lastDisplayedClone = null;
+            if (this.lastDisplayedClones.includes(clone)) {
+                this.lastDisplayedClones.splice(this.lastDisplayedClones.indexOf(clone), 1);
             }
             clone.remove();
             this.clones.all.splice(this.clones.all.indexOf(clone), 1);
@@ -511,8 +520,8 @@ export class HumanPoseAnalyzer {
      */
     resetLiveHistoryClones() {
         this.clones.live.forEach(clone => {
-            if (this.lastDisplayedClone === clone) {
-                this.lastDisplayedClone = null;
+            if (this.lastDisplayedClones.includes(clone)) {
+                this.lastDisplayedClones.splice(this.lastDisplayedClones.indexOf(clone), 1);
             }
             clone.remove();
             this.clones.all.splice(this.clones.all.indexOf(clone), 1);
@@ -528,13 +537,13 @@ export class HumanPoseAnalyzer {
     setActiveLens(lens) {
         this.activeLensIndex = this.lenses.indexOf(lens);
         this.applyCurrentLensToHistory();
-        
+
         // Swap hpri colors
         this.clones.all.forEach(clone => {
             clone.setLens(lens);
             clone.renderer.markColorNeedsUpdate();
         });
-        
+
         // Swap history lines
         this.lenses.forEach(l => {
             this.historyLineContainers.historical[l.name].visible = false;
@@ -585,6 +594,10 @@ export class HumanPoseAnalyzer {
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
+            this.setAnimationMode(AnimationMode.cursor);
+            // Clear prevAnimationState because we're no longer in a
+            // highlighting state
+            this.prevAnimationState = null;
             return;
         }
         if (this.animationMode !== AnimationMode.region &&
@@ -606,7 +619,7 @@ export class HumanPoseAnalyzer {
     setDisplayRegion(displayRegion) {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
-        
+
         for (let historyLine of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
             if (historyLine.getStartTime() > secondTimestamp || historyLine.getEndTime() < firstTimestamp) {
                 historyLine.visible = false;
@@ -636,26 +649,52 @@ export class HumanPoseAnalyzer {
             }
             if (!fromSpaghetti) {
                 mesh.setCursorTime(timestamp);
+
+                if (this.animationMode !== AnimationMode.cursor) {
+                    this.setAnimationMode(AnimationMode.cursor);
+                }
             }
-            if (this.animationMode !== AnimationMode.cursor) {
-                this.setAnimationMode(AnimationMode.cursor);
-            }
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
-            this.displayCloneByTimestamp(timestamp);
         }
+        this.displayClonesByTimestamp(timestamp);
     }
 
     /**
-     * Sets all poses in the time interval
+     * Returns a list of poses in the time interval, preferring the historical
+     * data source where available
      * @param {number} firstTimestamp - start of time interval in ms
      * @param {number} secondTimestamp - end of time interval in ms
      * @return {Pose[]} - all poses in the time interval
      */
     getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
-        const poses = this.clones.all.map(clone => clone.pose).filter(pose => pose.timestamp >= firstTimestamp && pose.timestamp <= secondTimestamp);
-        poses.sort((a, b) => a.timestamp - b.timestamp);
-        return poses;
+        function getPoses(clonesList) {
+            const poses = clonesList.map(clone => clone.pose).filter(pose => {
+                return pose.timestamp >= firstTimestamp &&
+                    pose.timestamp <= secondTimestamp;
+            });
+            poses.sort((a, b) => a.timestamp - b.timestamp);
+            return poses;
+        }
+
+        const live = getPoses(this.clones.live);
+        if (live.length > 0) {
+            return live;
+        }
+
+        return getPoses(this.clones.historical);
+    }
+
+    /**
+     * Makes the live human poses visible or invisible
+     * @param {boolean} visible - whether to show or not
+     */
+    setLiveHumanPosesVisible(visible) {
+
+        this.opaqueContainer.visible = visible;
+        /*
+        for (let id in this.livePoseRenderers) {
+            this.livePoseRenderers[id].container.visible = visible;
+        }
+        */
     }
 
     /**
@@ -715,7 +754,7 @@ export class HumanPoseAnalyzer {
         this.nextLensIndex = (this.activeLensIndex + 1) % this.lenses.length;
         this.setActiveLens(this.lenses[this.nextLensIndex]);
     }
-    
+
     /**
      * Applies the current lens to the history, updating the clones' colors if needed
      */
@@ -726,7 +765,7 @@ export class HumanPoseAnalyzer {
                 if (wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
                 }
-            }); 
+            });
         });
     }
 
@@ -741,16 +780,17 @@ export class HumanPoseAnalyzer {
         if (animationMode === AnimationMode.cursor) {
             this.saveAnimationState();
         }
-        
+
         this.animationMode = animationMode;
-        
+
         if (this.clones.all.length === 0) {
             return;
         }
 
         if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clones.all) {
-                clone.setVisible(true);
+                const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+                clone.setVisible(canBeVisible);
                 clone.renderer.markMatrixNeedsUpdate();
             }
             return;
@@ -781,6 +821,10 @@ export class HumanPoseAnalyzer {
         if (this.animationMode === AnimationMode.cursor) {
             return;
         }
+        // May have not set an animation state
+        if (this.animationStart < 0 || this.animationEnd < 0) {
+            return;
+        }
 
         this.prevAnimationState = {
             animationMode: this.animationMode,
@@ -793,6 +837,7 @@ export class HumanPoseAnalyzer {
      * Resets to the saved animation state after exiting the temporary cursor mode
      */
     restoreAnimationState() {
+        this.hideLastDisplayedClones();
         if (!this.prevAnimationState) {
             return;
         }
@@ -851,8 +896,8 @@ export class HumanPoseAnalyzer {
         switch (this.animationMode) {
         case AnimationMode.region:
             // Fully reset the animation when changing
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+            this.hideLastDisplayedClones();
+            this.lastDisplayedClones = [];
             break;
         case AnimationMode.regionAll: {
             this.hideAllClones();
@@ -903,7 +948,7 @@ export class HumanPoseAnalyzer {
         let animationDuration = this.animationEnd - this.animationStart;
         let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
         this.animationPosition = this.animationStart + progressClamped;
-        this.displayCloneByTimestamp(this.animationPosition);
+        realityEditor.analytics.setCursorTime(this.animationPosition, true);
     }
 
     /**
@@ -913,7 +958,7 @@ export class HumanPoseAnalyzer {
         this.animationStart = -1;
         this.animationEnd = -1;
         this.animationPosition = -1;
-        this.hideLastDisplayedClone();
+        this.hideLastDisplayedClones();
     }
 
     /**
@@ -936,11 +981,12 @@ export class HumanPoseAnalyzer {
             if (clone.pose.timestamp > end) {
                 break;
             }
-            if (clone.visible === visible) {
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            if (clone.visible === (visible && canBeVisible)) {
                 continue;
             }
             clone.renderer.markMatrixNeedsUpdate();
-            clone.setVisible(visible);
+            clone.setVisible(visible && canBeVisible);
         }
     }
 
@@ -949,7 +995,8 @@ export class HumanPoseAnalyzer {
      */
     showAllClones() {
         this.clones.all.forEach(clone => {
-            clone.setVisible(true);
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
     }
@@ -965,20 +1012,20 @@ export class HumanPoseAnalyzer {
     }
 
     /**
-     * Hides the current single displayed clone
+     * Hides the current displayed clones
      */
-    hideLastDisplayedClone() {
-        if (this.lastDisplayedClone) {
-            this.lastDisplayedClone.setVisible(false);
-            this.lastDisplayedClone.renderer.markMatrixNeedsUpdate();
-        }
+    hideLastDisplayedClones() {
+        this.lastDisplayedClones.forEach(clone => {
+            clone.setVisible(false);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
     }
 
     /**
-     * Displays the clone with the closest timestamp to the given timestamp
+     * Displays the clones with the closest timestamp to the given timestamp per objectId
      * @param {number} timestamp - the timestamp to display
      */
-    displayCloneByTimestamp(timestamp) {
+    displayClonesByTimestamp(timestamp) {
         if (this.animationMode === AnimationMode.all || this.animationMode === AnimationMode.regionAll) { // Don't do anything if we're rendering all clones
             return;
         }
@@ -987,49 +1034,96 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        const bestClone = this.getCloneByTimestamp(timestamp);
-        if (!bestClone) {
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = null;
+        const bestClones = this.getClonesByTimestamp(timestamp);
+        if (bestClones.length === 0) {
+            this.hideLastDisplayedClones();
+            this.lastDisplayedClones = [];
             return;
         }
 
-        if (this.lastDisplayedClone !== bestClone) {
-            this.hideLastDisplayedClone();
-            this.lastDisplayedClone = bestClone;
-            bestClone.setVisible(true);
-            bestClone.renderer.markMatrixNeedsUpdate();
-        }
+        const clonesToHide = this.lastDisplayedClones.filter(clone => !bestClones.includes(clone));
+        const clonesToShow = bestClones.filter(clone => !this.lastDisplayedClones.includes(clone));
+
+        clonesToHide.forEach(clone => {
+            clone.setVisible(false);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
+        clonesToShow.forEach(clone => {
+            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            clone.setVisible(canBeVisible);
+            clone.renderer.markMatrixNeedsUpdate();
+        });
+
+        this.lastDisplayedClones = bestClones;
     }
 
     /**
-     * Returns the clone with the closest timestamp to the given timestamp
+     * Returns the clone with the closest timestamp to the given timestamp, independent of objectId
      * @param {number} timestamp - time in ms
-     * @return {HumanPoseRenderInstance} - the clone with the closest timestamp
+     * @return {HumanPoseRenderInstance | null} - the clone with the closest timestamp
      */
     getCloneByTimestamp(timestamp) {
         if (this.clones.all.length < 2) {
             return null;
         }
 
-        let bestClone = null;
-        let distance = 0;
+        let bestClone = this.clones.all[0];
+        let bestDeltaT = Math.abs(this.clones.all[0].pose.timestamp - timestamp);
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
-            if (!bestClone) {
-                bestClone = this.clones.all[i];
-                distance = Math.abs(bestClone.pose.timestamp - timestamp);
+            const clone = this.clones.all[i];
+            if (clone.pose.metadata.poseHasParent)
                 continue;
-            }
-            let clone = this.clones.all[i];
-            let cloneDistance = Math.abs(clone.pose.timestamp - timestamp);
-            if (cloneDistance < distance) {
+            const deltaT = Math.abs(clone.pose.timestamp - timestamp);
+            if (deltaT < bestDeltaT) {
                 bestClone = clone;
-                distance = cloneDistance;
+                bestDeltaT = deltaT;
             }
         }
+
         return bestClone;
+    }
+
+    /**
+     * Returns the clones per objectId with the closest timestamp to the given timestamp
+     * @param {number} timestamp - time in ms
+     * @return {HumanPoseRenderInstance[]} - the clones with the closest timestamp per objectId
+     */
+    getClonesByTimestamp(timestamp) {
+        if (this.clones.all.length < 2) {
+            return [];
+        }
+
+        const maxDeltaT = 100; // ms, don't show clones that are more than some time interval away from the current time
+        let bestData = [];
+
+        // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
+        for (let i = 0; i < this.clones.all.length; i++) {
+            const clone = this.clones.all[i];
+            const objectId = clone.pose.metadata.poseObjectId;
+            const bestDatum = bestData.find(data => data.objectId === objectId);
+            if (!bestDatum) {
+                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
+                    continue;
+                }
+                bestData.push({
+                    clone,
+                    distance: Math.abs(clone.pose.timestamp - timestamp),
+                    objectId
+                });
+            } else {
+                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
+                    continue;
+                }
+                const distance = Math.abs(clone.pose.timestamp - timestamp);
+                if (distance < bestDatum.distance) {
+                    bestDatum.clone = clone;
+                    bestDatum.distance = distance;
+                }
+            }
+        }
+        return bestData.map(bestDatum => bestDatum.clone);
     }
 }
 
@@ -1070,7 +1164,7 @@ function bulkRenderHistoricalPoses(poses, container) {
  */
 function renderLiveHumanPoseObjects(poseObjects, timestamp, container) {
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
-    
+
     if (!humanPoseAnalyzer) {
         humanPoseAnalyzer = new HumanPoseAnalyzer(container);
     }
@@ -1087,8 +1181,13 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {HumanPoseRenderInstance} poseRenderInstance - the pose render instance to hide
  */
 function hidePoseRenderInstance(poseRenderInstance) {
-    poseRenderInstance.setVisible(false);
+    /*
+    poseRenderInstance.setVisible(false); // TODO: delete the instance rather than hide, performance impact of setting up a new instance max every second is negligible
     poseRenderInstance.renderer.markNeedsUpdate();
+    */
+    poseRenderInstance.remove();
+    poseRenderInstance.renderer.markNeedsUpdate();
+    delete poseRenderInstances[poseRenderInstance.id];
 }
 
 /**
@@ -1098,7 +1197,7 @@ function hidePoseRenderInstance(poseRenderInstance) {
  */
 function updatePoseRenderer(poseObject, timestamp) {
     let renderer = humanPoseAnalyzer.opaquePoseRenderer;
-    const identifier = poseObject.uuid;
+    const identifier = poseObject.objectId;
     if (!poseRenderInstances[identifier]) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, humanPoseAnalyzer.activeLens);
     }
@@ -1109,7 +1208,10 @@ function updatePoseRenderer(poseObject, timestamp) {
         hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = null;
     }
     hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => hidePoseRenderInstance(poseRenderInstance), 1000);
+    renderer.markNeedsUpdate();
 }
+
+const mostRecentPoseByObjectId = {};
 
 /**
  * Updates the pose renderer with the current pose data
@@ -1121,10 +1223,11 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
     const jointPositions = {};
-    
+    const jointConfidences = {};
+
     for (const [i, jointId] of Object.values(JOINTS).entries()) {
         // assume that all sub-objects are of the form poseObject.id + joint name
-        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.uuid}${jointId}`);
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.objectId}${jointId}`);
 
         // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
         let jointMatrixThree = new THREE.Matrix4();
@@ -1136,25 +1239,31 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
         jointPositions[jointId] = jointPosition;
 
-        if (RENDER_CONFIDENCE_COLOR) {
-            let keys = getJointNodeInfo(poseObject, i);
-            // zero confidence if node's public data are not available
-            let confidence = 0.0;
-            if (keys) {
-                const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
-                if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
-                    confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
-                }
+        let keys = getJointNodeInfo(poseObject, i);
+        // zero confidence if node's public data are not available
+        let confidence = 0.0;
+        if (keys) {
+            const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+            if (node && node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
+                confidence = node.publicData[JOINT_PUBLIC_DATA_KEYS.data].confidence;
             }
+        }
+        jointConfidences[jointId] = confidence;
+
+        if (RENDER_CONFIDENCE_COLOR) {
+
             poseRenderInstance.setJointConfidenceColor(jointId, confidence);
         }
     }
 
-    const pose = new Pose(jointPositions, timestamp, {poseObjectId: poseObject.uuid});
+    const poseHasParent = poseObject.parent && (poseObject.parent !== 'none');
+    const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.objectId, poseHasParent: poseHasParent});
+    pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
+    mostRecentPoseByObjectId[poseObject.objectId] = pose;
     humanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(humanPoseAnalyzer.activeLens);
-    poseRenderInstance.setVisible(true);
+    poseRenderInstance.setVisible(childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
     humanPoseAnalyzer.poseUpdated(pose, false);
@@ -1340,6 +1449,26 @@ function toggleAnalyzerSettingsUI() {
     }
 }
 
+/**
+ * Sets the visibility of the human poses
+ * @param {boolean} visible - whether to show or not
+ */
+function setHumanPosesVisible(visible) {
+    humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
+}
+
+/**
+ * Sets the visibility of the child human pose objects
+ * Note: Used in live mode so far
+ * @param {boolean} visible - whether to show or not
+ */
+function setChildHumanPosesVisible(visible) {
+    childHumanObjectsVisible = visible;
+    if (this.settingsUi) {
+        this.settingsUi.setChildHumanPosesVisible(visible);
+    }
+}
+
 // TODO: Remove deprecated API use
 export {
     bulkRenderHistoricalPoses,
@@ -1363,4 +1492,6 @@ export {
     showAnalyzerSettingsUI,
     hideAnalyzerSettingsUI,
     toggleAnalyzerSettingsUI,
+    setHumanPosesVisible,
+    setChildHumanPosesVisible
 };

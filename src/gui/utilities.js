@@ -230,3 +230,35 @@ realityEditor.gui.utilities.getTargetSize = function(objectKey) {
 
     return targetSize;
 };
+
+/**
+ * Smoothly animates a set of translations using the first-last-invert-play
+ * technique
+ * @param {Array<Element>} elements
+ * @param {Function} translationFn - called to apply translation
+ * @param {object} options - used for Web Animations API
+ */
+realityEditor.gui.utilities.animateTranslations = function(elements, translationFn, options) {
+    const starts = elements.map(element => element.getBoundingClientRect());
+    translationFn();
+    const ends = elements.map(element => element.getBoundingClientRect());
+
+    for (let i = 0; i < elements.length; i++) {
+        const element = elements[i];
+        const start = starts[i];
+        const end = ends[i];
+
+        const dx = start.left - end.left;
+        const dy = start.top - end.top;
+
+        element.animate([
+            {
+                transform: `translate(${dx}px, ${dy}px)`,
+            }, {
+                transform: `none`,
+            }
+        ], Object.assign({
+            fill: 'both', // Transform should persist afterwards and be applied before
+        }, options));
+    }
+};

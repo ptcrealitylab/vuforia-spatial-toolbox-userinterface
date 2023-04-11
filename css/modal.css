@@ -347,8 +347,13 @@ a.modalLink:active { color: #757575; }
 }
 
 .loaderContainerPortrait {
-    height: max(32vh, 32vw) !important;
-    top: calc(50vh - max(32vh, 32vw)/2) !important;
+    height: max(36vh, 36vw) !important;
+    top: calc(50vh - max(36vh, 36vw)/2) !important;
+}
+
+.loaderContainerPortraitTall {
+    height: max(50vh, 50vw) !important;
+    top: calc(50vh - max(50vh, 50vw)/2) !important;
 }
 
 .loader {
