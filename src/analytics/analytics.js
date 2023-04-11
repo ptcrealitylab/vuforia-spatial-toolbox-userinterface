@@ -42,16 +42,24 @@ export class Analytics {
     }
 
     add() {
+        if (this.added) {
+            return;
+        }
+        this.added = true;
+
         this.createNewPinnedRegionCardsContainer();
         document.body.appendChild(this.container);
-        this.added = true;
         showAnalyzerSettingsUI();
     }
 
     remove() {
+        if (!this.added) {
+            return;
+        }
+        this.added = false;
+
         document.body.removeChild(this.container);
         clearHistoricalData();
-        this.added = false;
         this.timeline.reset();
         hideAnalyzerSettingsUI();
     }

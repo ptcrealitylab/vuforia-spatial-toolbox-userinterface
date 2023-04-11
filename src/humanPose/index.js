@@ -187,6 +187,7 @@ import {JOINT_TO_INDEX} from './constants.js';
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
         const poses = [];
+        const mostRecentPoseByObjectId = {};
         timestampStrings.forEach(timestampString => {
             let historyEntry = history[timestampString];
             let objectNames = Object.keys(historyEntry);
@@ -197,9 +198,6 @@ import {JOINT_TO_INDEX} from './constants.js';
             }
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
-                if (!poseObject.uuid) {
-                    poseObject.uuid = poseObject.objectId;
-                }
                 let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
                 const jointPositions = {};
                 const jointConfidences = {};
@@ -209,7 +207,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
                 for (let jointId of Object.values(JOINTS)) {
-                    let frame = poseObject.frames[poseObject.uuid + jointId];
+                    let frame = poseObject.frames[poseObject.objectId + jointId];
                     if (!frame.ar.matrix) {
                         continue;
                     }
@@ -235,11 +233,13 @@ import {JOINT_TO_INDEX} from './constants.js';
                 if (Object.keys(jointPositions).length === 0) {
                     return;
                 }
-                const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+                const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
                 const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
                     poseObjectId: identifier,
                     poseHasParent: poseObject.parent && (poseObject.parent !== 'none'),
                 });
+                pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
+                mostRecentPoseByObjectId[poseObject.objectId] = pose;
                 poses.push(pose);
             }
         });

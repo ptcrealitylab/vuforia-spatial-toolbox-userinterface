@@ -1969,6 +1969,26 @@ Logic Interface CSS
     pointer-events: none; /* deactivates the tool's touchPropagation cover, so the iframe is directly interactable */
 }
 
+.ru-container {
+    position: absolute;
+    top: 60px;
+    left: calc(30px + 54px + 30px);
+    transform: translateZ(1100px);
+    z-index: 1100;
+}
+
+.ru-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 12px;
+    border: 2px solid rgba(0, 0, 0, 0);
+    border-radius: 8px;
+}
+
+.ru-icon.ru-icon-active {
+    border-color: white;
+}
+
 .iframeOverlayWithoutFocus {
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
