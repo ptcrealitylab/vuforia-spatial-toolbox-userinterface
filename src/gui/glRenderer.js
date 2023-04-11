@@ -111,10 +111,16 @@ class WorkerGLProxy {
         this.frameEndListener = null;
 
         /**
-         * @type {Int32Array} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
+         * @type {Int32Array|null} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
          */
-        this.synclock = new Int32Array(new SharedArrayBuffer(4));
-        Atomics.store(this.synclock, 0, 1);
+        this.synclock = null;
+        // if we don't meet the security requirements, don't initialize the sharedarraybuffer
+        // this will also have an effect on which WebGLSyncStrategy will be used
+        if (isSecureContext && crossOriginIsolated) {
+          
+            this.synclock = new Int32Array(new SharedArrayBuffer(4));
+            Atomics.store(this.synclock, 0, 1);
+        } 
     }
 
     /**
@@ -201,7 +207,7 @@ class WorkerGLProxy {
             case WorkerGLProxy.STATE_CONTEXT_RESTORED:
                 // if the message is none of the above, it's a command buffer. notify the commandbuffermanager about the received command buffer.
                 this.buffer.onCommandBufferReceived(message);
-                if (Atomics.load(this.synclock, 0) === 0) {
+                if ((this.synclock !== null) && (Atomics.load(this.synclock, 0) === 0)) {
                     switch (this.serverState) {
                         case WorkerGLProxy.STATE_BOOTSTRAP:
                             this.serverState = WorkerGLProxy.STATE_BOOTSTRAP_SYNC;
@@ -365,7 +371,7 @@ class WorkerGLProxy {
             // execute the resource commandbuffer
             let commandId = 1;
             // is the client locked and awaiting a response
-            if (Atomics.load(this.synclock, 0) === 1) {
+            if ((this.synclock === null) || (Atomics.load(this.synclock, 0) === 1)) {
                 // normal unlocked execution of the resource command buffer
                 // itterate the commandbuffer and execute each command, generating an id for tracing
                 for (let command of localCommandBuffer.commands) {
