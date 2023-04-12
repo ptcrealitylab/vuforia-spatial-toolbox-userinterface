@@ -458,9 +458,11 @@ class WorkerGLProxy {
         this.frameEndListener = null;
         window.removeEventListener('message', this.onMessage);
         // unlock the thread if needed
-        if (Atomics.load(this.synclock, 0) === 0) {
-            Atomics.store(this.synclock, 0, 1);
-            Atomics.notify(this.synclock, 0, 1);
+        if (this.synclock !== null) {
+            if (Atomics.load(this.synclock, 0) === 0) {
+                Atomics.store(this.synclock, 0, 1);
+                Atomics.notify(this.synclock, 0, 1);
+            }
         }
     }
 
@@ -474,8 +476,10 @@ class WorkerGLProxy {
             case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
             case WorkerGLProxy.STATE_FRAME_SYNC:
             case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
-                Atomics.store(this.synclock, 0, 1);
-                Atomics.notify(this.synclock, 0, 1);
+                if (this.synclock !== null) {
+                    Atomics.store(this.synclock, 0, 1);
+                    Atomics.notify(this.synclock, 0, 1);
+                }
             case WorkerGLProxy.STATE_BOOTSTRAP_DONE:
             case WorkerGLProxy.STATE_FRAME_DONE:
             case WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE:
