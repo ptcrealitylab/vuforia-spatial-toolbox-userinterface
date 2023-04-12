@@ -1971,10 +1971,18 @@ Logic Interface CSS
 
 .ru-container {
     position: absolute;
-    top: 60px;
-    left: calc(30px + 54px + 30px);
     transform: translateZ(1100px);
     z-index: 1100;
+}
+
+.ru-container.ru-mobile {
+    bottom: 40px;
+    left: calc(30px + 68px + 30px);
+}
+
+.ru-container.ru-desktop {
+    top: 60px;
+    left: calc(30px + 54px + 68px + 30px);
 }
 
 .ru-icon {
@@ -1987,14 +1995,4 @@ Logic Interface CSS
 
 .ru-icon.ru-icon-active {
     border-color: white;
-}
-
-/* RESPONSIVE DESIGN */
-
-@media screen and (max-width: 768px) {
-    .ru-container {
-        top: unset;
-        bottom: 40px;
-        left: calc(30px + 68px + 30px);
-    }
 }
