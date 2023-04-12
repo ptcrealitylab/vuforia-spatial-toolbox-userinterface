@@ -116,7 +116,7 @@ class WorkerGLProxy {
         this.synclock = null;
         // if we don't meet the security requirements, don't initialize the sharedarraybuffer
         // this will also have an effect on which WebGLSyncStrategy will be used
-        if (isSecureContext && crossOriginIsolated) {
+        if (isSecureContext && crossOriginIsolated && false) {
           
             this.synclock = new Int32Array(new SharedArrayBuffer(4));
             Atomics.store(this.synclock, 0, 1);
