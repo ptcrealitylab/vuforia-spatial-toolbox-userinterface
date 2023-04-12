@@ -1,5 +1,6 @@
 import {GLState, Handle, DeviceDescription} from "/objectDefaultFiles/glState.js"
 import {CommandId, Command, CommandBufferManager} from "/objectDefaultFiles/glCommandBuffer.js"
+import {useWebWorkers} from "/objectDefaultFiles/WorkerFactory.js"
 
 createNameSpace("realityEditor.gui.glRenderer");
 
@@ -114,10 +115,8 @@ class WorkerGLProxy {
          * @type {Int32Array|null} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
          */
         this.synclock = null;
-        // if we don't meet the security requirements, don't initialize the sharedarraybuffer
-        // this will also have an effect on which WebGLSyncStrategy will be used
-        if (isSecureContext && crossOriginIsolated && false) {
-          
+        // check which combination of worker and webgl sync strategy are needed
+        if (useWebWorkers()) {
             this.synclock = new Int32Array(new SharedArrayBuffer(4));
             Atomics.store(this.synclock, 0, 1);
         } 
