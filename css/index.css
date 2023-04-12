@@ -1982,17 +1982,21 @@ Logic Interface CSS
 
 .ru-container.ru-desktop {
     top: 60px;
-    left: calc(30px + 54px + 68px + 30px);
-}
+    left: 150px;
+}    
 
 .ru-icon {
     width: 54px;
     height: 54px;
-    margin: 0 12px;
+    margin: 0 6px;
     border: 2px solid rgba(0, 0, 0, 0);
-    border-radius: 8px;
+    border-radius: 12.8px;
 }
 
 .ru-icon.ru-icon-active {
     border-color: white;
+}
+
+.iframeOverlayWithoutFocus {
+    pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
