@@ -63,8 +63,11 @@
     -webkit-touch-callout:none;
 }
 
-
-
+#GUI {
+    /* This will affect the z-index of the tool iframes added to the scene */
+    /* If larger than the glcanvas z-index, the tools render on top of the 3D content */
+    z-index: 100;
+}
 
 body {
     -webkit-transform-style: preserve-3d;
@@ -711,8 +714,8 @@ body {
     border: 4px solid #01fffc;
     border-radius: 60px;
 
-    /* this is a hack for adding the interface in front of the transformed web interface */
-    z-index: 3;
+    /* render the touch overlay circle on top of everything */
+    z-index: 6000;
     -webkit-transform-style: preserve-3d;
     -webkit-transform: translateZ(6000px);
 }
@@ -1517,6 +1520,12 @@ Logic Interface CSS
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
     z-index: 2900;
+}
+
+.envelopeMenuButton:hover {
+    filter: brightness(0.8);
+    -webkit-filter: brightness(0.8);
+    transform: scale(0.975);
 }
 
 #exitEnvelopeButton {
