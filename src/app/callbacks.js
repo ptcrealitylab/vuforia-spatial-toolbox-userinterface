@@ -224,7 +224,7 @@ createNameSpace('realityEditor.app.callbacks');
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
             // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
-            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData.timestamp));
+            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
             
         }
     }

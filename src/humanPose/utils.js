@@ -65,11 +65,15 @@ function isHumanPoseObject(object) {
     return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
 }
 
-function makePoseFromJoints(name, joints, timestamp) {
+function makePoseData(name, poseJoints, frameData) {
     return {
         name: name,
-        timestamp: timestamp,
-        joints: joints
+        joints: poseJoints,
+        timestamp: frameData.timestamp,
+        imageSize: frameData.imageSize,
+        focalLength: frameData.focalLength,
+        principalPoint: frameData.principalPoint,
+        transformW2C: frameData.transformW2C
     }
 }
 
@@ -286,7 +290,7 @@ export {
     SCALE,
     getBoneName,
     isHumanPoseObject,
-    makePoseFromJoints,
+    makePoseData,
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
