@@ -16,7 +16,6 @@ let activeHumanPoseAnalyzer = null;
 // Map from frame id to humanPoseAnalyzer
 let humanPoseAnalyzers = {};
 const poseRenderInstances = {};
-let historicalPoseRenderInstanceList = [];
 let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
 /**
@@ -288,17 +287,15 @@ function setLiveHistoryLinesVisible(visible) {
 /**
  * Resets the HumanPoseAnalyzer's historical data
  */
-function clearHistoricalData() {
+function clearHistoricalData(frameId) {
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
     }
     activeHumanPoseAnalyzer.clearHistoricalData();
-    // historicalPoseRenderInstanceList.forEach((poseRenderInstance) => {
-    //     poseRenderInstance.remove();
-    //     delete poseRenderInstances[poseRenderInstance.id];
-    // });
-    historicalPoseRenderInstanceList = [];
+    if (humanPoseAnalyzers[frameId]) {
+        delete humanPoseAnalyzers[frameId];
+    }
 }
 
 /**
