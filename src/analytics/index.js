@@ -4,23 +4,31 @@ import {Analytics} from './analytics.js'
 import {AnalyticsMobile} from './AnalyticsMobile.js'
 
 (function(exports) {
-    const DEBUG_ALWAYS_ADD = false;
+    const DEBUG_ALWAYS_OPEN = false;
     const analytics = realityEditor.device.environment.isDesktop() ?
         new Analytics() :
         new AnalyticsMobile();
     exports.analytics = analytics;
 
     exports.analytics.initService = function() {
-        if (DEBUG_ALWAYS_ADD) {
-            exports.analytics.add();
+        if (DEBUG_ALWAYS_OPEN) {
+            exports.analytics.open();
         }
 
-        realityEditor.network.addPostMessageHandler('analyticsAdd', () => {
-            analytics.add();
+        realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
+            analytics.open(msgData.frame);
         });
 
-        realityEditor.network.addPostMessageHandler('analyticsRemove', () => {
-            analytics.remove();
+        realityEditor.network.addPostMessageHandler('analyticsClose', (msgData) => {
+            analytics.close(msgData.frame);
+        });
+
+        realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
+            analytics.focus(msgData.frame);
+        });
+
+        realityEditor.network.addPostMessageHandler('analyticsBlur', (msgData) => {
+            analytics.blur(msgData.frame);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
