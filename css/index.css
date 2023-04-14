@@ -1526,8 +1526,7 @@ Logic Interface CSS
 .envelopeMenuButton:hover {
     filter: brightness(0.8);
     -webkit-filter: brightness(0.8);
-    transform: scale(0.975) translate(2900px);
-    z-index: 2900;
+    /*transform: scale(0.975);*/
 }
 
 #exitEnvelopeButton {
