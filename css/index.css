@@ -1519,13 +1519,15 @@ Logic Interface CSS
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
+    transform: translateZ(2900px);
     z-index: 2900;
 }
 
 .envelopeMenuButton:hover {
     filter: brightness(0.8);
     -webkit-filter: brightness(0.8);
-    transform: scale(0.975);
+    transform: scale(0.975) translate(2900px);
+    z-index: 2900;
 }
 
 #exitEnvelopeButton {
