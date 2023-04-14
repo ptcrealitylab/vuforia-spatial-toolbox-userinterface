@@ -48,6 +48,8 @@ export class HumanPoseAnalyzer {
     constructor(parent) {
         this.setupContainers(parent);
 
+        this.active = true;
+
         /** @type {AnalyticsLens[]} */
         this.lenses = [
             new RebaLens(),
@@ -942,7 +944,14 @@ export class HumanPoseAnalyzer {
         let animationDuration = this.animationEnd - this.animationStart;
         let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
         this.animationPosition = this.animationStart + progressClamped;
-        realityEditor.analytics.setCursorTime(this.animationPosition, true);
+
+        // As the active HPA we control the shared cursor
+        if (this.active) {
+            realityEditor.analytics.setCursorTime(this.animationPosition, true);
+        } else {
+            // Otherwise display the clone without interfering
+            this.displayClonesByTimestamp(this.animationPosition);
+        }
     }
 
     /**
