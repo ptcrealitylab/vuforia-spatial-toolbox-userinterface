@@ -70,7 +70,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderLiveHumanPoseObjects([], Date.now(), null);
+                    draw.renderLiveHumanPoseObjects([], Date.now());
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -89,12 +89,12 @@ import {JOINT_TO_INDEX} from './constants.js';
                             lastRenderedPoses[id] = newPoseHash;
                         }
                     }
-                }                
+                }
                 if (updatedHumanPoseObjects.length == 0) return;
 
                 lastUpdateTime = Date.now();
 
-                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now(), null);
+                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now());
 
             } catch (e) {
                 console.warn('error in renderLiveHumanPoseObjects', e);
@@ -243,7 +243,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                 poses.push(pose);
             }
         });
-        draw.bulkRenderHistoricalPoses(poses, null);
+        draw.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
     }
 
