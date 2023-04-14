@@ -280,8 +280,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
 
         if (!moveToCursor && !spatialCursorMatrix) {
-            let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
-            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
+            let worldCenterPoint = getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
+            if (worldCenterPoint.point === undefined) {
+                let dist = realityEditor.sceneGraph.getDistanceToCamera('rotateCenter'+'_VISUAL_ELEMENT');
+                realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, dist);
+            } else {
+                let worldCamPoint = new THREE.Vector3();
+                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
+            }
         }
 
         return addedElement;
