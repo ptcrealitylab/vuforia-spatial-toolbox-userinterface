@@ -51,10 +51,12 @@ export class Analytics {
      */
     open(frameId) {
         if (this.opened) {
-            if (this.activeEnvelope !== frameId) {
-                this.blur(this.activeEnvelope);
-            } else {
+            if (this.activeEnvelope === frameId) {
+                setActiveFrame(frameId);
                 return;
+            }
+            if (this.activeEnvelope) {
+                this.blur(this.activeEnvelope);
             }
         }
         this.activeEnvelope = frameId;
@@ -71,16 +73,19 @@ export class Analytics {
      * On envelope close
      * remove pinned region cards, remove timeline, remove spaghetti
      */
-    close(_frameId) {
+    close(frameId) {
+        if (frameId !== this.activeEnvelope) {
+            return;
+        }
+
         if (!this.opened) {
             return;
         }
+
         this.opened = false;
 
-        document.body.removeChild(this.container);
-        clearHistoricalData();
-        this.timeline.reset();
-        hideAnalyzerSettingsUI();
+        this.blur(frameId);
+        clearHistoricalData(frameId);
     }
 
     /**
