@@ -1519,13 +1519,14 @@ Logic Interface CSS
     height: 60px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
+    transform: translateZ(2900px);
     z-index: 2900;
 }
 
 .envelopeMenuButton:hover {
     filter: brightness(0.8);
     -webkit-filter: brightness(0.8);
-    transform: scale(0.975);
+    /*transform: scale(0.975);*/
 }
 
 #exitEnvelopeButton {
@@ -1980,11 +1981,19 @@ Logic Interface CSS
 
 .ru-container {
     position: absolute;
-    top: 60px;
-    left: 150px;
     transform: translateZ(1100px);
     z-index: 1100;
 }
+
+.ru-container.ru-mobile {
+    bottom: 40px;
+    left: calc(30px + 68px + 30px);
+}
+
+.ru-container.ru-desktop {
+    top: 64px;
+    left: 300px;
+}    
 
 .ru-icon {
     width: 54px;

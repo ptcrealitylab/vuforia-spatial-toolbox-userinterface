@@ -2,6 +2,11 @@ class RecentlyUsedBar {
     constructor() {
         this.container = document.createElement('div');
         this.container.classList.add('ru-container');
+        if (realityEditor.device.environment.isDesktop()) {
+            this.container.classList.add('ru-desktop');
+        } else {
+            this.container.classList.add('ru-mobile');
+        }
         this.iconElts = [];
         this.capacity = 3;
     }
