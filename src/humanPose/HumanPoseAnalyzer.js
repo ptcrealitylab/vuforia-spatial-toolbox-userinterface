@@ -619,7 +619,7 @@ export class HumanPoseAnalyzer {
         for (let historyLine of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
             if (historyLine.getStartTime() > secondTimestamp || historyLine.getEndTime() < firstTimestamp) {
                 historyLine.visible = false;
-                return;
+                continue;
             }
             historyLine.visible = true;
             historyLine.setDisplayRegion(displayRegion);
