@@ -22,7 +22,8 @@ import {RENDER_CONFIDENCE_COLOR, MAX_POSE_INSTANCES} from './constants.js';
 let humanPoseAnalyzer;
 const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
-let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
+// MK HACK: show by default for debugging
+let childHumanObjectsVisible = true; // false;  // auxiliary human objects supporting fused human objects
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -62,7 +63,8 @@ export class HumanPoseAnalyzer {
             new TimeLens(),
             new PoseObjectIdLens()
         ]
-        this.activeLensIndex = 0;
+        // MK HACK: for debugging multi camera
+        this.activeLensIndex = 4; // 0;
 
         this.activeJointName = ""; // Used in the UI
 
