@@ -14,7 +14,6 @@ import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES} from './constants.js';
 
-let historicalPoseRenderInstanceList = [];
 let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
 const POSE_OPACITY_BASE = 0.5;
@@ -305,9 +304,6 @@ export class HumanPoseAnalyzer {
             this.poseRenderInstances[instanceId] = new HumanPoseRenderInstance(poseRenderer, instanceId, this.activeLens);
         }
         const poseRenderInstance = this.poseRenderInstances[instanceId];
-        if (historical) {
-            historicalPoseRenderInstanceList.push(poseRenderInstance);
-        }
 
         this.clones.all.push(poseRenderInstance);
         if (historical) {
