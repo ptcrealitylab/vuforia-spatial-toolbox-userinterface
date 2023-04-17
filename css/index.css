@@ -1911,8 +1911,8 @@ Logic Interface CSS
 
 .analytics-pinned-region-cards-csv {
     position: absolute;
-    top: 46px;
-    left: 92px;
+    top: 84px;
+    right: calc(100vw - 30px);
     pointer-events: all;
 }
 
