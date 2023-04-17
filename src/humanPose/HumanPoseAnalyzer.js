@@ -14,7 +14,6 @@ import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES} from './constants.js';
 
-const poseRenderInstances = {};
 let historicalPoseRenderInstanceList = [];
 let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
@@ -61,6 +60,7 @@ export class HumanPoseAnalyzer {
         this.activeLensIndex = 0;
 
         this.activeJointName = ""; // Used in the UI
+        this.poseRenderInstances = {};
 
         this.historyLines = {}; // Dictionary of {poseRenderer.id: {lensName: SpaghettiMeshPath}}, separated by historical and live
         this.historyLineContainers = {
@@ -301,10 +301,10 @@ export class HumanPoseAnalyzer {
     addCloneFromPose(pose, historical) {
         const poseRenderer = historical ? this.getHistoricalPoseRenderer() : this.getLivePoseRenderer();
         const instanceId = `${pose.timestamp}-${pose.metadata.poseObjectId}`;
-        if (!poseRenderInstances[instanceId]) {
-            poseRenderInstances[instanceId] = new HumanPoseRenderInstance(poseRenderer, instanceId, this.activeLens);
+        if (!this.poseRenderInstances[instanceId]) {
+            this.poseRenderInstances[instanceId] = new HumanPoseRenderInstance(poseRenderer, instanceId, this.activeLens);
         }
-        const poseRenderInstance = poseRenderInstances[instanceId];
+        const poseRenderInstance = this.poseRenderInstances[instanceId];
         if (historical) {
             historicalPoseRenderInstanceList.push(poseRenderInstance);
         }
