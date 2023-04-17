@@ -15,7 +15,6 @@ import {RENDER_CONFIDENCE_COLOR} from './constants.js';
 let activeHumanPoseAnalyzer = null;
 // Map from frame id to humanPoseAnalyzer
 let humanPoseAnalyzers = {};
-const poseRenderInstances = {};
 let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
 
 /**
@@ -89,19 +88,6 @@ function renderLiveHumanPoseObjects(poseObjects, timestamp) {
 }
 
 let hidePoseRenderInstanceTimeoutIds = {};
-/**
- * Hides the pose render instance if not used for a while
- * @param {HumanPoseRenderInstance} poseRenderInstance - the pose render instance to hide
- */
-function hidePoseRenderInstance(poseRenderInstance) {
-    /*
-    poseRenderInstance.setVisible(false); // TODO: delete the instance rather than hide, performance impact of setting up a new instance max every second is negligible
-    poseRenderInstance.renderer.markNeedsUpdate();
-    */
-    poseRenderInstance.remove();
-    poseRenderInstance.renderer.markNeedsUpdate();
-    delete poseRenderInstances[poseRenderInstance.id];
-}
 
 /**
  * Updates the corresponding poseRenderer with the poseObject given
@@ -114,18 +100,25 @@ function updatePoseRenderer(poseObject, timestamp) {
         return;
     }
 
-    let renderer = activeHumanPoseAnalyzer.opaquePoseRenderer;
+    const renderer = activeHumanPoseAnalyzer.opaquePoseRenderer;
+    const poseRenderInstances = activeHumanPoseAnalyzer.poseRenderInstances;
+
     const identifier = poseObject.objectId;
     if (!poseRenderInstances[identifier]) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, activeHumanPoseAnalyzer.activeLens);
     }
-    let poseRenderInstance = poseRenderInstances[identifier];
+    const poseRenderInstance = poseRenderInstances[identifier];
     updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
     if (hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]) {
         clearTimeout(hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]);
         hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = null;
     }
-    hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => hidePoseRenderInstance(poseRenderInstance), 1000);
+    hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => {
+        poseRenderInstance.remove();
+        poseRenderInstance.renderer.markNeedsUpdate();
+        delete poseRenderInstances[poseRenderInstance.id];
+    }, 1000);
+
     renderer.markNeedsUpdate();
 }
 
