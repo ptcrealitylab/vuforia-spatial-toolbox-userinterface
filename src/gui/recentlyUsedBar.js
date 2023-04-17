@@ -21,9 +21,12 @@ class RecentlyUsedBar {
         iconElt.dataset.lastActive = Date.now();
 
         realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
-            realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+            if (envelope.hasFocus) {
+                realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+            }
         });
         realityEditor.envelopeManager.openEnvelope(frameId, false);
+        realityEditor.envelopeManager.focusEnvelope(frameId, false);
     }
 
     onEnvelopeRegistered(frame) {

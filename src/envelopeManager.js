@@ -325,7 +325,9 @@ createNameSpace("realityEditor.envelopeManager");
                 exitButton.addEventListener('pointerup', function() {
                     // TODO: show tabs or something else if multiple are stacked, allowing them to be closed individually
                     getOpenEnvelopes().forEach(function(envelope) {
-                        closeEnvelope(envelope.frame);
+                        if (envelope.hasFocus) {
+                            closeEnvelope(envelope.frame);
+                        }
                     });
                     // TODO: send a message to the tool to make it lose focus (or have a sessionManager or focusManager to handle it)
                 });
