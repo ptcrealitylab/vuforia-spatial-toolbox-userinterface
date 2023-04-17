@@ -208,6 +208,7 @@ export class HumanPoseAnalyzer {
     }
 
     resetHistoricalPoseRenderers() {
+        this.poseRenderInstances = {};
         this.historicalPoseRenderers.forEach((renderer) => {
             renderer.removeFromParent();
         });
