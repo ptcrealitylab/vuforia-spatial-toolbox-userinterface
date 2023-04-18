@@ -364,6 +364,22 @@ realityEditor.app.stopVideoRecording = function (videoId) {
 };
 
 /**
+ * Enable human tracking, telling the app to submit frames to the human
+ * tracking MediaPipe graph.
+ */
+realityEditor.app.enableHumanTracking = function () {
+    this.appFunctionCall('enableHumanTracking', null, null);
+};
+
+/**
+ * Disable human tracking, some frames may already be in pipeline and show up
+ * shortly after this call
+ */
+realityEditor.app.disableHumanTracking = function () {
+    this.appFunctionCall('disableHumanTracking', null, null);
+};
+
+/**
  * Makes objects visible even when they move out of the camera view.
  * @deprecated - was implemented in native app, but negatively impacts performance if we want it to be
  *  backwards compatible, because of changes to the Vuforia SDK. It is intentionally internally disabled for now.
