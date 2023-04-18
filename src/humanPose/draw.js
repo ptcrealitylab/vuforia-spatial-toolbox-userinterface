@@ -15,8 +15,6 @@ import {RENDER_CONFIDENCE_COLOR} from './constants.js';
 let activeHumanPoseAnalyzer = null;
 // Map from frame id to humanPoseAnalyzer
 let humanPoseAnalyzers = {};
-let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
-
 /**
  * @typedef {string} AnimationMode
  */
@@ -174,7 +172,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     activeHumanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(activeHumanPoseAnalyzer.activeLens);
-    poseRenderInstance.setVisible(childHumanObjectsVisible || !poseHasParent);
+    poseRenderInstance.setVisible(activeHumanPoseAnalyzer.childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
     activeHumanPoseAnalyzer.poseUpdated(pose, false);
@@ -441,9 +439,11 @@ function setHumanPosesVisible(visible) {
  * @param {boolean} visible - whether to show or not
  */
 function setChildHumanPosesVisible(visible) {
-    childHumanObjectsVisible = visible;
-    if (this.settingsUi) {
-        this.settingsUi.setChildHumanPosesVisible(visible);
+    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
+        humanPoseAnalyzer.childHumanObjectsVisible = visible;
+        if (humanPoseAnalyzer.settingsUi) {
+            humanPoseAnalyzer.settingsUi.setChildHumanPosesVisible(visible);
+        }
     }
 }
 

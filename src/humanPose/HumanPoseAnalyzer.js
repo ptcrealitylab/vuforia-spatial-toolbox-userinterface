@@ -14,8 +14,6 @@ import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES} from './constants.js';
 
-let childHumanObjectsVisible = false;  // auxiliary human objects supporting fused human objects
-
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
 
@@ -60,6 +58,9 @@ export class HumanPoseAnalyzer {
 
         this.activeJointName = ""; // Used in the UI
         this.poseRenderInstances = {};
+
+        // auxiliary human objects supporting fused human objects
+        this.childHumanObjectsVisible = false;
 
         this.historyLines = {}; // Dictionary of {poseRenderer.id: {lensName: SpaghettiMeshPath}}, separated by historical and live
         this.historyLineContainers = {
@@ -178,7 +179,7 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setLiveHistoryLinesVisible(this.liveHistoryLineContainer.visible);
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
-        this.settingsUi.setChildHumanPosesVisible(childHumanObjectsVisible);
+        this.settingsUi.setChildHumanPosesVisible(this.childHumanObjectsVisible);
     }
 
     /**
@@ -313,7 +314,7 @@ export class HumanPoseAnalyzer {
             this.clones.live.push(poseRenderInstance);
         }
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
-        const canBeVisible = childHumanObjectsVisible || !pose.metadata.poseHasParent;
+        const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
             poseRenderInstance.setVisible(canBeVisible);
         } else {
@@ -782,7 +783,7 @@ export class HumanPoseAnalyzer {
 
         if (this.animationMode === AnimationMode.all) {
             for (let clone of this.clones.all) {
-                const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+                const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
                 clone.setVisible(canBeVisible);
                 clone.renderer.markMatrixNeedsUpdate();
             }
@@ -981,7 +982,7 @@ export class HumanPoseAnalyzer {
             if (clone.pose.timestamp > end) {
                 break;
             }
-            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             if (clone.visible === (visible && canBeVisible)) {
                 continue;
             }
@@ -995,7 +996,7 @@ export class HumanPoseAnalyzer {
      */
     showAllClones() {
         this.clones.all.forEach(clone => {
-            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
@@ -1049,7 +1050,7 @@ export class HumanPoseAnalyzer {
             clone.renderer.markMatrixNeedsUpdate();
         });
         clonesToShow.forEach(clone => {
-            const canBeVisible = childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
+            const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
