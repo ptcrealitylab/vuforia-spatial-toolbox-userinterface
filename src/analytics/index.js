@@ -17,10 +17,14 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
 
         realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
             analytics.open(msgData.frame);
+            realityEditor.app.enableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsClose', (msgData) => {
             analytics.close(msgData.frame);
+            // Could disable proactively, not a priority since it may lead to
+            // unexpected behavior
+            // realityEditor.app.disableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
