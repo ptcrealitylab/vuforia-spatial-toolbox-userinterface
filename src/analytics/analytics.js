@@ -138,14 +138,6 @@ export class Analytics {
         this.pinnedRegionCards = [];
     }
 
-    toggle() {
-        if (this.added) {
-            this.remove();
-        } else {
-            this.add();
-        }
-    }
-
     draw() {
         if (this.container.parentElement) {
             this.timeline.draw();

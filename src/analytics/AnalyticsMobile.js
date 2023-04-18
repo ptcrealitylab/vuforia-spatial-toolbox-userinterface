@@ -7,13 +7,16 @@ export class AnalyticsMobile {
         this.livePlayback = false;
     }
 
-    add() {
+    open() {
     }
 
-    remove() {
+    close() {
     }
 
-    toggle() {
+    focus() {
+    }
+
+    blur() {
     }
 
     appendPose() {
