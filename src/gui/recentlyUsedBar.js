@@ -9,10 +9,29 @@ class RecentlyUsedBar {
         }
         this.iconElts = [];
         this.capacity = 3;
+        this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
     }
 
     initService() {
         document.body.appendChild(this.container);
+
+        realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
+    }
+
+    onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+
+        this.iconElts = this.iconElts.filter((iconElt) => {
+            if (iconElt.dataset.frameId !== event.frameKey) {
+                return true;
+            }
+            this.container.removeChild(iconElt);
+            return false;
+        });
+        this.updateIconPositions();
     }
 
     onIconPointerDown(event) {
