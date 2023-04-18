@@ -20,7 +20,10 @@ createNameSpace("realityEditor.device.keyboardEvents");
     function initService() {
         window.addEventListener('keyup', keyUpHandler);
         window.addEventListener('keydown', keyDownHandler);
-        window.addEventListener('keyup', (e) => handleFlyMode(e));
+        window.addEventListener('keyup', (e) => {
+            handleFlyMode(e);
+        });
+        document.addEventListener('pointerlockchange', handleFlyModeEscapeKey);
         realityEditor.network.addPostMessageHandler('resetScroll', function() {
             resetScroll();
             setTimeout(function() {
@@ -71,11 +74,16 @@ createNameSpace("realityEditor.device.keyboardEvents");
         if (isKeyboardActive()) return; // ignore if a tool is using the keyboard
         if (e.key === 'f' || e.key === 'F') {
             isFlying = !isFlying;
-            if (isFlying) {
-                callbackHandler.triggerCallbacks('enterFlyMode', {isFlying: true});
-            } else {
-                callbackHandler.triggerCallbacks('enterNormalMode', {isFlying: false});
-            }
+        }
+    }
+
+    // todo: if detected a pointer lock change, then wait for 1 seconds before triggering the next pointer lock change
+    
+    function handleFlyModeEscapeKey() {
+        if (document.pointerLockElement === document.body) {
+            callbackHandler.triggerCallbacks('enterFlyMode', {isFlying: true});
+        } else if (document.pointerLockElement === null) {
+            callbackHandler.triggerCallbacks('enterNormalMode', {isFlying: false, from: 'triggered from ESC key'});
         }
     }
 
