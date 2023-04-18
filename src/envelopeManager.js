@@ -306,6 +306,7 @@ createNameSpace("realityEditor.envelopeManager");
                 }
             });
         });
+        return exitButton;
     }
 
     function createMinimizeButton() {
@@ -324,6 +325,7 @@ createNameSpace("realityEditor.envelopeManager");
                 }
             });
         });
+        return minimizeButton;
     }
 
     /**
@@ -343,8 +345,8 @@ createNameSpace("realityEditor.envelopeManager");
             callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         } else {
             // show (create if needed) exit button
-            if (!exitButton) createExitButton();
-            if (!minimizeButton) createMinimizeButton();
+            if (!exitButton) exitButton = createExitButton();
+            if (!minimizeButton) minimizeButton = createMinimizeButton();
             minimizeButton.style.display = 'inline';
             exitButton.style.display = 'inline';
             callbacks.onExitButtonShown.forEach(cb => cb(exitButton, minimizeButton));
