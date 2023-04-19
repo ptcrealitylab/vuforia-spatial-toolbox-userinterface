@@ -38,6 +38,10 @@ createNameSpace("realityEditor.sceneGraph.network");
         if (!realityEditor.sceneGraph.getWorldId())  { return; }
         
         realityEditor.forEachObject(function(object, objectKey) {
+            
+            // don't synchronise pose of human pose objects, it is done through real-time channels
+            if (realityEditor.humanPose.utils.isHumanPoseObject(object)) { return; }
+
             let sceneNode = sceneGraph.getSceneNodeById(objectKey);
             if (doesObjectNeedUpload(sceneNode)) {
                 uploadObjectSceneNode(sceneNode);

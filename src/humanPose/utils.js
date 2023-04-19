@@ -1,4 +1,13 @@
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+
 const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
+
+const JOINT_NODE_NAME = 'storage';
+const JOINT_PUBLIC_DATA_KEYS = {
+    data: 'data',
+    transferData: 'whole_pose'
+};
+const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
 
 const JOINTS = {
     NOSE: 'nose',
@@ -31,8 +40,8 @@ const JOINT_CONNECTIONS = {
     elbowWristLeft: [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
     shoulderElbowLeft: [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
     shoulderSpan: [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
-    shoulderElbowRight: [JOINTS.RIGHT_SHOULDER, JOINTS.RIGHT_ELBOW],
-    elbowWristRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST],
+    shoulderElbowRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_SHOULDER],
+    elbowWristRight: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_ELBOW],
     chestLeft: [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
     hipSpan: [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
     chestRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
@@ -46,15 +55,20 @@ const JOINT_CONNECTIONS = {
     navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
 };
 
+function getBoneName(bone) {
+    return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
+}
+
 // other modules in the project can use this to reliably check whether an object is a humanPose object
 function isHumanPoseObject(object) {
     if (!object) { return false; }
     return object.type === 'human' || object.objectId.indexOf(HUMAN_POSE_ID_PREFIX) === 0;
 }
 
-function makePoseFromJoints(name, joints) {
+function makePoseFromJoints(name, joints, timestamp) {
     return {
         name: name,
+        timestamp: timestamp,
         joints: joints
     }
 }
@@ -94,13 +108,191 @@ function indexOfMin(arr) {
     return minIndex;
 }
 
+// returns the {objectKey, frameKey, nodeKey} address of the storeData node on this object
+function getJointNodeInfo(humanObject, jointIndex) {
+    if (!humanObject) { return null; }
+
+    let humanObjectKey = humanObject.objectId;
+    let jointName = Object.values(JOINTS)[jointIndex];
+    let humanFrameKey = Object.keys(humanObject.frames).find(name => name.includes(jointName));
+    if (!humanObject.frames || !humanFrameKey) { return null; }
+    let humanNodeKey = Object.keys(humanObject.frames[humanFrameKey].nodes).find(name => name.includes(JOINT_NODE_NAME));
+    if (!humanNodeKey) { return null; }
+    return {
+        objectKey: humanObjectKey,
+        frameKey: humanFrameKey,
+        nodeKey: humanNodeKey
+    }
+}
+
+function getDummyJointMatrix(jointId) {
+    const matrix = new THREE.Matrix4();
+    switch (jointId) {
+        case JOINTS.NOSE:
+            matrix.setPosition(0, 0, 0.1 * SCALE);
+            return matrix;
+        case JOINTS.LEFT_EYE:
+            matrix.setPosition(-0.05 * SCALE, 0.05 * SCALE, 0.075 * SCALE);
+            return matrix;
+        case JOINTS.RIGHT_EYE:
+            matrix.setPosition(0.05 * SCALE, 0.05 * SCALE, 0.075 * SCALE);
+            return matrix;
+        case JOINTS.LEFT_EAR:
+            matrix.setPosition(-0.1 * SCALE, 0, 0);
+            return matrix;
+        case JOINTS.RIGHT_EAR:
+            matrix.setPosition(0.1 * SCALE, 0, 0);
+            return matrix;
+        case JOINTS.LEFT_SHOULDER:
+            matrix.setPosition(-0.25 * SCALE, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_SHOULDER:
+            matrix.setPosition(0.25 * SCALE, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_ELBOW:
+            matrix.setPosition(-0.3 * SCALE, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_ELBOW:
+            matrix.setPosition(0.3 * SCALE, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_WRIST:
+            matrix.setPosition(-0.3 * SCALE, -0.9 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_WRIST:
+            matrix.setPosition(0.3 * SCALE, -0.9 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_HIP:
+            matrix.setPosition(-0.175 * SCALE, -0.8 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_HIP:
+            matrix.setPosition(0.175 * SCALE, -0.8 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_KNEE:
+            matrix.setPosition(-0.2 * SCALE, -1.15 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_KNEE:
+            matrix.setPosition(0.2 * SCALE, -1.15 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_ANKLE:
+            matrix.setPosition(-0.2 * SCALE, -1.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_ANKLE:
+            matrix.setPosition(0.2 * SCALE, -1.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.HEAD:
+            return matrix;
+        case JOINTS.NECK:
+            matrix.setPosition(0, -0.2 * SCALE, 0);
+            return matrix;
+        case JOINTS.CHEST:
+            matrix.setPosition(0, -0.4 * SCALE, 0);
+            return matrix;
+        case JOINTS.NAVEL:
+            matrix.setPosition(0, -0.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.PELVIS:
+            matrix.setPosition(0, -0.8 * SCALE, 0);
+            return matrix;
+        default:
+            console.error(`Cannot create dummy joint for joint ${jointId}, not implemented`)
+            return matrix;
+    }
+}
+
+function getDummyBoneMatrix(bone) {
+    const matrix = new THREE.Matrix4();
+    let jointA = new THREE.Vector3().setFromMatrixPosition(getDummyJointMatrix(bone[0]));
+    let jointB = new THREE.Vector3().setFromMatrixPosition(getDummyJointMatrix(bone[1]));
+
+    let pos = new THREE.Vector3(
+        (jointA.x + jointB.x) / 2,
+        (jointA.y + jointB.y) / 2,
+        (jointA.z + jointB.z) / 2,
+    );
+
+    let diff = new THREE.Vector3(jointB.x - jointA.x, jointB.y - jointA.y,
+        jointB.z - jointA.z);
+    let scale = new THREE.Vector3(1, diff.length() / SCALE, 1);
+    diff.normalize();
+
+    let rot = new THREE.Quaternion();
+    rot.setFromUnitVectors(new THREE.Vector3(0, 1, 0),
+        diff);
+    
+    matrix.compose(pos, rot, scale);
+    
+    return matrix;
+}
+
+function createDummySkeleton() {
+    const dummySkeleton = new THREE.Group();
+    
+    dummySkeleton.joints = {};
+    const jointGeometry = new THREE.SphereGeometry(.03 * SCALE, 12, 12);
+    const material = new THREE.MeshLambertMaterial();
+    dummySkeleton.jointInstancedMesh = new THREE.InstancedMesh(jointGeometry, material, Object.values(JOINTS).length);
+    Object.values(JOINTS).forEach((jointId, i) => {
+        dummySkeleton.joints[jointId] = i;
+        dummySkeleton.jointInstancedMesh.setMatrixAt(i, getDummyJointMatrix(jointId));
+    });
+
+    const boneGeometry = new THREE.CylinderGeometry(.01 * SCALE, .01 * SCALE, SCALE, 3);
+    dummySkeleton.boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, material, Object.values(JOINT_CONNECTIONS).length);
+    Object.values(JOINT_CONNECTIONS).forEach((bone, i) => {
+        dummySkeleton.boneInstancedMesh.setMatrixAt(i, getDummyBoneMatrix(bone));
+    });
+
+    dummySkeleton.add(dummySkeleton.jointInstancedMesh);
+    dummySkeleton.add(dummySkeleton.boneInstancedMesh);
+    
+    dummySkeleton.jointNameFromIndex = (index) => {
+        return Object.keys(dummySkeleton.joints).find(key => dummySkeleton.joints[key] === index);
+    }
+
+    dummySkeleton.jointInstancedMesh.joints = dummySkeleton.joints;
+    return dummySkeleton;
+}
+
+/**
+ * Helper function to get the matrix of the ground plane relative to the world
+ * @return {Matrix4} - the matrix of the ground plane relative to the world
+ */
+function getGroundPlaneRelativeMatrix() {
+    let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+    let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+    let groundPlaneRelativeMatrix = new THREE.Matrix4();
+    setMatrixFromArray(groundPlaneRelativeMatrix, worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode));
+    return groundPlaneRelativeMatrix;
+}
+
+/**
+ * Helper function to set a matrix from an array
+ * @param {THREE.Matrix4} matrix - the matrix to set
+ * @param {number[]} array - the array to set the matrix from
+ */
+function setMatrixFromArray(matrix, array) {
+    matrix.set( array[0], array[4], array[8], array[12],
+        array[1], array[5], array[9], array[13],
+        array[2], array[6], array[10], array[14],
+        array[3], array[7], array[11], array[15]
+    );
+}
+
 export {
     JOINTS,
     JOINT_CONNECTIONS,
+    JOINT_NODE_NAME,
+    JOINT_PUBLIC_DATA_KEYS,
+    SCALE,
+    getBoneName,
     isHumanPoseObject,
     makePoseFromJoints,
     getPoseObjectName,
     getPoseStringFromObject,
     getMockPoseStandingFarAway,
-    indexOfMin
+    getGroundPlaneRelativeMatrix,
+    setMatrixFromArray,
+    indexOfMin,
+    getJointNodeInfo,
+    createDummySkeleton
 };

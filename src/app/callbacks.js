@@ -61,45 +61,9 @@ createNameSpace('realityEditor.app.callbacks');
 
     let hasActiveGroundPlaneStream = false;
 
-    const skeletonDedupId = Math.floor(Math.random() * 10000);
-
     // other modules can subscribe to what's happening here
     let subscriptions = {
         onPoseReceived: []
-    }
-
-    function onOrientationSet() {
-        // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
-        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
-    }
-
-    /**
-     * Requests Vuforia to start if Local Network access is provided, otherwise shows an error on screen
-     * @param {boolean} success
-     */
-    exports.receiveNetworkPermissions = function(success) {
-        if (typeof success !== 'undefined' && !success) {
-
-            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
-                let callback = listeners.onVuforiaInitFailure.pop();
-                callback();
-            }
-
-            let headerText = 'Needs Local Network Access';
-            let descriptionText = 'Please enable "Local Network" access<br/>in your device\'s Settings app and try again.';
-
-            let notification = realityEditor.gui.modal.showSimpleNotification(
-                headerText, descriptionText, function () {
-                    console.log('closed...');
-                }, realityEditor.device.environment.variables.layoutUIForPortrait);
-            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            return;
-        }
-
-        // start the AR framework in native iOS
-        realityEditor.app.promises.getVuforiaReady().then(success => {
-            vuforiaIsReady(success);
-        });
     }
 
     /**
@@ -116,14 +80,15 @@ createNameSpace('realityEditor.app.callbacks');
                 callback();
             }
             
-            let headerText = 'Needs camera access';
-            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and try again.';
+            let headerText = 'Needs camera and microphone access';
+            let descriptionText = `Please enable camera and microphone access in your device's Settings app, and try again.`;
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
                 headerText, descriptionText, function () {
                     console.log('closed...');
                 }, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            notification.domElements.container.classList.add('loaderContainerPortraitTall');
             return;
         }
         // projection matrix only needs to be retrieved once
@@ -234,125 +199,33 @@ createNameSpace('realityEditor.app.callbacks');
 
     /**
      * Callback for realityEditor.app.getPosesStream
-     * @param {Array<Object>} poses
+     * @param {Array<Object>} pose (in world CS, in mm units)
+     * @param {number} timestamp of the pose (in miliseconds, but floating point number with nanosecond precision)
+     * @param {Array<number>} [width, height] of the image which the pose was computed from
      */
-    function receivePoses(poses, imageSize) {
-        if (!window.rzvIo) {
-            // window.rzvIo = io('http://jhobin0ml.local:31337');
-            // window.rzvIo = io('http://10.10.10.166:31337');
-            // window.rzvIo = io('http://192.168.0.106:31337');
-            // window.rzvIo = io('http://192.168.50.98:31337');
+    function receivePoses(pose, timestamp, imageSize) {
 
-            let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-            if (!bestWorldObject || bestWorldObject.objectId === realityEditor.worldObjects.getLocalWorldId()) {
-                return;
-            }
-            const wsPort = 31337;
-            const url = `ws://${bestWorldObject.ip}:${wsPort}/`;
-            // const url = 'ws://10.10.10.166:31337/';
-            window.rzvIo = new WebSocket(url);
-        }
+        let poseInWorld = [];
 
-        let coolerPoses = [];
-        let worldObject = realityEditor.worldObjects.getBestWorldObject();
-        if (!worldObject) {
-            console.warn('okay I give up');
-            return;
-        }
-        let worldObjectId = worldObject.objectId;
-        let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
-        let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
-        if (!gpNode) {
-             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
-        }
-        let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
-        // let persistentClientId = window.localStorage.getItem('persistentClientId') || globalStates.defaultClientName;
-        // let sceneNode = realityEditor.sceneGraph.getSceneNodeById(persistentClientId);
-        let sceneNode = new realityEditor.sceneGraph.SceneNode('posePixel');
-        sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT'));
-        // realityEditor.sceneGraph.changeParent(sceneNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
-        // let gpNode = sceneNode.parent;
-        // if (!worldNode) {
-        //     worldNode = gpNode;
-        // }
-        let basisNode = worldNode; // gpNode;
-        basisNode.updateWorldMatrix();
-        cameraNode.updateWorldMatrix();
-        // cameraNode.setParent(gpNode);
-        // realityEditor.sceneGraph.changeParent(cameraNode, realityEditor.sceneGraph.NAMES.GROUNDPLANE, false);
-        // if (!basisNode.parent) {
-        //     console.log('updating basis parent');
-        //     realityEditor.sceneGraph.changeParent(basisNode, realityEditor.sceneGraph.NAMES.ROOT, true);
-        // }
-
-        for (let point of poses) {
-            // place it in front of the camera, facing towards the camera
-            // sceneNode.setParent(realityEditor.sceneGraph.getSceneNodeById('ROOT')); hmm
-
-            // * 1000 - convert from m to mm
-            let initialVehicleMatrix = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                point.x * 1000, point.y * 1000, point.z * 1000, 1
-            ];
-
-            // needs to be flipped in some environments with different camera systems
-            if (realityEditor.device.environment.isCameraOrientationFlipped()) {
-                initialVehicleMatrix[0] *= -1;
-                initialVehicleMatrix[5] *= -1;
-                initialVehicleMatrix[10] *= -1;
-            }
-
-            sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-            sceneNode.updateWorldMatrix();
-
-            let mat = sceneNode.getMatrixRelativeTo(basisNode);
-
-            let worldX = mat[12];
-            let worldY = mat[13];
-            let worldZ = mat[14];
-            coolerPoses.push({
-                x: worldX / 1000,
-                y: worldY / 1000,
-                z: worldZ / 1000,
+        for (let point of pose) {
+            poseInWorld.push({
+                x: point.x,
+                y: point.y,
+                z: point.z,
+                confidence: point.score,
             });
         }
 
-        let initialVehicleMatrix = [
-            -1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, -1, 0,
-            0, 0, 0, 1
-        ];
-
-        sceneNode.setPositionRelativeTo(cameraNode, initialVehicleMatrix);
-        sceneNode.updateWorldMatrix();
-
-        let cameraMat = sceneNode.getMatrixRelativeTo(basisNode);
-        let msg = {time: Date.now(), pose: [{id: 1337 + skeletonDedupId, joints: coolerPoses}], camera: cameraMat};
-
-        // if (window.rzvIo && (coolerPoses.length > 0 || coolerPoses.length !== window.lastPosesLen)) {
-        //     if (coolerPoses.length > 0 || Math.random() > 0.9) {
-        //         window.lastPosesLen = coolerPoses.length;
-        //     }
-        if (window.rzvIo.readyState === WebSocket.OPEN) {
-            window.rzvIo.send(JSON.stringify(Object.assign({
-                command: '/update/humanPoses'
-            }, msg)));
-        }
-        // }
-
-        realityEditor.gui.poses.drawPoses(poses, imageSize);
+        realityEditor.gui.poses.drawPoses(pose, imageSize);
 
         const USE_DEBUG_POSE = false;
 
         if (USE_DEBUG_POSE) {
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
-            if (poses.length > 0) {
-                subscriptions.onPoseReceived.forEach(cb => cb(coolerPoses));
-            }
+            // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
+            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
+            
         }
     }
 
@@ -682,7 +555,6 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     // public methods (anything triggered by a native app callback needs to be public
-    exports.onOrientationSet = onOrientationSet;
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
     exports.receivedUDPMessage = receivedUDPMessage;

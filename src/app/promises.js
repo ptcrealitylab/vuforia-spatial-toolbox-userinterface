@@ -25,6 +25,9 @@ createNameSpace("realityEditor.app.promises");
     // params: [markerName, objectID, targetWidthMeters], resolves to: {success: boolean, fileName: string]}
     exports.addNewMarkerJPG = makeAPI(app.addNewMarkerJPG.bind(app), ['success', 'fileName']);
 
+    // resolves to providerId: string
+    exports.getProviderId = makeAPI(app.getProviderId.bind(app));
+
     // adapted from: https://stackoverflow.com/a/34637436
     class Deferred {
         constructor(onFinally) {

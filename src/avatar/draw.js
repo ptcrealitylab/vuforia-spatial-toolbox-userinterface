@@ -21,10 +21,14 @@ createNameSpace("realityEditor.avatar.draw");
     const ICON_GAP = 10;
 
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
-    function renderOtherAvatars(avatarTouchStates, avatarNames) {
+    function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
         try {
             for (const [objectKey, avatarTouchState] of Object.entries(avatarTouchStates)) {
                 renderAvatar(objectKey, avatarTouchState, avatarNames[objectKey]);
+            }
+            for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
+                realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);
@@ -203,6 +207,7 @@ createNameSpace("realityEditor.avatar.draw");
                 avatarMeshes[objectKey].pointer.visible = false;
                 avatarMeshes[objectKey].beam.visible = false;
                 avatarMeshes[objectKey].textLabel.style.display = 'none';
+                realityEditor.gui.spatialArrow.deleteLaserBeamIndicator(objectKey);
             }
             return;
         }
@@ -341,6 +346,19 @@ createNameSpace("realityEditor.avatar.draw");
         avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
         realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
+        // if laser beam is off screen, add an arrow pointing to the laser beam destination position
+        let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey)) || '#ffff00';
+        // get the world position of the laser pointer sphere, and draw arrow to it if off screen
+        let endWorldPosition = new THREE.Vector3();
+        if (avatarMeshes[objectKey].pointer.visible) {
+            avatarMeshes[objectKey].pointer.getWorldPosition(endWorldPosition);
+        } else {
+            let endWorldPositionArray = [endPosition.x, endPosition.y, endPosition.z];
+            endWorldPositionArray = realityEditor.sceneGraph.convertToNewCoordSystem(endWorldPositionArray, groundPlaneSceneNode, worldSceneNode);
+            endWorldPosition.set(endWorldPositionArray[0], endWorldPositionArray[1], endWorldPositionArray[2]);
+        }
+        // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
+        realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
     }
 
     // helper to create a box mesh

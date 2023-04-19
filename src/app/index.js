@@ -134,7 +134,7 @@ realityEditor.app.getMatrixStream = function(callBack) {
  * @param {FunctionName} callBack
  */
 realityEditor.app.getPosesStream = function(callBack) {
-    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+    this.appFunctionCall('getPosesStream', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__, __ARG3__])');
 };
 
 /**
@@ -496,6 +496,15 @@ realityEditor.app.areaTargetCaptureGenerate = function (targetUploadURL) {
 realityEditor.app.onAreaTargetGenerateProgress = function (callBack) {
     realityEditor.app.appFunctionCall("onAreaTargetGenerateProgress", null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 }
+
+/**
+ * Response with a callback that indicates the device provider id.
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getProviderId = function(callBack) {
+    this.appFunctionCall('getProviderId', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
 
 /**
  **************UTILITIES****************

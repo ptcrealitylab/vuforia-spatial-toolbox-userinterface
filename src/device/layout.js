@@ -70,6 +70,101 @@ createNameSpace('realityEditor.device.layout');
 
     let knownDeviceName;
 
+    // by default, trash is by right edge of screen, but you can use setTrashZoneRect to define different bounds
+    let customTrashZone = null;
+
+    // the set of which toolIds are listening to onWindowResized events
+    let toolSubscriptions = {};
+
+    let callbacks = {
+        onWindowResized: []
+    }
+
+    function initService() {
+        /**
+         * Listen for messages that set up the subscription for spatialInterface.onWindowResized(({width, height})=>{}) tool API
+         */
+        realityEditor.network.addPostMessageHandler('sendWindowResize', (eventData, fullMessageContent) => {
+            toolSubscriptions[fullMessageContent.frame] = true;
+        });
+
+        /**
+         * This is the main window resize event listener for the project.
+         * Other modules should use realityEditor.device.layout.onWindowResized(({width, height})=>{})
+         * rather than adding another window.onResize listener, so that code triggers in the right order
+         */
+        window.addEventListener('resize', () => {
+            // noinspection JSSuspiciousNameCombination
+            globalStates.height = window.innerWidth;
+            // noinspection JSSuspiciousNameCombination
+            globalStates.width = window.innerHeight;
+
+            // reformat pocket tile size/arrangement
+            realityEditor.gui.pocket.onWindowResized();
+
+            // Resize the canvas used for drawing node links
+            let nodeConnectionCanvas = document.querySelector('.canvas-node-connections');
+            if (nodeConnectionCanvas) {
+                nodeConnectionCanvas.width = window.innerWidth;
+                nodeConnectionCanvas.height = window.innerHeight;
+                nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
+                nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
+            }
+
+            // adjust the size of each tool's container div to match the viewport...
+            // ...this is the magic that makes the CSS rendering put everything in the right coordinate system
+            // additionally, adjust fullscreen tools to maintain fullscreen size
+            realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
+                let container = globalDOMCache['object' + frameKey];
+                let iframe = globalDOMCache['iframe' + frameKey];
+                let cover = globalDOMCache[frameKey];
+                // this is essential for rendering
+                if (container) {
+                    container.style.width = `${window.innerWidth}px`;
+                    container.style.height = `${window.innerHeight}px`;
+                }
+                // this adjusts the fullscreen iframes to continue to be fullscreen
+                if (iframe && iframe.classList.contains('webGlFrame')) {
+                    iframe.style.width = `${window.innerWidth}px`;
+                    iframe.style.height = `${window.innerHeight}px`;
+                    if (cover) {
+                        cover.style.width = `${window.innerWidth}px`;
+                        cover.style.height = `${window.innerHeight}px`;
+                    }
+                }
+            });
+
+            // trigger other modules that have subscribed using realityEditor.device.layout.onWindowResized(...)
+            callbacks.onWindowResized.forEach(callback => {
+                callback({
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                });
+            });
+
+            // post a onWindowResized message into each tool that has subscribed to spatialInterface.onWindowResized(...)
+            Object.keys(toolSubscriptions).forEach(frameKey => {
+                let iframe = document.getElementById('iframe' + frameKey);
+                if (!iframe) return;
+                let eventData = {
+                    onWindowResized: {
+                        width: window.innerWidth,
+                        height: window.innerHeight
+                    }
+                };
+                iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
+            });
+        });
+    }
+
+    /**
+     * Other modules can subscribe to window resize events via this method, rather than adding a new resize listener
+     * @param {function} callback
+     */
+    function onWindowResized(callback) {
+        callbacks.onWindowResized.push(callback);
+    }
+
     /**
      * Center the menu buttons vertically on screens taller than MENU_HEIGHT.
      * Adjusts the CSS of various UI elements (buttons, pocket, settings menu, crafting board)
@@ -170,6 +265,15 @@ createNameSpace('realityEditor.device.layout');
         }
     }
 
+    function setTrashZoneRect(x, y, width, height) {
+        customTrashZone = {
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        };
+    }
+
     /**
      * Returns the x-coordinate of the edge of the trash drop-zone, adjusted for different screen sizes.
      * @return {number}
@@ -211,9 +315,13 @@ createNameSpace('realityEditor.device.layout');
         adjustRightEdgeIfNeeded();
     }
 
+    exports.initService = initService;
     exports.adjustForScreenSize = adjustForScreenSize;
     exports.getTrashThresholdX = getTrashThresholdX;
     exports.onOrientationChanged = onOrientationChanged;
     exports.adjustForDevice = adjustForDevice;
+    exports.setTrashZoneRect = setTrashZoneRect;
+    exports.getCustomTrashZone = () => { return customTrashZone; }
+    exports.onWindowResized = onWindowResized;
 
 })(realityEditor.device.layout);

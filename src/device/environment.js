@@ -17,14 +17,19 @@ createNameSpace("realityEditor.device.environment");
 
     exports.initService = function() {
         console.log('Default environment initialized');
+        realityEditor.network.addPostMessageHandler('getEnvironmentVariables', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {environmentVariables: variables});
+        });
     };
 
     function isDesktop() {
         const userAgent = window.navigator.userAgent;
         const isWebView = userAgent.includes('Mobile') && !userAgent.includes('Safari');
-        const isMac = userAgent.includes('Macintosh');
+        const isIpad = /Macintosh/i.test(navigator.userAgent) &&
+            navigator.maxTouchPoints &&
+            navigator.maxTouchPoints > 1;
 
-        return (!isWebView) || isMac;
+        return !isWebView && !isIpad;
     }
 
     // initialized with default variables for iPhone environment. add-ons can modify
@@ -49,6 +54,7 @@ createNameSpace("realityEditor.device.environment");
         layoutUIForPortrait: false,
         defaultShowGroundPlane: false,
         supportsMemoryCreation: true,
+        hasLocalNetworkAccess: true, // set to false if iOS device permissions disabled
         // numbers
         lineWidthMultiplier: 1, // 5
         distanceScaleFactor: 1, // 10
@@ -229,5 +235,7 @@ createNameSpace("realityEditor.device.environment");
     exports.getInitialPocketToolRotation = function() {
         return variables.initialPocketToolRotation;
     };
+    
+    exports.isDesktop = isDesktop;
 
 }(realityEditor.device.environment));

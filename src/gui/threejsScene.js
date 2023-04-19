@@ -55,6 +55,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            renderer.setSize(width, height);
+        });
+
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
@@ -91,7 +95,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
         scene.environment = neutralEnvironment;
 
-        renderScene(); // update loop
+        // this triggers with a requestAnimationFrame on remote operator,
+        // or at frequency of Vuforia updates on mobile
+        realityEditor.gui.ar.draw.addUpdateListener(renderScene);
 
         if (DISPLAY_ORIGIN_BOX) {
             realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
@@ -156,6 +162,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
+        // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
         });
@@ -228,16 +235,23 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             renderer.clear();
+            // render the ground plane visualizer first
+            camera.layers.set(2);
+            renderer.render(scene, camera);
+            renderer.clearDepth();
             if (hasGltfScene) {
+                // Set rendered layer to 1: only the background, i.e. the
+                // static gltf mesh
                 camera.layers.set(1);
                 renderer.render(scene, camera);
+                // Leaves only the color from the render, discarding depth and
+                // stencil
                 renderer.clear(false, true, true);
             }
+            // Set layer to 0: everything but the background
             camera.layers.set(0);
             renderer.render(scene, camera);
         }
-
-        requestAnimationFrame(renderScene);
     }
 
     function toggleDisplayOriginBoxes(newValue) {
@@ -254,6 +268,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
+        const layer = parameters.layer;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -280,6 +295,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             } else {
                 threejsContainerObj.add(obj);
             }
+        }
+        if (layer) {
+            obj.layers.set(layer);
         }
     }
 
@@ -314,6 +332,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             gltf.scene.traverse(obj => {
                 if (obj.geometry) {
                     obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
+                    obj.geometry.deleteAttribute('uv2'); // Messes with merge if present in some geometries but not others
                     geometries.push(obj.geometry);
                 }
             });
@@ -450,6 +469,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 const mergedGeometry = mergeBufferGeometries(allMeshes.map(child => {
                   let geo = child.geometry.clone();
                   geo.deleteAttribute('uv');
+                  geo.deleteAttribute('uv2');
                   return geo;
                 }));
                 mergedGeometry.computeVertexNormals();
@@ -526,6 +546,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         });
 
         //3. compute intersections
+        // add object layer to raycast layer mask
+        objectsToCheck.forEach(obj => {
+            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
+        });
         let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
         results.forEach(intersection => {
             intersection.rayDirection = raycaster.ray.direction;
@@ -554,6 +578,16 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
     function getObjectByName(name) {
         return scene.getObjectByName(name);
+    }
+    
+    // return all objects with the name
+    function getObjectsByName(name) {
+        if (name === undefined) return;
+        const objects = [];
+        scene.traverse((object) => {
+            if (object.name === name) objects.push(object);
+        })
+        return objects;
     }
 
     function getGroundPlaneCollider() {
@@ -642,11 +676,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     function removeMaterialCullingFrustum(id) {
         delete materialCullingFrustums[id];
 
-        if (Object.keys(materialCullingFrustums).length === 0) {
-            areaTargetMaterials.forEach(material => {
+        let numFrustums = Object.keys(materialCullingFrustums).length;
+
+        areaTargetMaterials.forEach(material => {
+            material.uniforms[UNIFORMS.numFrustums].value = Math.min(numFrustums, MAX_VIEW_FRUSTUMS);
+            if (numFrustums === 0) {
                 material.transparent = false; // optimize by turning off transparency when no virtualizers are connected
-            });
-        }
+            }
+        });
     }
 
     class CustomMaterials {
@@ -831,8 +868,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return transformControls;
     }
 
-    exports.createInfiniteGridHelper = function(size1, size2, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, color, maxVisibilityDistance);
+    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
+        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
     }
 
     // source: https://github.com/mrdoob/three.js/issues/78
@@ -841,12 +878,51 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let projScreenMat = new THREE.Matrix4();
         projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         pos.applyMatrix4(projScreenMat);
+        
+        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
+        let meshPosWrtCamera = meshPosition.clone();
+        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
+        if (meshPosWrtCamera.z > 0) {
+            pos.negate();
+        }
 
         return {
             x: ( pos.x + 1 ) * window.innerWidth / 2,
             y: ( -pos.y + 1) * window.innerHeight / 2
         };
     };
+
+    // source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
+    exports.isPointOnScreen = function(pointPosition) {
+        let frustum = new THREE.Frustum();
+        let matrix = new THREE.Matrix4();
+        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(matrix);
+        if (frustum.containsPoint(pointPosition)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // gets the position relative to groundplane (common coord system for threejsScene)
+    exports.getToolPosition = function(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        // console.log('%c debugging tool position', 'color: orange');
+        // console.log(realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode));
+        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+    }
+
+    // gets the direction the tool is facing, within the coordinate system of the groundplane
+    exports.getToolDirection = function(toolId) {
+        let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
+        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
+        // console.log(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
+        return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
+    }
 
     /**
      * @return {{
@@ -875,6 +951,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.getRaycastIntersects = getRaycastIntersects;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
+    exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;

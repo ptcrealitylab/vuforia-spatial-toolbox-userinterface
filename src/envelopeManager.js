@@ -18,6 +18,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @property {Array.<string>} compatibleFrameTypes
      * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
+     * @property {boolean} hasFocus
      */
 
     /**
@@ -66,7 +67,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {string} frameKey
      */
     function onEnvelopeRegistered(objectKey, frameKey) {
-        
+
         var frame = realityEditor.getFrame(objectKey, frameKey);
         if (frame && typeof frame.autoAddedEnvelope !== 'undefined') {
 
@@ -83,8 +84,11 @@ createNameSpace("realityEditor.envelopeManager");
                 frameType: frame.autoAddedEnvelope.containedFrameToAdd.frameType
             }); // todo: can simplify to just frame.autoAddedEnvelope.containedFrameToAdd
         }
+
+        realityEditor.gui.recentlyUsedBar.onEnvelopeRegistered(frame);
+        realityEditor.gui.envelopeIconRenderer.onEnvelopeRegistered(knownEnvelopes[frameKey]);
     }
-    
+
     /**
      * @param {Object} eventData - contents of 'envelopeMessage' object
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
@@ -113,10 +117,20 @@ createNameSpace("realityEditor.envelopeManager");
         if (typeof eventData.open !== 'undefined') {
             openEnvelope(fullMessageContent.frame, true);
         }
-        
+
         // responds to an envelope closing
         if (typeof eventData.close !== 'undefined') {
             closeEnvelope(fullMessageContent.frame, true);
+        }
+
+        // generally not used, but responds to an envelope removing its 2D layer
+        if (typeof eventData.blur !== 'undefined') {
+            blurEnvelope(fullMessageContent.frame, true);
+        }
+
+        // generally not used, but responds to an envelope restoring its 2D layer
+        if (typeof eventData.focus !== 'undefined') {
+            focusEnvelope(fullMessageContent.frame, true);
         }
         
         // keeps mapping of envelopes -> containedFrames up to date
@@ -127,6 +141,8 @@ createNameSpace("realityEditor.envelopeManager");
                 // if we added any new frames, and they are visible but the envelope is closed, then hide them
                 if (!knownEnvelopes[fullMessageContent.frame].isOpen) {
                     closeEnvelope(fullMessageContent.frame, true);
+                } else if (!knownEnvelopes[fullMessageContent.frame].hasFocus) {
+                    blurEnvelope(fullMessageContent.frame, true);
                 }
             }
         }
@@ -138,7 +154,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - if triggered by itself, doesnt need to update iframe contents
      */
     function openEnvelope(frameId, wasTriggeredByEnvelope) {
-        knownEnvelopes[frameId].isOpen = true;
+        const envelope = knownEnvelopes[frameId];
+        if (envelope.isOpen) return;
+
+        envelope.isOpen = true;
+        envelope.hasFocus = true;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -146,13 +166,13 @@ createNameSpace("realityEditor.envelopeManager");
                 open: true
             });
         }
-        
+
         // show all contained frames
         sendMessageToEnvelopeContents(frameId, {
             showContainedFrame: true
         });
 
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -160,8 +180,16 @@ createNameSpace("realityEditor.envelopeManager");
             }
         });
 
+        if (globalDOMCache[frameId]) {
+            globalDOMCache[frameId].classList.remove('iframeOverlayWithoutFocus');
+            globalDOMCache['iframe' + frameId].classList.remove('iframeOverlayWithoutFocus');
+        }
+
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onOpen(envelope);
+        realityEditor.gui.envelopeIconRenderer.onOpen(envelope);
     }
 
     /**
@@ -170,7 +198,11 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the exit button or from within the envelope
      */
     function closeEnvelope(frameId, wasTriggeredByEnvelope) {
-        knownEnvelopes[frameId].isOpen = false;
+        const envelope = knownEnvelopes[frameId];
+        if (!envelope.isOpen) return;
+
+        envelope.isOpen = false;
+        envelope.hasFocus = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
         if (!wasTriggeredByEnvelope) {
@@ -187,7 +219,7 @@ createNameSpace("realityEditor.envelopeManager");
         // TODO: hide contained frames at a higher level by giving them some property or CSS class
         // TODO: after 3 seconds, kill/unload them? (make sure it doesn't interfere with envelope when it opens again
         
-        let containedFrameIds = knownEnvelopes[frameId].containedFrameIds;
+        let containedFrameIds = envelope.containedFrameIds;
         containedFrameIds.forEach(function(id) {
             let element = globalDOMCache['object' + id];
             if (element) {
@@ -195,65 +227,128 @@ createNameSpace("realityEditor.envelopeManager");
             }
         });
 
+        if (globalDOMCache[frameId]) {
+            globalDOMCache[frameId].classList.remove('iframeOverlayWithoutFocus');
+            globalDOMCache['iframe' + frameId].classList.remove('iframeOverlayWithoutFocus');
+        }
+
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
+
+        realityEditor.gui.recentlyUsedBar.onClose(envelope);
+        realityEditor.gui.envelopeIconRenderer.onClose(envelope);
+    }
+
+    /**
+     * Restore focus to an envelope, showing its 2D UI
+     * @param {string} frameId
+     * @param {boolean} wasTriggeredByEnvelope
+     */
+    function focusEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        knownEnvelopes[frameId].hasFocus = true;
+
+        // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
+        if (!wasTriggeredByEnvelope) {
+            sendMessageToEnvelope(frameId, {
+                focus: true
+            });
+        }
+
+        if (globalDOMCache[frameId]) {
+            globalDOMCache[frameId].classList.remove('iframeOverlayWithoutFocus');
+            globalDOMCache['iframe' + frameId].classList.remove('iframeOverlayWithoutFocus');
+        }
+
+        // adjust exit/cancel/back buttons for # of open frames
+        updateExitButton();
+
+        realityEditor.gui.envelopeIconRenderer.onFocus(knownEnvelopes[frameId]);
+    }
+
+    /**
+     * Remove focus, by hiding controls and/or responds to an envelope closing to update UI and other frames appropriately
+     * @param {string} frameId
+     * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
+     */
+    function blurEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        knownEnvelopes[frameId].hasFocus = false;
+
+        // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
+        if (!wasTriggeredByEnvelope) {
+            sendMessageToEnvelope(frameId, {
+                blur: true
+            });
+        }
+
+        if (globalDOMCache[frameId]) {
+            globalDOMCache[frameId].classList.add('iframeOverlayWithoutFocus');
+            globalDOMCache['iframe' + frameId].classList.add('iframeOverlayWithoutFocus');
+        }
+
+        // adjust exit/cancel/back buttons for # of open frames
+        updateExitButton();
+
+        realityEditor.gui.envelopeIconRenderer.onBlur(knownEnvelopes[frameId]);
+    }
+
+    function createExitButton() {
+        let exitButton = document.createElement('img');
+        exitButton.classList.add('envelopeMenuButton');
+        exitButton.src = 'svg/envelope-x-button.svg';
+        exitButton.id = 'exitEnvelopeButton';
+        exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        document.body.appendChild(exitButton);
+
+        exitButton.addEventListener('pointerup', function() {
+            getOpenEnvelopes().forEach(function(envelope) {
+                if (envelope.hasFocus) {
+                    closeEnvelope(envelope.frame);
+                }
+            });
+        });
+        return exitButton;
+    }
+
+    function createMinimizeButton() {
+        let minimizeButton = document.createElement('img');
+        minimizeButton.classList.add('envelopeMenuButton');
+        minimizeButton.src = 'svg/envelope-minimize-button.svg';
+        minimizeButton.id = 'minimizeEnvelopeButton';
+        minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        document.body.appendChild(minimizeButton);
+
+        minimizeButton.addEventListener('pointerup', function() {
+            // TODO: only minimize the envelope that has focus, not all of them
+            getOpenEnvelopes().forEach(function(envelope) {
+                if (envelope.hasFocus) {
+                    blurEnvelope(envelope.frame);
+                }
+            });
+        });
+        return minimizeButton;
     }
 
     /**
      * Creates/renders an [X] button in the top left corner if there are any open envelopes, which can be used to close them
+     * Also creates a second button, which is used to remove focus from the focused envelope
      */
     function updateExitButton() {
-        var numberOfOpenEnvelopes = getOpenEnvelopes().length;
-        if (numberOfOpenEnvelopes === 0) {
+        let numberOfOpenEnvelopes = getOpenEnvelopes().length;
+        let numberOfFocusedEnvelopes = getFocusedEnvelopes().length; // should be 0 or 1
+        let exitButton = document.getElementById('exitEnvelopeButton');
+        let minimizeButton = document.getElementById('minimizeEnvelopeButton');
+
+        if (numberOfOpenEnvelopes === 0 || numberOfFocusedEnvelopes === 0) {
             // hide exit and minimize buttons
-            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
-            if (minimizeButton) {
-                minimizeButton.style.display = 'none';
-            }
-            let exitButton = document.getElementById('exitEnvelopeButton');
-            if (exitButton) {
-                exitButton.style.display = 'none';
-            }
+            if (minimizeButton) minimizeButton.style.display = 'none';
+            if (exitButton) exitButton.style.display = 'none';
             callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         } else {
             // show (create if needed) exit button
-            let exitButton = document.getElementById('exitEnvelopeButton');
-            if (!exitButton) {
-                exitButton = document.createElement('img');
-                exitButton.classList.add('envelopeMenuButton');
-                exitButton.src = 'svg/envelope-x-button.svg';
-                exitButton.id = 'exitEnvelopeButton';
-                exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-                document.body.appendChild(exitButton);
-                
-                exitButton.addEventListener('pointerup', function() {
-                    // TODO: show tabs or something else if multiple are stacked, allowing them to be closed individually
-                    getOpenEnvelopes().forEach(function(envelope) {
-                        closeEnvelope(envelope.frame);
-                    });
-                    // TODO: send a message to the tool to make it lose focus (or have a sessionManager or focusManager to handle it)
-                });
-            }
-            exitButton.style.display = 'inline';
-
-            let minimizeButton = document.getElementById('minimizeEnvelopeButton');
-            if (!minimizeButton) {
-                minimizeButton = document.createElement('img');
-                minimizeButton.classList.add('envelopeMenuButton');
-                minimizeButton.src = 'svg/envelope-minimize-button.svg';
-                minimizeButton.id = 'minimizeEnvelopeButton';
-                minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-                document.body.appendChild(minimizeButton);
-
-                minimizeButton.addEventListener('pointerup', function() {
-                    // TODO: only minimize the envelope that has focus, not all of them
-                    getOpenEnvelopes().forEach(function(envelope) {
-                        closeEnvelope(envelope.frame);
-                    });
-                });
-            }
+            if (!exitButton) exitButton = createExitButton();
+            if (!minimizeButton) minimizeButton = createMinimizeButton();
             minimizeButton.style.display = 'inline';
-
+            exitButton.style.display = 'inline';
             callbacks.onExitButtonShown.forEach(cb => cb(exitButton, minimizeButton));
         }
     }
@@ -452,7 +547,14 @@ createNameSpace("realityEditor.envelopeManager");
                 };
 
                 if (envelopeData) {
-                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, JSON.stringify(envelopeData.startPositionOffset), JSON.stringify(envelopeData.width), JSON.stringify(envelopeData.height), JSON.stringify(envelopeData.nodes), touchPosition.x, touchPosition.y, true);
+                    let addedElement = realityEditor.gui.pocket.createFrame(envelopeData.name, {
+                        startPositionOffset: envelopeData.startPositionOffset,
+                        width: envelopeData.width,
+                        height: envelopeData.height,
+                        pageX: touchPosition.x,
+                        pageY: touchPosition.y,
+                        noUserInteraction: true
+                    });
 
                     console.log('added an envelope (maybe in time?)', addedElement);
 
@@ -543,7 +645,17 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function getOpenEnvelopes() {
         return Object.values(knownEnvelopes).filter(function(envelope) {
-            return envelope.isOpen;
+            return envelope.isOpen; // && !envelope.hasFocus;
+        });
+    }
+
+    /**
+     * Helper function to return the envelope that has focus, if any
+     * @return {Array.<Envelope>}
+     */
+    function getFocusedEnvelopes() {
+        return Object.values(knownEnvelopes).filter((envelope) => {
+            return envelope.hasFocus;
         });
     }
 
@@ -573,11 +685,49 @@ createNameSpace("realityEditor.envelopeManager");
         var frame = realityEditor.getFrame(objectKey, frameKey);
         return frame.src;
     }
+    
+    function showBlurredBackground(focusedFrameId) {
+        // create a fullscreen div with webkit-backdrop-filter: blur(), if it isn't already shown
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (!blur) {
+            blur = document.createElement('div');
+            blur.id = 'blurredEnvelopeBackground';
+        }
+        let GUI = document.getElementById('GUI');
+        // let focusedElement = document.getElementById('object' + focusedFrameId);
+        // focusedElement.parentNode.insertBefore(blur, focusedElement);
+        GUI.parentNode.insertBefore(blur, GUI);
+        blur.style.display = 'inline';
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.add('deactivatedIframeOverlay');
+        }
+    }
+    
+    function hideBlurredBackground(focusedFrameId) {
+        // hide the fullscreen blurred div, if it exists
+        let blur = document.getElementById('blurredEnvelopeBackground');
+        if (blur) {
+            blur.style.display = 'none';
+        }
+
+        if (globalDOMCache[focusedFrameId]) {
+            globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
+        }
+    }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
-    
+
     exports.getKnownEnvelopes = function() {
         return knownEnvelopes;
     }
+    
+    exports.showBlurredBackground = showBlurredBackground;
+    exports.hideBlurredBackground = hideBlurredBackground;
+
+    exports.getOpenEnvelopes = getOpenEnvelopes;
+    exports.openEnvelope = openEnvelope;
+    exports.closeEnvelope = closeEnvelope;
+    exports.focusEnvelope = focusEnvelope;
 
 }(realityEditor.envelopeManager));

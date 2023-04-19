@@ -278,6 +278,13 @@ createNameSpace("realityEditor.gui.glRenderer");
         canvas.style.height = canvas.height + 'px';
         gl = canvas.getContext('webgl2');
 
+        realityEditor.device.layout.onWindowResized(({width, height}) => {
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            // note: don't need to update canvas.width and height, just style.width and height
+            // because there's no mechanism for sending the new canvas pixel dimensions to the proxied frame
+        });
+
         // If we don't have a GL context, give up now
 
         if (!gl) {
@@ -302,7 +309,9 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
         }
 
-        setTimeout(renderFrame, 500);
+        setTimeout(() => {
+            requestAnimationFrameIfNotPending();
+        }, 500);
         setInterval(watchpuppy, 1000);
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
@@ -370,7 +379,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         let res = await Promise.all(prommies);
         if (!res) {
             console.warn('glRenderer watchdog is barking');
-            requestAnimationFrame(renderFrame);
+            requestAnimationFrameIfNotPending();
             return;
         }
 
@@ -393,14 +402,23 @@ createNameSpace("realityEditor.gui.glRenderer");
             proxy.executeFrameCommands();
         }
 
-        requestAnimationFrame(renderFrame);
         lastRender = Date.now();
         rendering = false;
+        animationFrameRequest = null;
+        requestAnimationFrameIfNotPending();
+    }
+
+    let animationFrameRequest = null;
+    function requestAnimationFrameIfNotPending() {
+        if (animationFrameRequest) {
+            return;
+        }
+        animationFrameRequest = requestAnimationFrame(renderFrame);
     }
 
     function watchpuppy() {
         if (lastRender + 3000 < Date.now()) {
-            renderFrame();
+            requestAnimationFrameIfNotPending();
         }
     }
 

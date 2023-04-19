@@ -121,6 +121,8 @@ var realityEditor = realityEditor || {
         pocket: {},
         screenExtension : {},
         threejsScene: {},
+        spatialIndicator: {},
+        spatialArrow: {},
         utilities: {}
     },
     network: {
