@@ -25,6 +25,7 @@ createNameSpace("realityEditor.worldObjects");
      * @type {Object.<string, Array.<number>>}
      */
     var worldCorrections = {};
+    let worldUsedForCorrection = null;
 
     // a string that all world object's uuids are built from
     const worldObjectId = '_WORLD_';
@@ -382,6 +383,7 @@ createNameSpace("realityEditor.worldObjects");
                 localizedWithinWorldCallbacks.forEach(function(callback) {
                     callback(objectKey);
                 });
+                worldUsedForCorrection = objectKey;
                 realityEditor.app.tap();
                 setTimeout(function() {
                     realityEditor.app.tap();
@@ -403,6 +405,8 @@ createNameSpace("realityEditor.worldObjects");
         let bestWorld = getBestWorldObject();
         if (bestWorld && bestWorld.objectId !== getLocalWorldId()) {
             callback(bestWorld.objectId); // trigger immediately if we're already localized
+        } else if (worldUsedForCorrection) {
+            callback(worldUsedForCorrection); // works even when suppressedObjectRendering is on
         }
     }
 

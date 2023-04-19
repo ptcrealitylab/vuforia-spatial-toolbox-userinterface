@@ -4,12 +4,14 @@ import {
     RegionCardState,
 } from './regionCard.js';
 import {
+    setActiveFrame,
     setHighlightRegion,
     setDisplayRegion,
     setCursorTime,
     clearHistoricalData,
     showAnalyzerSettingsUI,
-    hideAnalyzerSettingsUI, getPosesInTimeInterval
+    hideAnalyzerSettingsUI,
+    getPosesInTimeInterval,
 } from '../humanPose/draw.js';
 import {
     loadHistory
@@ -20,6 +22,8 @@ import {
 
 export class Analytics {
     constructor() {
+        this.activeEnvelope = null;
+
         this.container = document.createElement('div');
         this.container.id = 'analytics-container';
 
@@ -28,7 +32,7 @@ export class Analytics {
 
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this.timelineContainer);
-        this.added = false;
+        this.opened = false;
         this.loadingHistory = false;
         this.livePlayback = false;
         this.pinnedRegionCards = [];
@@ -41,25 +45,69 @@ export class Analytics {
         requestAnimationFrame(this.draw);
     }
 
-    add() {
-        if (this.added) {
-            return;
+    /**
+     * On envelope open
+     * add, load pinned region cards, load spaghetti, set timeline
+     */
+    open(frameId) {
+        if (this.opened) {
+            if (this.activeEnvelope === frameId) {
+                setActiveFrame(frameId);
+                return;
+            }
+            if (this.activeEnvelope) {
+                this.blur(this.activeEnvelope);
+            }
         }
-        this.added = true;
+        this.activeEnvelope = frameId;
+        this.opened = true;
 
         this.createNewPinnedRegionCardsContainer();
         document.body.appendChild(this.container);
+        this.container.style.display = 'block';
+        setActiveFrame(frameId);
         showAnalyzerSettingsUI();
     }
 
-    remove() {
-        if (!this.added) {
+    /**
+     * On envelope close
+     * remove pinned region cards, remove timeline, remove spaghetti
+     */
+    close(frameId) {
+        if (frameId !== this.activeEnvelope) {
             return;
         }
-        this.added = false;
+
+        if (!this.opened) {
+            return;
+        }
+
+        this.opened = false;
+
+        this.blur(frameId);
+        clearHistoricalData(frameId);
+    }
+
+    /**
+     * On envelope focus (unblur)
+     */
+    focus(frameId) {
+        this.open(frameId);
+    }
+
+    /**
+     * On envelope blur
+     * Remove all 2d ui
+     */
+    blur(frameId) {
+        if (frameId !== this.activeEnvelope) {
+            return;
+        }
+
+        this.container.style.display = 'none';
+        this.activeEnvelope = null;
 
         document.body.removeChild(this.container);
-        clearHistoricalData();
         this.timeline.reset();
         hideAnalyzerSettingsUI();
     }

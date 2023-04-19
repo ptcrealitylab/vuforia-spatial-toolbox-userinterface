@@ -2,12 +2,36 @@ class RecentlyUsedBar {
     constructor() {
         this.container = document.createElement('div');
         this.container.classList.add('ru-container');
+        if (realityEditor.device.environment.isDesktop()) {
+            this.container.classList.add('ru-desktop');
+        } else {
+            this.container.classList.add('ru-mobile');
+        }
         this.iconElts = [];
         this.capacity = 3;
+        this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
     }
 
     initService() {
         document.body.appendChild(this.container);
+
+        realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
+    }
+
+    onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+
+        this.iconElts = this.iconElts.filter((iconElt) => {
+            if (iconElt.dataset.frameId !== event.frameKey) {
+                return true;
+            }
+            this.container.removeChild(iconElt);
+            return false;
+        });
+        this.updateIconPositions();
     }
 
     onIconPointerDown(event) {
@@ -16,9 +40,12 @@ class RecentlyUsedBar {
         iconElt.dataset.lastActive = Date.now();
 
         realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
-            realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+            if (envelope.hasFocus) {
+                realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+            }
         });
         realityEditor.envelopeManager.openEnvelope(frameId, false);
+        realityEditor.envelopeManager.focusEnvelope(frameId, false);
     }
 
     onEnvelopeRegistered(frame) {
