@@ -7,22 +7,24 @@ class RecentlyUsedBar {
         } else {
             this.container.classList.add('ru-mobile');
         }
-        this.iconElts = [];
-        this.capacity = 3;
-        this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
-        this.onIconPointerOver = this.onIconPointerOver.bind(this);
-        this.onIconPointerOut = this.onIconPointerOut.bind(this);
-        this.hoveredFrameId = null;
-        this.hoverAnimationPercent = 0;
-        this.hoverAnimationDurationMs = (10 / 60) * 1000; // take 10 frames if running at 60 fps
-        this.lastAnimationPositions = null;
-        this.lastDraw = Date.now();
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'ru-canvas';
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         this.ctx = this.canvas.getContext("2d");
+
+        this.iconElts = [];
+        this.capacity = 3;
+        this.hoveredFrameId = null;
+        this.hoverAnimationPercent = 0;
+        this.hoverAnimationDurationMs = (12 / 60) * 1000; // speed of the slowest part of the line
+        this.lastAnimationPositions = null;
+        this.lastDraw = Date.now();
         this.canvasHasContent = false;
+
+        this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
+        this.onIconPointerOver = this.onIconPointerOver.bind(this);
+        this.onIconPointerOut = this.onIconPointerOut.bind(this);
     }
 
     initService() {
@@ -229,14 +231,16 @@ class RecentlyUsedBar {
     updateAnimationPercent() {
         let dt = Date.now() - this.lastDraw;
         this.lastDraw += dt;
-        // the line animates forwards and backwards over time, depending on
-        // whether an icon is currently hovered over
+        // the line animates forwards and backwards over time
         if (this.hoveredFrameId) {
             this.hoverAnimationPercent = Math.min(1,
                 this.hoverAnimationPercent + (dt / this.hoverAnimationDurationMs));
         } else {
+            // https://www.nngroup.com/articles/animation-duration/
+            // "animating objects appearing or entering the screen usually need
+            // a subtly longer duration than objects disappearing or exiting the screen"
             this.hoverAnimationPercent = Math.max(0,
-                this.hoverAnimationPercent - (dt / this.hoverAnimationDurationMs));
+                this.hoverAnimationPercent - 1.5 * (dt / this.hoverAnimationDurationMs));
         }
     }
 
@@ -254,26 +258,42 @@ class RecentlyUsedBar {
             { x: iconRect.left + iconRect.width / 2,  y: iconRect.bottom } :
             this.lastAnimationPositions.icon;
 
-        this.ctx.beginPath();
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         let lineStartX = iconBottom.x;
         let lineStartY = iconBottom.y + 5;
         let lineNextY = iconBottom.y + 15;
-        this.ctx.moveTo(lineStartX, lineStartY);
-        this.ctx.lineTo(lineStartX, lineNextY);
-        // this calculates an animated endpoint for the line based on the hoverAnimationPercent
-        let horizontalDistance = frameScreenPosition.x - lineStartX;
-        let verticalDistance = frameScreenPosition.y - lineNextY;
-        let horizontalPercent = Math.abs(horizontalDistance) / (Math.abs(horizontalDistance) + Math.abs(verticalDistance));
-        let lineEndX = lineStartX + horizontalDistance *
-            Math.min(1, this.hoverAnimationPercent / horizontalPercent);
-        this.ctx.lineTo(lineEndX, lineNextY);
-        let lineEndY = lineNextY + verticalDistance *
-            Math.max(0, Math.min(1, (this.hoverAnimationPercent - horizontalPercent) / (1 - horizontalPercent)));
-        this.ctx.lineTo(lineEndX, lineEndY);
-        this.ctx.stroke();
-        this.ctx.closePath();
+
+        // the line gets a fast, smooth, fade-in animation by having
+        // multiple layers animate in/out with different speeds
+        let animationLayers = [
+            { speed: 1, opacity: 0.5 },
+            { speed: 2, opacity: 0.25 },
+            { speed: 3, opacity: 0.125 }
+        ];
+
+        animationLayers.forEach(layer => {
+            this.ctx.beginPath();
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = `rgba(255,255,255,${layer.opacity})`;
+            this.ctx.moveTo(lineStartX, lineStartY);
+            this.ctx.lineTo(lineStartX, lineNextY);
+
+            let adjustedAnimPercent = Math.min(1, this.hoverAnimationPercent * layer.speed);
+
+            // this calculates an animated endpoint for the line based on the hoverAnimationPercent
+            let horizontalDistance = frameScreenPosition.x - lineStartX;
+            let verticalDistance = frameScreenPosition.y - lineNextY;
+            let horizontalPercent = Math.abs(horizontalDistance) / (Math.abs(horizontalDistance) + Math.abs(verticalDistance));
+            let lineEndX = lineStartX + horizontalDistance *
+                Math.min(1, adjustedAnimPercent / horizontalPercent);
+            this.ctx.lineTo(lineEndX, lineNextY);
+            let lineEndY = lineNextY + verticalDistance *
+                Math.max(0, Math.min(1, (adjustedAnimPercent - horizontalPercent) / (1 - horizontalPercent)));
+            this.ctx.lineTo(lineEndX, lineEndY);
+
+            this.ctx.stroke();
+            this.ctx.closePath();
+        });
+
         this.canvasHasContent = true; // so we can clear the canvas only when necessary
 
         // keep track of the line's start and end, so we can do reverse animation
