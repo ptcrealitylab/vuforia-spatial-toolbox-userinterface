@@ -255,17 +255,17 @@ class RecentlyUsedBar {
             this.lastAnimationPositions.icon;
 
         this.ctx.beginPath();
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
         let lineStartX = iconBottom.x;
         let lineStartY = iconBottom.y + 5;
         let lineNextY = iconBottom.y + 15;
         this.ctx.moveTo(lineStartX, lineStartY);
         this.ctx.lineTo(lineStartX, lineNextY);
         // this calculates an animated endpoint for the line based on the hoverAnimationPercent
-        let horizontalDistance = Math.abs(frameScreenPosition.x - iconBottom.x);
-        let verticalDistance = Math.abs(lineNextY - frameScreenPosition.y);
-        let horizontalPercent = horizontalDistance / (horizontalDistance + verticalDistance);
+        let horizontalDistance = frameScreenPosition.x - lineStartX;
+        let verticalDistance = frameScreenPosition.y - lineNextY;
+        let horizontalPercent = Math.abs(horizontalDistance) / (Math.abs(horizontalDistance) + Math.abs(verticalDistance));
         let lineEndX = lineStartX + horizontalDistance *
             Math.min(1, this.hoverAnimationPercent / horizontalPercent);
         this.ctx.lineTo(lineEndX, lineNextY);
