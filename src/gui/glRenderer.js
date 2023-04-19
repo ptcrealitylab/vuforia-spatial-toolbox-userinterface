@@ -1,6 +1,5 @@
 import {GLState, Handle, DeviceDescription} from "/objectDefaultFiles/glState.js"
-import {CommandId, Command, CommandBufferManager} from "/objectDefaultFiles/glCommandBuffer.js"
-import {useWebWorkers} from "/objectDefaultFiles/WorkerFactory.js"
+import {CommandId, Command, CommandBufferManager, WebGLStrategy, BlockAndWaitWebGLSyncStrategy} from "/objectDefaultFiles/glCommandBuffer.js"
 
 createNameSpace("realityEditor.gui.glRenderer");
 
@@ -116,7 +115,7 @@ class WorkerGLProxy {
          */
         this.synclock = null;
         // check which combination of worker and webgl sync strategy are needed
-        if (useWebWorkers()) {
+        if (WebGLStrategy.getInstance().syncStrategy instanceof BlockAndWaitWebGLSyncStrategy) {
             this.synclock = new Int32Array(new SharedArrayBuffer(4));
             Atomics.store(this.synclock, 0, 1);
         } 
