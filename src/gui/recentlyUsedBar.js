@@ -17,7 +17,7 @@ class RecentlyUsedBar {
         this.capacity = 3;
         this.hoveredFrameId = null;
         this.hoverAnimationPercent = 0;
-        this.hoverAnimationDurationMs = (12 / 60) * 1000; // speed of the slowest part of the line
+        this.hoverAnimationDurationMs = 60; // speed of the slowest part of the line
         this.lastAnimationPositions = null;
         this.lastDraw = Date.now();
         this.canvasHasContent = false;
@@ -265,9 +265,9 @@ class RecentlyUsedBar {
         // the line gets a fast, smooth, fade-in animation by having
         // multiple layers animate in/out with different speeds
         let animationLayers = [
-            { speed: 1, opacity: 0.5 },
-            { speed: 2, opacity: 0.25 },
-            { speed: 3, opacity: 0.125 }
+            { speed: 1, opacity: 0.4 },
+            { speed: 2, opacity: 0.2 },
+            { speed: 3, opacity: 0.1 }
         ];
 
         animationLayers.forEach(layer => {
