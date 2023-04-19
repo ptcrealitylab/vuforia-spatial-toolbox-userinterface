@@ -426,11 +426,9 @@ function toggleAnalyzerSettingsUI() {
  * @param {boolean} visible - whether to show or not
  */
 function setHumanPosesVisible(visible) {
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
+    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
+        humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
     }
-    activeHumanPoseAnalyzer.setLiveHumanPosesVisible(visible);
 }
 
 /**
@@ -439,11 +437,13 @@ function setHumanPosesVisible(visible) {
  * @param {boolean} visible - whether to show or not
  */
 function setChildHumanPosesVisible(visible) {
-    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
-        humanPoseAnalyzer.childHumanObjectsVisible = visible;
-        if (humanPoseAnalyzer.settingsUi) {
-            humanPoseAnalyzer.settingsUi.setChildHumanPosesVisible(visible);
-        }
+    if (!activeHumanPoseAnalyzer) {
+        console.warn('No active HPA');
+        return;
+    }
+    activeHumanPoseAnalyzer.childHumanObjectsVisible = visible;
+    if (activeHumanPoseAnalyzer.settingsUi) {
+        activeHumanPoseAnalyzer.settingsUi.setChildHumanPosesVisible(visible);
     }
 }
 
