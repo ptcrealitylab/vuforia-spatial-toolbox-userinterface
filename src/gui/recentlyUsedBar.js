@@ -13,6 +13,10 @@ class RecentlyUsedBar {
         this.onIconPointerOver = this.onIconPointerOver.bind(this);
         this.onIconPointerOut = this.onIconPointerOut.bind(this);
         this.hoveredFrameId = null;
+        this.hoverAnimationPercent = 0;
+        this.hoverAnimationDurationMs = (10 / 60) * 1000; // take 10 frames if running at 60 fps
+        this.lastAnimationPositions = null;
+        this.lastDraw = Date.now();
         this.canvas = document.createElement('canvas');
         this.canvas.className = 'ru-canvas';
         this.canvas.width = window.innerWidth;
@@ -204,31 +208,75 @@ class RecentlyUsedBar {
 
     renderCanvas() {
         try {
+            let dt = Date.now() - this.lastDraw;
+            this.lastDraw += dt;
             this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             if (this.hoveredFrameId) {
-                let frameScreenPosition = realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]);
-                let iconElt = this.iconElts.find((iconElt) => {
-                    return iconElt.dataset.frameId === this.hoveredFrameId;
-                });
-                if (!iconElt) {
-                    this.hoveredFrameId = null;
-                } else {
-                    let iconScreenPosition = iconElt.getBoundingClientRect();
-                    let iconBottom = {
-                        x: iconScreenPosition.left + iconScreenPosition.width/2,
-                        y: iconScreenPosition.bottom
-                    }
+                this.hoverAnimationPercent = Math.min(1, this.hoverAnimationPercent + (dt / this.hoverAnimationDurationMs));
+            } else {
+                // the animation starts out midway done if you quickly flip between icons, resets to 0 progress as time passes
+                this.hoverAnimationPercent = Math.max(0, this.hoverAnimationPercent - (dt / this.hoverAnimationDurationMs));
+            }
+            if (this.hoverAnimationPercent > 0) {
+
+                if (this.hoveredFrameId || this.lastAnimationPositions) {
+
+                    let frameScreenPosition = this.hoveredFrameId ?
+                        realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
+                        this.lastAnimationPositions.tool;
+                    
+                    let iconRect = this.hoveredFrameId ? this.getIcon(this.hoveredFrameId).getBoundingClientRect() : null;
+                    let iconBottom = this.hoveredFrameId ?
+                        { x: iconRect.left + iconRect.width / 2,  y: iconRect.bottom } :
+                        this.lastAnimationPositions.icon;
+
+                    // const iconElt = this.getIcon(this.hoveredFrameId);
+                    // if (!iconElt) {
+                    //     this.hoveredFrameId = null;
+                    // } else {
+                    // let iconScreenPosition = iconElt.getBoundingClientRect();
+                    // let iconBottom = {
+                    //     x: iconScreenPosition.left + iconScreenPosition.width/2,
+                    //     y: iconScreenPosition.bottom
+                    // }
                     // draw a line from iconScreenPosition to frameScreenPosition
+                    // this.ctx.beginPath();
+                    // this.ctx.fillStyle = '#ffffff';
+                    // this.ctx.arc(iconBottom.x, iconBottom.y + 7, 2, 0, Math.PI * 2);
+                    // this.ctx.fill();
                     this.ctx.beginPath();
                     this.ctx.lineWidth = 1;
                     this.ctx.strokeStyle = '#ffffff';
                     this.ctx.moveTo(iconBottom.x, iconBottom.y + 5);
                     this.ctx.lineTo(iconBottom.x, iconBottom.y + 15);
-                    this.ctx.lineTo(frameScreenPosition.x, iconBottom.y + 15);
-                    this.ctx.lineTo(frameScreenPosition.x, frameScreenPosition.y);
+                    // this calculates an animated endpoint for the line based on the hoverAnimationPercent
+                    let horizontalDistance = Math.abs(frameScreenPosition.x - iconBottom.x);
+                    let verticalDistance = Math.abs((iconBottom.y + 15) - frameScreenPosition.y);
+                    let horizontalPercent = horizontalDistance / (horizontalDistance + verticalDistance);
+                    let lineEndX = iconBottom.x + Math.min(1, this.hoverAnimationPercent / horizontalPercent) * horizontalDistance;
+                    let lineEndY = (iconBottom.y + 15) + Math.max(0, Math.min(1, (this.hoverAnimationPercent - horizontalPercent) / (1 - horizontalPercent))) * verticalDistance;
+                    this.ctx.lineTo(lineEndX, iconBottom.y + 15);
+                    this.ctx.lineTo(lineEndX, lineEndY);
                     this.ctx.stroke();
                     this.ctx.closePath();
+
+                    if (this.hoveredFrameId) {
+                        this.lastAnimationPositions = {
+                            icon: {
+                                x: iconBottom.x,
+                                y: iconBottom.y
+                            },
+                            tool: {
+                                x: frameScreenPosition.x,
+                                y: frameScreenPosition.y
+                            }
+                        }
+                    }
+                    // }
                 }
+                
+            } else {
+                this.lastAnimationPositions = null;
             }
         } catch (e) {
             console.warn(e);
