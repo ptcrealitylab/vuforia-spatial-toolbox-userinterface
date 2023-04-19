@@ -1,5 +1,5 @@
-import {GLState, Handle, DeviceDescription} from "/objectDefaultFiles/glState.js"
-import {CommandId, Command, CommandBufferManager, WebGLStrategy, BlockAndWaitWebGLSyncStrategy} from "/objectDefaultFiles/glCommandBuffer.js"
+import {GLState, DeviceDescription} from "/objectDefaultFiles/glState.js"
+import {CommandId, CommandBufferManager, WebGLStrategy, BlockAndWaitWebGLSyncStrategy} from "/objectDefaultFiles/glCommandBuffer.js"
 
 createNameSpace("realityEditor.gui.glRenderer");
 
@@ -479,6 +479,8 @@ class WorkerGLProxy {
                     Atomics.store(this.synclock, 0, 1);
                     Atomics.notify(this.synclock, 0, 1);
                 }
+                this.serverState = WorkerGLProxy.STATE_CONTEXT_LOST;
+                break;
             case WorkerGLProxy.STATE_BOOTSTRAP_DONE:
             case WorkerGLProxy.STATE_FRAME_DONE:
             case WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE:
@@ -502,9 +504,9 @@ class WorkerGLProxy {
 
     /**
      * 
-     * @param {WebGLContextEvent} e 
+     * @param {WebGLContextEvent} _ 
      */
-    onContextRestored(e) {
+    onContextRestored(_) {
         if (this.serverState === WorkerGLProxy.STATE_CONTEXT_LOST) {
             this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED;
         } else {
@@ -542,7 +544,7 @@ let lastRender = Date.now();
 let defaultGLState = null;
 
 function initService() {
-    console.log("renderer is in a secure context: " + isSecureContext + " and isolated: " + crossOriginIsolated);
+    console.log("renderer is in a secure context: " + self.isSecureContext + " and isolated: " + self.crossOriginIsolated);
     // canvas = globalCanvas.canvas;
     canvas = document.querySelector('#glcanvas');
     if (canvas !== null) {
