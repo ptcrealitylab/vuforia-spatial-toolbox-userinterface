@@ -667,6 +667,12 @@ createNameSpace("realityEditor.network.realtime");
 
     }
 
+    exports.getSocketsForSet = function(setName) {
+        return getSocketIPsForSet(setName).map(ip => {
+            return sockets[setName][ip];
+        });
+    }
+
     /**
      * Utility that uses a possibly-recursive path to set an object's property to a new value
      * @example setObjectValueAtPath( {a:{b:{etc:5}}}, 'a.b.etc', 123 ) modifies the first argument to {a:{b:{etc:123}}}

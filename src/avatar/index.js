@@ -212,6 +212,9 @@ createNameSpace("realityEditor.avatar");
 
         let worldObjectId = realityEditor.sceneGraph.getWorldId();
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
+        
+        if (!worldNode) return;
+        
         let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
 
         network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix);
