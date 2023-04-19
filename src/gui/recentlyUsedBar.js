@@ -10,13 +10,25 @@ class RecentlyUsedBar {
         this.iconElts = [];
         this.capacity = 3;
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
+        this.onIconPointerOver = this.onIconPointerOver.bind(this);
+        this.onIconPointerOut = this.onIconPointerOut.bind(this);
+        this.hoveredFrameId = null;
+        this.canvas = document.createElement('canvas');
+        this.canvas.className = 'ru-canvas';
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.ctx = this.canvas.getContext("2d");
     }
 
     initService() {
         document.body.appendChild(this.container);
+        document.body.appendChild(this.canvas);
 
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
+
+        realityEditor.device.layout.onWindowResized(this.resizeCanvas.bind(this));
+        this.renderCanvas();
     }
 
     onVehicleDeleted(event) {
@@ -46,6 +58,15 @@ class RecentlyUsedBar {
         });
         realityEditor.envelopeManager.openEnvelope(frameId, false);
         realityEditor.envelopeManager.focusEnvelope(frameId, false);
+    }
+
+    onIconPointerOver(event) {
+        const iconElt = event.target;
+        this.hoveredFrameId = iconElt.dataset.frameId;
+    }
+
+    onIconPointerOut(_event) {
+        this.hoveredFrameId = null;
     }
 
     onEnvelopeRegistered(frame) {
@@ -121,6 +142,8 @@ class RecentlyUsedBar {
             icon.src = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + name + '/icon.gif');
 
             icon.addEventListener('pointerdown', this.onIconPointerDown);
+            icon.addEventListener('pointerover', this.onIconPointerOver);
+            icon.addEventListener('pointerout', this.onIconPointerOut);
 
             this.iconElts.push(icon);
 
@@ -170,6 +193,47 @@ class RecentlyUsedBar {
                 this.container.removeChild(last);
             }, animDur * 0.5);
         }
+    }
+
+    resizeCanvas() {
+        if (this.canvas !== undefined) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
+    }
+
+    renderCanvas() {
+        try {
+            this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            if (this.hoveredFrameId) {
+                let frameScreenPosition = realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]);
+                let iconElt = this.iconElts.find((iconElt) => {
+                    return iconElt.dataset.frameId === this.hoveredFrameId;
+                });
+                if (!iconElt) {
+                    this.hoveredFrameId = null;
+                } else {
+                    let iconScreenPosition = iconElt.getBoundingClientRect();
+                    let iconBottom = {
+                        x: iconScreenPosition.left + iconScreenPosition.width/2,
+                        y: iconScreenPosition.bottom
+                    }
+                    // draw a line from iconScreenPosition to frameScreenPosition
+                    this.ctx.beginPath();
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeStyle = '#ffffff';
+                    this.ctx.moveTo(iconBottom.x, iconBottom.y + 5);
+                    this.ctx.lineTo(iconBottom.x, iconBottom.y + 15);
+                    this.ctx.lineTo(frameScreenPosition.x, iconBottom.y + 15);
+                    this.ctx.lineTo(frameScreenPosition.x, frameScreenPosition.y);
+                    this.ctx.stroke();
+                    this.ctx.closePath();
+                }
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+        requestAnimationFrame(this.renderCanvas.bind(this));
     }
 }
 
