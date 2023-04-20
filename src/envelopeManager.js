@@ -246,6 +246,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope
      */
     function focusEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        if (knownEnvelopes[frameId].hasFocus) return;
+
         knownEnvelopes[frameId].hasFocus = true;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
@@ -263,7 +265,10 @@ createNameSpace("realityEditor.envelopeManager");
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
 
+        // hide the temporary icon
         realityEditor.gui.envelopeIconRenderer.onFocus(knownEnvelopes[frameId]);
+        // focusing an app also brings it to the front of the bar, same as opening it
+        realityEditor.gui.recentlyUsedBar.onOpen(knownEnvelopes[frameId]);
     }
 
     /**
@@ -272,6 +277,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
      */
     function blurEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        if (!knownEnvelopes[frameId].hasFocus) return;
+
         knownEnvelopes[frameId].hasFocus = false;
 
         // callbacks inside the envelope are auto-triggered if it opens itself, but need to be triggered if opened externally
@@ -749,5 +756,6 @@ createNameSpace("realityEditor.envelopeManager");
     exports.openEnvelope = openEnvelope;
     exports.closeEnvelope = closeEnvelope;
     exports.focusEnvelope = focusEnvelope;
+    exports.blurEnvelope = blurEnvelope;
 
 }(realityEditor.envelopeManager));
