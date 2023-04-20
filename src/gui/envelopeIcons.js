@@ -64,7 +64,7 @@ class EnvelopeIconRenderer {
             let object = realityEditor.getObject(objectId);
             let name = frame.src;
             let port = realityEditor.network.getPort(object);
-            let path = '/frames/' + name + '/icon.gif';
+            let path = '/frames/' + name + '/icon-foreground.svg';
             let src = realityEditor.network.getURL(object.ip, port, path);
             iconDiv = this.createIconDiv(frameId, src);
         }
