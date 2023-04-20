@@ -2007,6 +2007,15 @@ Logic Interface CSS
     border-color: white;
 }
 
+.ru-canvas {
+    position: absolute;
+    pointer-events: none;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
 .iframeOverlayWithoutFocus {
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
