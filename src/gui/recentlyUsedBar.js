@@ -60,7 +60,11 @@ class RecentlyUsedBar {
 
         realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
             if (envelope.hasFocus) {
-                realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+                if (envelope.isFull2D) {
+                    realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+                } else {
+                    realityEditor.envelopeManager.blurEnvelope(envelope.frame);
+                }
             }
         });
         realityEditor.envelopeManager.openEnvelope(frameId, false);
