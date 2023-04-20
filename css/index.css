@@ -2019,3 +2019,12 @@ Logic Interface CSS
 .iframeOverlayWithoutFocus {
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
+
+.minimizedEnvelopeIcon {
+    position: absolute;
+    border-radius: 96px;
+    /* this is a trick to turn a black image with white borders into a colored image with black borders */
+    filter: invert(1) brightness(90%) saturate(200%) blur(1px); /* assumes it's a black semi-transparent icon */
+    -webkit-filter: invert(1) brightness(90%) saturate(200%) blur(1px); /* blur smooths out jagged pixel edges */
+    background-color: #BF55E2; /* inverse of PTC-green */
+}

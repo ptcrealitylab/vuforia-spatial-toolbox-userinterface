@@ -91,16 +91,12 @@ class EnvelopeIconRenderer {
         let icon = document.createElement('img');
         icon.src = src;
         let iconWidth = 440, borderWidth = 16;
-        icon.style.position = 'absolute';
+        icon.classList.add('minimizedEnvelopeIcon');
         icon.style.width = `${iconWidth}px`;
         icon.style.height = `${iconWidth}px`;
         icon.style.left = `calc(100vw/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
         icon.style.top = `calc(100vh/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
         icon.style.border = `${borderWidth}px solid white`;
-        icon.style.borderRadius = '96px';
-        icon.style.backgroundColor = '#BF55E2'; // inverse of PTC-green
-        icon.style.filter = 'invert(1)';
-        icon.style.webkitFilter = 'invert(1)';
         container.appendChild(icon);
 
         icon.addEventListener('pointerup', () => {
