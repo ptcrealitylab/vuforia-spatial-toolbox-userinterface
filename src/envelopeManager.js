@@ -19,6 +19,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @property {Array.<string>} containedFrameIds
      * @property {boolean} isOpen
      * @property {boolean} hasFocus
+     * @property {boolean} isFull2D
      */
 
     /**
@@ -312,7 +313,7 @@ createNameSpace("realityEditor.envelopeManager");
     function createMinimizeButton() {
         let minimizeButton = document.createElement('img');
         minimizeButton.classList.add('envelopeMenuButton');
-        minimizeButton.src = 'svg/envelope-minimize-button.svg';
+        minimizeButton.src = 'svg/envelope-collapse-button.svg';
         minimizeButton.id = 'minimizeEnvelopeButton';
         minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
         document.body.appendChild(minimizeButton);
@@ -330,26 +331,35 @@ createNameSpace("realityEditor.envelopeManager");
 
     /**
      * Creates/renders an [X] button in the top left corner if there are any open envelopes, which can be used to close them
-     * Also creates a second button, which is used to remove focus from the focused envelope
+     * Also creates a second button, which is used to remove focus from the focused envelope, if it has a 3D scene
      */
     function updateExitButton() {
         let numberOfOpenEnvelopes = getOpenEnvelopes().length;
-        let numberOfFocusedEnvelopes = getFocusedEnvelopes().length; // should be 0 or 1
+        let numberOfFocusedEnvelopes = getFocusedEnvelopes().length;
+        // Full2D tools are not "blurrable" because they don't have a 3D scene that can remain in the background when their 2D layer loses focus
+        let numberOfBlurrableEnvelopes = getFocusedEnvelopes().filter(envelope => !envelope.isFull2D).length;
         let exitButton = document.getElementById('exitEnvelopeButton');
         let minimizeButton = document.getElementById('minimizeEnvelopeButton');
 
-        if (numberOfOpenEnvelopes === 0 || numberOfFocusedEnvelopes === 0) {
-            // hide exit and minimize buttons
-            if (minimizeButton) minimizeButton.style.display = 'none';
-            if (exitButton) exitButton.style.display = 'none';
-            callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
-        } else {
-            // show (create if needed) exit button
-            if (!exitButton) exitButton = createExitButton();
+        // exit button shows anytime an envelope is open+focused
+        let showExitButton = numberOfOpenEnvelopes > 0 && numberOfFocusedEnvelopes > 0;
+        // minimize button only shows if the open+focused envelope is also not a Full2D envelope
+        let showMinimizeButton = numberOfBlurrableEnvelopes > 0;
+
+        if (showMinimizeButton) {
             if (!minimizeButton) minimizeButton = createMinimizeButton();
             minimizeButton.style.display = 'inline';
+        } else {
+            if (minimizeButton) minimizeButton.style.display = 'none';
+        }
+
+        if (showExitButton) {
+            if (!exitButton) exitButton = createExitButton();
             exitButton.style.display = 'inline';
             callbacks.onExitButtonShown.forEach(cb => cb(exitButton, minimizeButton));
+        } else {
+            if (exitButton) exitButton.style.display = 'none';
+            callbacks.onExitButtonHidden.forEach(cb => cb(exitButton, minimizeButton));
         }
     }
     
@@ -702,6 +712,11 @@ createNameSpace("realityEditor.envelopeManager");
         if (globalDOMCache[focusedFrameId]) {
             globalDOMCache[focusedFrameId].classList.add('deactivatedIframeOverlay');
         }
+
+        if (knownEnvelopes[focusedFrameId]) {
+            knownEnvelopes[focusedFrameId].isFull2D = true;
+            updateExitButton();
+        }
     }
     
     function hideBlurredBackground(focusedFrameId) {
@@ -713,6 +728,11 @@ createNameSpace("realityEditor.envelopeManager");
 
         if (globalDOMCache[focusedFrameId]) {
             globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
+        }
+
+        if (knownEnvelopes[focusedFrameId]) {
+            knownEnvelopes[focusedFrameId].isFull2D = false;
+            updateExitButton();
         }
     }
 
