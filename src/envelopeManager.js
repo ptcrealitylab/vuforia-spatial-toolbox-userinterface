@@ -312,7 +312,7 @@ createNameSpace("realityEditor.envelopeManager");
     function createMinimizeButton() {
         let minimizeButton = document.createElement('img');
         minimizeButton.classList.add('envelopeMenuButton');
-        minimizeButton.src = 'svg/envelope-minimize-button.svg';
+        minimizeButton.src = 'svg/envelope-collapse-button.svg';
         minimizeButton.id = 'minimizeEnvelopeButton';
         minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
         document.body.appendChild(minimizeButton);
