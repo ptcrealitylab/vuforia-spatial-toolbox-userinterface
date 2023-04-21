@@ -91,7 +91,7 @@ class EnvelopeIconRenderer {
         let icon = document.createElement('img');
         icon.src = src;
         let iconWidth = 440, borderWidth = 16;
-        icon.classList.add('minimizedEnvelopeIcon');
+        icon.classList.add('minimizedEnvelopeIcon', 'tool-color-gradient');
         icon.style.width = `${iconWidth}px`;
         icon.style.height = `${iconWidth}px`;
         icon.style.left = `calc(100vw/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
