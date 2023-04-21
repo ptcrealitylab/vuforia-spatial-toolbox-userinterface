@@ -282,9 +282,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (!moveToCursor && !spatialCursorMatrix) {
             let worldCenterPoint = getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
             if (worldCenterPoint.point === undefined) {
-                let dist = realityEditor.sceneGraph.getDistanceToCamera('rotateCenter'+'_VISUAL_ELEMENT');
-                realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, dist);
+                let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
+                if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
+                    // when on desktop, there is rotation center
+                    let dist = realityEditor.sceneGraph.getDistanceToCamera(rotateCenterId);
+                    console.log(dist);
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, dist);
+                } else {
+                    // when on phone, there's no rotation center
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 1000);
+                }
             } else {
+                // when there is area target mesh at screen center
                 let worldCamPoint = new THREE.Vector3();
                 realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
                 realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
