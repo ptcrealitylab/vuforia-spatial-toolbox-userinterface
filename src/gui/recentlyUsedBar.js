@@ -23,8 +23,12 @@ class RecentlyUsedBar {
         this.canvasHasContent = false;
 
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
+        this.onIconPointerDown = this.onIconPointerDown.bind(this);
         this.onIconPointerOver = this.onIconPointerOver.bind(this);
         this.onIconPointerOut = this.onIconPointerOut.bind(this);
+        this.onEnvelopeRegistered = this.onEnvelopeRegistered.bind(this);
+        this.onOpen = this.onOpen.bind(this);
+        this.onClose = this.onClose.bind(this);
     }
 
     initService() {
@@ -56,13 +60,29 @@ class RecentlyUsedBar {
     onIconPointerDown(event) {
         const iconElt = event.target;
         const frameId = iconElt.dataset.frameId;
+        let isFirstIcon = frameId === this.iconElts[0].dataset.frameId;
         iconElt.dataset.lastActive = Date.now();
 
+        let alreadyFocused = false;
         realityEditor.envelopeManager.getOpenEnvelopes().forEach(function(envelope) {
             if (envelope.hasFocus) {
-                realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+                if (envelope.frame === frameId && isFirstIcon) {
+                    alreadyFocused = true;
+                    return;
+                }
+
+                if (envelope.isFull2D) {
+                    realityEditor.envelopeManager.closeEnvelope(envelope.frame);
+                } else {
+                    realityEditor.envelopeManager.blurEnvelope(envelope.frame);
+                }
             }
         });
+
+        if (alreadyFocused) {
+            return;
+        }
+
         realityEditor.envelopeManager.openEnvelope(frameId, false);
         realityEditor.envelopeManager.focusEnvelope(frameId, false);
     }

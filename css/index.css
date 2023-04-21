@@ -2020,3 +2020,39 @@ Logic Interface CSS
 .iframeOverlayWithoutFocus {
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
+
+.minimizedEnvelopeContainer {
+    width: 100vw;
+    height: 100vh;
+}
+
+.minimizedEnvelopeIcon {
+    position: absolute;
+    border-radius: 96px;
+    border: 16px solid white;
+    width: 440px;
+    height: 440px;
+    left: calc(100vw/2 - 440px/2 - 16px);
+    top: calc(100vh/2 - 440px/2 - 16px);
+}
+
+.tool-color-gradient {
+    /*animation: tool-color-gradient-anim 0.3s infinite alternate;*/
+    background: linear-gradient(90deg, #000000,#000000, #00ffff, #ee7752, #e73c7e, #23a6d5, #23d5ab,#000000, #000000);
+    background-size: 2000% 200%;
+    animation: gradient 10s infinite;
+    border-radius: 50px;
+}
+
+@keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.minimizedEnvelopeIcon:hover {
+    border: 24px solid white;
+    left: calc(100vw/2 - 440px/2 - 24px);
+    top: calc(100vh/2 - 440px/2 - 24px);
+    background: black;
+}
