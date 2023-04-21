@@ -83,20 +83,12 @@ class EnvelopeIconRenderer {
     createIconDiv(frameId, src) {
         let container = document.createElement('div');
         container.id = 'envelopeIcon_' + frameId;
-        container.classList.add('main', 'visibleFrameContainer');
-        container.style.width = '100vw';
-        container.style.height = '100vh';
+        container.classList.add('main', 'visibleFrameContainer', 'minimizedEnvelopeContainer');
         this.gui.appendChild(container);
 
         let icon = document.createElement('img');
         icon.src = src;
-        let iconWidth = 440, borderWidth = 16;
         icon.classList.add('minimizedEnvelopeIcon', 'tool-color-gradient');
-        icon.style.width = `${iconWidth}px`;
-        icon.style.height = `${iconWidth}px`;
-        icon.style.left = `calc(100vw/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
-        icon.style.top = `calc(100vh/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
-        icon.style.border = `${borderWidth}px solid white`;
         container.appendChild(icon);
 
         icon.addEventListener('pointerup', () => {

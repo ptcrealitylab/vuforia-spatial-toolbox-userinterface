@@ -2020,9 +2020,19 @@ Logic Interface CSS
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
 
+.minimizedEnvelopeContainer {
+    width: 100vw;
+    height: 100vh;
+}
+
 .minimizedEnvelopeIcon {
     position: absolute;
     border-radius: 96px;
+    border: 16px solid white;
+    width: 440px;
+    height: 440px;
+    left: calc(100vw/2 - 440px/2 - 16px);
+    top: calc(100vh/2 - 440px/2 - 16px);
 }
 
 .tool-color-gradient {
@@ -2037,4 +2047,11 @@ Logic Interface CSS
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+}
+
+.minimizedEnvelopeIcon:hover {
+    border: 24px solid white;
+    left: calc(100vw/2 - 440px/2 - 24px);
+    top: calc(100vh/2 - 440px/2 - 24px);
+    background: black;
 }
