@@ -273,7 +273,13 @@ class RecentlyUsedBar {
             realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
             this.lastAnimationPositions.frame;
 
-        let iconRect = this.hoveredFrameId ? this.getIcon(this.hoveredFrameId).getBoundingClientRect() : null;
+        let iconElt = this.getIcon(this.hoveredFrameId);
+        if (this.hoveredFrameId && !iconElt) {
+            this.hoveredFrameId = null;
+            return;
+        }
+
+        let iconRect = this.hoveredFrameId ? iconElt.getBoundingClientRect() : null;
         let iconBottom = this.hoveredFrameId ?
             { x: iconRect.left + iconRect.width / 2,  y: iconRect.bottom } :
             this.lastAnimationPositions.icon;
