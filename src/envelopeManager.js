@@ -89,6 +89,20 @@ createNameSpace("realityEditor.envelopeManager");
 
         realityEditor.gui.recentlyUsedBar.onEnvelopeRegistered(frame);
         realityEditor.gui.envelopeIconRenderer.onEnvelopeRegistered(knownEnvelopes[frameKey]);
+
+        // Parse the URL for a ?toolId, and open the envelope if possible
+        let searchParams = new URLSearchParams(window.location.search);
+        let toolboxActiveToolId = searchParams.get('toolId');
+        if (toolboxActiveToolId && frameKey === toolboxActiveToolId) {
+            setTimeout(() => {
+                // for now, open it after a slight delay so it doesn't get closed by another open envelope
+                // todo: don't rely on a timeout
+                openEnvelope(frameKey, false);
+                setTimeout(() => {
+                    focusEnvelope(frameKey, false);
+                }, 1000);
+            }, 1000);
+        }
     }
 
     /**
