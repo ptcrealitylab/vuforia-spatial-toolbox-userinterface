@@ -26,6 +26,8 @@ createNameSpace("realityEditor.envelopeManager");
      * @type {Object.<string, Envelope>}
      */
     var knownEnvelopes = {};
+
+    let alreadyProcessedUrlToolId = false;
     
     let callbacks = {
         onExitButtonShown: [],
@@ -90,10 +92,13 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.gui.recentlyUsedBar.onEnvelopeRegistered(frame);
         realityEditor.gui.envelopeIconRenderer.onEnvelopeRegistered(knownEnvelopes[frameKey]);
 
+        if (alreadyProcessedUrlToolId) return;
+
         // Parse the URL for a ?toolId, and open the envelope if possible
         let searchParams = new URLSearchParams(window.location.search);
         let toolboxActiveToolId = searchParams.get('toolId');
         if (toolboxActiveToolId && frameKey === toolboxActiveToolId) {
+            alreadyProcessedUrlToolId = true; // prevent weird behavior if the tool reloads/re-registers
             setTimeout(() => {
                 // for now, open it after a slight delay so it doesn't get closed by another open envelope
                 // todo: don't rely on a timeout
