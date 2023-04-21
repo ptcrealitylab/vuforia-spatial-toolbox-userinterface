@@ -29,7 +29,8 @@ createNameSpace("realityEditor.envelopeManager");
     
     let callbacks = {
         onExitButtonShown: [],
-        onExitButtonHidden: []
+        onExitButtonHidden: [],
+        onFullscreenFull2DToggled: []
     };
     
     /**
@@ -389,6 +390,10 @@ createNameSpace("realityEditor.envelopeManager");
         callbacks.onExitButtonShown.push(callback);
     }
 
+    exports.onFullscreenFull2DToggled = (callback) => {
+        callbacks.onFullscreenFull2DToggled.push(callback);
+    }
+
     /**
      * When a new frame is added and finishes loading, tell any open envelopes about it so they can "claim" it if they choose
      * @param {{objectKey: string, frameKey: string, frameType: string}} params
@@ -735,6 +740,11 @@ createNameSpace("realityEditor.envelopeManager");
             knownEnvelopes[focusedFrameId].isFull2D = true;
             updateExitButton();
         }
+
+        callbacks.onFullscreen2DToggled.forEach(cb => cb({
+            frameId: focusedFrameId,
+            isFull2D: true
+        }));
     }
     
     function hideBlurredBackground(focusedFrameId) {
@@ -752,6 +762,11 @@ createNameSpace("realityEditor.envelopeManager");
             knownEnvelopes[focusedFrameId].isFull2D = false;
             updateExitButton();
         }
+
+        callbacks.onFullscreen2DToggled.forEach(cb => cb({
+            frameId: focusedFrameId,
+            isFull2D: false
+        }));
     }
 
     exports.initService = initService; // ideally, for a self-contained service, this is the only export.
