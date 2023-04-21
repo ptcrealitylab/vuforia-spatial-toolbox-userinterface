@@ -741,7 +741,7 @@ createNameSpace("realityEditor.envelopeManager");
             updateExitButton();
         }
 
-        callbacks.onFullscreen2DToggled.forEach(cb => cb({
+        callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
             isFull2D: true
         }));
@@ -763,7 +763,7 @@ createNameSpace("realityEditor.envelopeManager");
             updateExitButton();
         }
 
-        callbacks.onFullscreen2DToggled.forEach(cb => cb({
+        callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
             isFull2D: false
         }));
