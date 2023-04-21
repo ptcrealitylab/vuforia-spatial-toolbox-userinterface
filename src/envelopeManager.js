@@ -158,6 +158,17 @@ createNameSpace("realityEditor.envelopeManager");
         const envelope = knownEnvelopes[frameId];
         if (envelope.isOpen) return;
 
+        // first, blur or close the current envelope if there is one focused
+        getOpenEnvelopes().forEach(openEnvelope => {
+            if (openEnvelope.hasFocus) {
+                if (openEnvelope.isFull2D) {
+                    realityEditor.envelopeManager.closeEnvelope(openEnvelope.frame);
+                } else {
+                    realityEditor.envelopeManager.blurEnvelope(openEnvelope.frame);
+                }
+            }
+        });
+
         envelope.isOpen = true;
         envelope.hasFocus = true;
 
@@ -247,6 +258,17 @@ createNameSpace("realityEditor.envelopeManager");
      */
     function focusEnvelope(frameId, wasTriggeredByEnvelope = false) {
         if (knownEnvelopes[frameId].hasFocus) return;
+
+        // first, blur or close the current envelope if there is one focused
+        getOpenEnvelopes().forEach(openEnvelope => {
+            if (openEnvelope.hasFocus) {
+                if (openEnvelope.isFull2D) {
+                    realityEditor.envelopeManager.closeEnvelope(openEnvelope.frame);
+                } else {
+                    realityEditor.envelopeManager.blurEnvelope(openEnvelope.frame);
+                }
+            }
+        });
 
         knownEnvelopes[frameId].hasFocus = true;
 

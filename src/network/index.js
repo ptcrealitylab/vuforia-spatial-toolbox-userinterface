@@ -1660,7 +1660,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
+            // z-index can be specified. if not, goes to background if not full2D, foreground if full2D
+            let zIndex = tempThisObject.fullscreenZPosition ||
+                msgContent.fullScreenFull2D ? globalStates.defaultFullscreenFull2DFrameZ : globalStates.defaultFullscreenFrameZ;
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
