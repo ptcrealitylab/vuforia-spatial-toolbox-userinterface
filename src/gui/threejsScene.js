@@ -432,11 +432,20 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
                 let allMeshes = [];
+                let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
+                        if (child.name && child.name.toLocaleLowerCase() === 'mesh_0') {
+                            meshesToRemove.push(child);
+                            return;
+                        }
                         allMeshes.push(child);
                     }
                 });
+
+                for (let mesh of meshesToRemove) {
+                    mesh.removeFromParent();
+                }
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
