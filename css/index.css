@@ -1515,8 +1515,9 @@ Logic Interface CSS
 
 .envelopeMenuButton {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
+    margin: 5px;
     /* this is a hack for adding the interface in front of the transformed web interface but behind the pocket*/
     -webkit-transform: translateZ(2900px);
     transform: translateZ(2900px);
@@ -1996,9 +1997,9 @@ Logic Interface CSS
 }
 
 .ru-icon {
-    width: 56px;
-    height: 56px;
-    margin: 0 6px;
+    width: 54px;
+    height: 54px;
+    margin: 1px 6px;
     border: 2px solid rgba(0, 0, 0, 0);
     border-radius: 12.8px;
 }
