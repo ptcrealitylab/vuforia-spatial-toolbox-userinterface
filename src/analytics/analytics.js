@@ -1,28 +1,22 @@
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+
 import {Timeline} from './timeline.js';
 import {
     RegionCard,
     RegionCardState,
 } from './regionCard.js';
-import {
-    setActiveFrame,
-    setHighlightRegion,
-    setDisplayRegion,
-    setCursorTime,
-    clearHistoricalData,
-    showAnalyzerSettingsUI,
-    hideAnalyzerSettingsUI,
-    getPosesInTimeInterval,
-} from '../humanPose/draw.js';
-import {
-    loadHistory
-} from '../humanPose/index.js';
+import {HumanPoseAnalyzer} from '../humanPose/HumanPoseAnalyzer.js';
 import {
     postPersistRequest,
 } from './utils.js';
 
 export class Analytics {
-    constructor() {
-        this.activeEnvelope = null;
+    /**
+     * @param {string} frame - frame id associated with instance of
+     * analytics
+     */
+    constructor(frame) {
+        this.frame = frame;
 
         this.container = document.createElement('div');
         this.container.id = 'analytics-container';
@@ -31,7 +25,12 @@ export class Analytics {
         this.timelineContainer.id = 'analytics-timeline-container';
 
         this.container.appendChild(this.timelineContainer);
-        this.timeline = new Timeline(this.timelineContainer);
+
+        this.timeline = new Timeline(this, this.timelineContainer);
+
+        this.threejsContainer = new THREE.Group();
+        this.humanPoseAnalyzer = new HumanPoseAnalyzer(this.threejsContainer);
+
         this.opened = false;
         this.loadingHistory = false;
         this.livePlayback = false;
@@ -40,6 +39,8 @@ export class Analytics {
         this.nextStepNumber = 1;
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
+        this.createNewPinnedRegionCardsContainer();
+
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
@@ -49,67 +50,84 @@ export class Analytics {
      * On envelope open
      * add, load pinned region cards, load spaghetti, set timeline
      */
-    open(frameId) {
-        if (this.opened) {
-            if (this.activeEnvelope === frameId) {
-                setActiveFrame(frameId);
-                return;
-            }
-            if (this.activeEnvelope) {
-                this.blur(this.activeEnvelope);
-            }
-        }
-        this.activeEnvelope = frameId;
-        this.opened = true;
+    open() {
+        console.log('analytics open', this.frame, this.opened);
 
-        this.createNewPinnedRegionCardsContainer();
-        document.body.appendChild(this.container);
-        this.container.style.display = 'block';
-        setActiveFrame(frameId);
-        showAnalyzerSettingsUI();
+        this.show2D();
+        this.show3D();
+    }
+
+    /**
+     * Shows all 2D UI
+     */
+    show2D() {
+        if (!this.container.parentElement) {
+            document.body.appendChild(this.container);
+        }
+        if (this.humanPoseAnalyzer.settingsUi) {
+            this.humanPoseAnalyzer.settingsUi.show();
+        }
+    }
+
+    /**
+     * Hides all 2D UI
+     */
+    hide2D() {
+        if (this.container.parentElement) {
+            document.body.removeChild(this.container);
+        }
+        if (this.humanPoseAnalyzer.settingsUi) {
+            this.humanPoseAnalyzer.settingsUi.hide();
+        }
+    }
+
+    /**
+     * Shows all 3D UI (spaghetti and clones)
+     */
+    show3D() {
+        if (!this.threejsContainer.parent) {
+            realityEditor.gui.threejsScene.addToScene(this.threejsContainer);
+        }
+    }
+
+    /**
+     * Hides all 3D UI (spaghetti and clones)
+     */
+    hide3D() {
+        if (this.threejsContainer.parent) {
+            realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
+        }
     }
 
     /**
      * On envelope close
      * remove pinned region cards, remove timeline, remove spaghetti
      */
-    close(frameId) {
-        if (frameId !== this.activeEnvelope) {
-            return;
-        }
+    close() {
+        console.log('analytics close', this.frame, this.opened);
+        this.hide2D();
+        this.hide3D();
 
-        if (!this.opened) {
-            return;
-        }
-
-        this.opened = false;
-
-        this.blur(frameId);
-        clearHistoricalData(frameId);
+        // contemplate clearing all historical data
+        // this.humanPoseAnalyzer.clearHistoricalData();
     }
 
     /**
      * On envelope focus (unblur)
      */
-    focus(frameId) {
-        this.open(frameId);
+    focus() {
+        console.log('analytics focus', this.frame, this.opened);
+        this.show2D();
+        this.show3D();
     }
 
     /**
      * On envelope blur
      * Remove all 2d ui
      */
-    blur(frameId) {
-        if (frameId !== this.activeEnvelope) {
-            return;
-        }
-
-        this.container.style.display = 'none';
-        this.activeEnvelope = null;
-
-        document.body.removeChild(this.container);
-        this.timeline.reset();
-        hideAnalyzerSettingsUI();
+    blur() {
+        console.log('analytics blur', this.frame, this.opened);
+        this.hide2D();
     }
 
     /**
@@ -145,8 +163,19 @@ export class Analytics {
         requestAnimationFrame(this.draw);
     }
 
-    appendPose(pose) {
-        this.timeline.appendPose(pose);
+    /**
+     * Processes the given historical poses and renders them efficiently
+     * @param {Pose[]}  poses - the poses to render
+     */
+    bulkRenderHistoricalPoses(poses) {
+        if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+        poses.forEach(pose => {
+            this.timeline.appendPose({
+                time: pose.timestamp,
+            });
+        });
+        this.humanPoseAnalyzer.bulkHistoricalPosesUpdated(poses);
+
     }
 
     /**
@@ -156,11 +185,18 @@ export class Analytics {
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
-        setCursorTime(time, fromSpaghetti);
+        this.humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
     }
 
     /**
-     * @param {{startTime: number, endTime: number}} highlightRegion
+     * @typedef {Object} TimeRegion
+     * @property {number} startTime - start of time interval in ms
+     * @property {number} endTime - end of time interval in ms
+     */
+
+    /**
+     * Sets the time interval to highlight
+     * @param {TimeRegion} highlightRegion
      * @param {boolean} fromSpaghetti - prevents infinite recursion from
      *                  modifying human pose spaghetti which calls this function
      */
@@ -172,11 +208,13 @@ export class Analytics {
             this.activeRegionCard = null;
         }
         this.timeline.setHighlightRegion(highlightRegion);
-        setHighlightRegion(highlightRegion, fromSpaghetti);
+        this.humanPoseAnalyzer.setHighlightRegion(highlightRegion, fromSpaghetti);
     }
 
     /**
-     * @param {{startTime: number, endTime: number}} region
+     * Sets the time interval to display. Syncs state across timeline and
+     * humanPoseAnalyzer
+     * @param {TimeRegion} region - the time interval to display
      * @param {boolean} fromSpaghetti - prevents infinite recursion from
      *                  modifying human pose spaghetti which calls this function
      */
@@ -188,10 +226,10 @@ export class Analytics {
         }
         this.livePlayback = livePlayback;
         this.loadingHistory = true;
-        await loadHistory(region);
+        await realityEditor.humanPose.loadHistory(region);
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
-            setDisplayRegion(region);
+            this.humanPoseAnalyzer.setDisplayRegion(region);
         }
     }
 
@@ -244,11 +282,11 @@ export class Analytics {
         });
 
         for (let desc of regionCardDescriptions) {
-            const poses = getPosesInTimeInterval(desc.startTime, desc.endTime);
+            const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
                 continue;
             }
-            let regionCard = new RegionCard(this.pinnedRegionCardsContainer, poses);
+            let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);

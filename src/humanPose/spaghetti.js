@@ -323,20 +323,26 @@ export class SpaghettiMeshPath extends MeshPath {
     updateAnalyticsHighlightRegion() {
         const comparer = this.comparer;
         const points = this.currentPoints;
+        const analytics = realityEditor.analytics.getActiveAnalytics();
+        if (!analytics) {
+            return;
+        }
 
-        if (comparer.firstPointIndex !== null) {
-            const firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            if (comparer.secondPointIndex !== null) {
-                const secondTimestamp = points[comparer.secondPointIndex].timestamp;
-                realityEditor.analytics.setCursorTime(-1, true);
-                realityEditor.analytics.setHighlightRegion({
-                    startTime: Math.min(firstTimestamp, secondTimestamp),
-                    endTime: Math.max(firstTimestamp, secondTimestamp),
-                }, true);
-            } else {
-                setAnimationMode(AnimationMode.cursor);
-                realityEditor.analytics.setCursorTime(firstTimestamp, true);
-            }
+        if (comparer.firstPointIndex === null) {
+            return;
+        }
+
+        const firstTimestamp = points[comparer.firstPointIndex].timestamp;
+        if (comparer.secondPointIndex !== null) {
+            const secondTimestamp = points[comparer.secondPointIndex].timestamp;
+            analytics.setCursorTime(-1, true);
+            analytics.setHighlightRegion({
+                startTime: Math.min(firstTimestamp, secondTimestamp),
+                endTime: Math.max(firstTimestamp, secondTimestamp),
+            }, true);
+        } else {
+            setAnimationMode(AnimationMode.cursor);
+            analytics.setCursorTime(firstTimestamp, true);
         }
     }
 
