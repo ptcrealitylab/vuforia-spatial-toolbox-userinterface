@@ -49,7 +49,7 @@ class StackingOrder {
 
         this.addToLayer(document.getElementById('glcanvas'), LAYERS.SCENE_APP_BACKGROUND);
 
-        this.addToLayer(document.querySelector('.canvas-node-connections'), LAYERS.SCENE_FOREGROUND);
+        this.addToLayer(document.querySelector('.canvas-node-connections'), LAYERS.SCENE_APP_BACKGROUND);
         this.addToLayer(document.getElementById('p5WebGL'), LAYERS.SCENE_FOREGROUND);
         this.addToLayer(document.getElementById('groupLassoSVG'), LAYERS.SCENE_FOREGROUND);
         this.addToLayer(document.getElementById('groupSVG'), LAYERS.SCENE_FOREGROUND);
