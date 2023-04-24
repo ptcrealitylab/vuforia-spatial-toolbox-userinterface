@@ -7,6 +7,7 @@ import * as draw from './draw.js'
 import * as utils from './utils.js'
 import {getGroundPlaneRelativeMatrix, JOINTS, setMatrixFromArray} from "./utils.js";
 import {Pose} from "./Pose.js";
+import {JOINT_TO_INDEX} from './constants.js';
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -53,6 +54,7 @@ import {Pose} from "./Pose.js";
 
             delete nameIdMap[objectToDelete.name];
             delete humanPoseObjects[objectKey];
+            // TODO: clean out live pose render instance for this object
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
@@ -68,21 +70,32 @@ import {Pose} from "./Pose.js";
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderLiveHumanPoseObjects([], Date.now(), null);
+                    draw.renderLiveHumanPoseObjects([], Date.now());
                     lastUpdateTime = Date.now();
                     return;
                 }
 
-                // further reduce rendering redundant poses by only rendering if any pose data has been updated
-                if (!areAnyPosesUpdated(humanPoseObjects)) return;
+                // further reduce rendering redundant poses by only rendering pose data that has been updated
+                let updatedHumanPoseObjects = [];
+                for (const [id, obj] of Object.entries(humanPoseObjects)) {
+                    let newPoseHash = utils.getPoseStringFromObject(obj);
+                    if (typeof lastRenderedPoses[id] === 'undefined') {
+                        updatedHumanPoseObjects.push(obj);
+                        lastRenderedPoses[id] = newPoseHash;
+                    }
+                    else {
+                        if (newPoseHash !== lastRenderedPoses[id]) {
+                            updatedHumanPoseObjects.push(obj);
+                            lastRenderedPoses[id] = newPoseHash;
+                        }
+                    }
+                }
+                if (updatedHumanPoseObjects.length == 0) return;
 
                 lastUpdateTime = Date.now();
 
-                draw.renderLiveHumanPoseObjects(Object.values(humanPoseObjects), Date.now(), null);
+                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now());
 
-                for (const [id, obj] of Object.entries(humanPoseObjects)) {
-                    lastRenderedPoses[id] = utils.getPoseStringFromObject(obj);
-                }
             } catch (e) {
                 console.warn('error in renderLiveHumanPoseObjects', e);
             }
@@ -174,6 +187,7 @@ import {Pose} from "./Pose.js";
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
         const poses = [];
+        const mostRecentPoseByObjectId = {};
         timestampStrings.forEach(timestampString => {
             let historyEntry = history[timestampString];
             let objectNames = Object.keys(historyEntry);
@@ -184,18 +198,16 @@ import {Pose} from "./Pose.js";
             }
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
-                if (!poseObject.uuid) {
-                    poseObject.uuid = poseObject.objectId;
-                }
                 let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
                 const jointPositions = {};
+                const jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
                     setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
                 for (let jointId of Object.values(JOINTS)) {
-                    let frame = poseObject.frames[poseObject.uuid + jointId];
+                    let frame = poseObject.frames[poseObject.objectId + jointId];
                     if (!frame.ar.matrix) {
                         continue;
                     }
@@ -206,28 +218,33 @@ import {Pose} from "./Pose.js";
                     let jointPosition = new THREE.Vector3();
                     jointPosition.setFromMatrixPosition(jointMatrixThree);
                     jointPositions[jointId] = jointPosition;
+
+                    let keys = utils.getJointNodeInfo(poseObject, JOINT_TO_INDEX[jointId]);
+                    // zero confidence if node's public data are not available
+                    let confidence = 0.0;
+                    if (keys) {
+                        const node = poseObject.frames[keys.frameKey].nodes[keys.nodeKey];
+                        if (node && node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data].confidence !== undefined) {
+                            confidence = node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.data].confidence;
+                        }
+                    }
+                    jointConfidences[jointId] = confidence;
                 }
                 if (Object.keys(jointPositions).length === 0) {
                     return;
                 }
-                const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
-                const pose = new Pose(jointPositions, parseInt(timestampString), {poseObjectId: identifier});
+                const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+                const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
+                    poseObjectId: identifier,
+                    poseHasParent: poseObject.parent && (poseObject.parent !== 'none'),
+                });
+                pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
+                mostRecentPoseByObjectId[poseObject.objectId] = pose;
                 poses.push(pose);
             }
         });
-        draw.bulkRenderHistoricalPoses(poses, null);
+        draw.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
-    }
-
-    function areAnyPosesUpdated(poseObjects) {
-        for (const [id, obj] of Object.entries(poseObjects)) {
-            if (typeof lastRenderedPoses[id] === 'undefined') return true;
-            let newPoseHash = utils.getPoseStringFromObject(obj);
-            if (newPoseHash !== lastRenderedPoses[id]) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -395,6 +412,12 @@ import {Pose} from "./Pose.js";
     let objectsInProgress = {};
 
     function tryCreatingObjectFromPose(pose, poseObjectName) {
+
+        // if no pose is detected, cannot create new human object
+        if (pose.joints.length <= 0) {    
+            return; 
+        }
+
         if (objectsInProgress[poseObjectName]) { return; }
         objectsInProgress[poseObjectName] = true;
 

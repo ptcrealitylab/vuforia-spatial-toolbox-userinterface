@@ -1,5 +1,5 @@
-import {GLState, Handle, DeviceDescription} from "/objectDefaultFiles/glState.js"
-import {CommandId, Command, CommandBufferManager} from "/objectDefaultFiles/glCommandBuffer.js"
+import {GLState, DeviceDescription} from "/objectDefaultFiles/glState.js"
+import {CommandId, CommandBufferManager, WebGLStrategy, BlockAndWaitWebGLSyncStrategy} from "/objectDefaultFiles/glCommandBuffer.js"
 
 createNameSpace("realityEditor.gui.glRenderer");
 
@@ -111,10 +111,14 @@ class WorkerGLProxy {
         this.frameEndListener = null;
 
         /**
-         * @type {Int32Array} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
+         * @type {Int32Array|null} if this is not 1, the worker thread is locked until it receives a response on the last comitted resource Command List
          */
-        this.synclock = new Int32Array(new SharedArrayBuffer(4));
-        Atomics.store(this.synclock, 0, 1);
+        this.synclock = null;
+        // check which combination of worker and webgl sync strategy are needed
+        if (WebGLStrategy.getInstance().syncStrategy instanceof BlockAndWaitWebGLSyncStrategy) {
+            this.synclock = new Int32Array(new SharedArrayBuffer(4));
+            Atomics.store(this.synclock, 0, 1);
+        } 
     }
 
     /**
@@ -201,7 +205,7 @@ class WorkerGLProxy {
             case WorkerGLProxy.STATE_CONTEXT_RESTORED:
                 // if the message is none of the above, it's a command buffer. notify the commandbuffermanager about the received command buffer.
                 this.buffer.onCommandBufferReceived(message);
-                if (Atomics.load(this.synclock, 0) === 0) {
+                if ((this.synclock !== null) && (Atomics.load(this.synclock, 0) === 0)) {
                     switch (this.serverState) {
                         case WorkerGLProxy.STATE_BOOTSTRAP:
                             this.serverState = WorkerGLProxy.STATE_BOOTSTRAP_SYNC;
@@ -371,7 +375,7 @@ class WorkerGLProxy {
             // execute the resource commandbuffer
             let commandId = 1;
             // is the client locked and awaiting a response
-            if (Atomics.load(this.synclock, 0) === 1) {
+            if ((this.synclock === null) || (Atomics.load(this.synclock, 0) === 1)) {
                 // normal unlocked execution of the resource command buffer
                 // itterate the commandbuffer and execute each command, generating an id for tracing
                 for (let command of localCommandBuffer.commands) {
@@ -459,9 +463,11 @@ class WorkerGLProxy {
         this.frameEndListener = null;
         window.removeEventListener('message', this.onMessage);
         // unlock the thread if needed
-        if (Atomics.load(this.synclock, 0) === 0) {
-            Atomics.store(this.synclock, 0, 1);
-            Atomics.notify(this.synclock, 0, 1);
+        if (this.synclock !== null) {
+            if (Atomics.load(this.synclock, 0) === 0) {
+                Atomics.store(this.synclock, 0, 1);
+                Atomics.notify(this.synclock, 0, 1);
+            }
         }
     }
 
@@ -475,8 +481,12 @@ class WorkerGLProxy {
             case WorkerGLProxy.STATE_BOOTSTRAP_SYNC:
             case WorkerGLProxy.STATE_FRAME_SYNC:
             case WorkerGLProxy.STATE_CONTEXT_RESTORED_SYNC:
-                Atomics.store(this.synclock, 0, 1);
-                Atomics.notify(this.synclock, 0, 1);
+                if (this.synclock !== null) {
+                    Atomics.store(this.synclock, 0, 1);
+                    Atomics.notify(this.synclock, 0, 1);
+                }
+                this.serverState = WorkerGLProxy.STATE_CONTEXT_LOST;
+                break;
             case WorkerGLProxy.STATE_BOOTSTRAP_DONE:
             case WorkerGLProxy.STATE_FRAME_DONE:
             case WorkerGLProxy.STATE_CONTEXT_RESTORED_DONE:
@@ -500,9 +510,9 @@ class WorkerGLProxy {
 
     /**
      * 
-     * @param {WebGLContextEvent} e 
+     * @param {WebGLContextEvent} _ 
      */
-    onContextRestored(e) {
+    onContextRestored(_) {
         if (this.serverState === WorkerGLProxy.STATE_CONTEXT_LOST) {
             this.serverState = WorkerGLProxy.STATE_CONTEXT_RESTORED;
         } else {
@@ -540,7 +550,7 @@ let lastRender = Date.now();
 let defaultGLState = null;
 
 function initService() {
-    console.log("renderer is in a secure context: " + isSecureContext + " and isolated: " + crossOriginIsolated);
+    console.log("renderer is in a secure context: " + self.isSecureContext + " and isolated: " + self.crossOriginIsolated);
     // canvas = globalCanvas.canvas;
     canvas = document.querySelector('#glcanvas');
     if (canvas !== null) {
@@ -553,6 +563,16 @@ function initService() {
         canvas.addEventListener("webglcontextcreationerror", (e) => {console.log("can't create context: " + (e.statusMessage || "Unknown error"))}, false);
         //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
         gl = canvas.getContext('webgl2');
+
+        // the standalone tool version doesn't have this function
+        if (realityEditor.device.layout.onWindowResized) {
+            realityEditor.device.layout.onWindowResized(({width, height}) => {
+                canvas.style.width = width + 'px';
+                canvas.style.height = height + 'px';
+                // note: don't need to update canvas.width and height, just style.width and height
+                // because there's no mechanism for sending the new canvas pixel dimensions to the proxied frame
+            });
+        }
 
         // If we don't have a GL context, give up now
 

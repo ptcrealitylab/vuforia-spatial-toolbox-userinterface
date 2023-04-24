@@ -4,6 +4,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 
 (function (exports) {
+    let camera;
 
     const DISABLE_SPATIAL_INDICATORS = true;
     
@@ -218,7 +219,15 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         // add an indicator group
         const indicatorGroup = new THREE.Group();
         indicatorGroup.position.set(worldIntersectPoint.point.x, worldIntersectPoint.point.y, worldIntersectPoint.point.z);
-        indicatorGroup.quaternion.setFromUnitVectors(indicatorAxis, worldIntersectPoint.normalVector);
+        // make worldIntersectPoint normalVector always point towards the same side of the camera
+        let normalVector = worldIntersectPoint.normalVector.clone();
+        let camPos = new THREE.Vector3();
+        camera.getWorldPosition(camPos);
+        let dotProduct = normalVector.dot(camPos.sub(worldIntersectPoint.point));
+        if (dotProduct < 0) {
+            normalVector.negate();
+        }
+        indicatorGroup.quaternion.setFromUnitVectors(indicatorAxis, normalVector);
         realityEditor.gui.threejsScene.addToScene(indicatorGroup);
         // store name & avatar colors in the indicator groups, so that spatialArrows can grab them as properties and render to correct colors
         indicatorGroup.name = indicatorName;
@@ -308,6 +317,8 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             color: new THREE.Color(color),
             colorLighter: new THREE.Color(colorLighter)
         };
+        
+        camera = realityEditor.gui.threejsScene.getInternals().camera;
         
         update();
 

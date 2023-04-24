@@ -25,6 +25,7 @@ createNameSpace("realityEditor.worldObjects");
      * @type {Object.<string, Array.<number>>}
      */
     var worldCorrections = {};
+    let worldUsedForCorrection = null;
 
     // a string that all world object's uuids are built from
     const worldObjectId = '_WORLD_';
@@ -130,6 +131,9 @@ createNameSpace("realityEditor.worldObjects");
             zone: '',
         };
         console.log('try loading local world object...', worldObjectBeat);
+
+        // process the heartbeat automatically, in case UDP isn't allowed on this network (e.g. cellular)
+        realityEditor.network.discovery.processHeartbeat(worldObjectBeat);
 
         if (!realityEditor.network.state.isCloudInterface) {
             realityEditor.network.addHeartbeatObject(worldObjectBeat);
@@ -379,6 +383,7 @@ createNameSpace("realityEditor.worldObjects");
                 localizedWithinWorldCallbacks.forEach(function(callback) {
                     callback(objectKey);
                 });
+                worldUsedForCorrection = objectKey;
                 realityEditor.app.tap();
                 setTimeout(function() {
                     realityEditor.app.tap();
@@ -396,6 +401,13 @@ createNameSpace("realityEditor.worldObjects");
     let localizedWithinWorldCallbacks = [];
     function onLocalizedWithinWorld(callback) {
         localizedWithinWorldCallbacks.push(callback);
+
+        let bestWorld = getBestWorldObject();
+        if (bestWorld && bestWorld.objectId !== getLocalWorldId()) {
+            callback(bestWorld.objectId); // trigger immediately if we're already localized
+        } else if (worldUsedForCorrection) {
+            callback(worldUsedForCorrection); // works even when suppressedObjectRendering is on
+        }
     }
 
     /**

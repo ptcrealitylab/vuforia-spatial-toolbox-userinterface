@@ -169,7 +169,7 @@ var globalStates = {
     framePullThreshold: 20, // 2cm
 
     // default scale for new frames and nodes
-    defaultScale: 0.5,
+    defaultScale: 1,
 
     // retail
     reality: false,

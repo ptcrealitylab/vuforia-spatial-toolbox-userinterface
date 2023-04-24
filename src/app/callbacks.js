@@ -66,40 +66,6 @@ createNameSpace('realityEditor.app.callbacks');
         onPoseReceived: []
     }
 
-    function onOrientationSet() {
-        // if we don't have access to the Local Network, show a pop-up asking the user to turn it on.
-        realityEditor.app.didGrantNetworkPermissions('realityEditor.app.callbacks.receiveNetworkPermissions');
-    }
-
-    /**
-     * Requests Vuforia to start if Local Network access is provided, otherwise shows an error on screen
-     * @param {boolean} success
-     */
-    exports.receiveNetworkPermissions = function(success) {
-        if (typeof success !== 'undefined' && !success) {
-
-            while (listeners.onVuforiaInitFailure.length > 0) { // dismiss the intializing pop-up that was waiting
-                let callback = listeners.onVuforiaInitFailure.pop();
-                callback();
-            }
-
-            let headerText = 'Needs Local Network Access';
-            let descriptionText = 'Please enable "Local Network" access<br/>in your device\'s Settings app and try again.';
-
-            let notification = realityEditor.gui.modal.showSimpleNotification(
-                headerText, descriptionText, function () {
-                    console.log('closed...');
-                }, realityEditor.device.environment.variables.layoutUIForPortrait);
-            notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            return;
-        }
-
-        // start the AR framework in native iOS
-        realityEditor.app.promises.getVuforiaReady().then(success => {
-            vuforiaIsReady(success);
-        });
-    }
-
     /**
      * Callback for realityEditor.app.getVuforiaReady
      * Triggered when Vuforia Engine finishes initializing.
@@ -114,14 +80,15 @@ createNameSpace('realityEditor.app.callbacks');
                 callback();
             }
             
-            let headerText = 'Needs camera access';
-            let descriptionText = 'Please enable camera access<br/>in your device\'s Settings app,<br/>and try again.';
+            let headerText = 'Needs camera and microphone access';
+            let descriptionText = `Please enable camera and microphone access in your device's Settings app, and try again.`;
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
                 headerText, descriptionText, function () {
                     console.log('closed...');
                 }, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            notification.domElements.container.classList.add('loaderContainerPortraitTall');
             return;
         }
         // projection matrix only needs to be retrieved once
@@ -256,10 +223,9 @@ createNameSpace('realityEditor.app.callbacks');
         if (USE_DEBUG_POSE) {
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
-            // NOTE: if no pose detected, it does not send poses. We may want to reconsider sending out this information (with a timestamp) to notify other servers/clients that body tracking is 'lost'.
-            if (pose.length > 0) {
-                subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
-            }
+            // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
+            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
+            
         }
     }
 
@@ -589,7 +555,6 @@ createNameSpace('realityEditor.app.callbacks');
     }
 
     // public methods (anything triggered by a native app callback needs to be public
-    exports.onOrientationSet = onOrientationSet;
     exports.vuforiaIsReady = vuforiaIsReady;
     exports.receivedProjectionMatrix = receivedProjectionMatrix;
     exports.receivedUDPMessage = receivedUDPMessage;
