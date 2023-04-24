@@ -55,7 +55,7 @@ class MeasurementLabel {
         labelContainer.classList.add('avatarBeamLabel');
         labelContainer.style.width = width + 'px';
         labelContainer.style.fontSize = fontSize + 'px';
-        labelContainer.style.transform = 'translateX(-50%) translateY(-100%) translateZ(3000px) scale(' + scale + ')';
+        labelContainer.style.transform = 'translateX(-50%) translateY(-135%) translateZ(3000px) scale(' + scale + ')';
         document.body.appendChild(labelContainer);
 
         let label = document.createElement('div');
