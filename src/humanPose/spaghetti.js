@@ -73,6 +73,34 @@ class MeasurementLabel {
     }
 }
 
+// TODO: complete this
+const SpaghettiSelectionState = {
+    NONE: {
+        onPointerDown: (_spaghetti, _e) => {
+            // let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
+            // TODO: handle intersections
+        },
+        onPointerMove: (_spaghetti, _e) => {},
+        updateMesh: (_spaghetti) => {}
+    },
+    SINGLE: {
+        onPointerDown: (_spaghetti, _e) => {
+            // let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
+            // TODO: handle intersections
+        },
+        onPointerMove: (_spaghetti, _e) => {},
+        updateMesh: (_spaghetti) => {}
+    },
+    RANGE: {
+        onPointerDown: (_spaghetti, _e) => {
+            // let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
+            // TODO: handle intersections
+        },
+        onPointerMove: (_spaghetti, _e) => {},
+        updateMesh: (_spaghetti) => {}
+    }
+}
+
 // creates a Path that you can click on to measure the time and distance between points on the path
 export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
@@ -80,24 +108,14 @@ export class SpaghettiMeshPath extends MeshPath {
         this.allPoints = this.currentPoints;
 
         this.pathId = realityEditor.device.utilities.uuidTime();
-        this.comparer = new KeyframeComparer();
-        this.comparer.setMeshPath(this);
-        this.cursor = this.createCursor(this.widthMm);
         this.setupPointerEvents();
         
-        this.cursorDestination = null;
-        this.cursorSnapDestination = null;
-        
-        realityEditor.gui.ar.draw.addUpdateListener(() => {
-            if (this.cursor && this.cursorDestination) {
-                let animatedPos = {
-                    x: 0.5 * this.cursorDestination[0] + 0.5 * this.cursor.position.x,
-                    y: 0.5 * this.cursorDestination[1] + 0.5 * this.cursor.position.y,
-                    z: 0.5 * this.cursorDestination[2] + 0.5 * this.cursor.position.z
-                };
-                this.cursor.position.set(animatedPos.x, animatedPos.y, animatedPos.z);
-            }
-        });
+        this.selectionState = SpaghettiSelectionState.NONE;
+        this.highlightRegion = {
+            start: -1,
+            end: -1
+        }
+        this.hoverIndex = -1; // TODO: ensure this is updated where appropriate
     }
     
     setAllPoints(points) {
@@ -123,15 +141,6 @@ export class SpaghettiMeshPath extends MeshPath {
             const threeHighlightColor = AnalyticsColors.highlight(new THREE.Color(pt.color[0] / 255, pt.color[1] / 255, pt.color[2] / 255));
             pt.hoverColor = [threeHighlightColor.r * 255, threeHighlightColor.g * 255, threeHighlightColor.b * 255];
         }); // [0-255, 0-255, 0-255] format
-        
-        // calculate the horizontal plane at the average Y height of the path
-        let yPoints = this.currentPoints.map(pt => pt.y);
-        let avgY = yPoints.reduce((a, b) => a + b, 0) / yPoints.length;
-        
-        let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
-        let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
-        this.planeOrigin = realityEditor.sceneGraph.convertToNewCoordSystem([0, avgY, 0], groundPlaneCoords, rootCoords);
-        this.planeNormal = [0, 1, 0];
     }
 
     getMeasurementLabel() {
@@ -146,89 +155,20 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        // If we're clicking the spaghetti at the end of a selection (selecting
-        // second point), we want to freeze the current highlight interval
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length > 0 &&
-            this.comparer.selectionState === SelectionState.SECOND) {
-            this.comparer.selectionState = SelectionState.TIMELINE;
-            this.frozen = true;
-            setAnimationMode(AnimationMode.region);
-            return;
-        }
-
-        const isHover = false;
-        this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
+        this.selectionState.onPointerDown(this, e);
     }
 
     onPointerMove(e) {
-        if (this.frozen) {
-            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
-            if (intersects.length === 0) {
-                return;
-            }
-            this.prevState = {
-                firstPointIndex: this.comparer.firstPointIndex,
-                secondPointIndex: this.comparer.secondPointIndex
-            };
-            this.frozen = false;
-            this.comparer.reset();
-        }
-
-        if (this.comparer.firstPointIndex === null || this.comparer.selectionState === SelectionState.FIRST) {
-            const isHover = true;
-            this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
-            if (this.comparer.firstPointIndex === null && this.prevState) {
-                this.frozen = true;
-                this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
-                this.comparer.setEndPoint(this.prevState.secondPointIndex);
-                this.comparer.selectionState = SelectionState.TIMELINE;
-                setAnimationMode(AnimationMode.region);
-                this.updateMeshWithComparer();
-            }
-
+        if (!this.horizontalMesh || !this.wallMesh) {
             return;
         }
 
-        this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
-
-        // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
-        let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
-        if (!pointOnPlane) {
-            return;
-        }
-        this.cursorDestination = [pointOnPlane.x, pointOnPlane.y, pointOnPlane.z];
-        this.cursor.material.color.setHex(0xffffff);
-        this.cursor.scale.set(1,1,1);
-
-        // figure out where cursor would snap to the closest point on the path
-        // for now, ignore y-distance... only x-z distance matters for snapping
-        let snapIndex = null;
-        let distanceSquaredToEachPoint = this.currentPoints.map(point => {
-            return (point.x - this.cursorDestination[0]) * (point.x - this.cursorDestination[0]) +
-                // (point.y - this.cursorDestination[1]) * (point.y - this.cursorDestination[1]) +
-                (point.z - this.cursorDestination[2]) * (point.z - this.cursorDestination[2]);
-        });
-
-        let closestIndex = utils.indexOfMin(distanceSquaredToEachPoint);
-        const SNAP_DISTANCE = 250;
-        if (distanceSquaredToEachPoint[closestIndex] < SNAP_DISTANCE * SNAP_DISTANCE) {
-            snapIndex = closestIndex;
-
-            let closestPoint = this.currentPoints[closestIndex];
-            let adjacentPoint = closestIndex < (this.currentPoints.length-1) ? this.currentPoints[closestIndex+1] : this.currentPoints[closestIndex-1];
-
-            // snap to halfway point between two endpoints of the selected segment
-            let avgX = (closestPoint.x + adjacentPoint.x) / 2;
-            let avgY = ((closestPoint.y + this.heightMm/2) + (adjacentPoint.y + this.heightMm/2)) / 2;
-            let avgZ = (closestPoint.z + adjacentPoint.z) / 2;
-            this.cursorSnapDestination = [avgX, avgY, avgZ];
-
-            this.cursor.material.color.setHex(0xff0000);
-            this.cursor.scale.set(1.5, 1.5, 1.5);
-        }
-
-        this.selectSecondPathPoint(e.pageX, e.pageY, snapIndex);
+        this.selectionState.onPointerMove(this, e);
+        // let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
+        // TODO: handle intersections
+        
+        // TODO: show measurement label when hovering over a second point
+        // this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
     }
 
     isVisible() {
@@ -263,89 +203,10 @@ export class SpaghettiMeshPath extends MeshPath {
             this.onPointerMove(e);
         });
     }
-
-    raycastOntoPathPlane(screenX, screenY) {
-        let cameraNode = realityEditor.sceneGraph.getCameraNode();
-        let pointOnPlane = realityEditor.gui.ar.utilities.getPointOnPlaneFromScreenXY(this.planeOrigin, this.planeNormal, cameraNode, screenX, screenY);
-        let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
-        let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
-        if (!pointOnPlane) {
-            return;
-        }
-        return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
-    }
     
-    selectFirstPathPoint(screenX, screenY, isHover) {
-        if (this.resetIfNoGeometry()) return;
-
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length === 0) {
-            this.comparer.reset();
-            this.updateMeshWithComparer();
-            this.updateAnalyticsHighlightRegion();
-            this.cursor.visible = false;
-            return;
-        }
-        let intersect = intersects[0];
-        let pointIndex = this.getPointFromFace([intersect.face.a, intersect.face.b, intersect.face.c]);
-        if (this.comparer.selectionState === SelectionState.SECOND) {
-            this.comparer.reset();
-            this.cursor.visible = false;
-        } else {
-            this.comparer.setFirstPoint(pointIndex, isHover);
-        }
-        this.updateMeshWithComparer();
-        this.updateAnalyticsHighlightRegion();
-    }
-
-    selectSecondPathPoint(screenX, screenY, possibleSnapIndex) {
-        if (this.resetIfNoGeometry()) return;
-
-        let pointIndex = possibleSnapIndex;
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length > 0) {
-            pointIndex = this.getPointFromFace([intersects[0].face.a, intersects[0].face.b, intersects[0].face.c]);
-        } else if (typeof possibleSnapIndex === 'number') {
-            this.cursorDestination = this.cursorSnapDestination;
-        }
-
-        this.comparer.setEndPoint(pointIndex);
-        this.cursor.visible = true;
-        this.updateMeshWithComparer();
-
-        setAnimationMode(AnimationMode.regionAll);
-        this.updateAnalyticsHighlightRegion();
-        this.prevState = null;
-    }
-    
-    resetIfNoGeometry() {
-        if (!this.horizontalMesh || !this.wallMesh) {
-            this.comparer.reset();
-            this.updateMeshWithComparer();
-            this.cursor.visible = false;
-            return true;
-        }
-        return false;
-    }
-
-    updateAnalyticsHighlightRegion() {
-        const comparer = this.comparer;
-        const points = this.currentPoints;
-
-        if (comparer.firstPointIndex !== null) {
-            const firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            if (comparer.secondPointIndex !== null) {
-                const secondTimestamp = points[comparer.secondPointIndex].timestamp;
-                realityEditor.analytics.setCursorTime(-1, true);
-                realityEditor.analytics.setHighlightRegion({
-                    startTime: Math.min(firstTimestamp, secondTimestamp),
-                    endTime: Math.max(firstTimestamp, secondTimestamp),
-                }, true);
-            } else {
-                setAnimationMode(AnimationMode.cursor);
-                realityEditor.analytics.setCursorTime(firstTimestamp, true);
-            }
-        }
+    updateMesh() {
+        // TODO: consider calling on frame update instead of whenever
+        this.selectionState.updateMesh(this);
     }
 
     updateMeshWithComparer() {
@@ -425,13 +286,7 @@ export class SpaghettiMeshPath extends MeshPath {
             }
         }
 
-        if (index < 0) {
-            return;
-        }
-
-        this.comparer.selectionState = SelectionState.TIMELINE;
-        this.comparer.setFirstPoint(index, true);
-        this.updateMeshWithComparer();
+        this.hoverIndex = index;
     }
 
     /**
@@ -460,11 +315,7 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        this.frozen = true;
-        this.comparer.setFirstPoint(firstIndex, false);
-        this.comparer.setEndPoint(secondIndex);
-        this.comparer.selectionState = SelectionState.TIMELINE;
-        this.updateMeshWithComparer();
+        // TODO: set highlightRegion
     }
 
     /**
@@ -497,16 +348,7 @@ export class SpaghettiMeshPath extends MeshPath {
         }
 
         this.setPoints(this.allPoints.slice(firstIndex, secondIndex + 1));
-        this.comparer.reset();
-        this.updateMeshWithComparer();
-    }
-
-
-    createCursor(radius = 50) {
-        let cursorMesh = new THREE.Mesh(new THREE.SphereGeometry(radius,12,12), new THREE.MeshBasicMaterial({color:0xff0000})); // new THREE.MeshNormalMaterial());
-        cursorMesh.visible = false;
-        this.add(cursorMesh);
-        return cursorMesh;
+        // TODO: reset state
     }
 
     /**
@@ -527,55 +369,5 @@ export class SpaghettiMeshPath extends MeshPath {
             return -1;
         }
         return this.currentPoints[this.currentPoints.length - 1].timestamp;
-    }
-}
-
-const SelectionState = {
-    FIRST: 'first',
-    SECOND: 'second',
-    TIMELINE: 'timeline',
-};
-
-// Handles some state management for comparing two points on a MeshPath to each other
-export class KeyframeComparer {
-    constructor() {
-        this.reset();
-        this.previousColors = [];
-    }
-    reset() {
-        this.selectionState = SelectionState.FIRST;
-        this.firstPointIndex = null;
-        this.secondPointIndex = null;
-    }
-    setMeshPath(meshPath) {
-        this.meshPath = meshPath;
-    }
-    setFirstPoint(index, isHover) {
-        if (isHover) {
-            this.selectionState = SelectionState.FIRST;
-        } else {
-            this.selectionState = SelectionState.SECOND;
-        }
-        this.firstPointIndex = index;
-    }
-    setEndPoint(index) {
-        if (this.firstPointIndex === null) return;
-        if (index === this.firstPointIndex) return;
-        this.secondPointIndex = index;
-    }
-    savePreviousColor(index, color) {
-        this.previousColors.push({
-            index: index,
-            rgb: [color[0], color[1], color[2]]
-        });
-    }
-    restorePreviousColors() {
-        let restoredIndices = [];
-        this.previousColors.forEach(elt => {
-            this.meshPath.currentPoints[elt.index].color = [elt.rgb[0], elt.rgb[1], elt.rgb[2]];
-            restoredIndices.push(elt.index);
-        });
-        this.previousColors = [];
-        return restoredIndices;
     }
 }
