@@ -107,7 +107,10 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.NONE;
             spaghetti.highlightRegion.start = -1;
             spaghetti.highlightRegion.end = -1;
-            // Cannot set animation mode here because other spaghettis may be selected, handled by HPA
+
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
+            
+            // Cannot set animation mode here, other spaghetti may be selected, HPA update function resolves this
         }
     },
     SINGLE: {
@@ -144,9 +147,13 @@ const SpaghettiSelectionState = {
                 endTime: spaghetti.currentPoints[maxIndex].timestamp
             }, true);
             setAnimationMode(AnimationMode.regionAll);
-            
-            // TODO: show measurement label when hovering over a second point
-            // this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
+
+            const points = spaghetti.currentPoints;
+            const distanceMm = spaghetti.getDistanceAlongPath(minIndex, maxIndex);
+            const timeMs = points[maxIndex].timestamp - points[minIndex].timestamp;
+            spaghetti.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
+            spaghetti.getMeasurementLabel().requestVisible(true, spaghetti.pathId);
+            spaghetti.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
         },
         colorPoints: (spaghetti) => {
             spaghetti.currentPoints.forEach((point, index) => {
@@ -174,6 +181,8 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
             spaghetti.highlightRegion.start = index;
             spaghetti.highlightRegion.end = index;
+
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
         }
     },
     RANGE: {
@@ -220,6 +229,8 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.RANGE;
             spaghetti.highlightRegion.start = startIndex;
             spaghetti.highlightRegion.end = endIndex;
+
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
 
             realityEditor.analytics.setCursorTime(spaghetti.currentPoints[spaghetti.highlightRegion.start].timestamp, true);
             realityEditor.analytics.setHighlightRegion({
