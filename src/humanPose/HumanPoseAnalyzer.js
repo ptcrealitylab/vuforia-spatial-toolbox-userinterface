@@ -13,6 +13,7 @@ import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES} from './constants.js';
+import {setAnimationMode} from "./draw.js";
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -247,21 +248,18 @@ export class HumanPoseAnalyzer {
      * Runs every frame to update the animation state
      */
     update() {
-        if (this.animationMode === AnimationMode.cursor) {
-            let anySpaghettiHovered = false;
-            for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-                let comparer = spaghettiMesh.comparer;
-                if (comparer.firstPointIndex === null) {
-                    continue;
-                }
+        let anySpaghettiHovered = false;
+        for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+            if (spaghettiMesh.cursorIndex !== -1) {
                 anySpaghettiHovered = true;
-                break;
             }
-            if (!anySpaghettiHovered) {
+        }
+        if (!anySpaghettiHovered) {
+            if (this.animationMode === AnimationMode.cursor) {
                 this.restoreAnimationState();
+            } else if (this.animationMode === AnimationMode.region) {
+                this.updateAnimation();
             }
-        } else if (this.animationMode === AnimationMode.region) {
-            this.updateAnimation();
         }
 
         window.requestAnimationFrame(this.update);
