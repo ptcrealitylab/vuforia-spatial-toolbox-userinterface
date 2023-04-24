@@ -280,7 +280,7 @@ export class HumanPoseAnalyzer {
      * @param {boolean} historical - whether the pose is historical or live
      */
     poseUpdated(pose, historical) {
-        if (this.recordingClones) {
+        if (this.recordingClones || historical) {
             this.addCloneFromPose(pose, historical);
         }
         if(!pose.metadata.poseHasParent) {
