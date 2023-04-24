@@ -346,7 +346,7 @@ export class SpaghettiMeshPath extends MeshPath {
         super.updateColors(this.currentPoints.map((pt, index) => index));
     }
 
-    updateMeshWithComparer() {
+    updateMeshWithComparer() { // TODO: take measurement label code from here
         let comparer = this.comparer;
         let points = this.currentPoints;
 
@@ -430,7 +430,6 @@ export class SpaghettiMeshPath extends MeshPath {
      * @param {{startTime: number, endTime: number}} highlightRegion
      */
     setHighlightRegion(highlightRegion) {
-        // TODO: ensure timestamps are in order
         const firstTimestamp = highlightRegion.startTime;
         const secondTimestamp = highlightRegion.endTime;
 
@@ -457,11 +456,11 @@ export class SpaghettiMeshPath extends MeshPath {
             return;
         }
 
-        if (this.selectionState !== SpaghettiSelectionState.RANGE ||
-            this.highlightRegion.start !== firstIndex ||
-            this.highlightRegion.end !== secondIndex) {
-            SpaghettiSelectionState.RANGE.transition(this, firstIndex, secondIndex);
-        }
+        // NOTE: this transition is done manually to prevent animation modes from being replaced when timeline sets it
+        // to regionAll during a drag selection
+        this.selectionState = SpaghettiSelectionState.RANGE;
+        this.highlightRegion.start = firstIndex;
+        this.highlightRegion.end = secondIndex;
     }
 
     /**
