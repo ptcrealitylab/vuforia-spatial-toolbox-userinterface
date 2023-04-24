@@ -124,10 +124,13 @@ import {JOINT_TO_INDEX} from './constants.js';
      * @param {TimeRegion} historyRegion
      */
     async function loadHistory(historyRegion) {
-        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
+        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
                 loadHistory(historyRegion);
             }, 500);
+            return;
+        }
+        if (!realityEditor.device.environment.isDesktop()) {
             return;
         }
         const regionStartTime = historyRegion.startTime;

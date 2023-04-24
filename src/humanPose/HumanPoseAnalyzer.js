@@ -12,7 +12,7 @@ import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
-import {MAX_POSE_INSTANCES} from './constants.js';
+import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -96,8 +96,12 @@ export class HumanPoseAnalyzer {
         this.animationMode = AnimationMode.region;
         this.lastAnimationTime = Date.now();
 
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
+
         // The renderer for poses that need to be rendered opaquely
-        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES);
+        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), maxPoseInstances);
         this.opaquePoseRenderer.addToScene(this.opaqueContainer);
 
         // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
@@ -222,10 +226,13 @@ export class HumanPoseAnalyzer {
      * @return {HumanPoseRenderer} - the new renderer
      */
     addLivePoseRenderer() {
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0.5,
-        }), MAX_POSE_INSTANCES);
+        }), maxPoseInstances);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
         return livePoseRenderer;
@@ -273,7 +280,9 @@ export class HumanPoseAnalyzer {
      * @param {boolean} historical - whether the pose is historical or live
      */
     poseUpdated(pose, historical) {
-        this.addCloneFromPose(pose, historical);
+        if (this.recordingClones) {
+            this.addCloneFromPose(pose, historical);
+        }
         if(!pose.metadata.poseHasParent) {
             // add to history line non-auxiliary poses
             this.updateHistoryLines(pose, historical);
