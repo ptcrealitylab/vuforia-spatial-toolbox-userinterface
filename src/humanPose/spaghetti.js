@@ -5,6 +5,7 @@ import {
     setAnimationMode,
     AnimationMode,
 } from './draw.js';
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // Approximate milliseconds between points (10 fps)
 const POINT_RES_MS = 100;
@@ -115,6 +116,13 @@ export class SpaghettiMeshPath extends MeshPath {
      */
     setPoints(points) {
         super.setPoints(points);
+        this.currentPoints.forEach(pt => {
+            pt.originalColor = [...pt.color];
+            const threeFadeColor = AnalyticsColors.fade(new THREE.Color(pt.color[0] / 255, pt.color[1] / 255, pt.color[2] / 255), 0.2);
+            pt.fadedColor = [threeFadeColor.r * 255, threeFadeColor.g * 255, threeFadeColor.b * 255];
+            const threeHighlightColor = AnalyticsColors.highlight(new THREE.Color(pt.color[0] / 255, pt.color[1] / 255, pt.color[2] / 255));
+            pt.hoverColor = [threeHighlightColor.r * 255, threeHighlightColor.g * 255, threeHighlightColor.b * 255];
+        }); // [0-255, 0-255, 0-255] format
         
         // calculate the horizontal plane at the average Y height of the path
         let yPoints = this.currentPoints.map(pt => pt.y);
