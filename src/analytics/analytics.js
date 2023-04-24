@@ -34,6 +34,7 @@ export class Analytics {
         this.opened = false;
         this.loadingHistory = false;
         this.livePlayback = false;
+        this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
         this.activeRegionCard = null;
         this.nextStepNumber = 1;
@@ -51,8 +52,6 @@ export class Analytics {
      * add, load pinned region cards, load spaghetti, set timeline
      */
     open() {
-        console.log('analytics open', this.frame, this.opened);
-
         this.show2D();
         this.show3D();
     }
@@ -104,11 +103,10 @@ export class Analytics {
      * remove pinned region cards, remove timeline, remove spaghetti
      */
     close() {
-        console.log('analytics close', this.frame, this.opened);
         this.hide2D();
         this.hide3D();
 
-        // contemplate clearing all historical data
+        // if memory limited then clearing all historical data makes sense
         // this.humanPoseAnalyzer.clearHistoricalData();
     }
 
@@ -116,7 +114,6 @@ export class Analytics {
      * On envelope focus (unblur)
      */
     focus() {
-        console.log('analytics focus', this.frame, this.opened);
         this.show2D();
         this.show3D();
     }
@@ -126,7 +123,6 @@ export class Analytics {
      * Remove all 2d ui
      */
     blur() {
-        console.log('analytics blur', this.frame, this.opened);
         this.hide2D();
     }
 
@@ -219,6 +215,15 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     async setDisplayRegion(region, fromSpaghetti) {
+        if (this.lastDisplayRegion) {
+            if (Math.abs(this.lastDisplayRegion.startTime - region.startTime) < 1 &&
+                Math.abs(this.lastDisplayRegion.endTime - region.endTime) < 1) {
+                return;
+            }
+        }
+
+        this.lastDisplayRegion = region;
+
         this.timeline.setDisplayRegion(region);
         let livePlayback = region.startTime < 0 || region.endTime < 0;
         if (this.livePlayback && !livePlayback) {
