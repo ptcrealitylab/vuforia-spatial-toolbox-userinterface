@@ -300,6 +300,16 @@ export class MeshPath extends THREE.Group
         return Math.max(0, Math.min(this.currentPoints.length - 1, (this.currentPoints.length - approximatePointIndex) - 2));
     }
 
+    /**
+     * Get the index of the point in the currentPoints array that the intersect is closest to
+     * @param {Object} intersect - the intersect object returned by three.js raycasting
+     * @return {number} index of the point in the currentPoints array that the intersect is closest to
+     */
+    getPointFromIntersect(intersect) {
+        const face = intersect.face;
+        return this.getPointFromFace([face.a, face.b, face.c]);
+    }
+
     // use this to get the indices in the color and position BufferAttributes that correspond to a certain point in the path
     // geometry is constructed backwards, from length-1 down to 0, so buffer attribute indices are "opposite" what you may expect
     getBufferIndices(pointIndex) {
