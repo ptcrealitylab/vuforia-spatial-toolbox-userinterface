@@ -206,6 +206,8 @@ const SpaghettiSelectionState = {
                 spaghetti.cursorIndex = index;
                 setAnimationMode(AnimationMode.cursor);
                 realityEditor.analytics.setCursorTime(spaghetti.currentPoints[spaghetti.cursorIndex].timestamp, true);
+            } else {
+                spaghetti.cursorIndex = -1;
             }
         },
         colorPoints: (spaghetti) => {
