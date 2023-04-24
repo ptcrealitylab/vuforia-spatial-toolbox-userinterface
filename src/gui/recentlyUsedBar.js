@@ -34,6 +34,8 @@ class RecentlyUsedBar {
     initService() {
         document.body.appendChild(this.container);
         document.body.appendChild(this.canvas);
+        realityEditor.gui.stackingOrder.addToLayer(this.container, realityEditor.gui.LAYERS.GUI_BUTTONS);
+        realityEditor.gui.stackingOrder.addToLayer(this.canvas, realityEditor.gui.LAYERS.SCENE_FOREGROUND);
 
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server

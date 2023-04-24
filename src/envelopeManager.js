@@ -337,6 +337,7 @@ createNameSpace("realityEditor.envelopeManager");
         exitButton.id = 'exitEnvelopeButton';
         exitButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
         document.body.appendChild(exitButton);
+        realityEditor.gui.stackingOrder.addToLayer(exitButton, realityEditor.gui.LAYERS.GUI_BUTTONS);
 
         exitButton.addEventListener('pointerup', function() {
             getOpenEnvelopes().forEach(function(envelope) {
@@ -355,6 +356,7 @@ createNameSpace("realityEditor.envelopeManager");
         minimizeButton.id = 'minimizeEnvelopeButton';
         minimizeButton.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
         document.body.appendChild(minimizeButton);
+        realityEditor.gui.stackingOrder.addToLayer(minimizeButton, realityEditor.gui.LAYERS.GUI_BUTTONS);
 
         minimizeButton.addEventListener('pointerup', function() {
             // TODO: only minimize the envelope that has focus, not all of them

@@ -219,6 +219,7 @@ createNameSpace('realityEditor.device.layout');
             edgeDiv.style.position = 'absolute';
             edgeDiv.style.display = 'none';
             document.body.appendChild(edgeDiv);
+            realityEditor.gui.stackingOrder.addToLayer(edgeDiv, realityEditor.gui.LAYERS.GUI_MENUS); // only on specific iOS version with notch and landscape
         }
         edgeDiv.style.left = document.body.offsetWidth - rightEdgeOffset + 'px';
         edgeDiv.style.width = rightEdgeOffset + 'px';

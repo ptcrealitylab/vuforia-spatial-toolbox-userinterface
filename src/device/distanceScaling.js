@@ -96,6 +96,7 @@ createNameSpace("realityEditor.device.distanceScaling");
             groundplaneContainer.style.left = 0;
             groundplaneContainer.style.top = 0;
             document.body.appendChild(groundplaneContainer);
+            realityEditor.gui.stackingOrder.addToLayer(groundplaneContainer, realityEditor.gui.LAYERS.SCENE_APP_BACKGROUND); // not used anymore?
         }
         
         var element = document.getElementById('distanceGroundplaneUI');
