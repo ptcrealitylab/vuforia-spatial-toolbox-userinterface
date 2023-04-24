@@ -73,7 +73,6 @@ class MeasurementLabel {
     }
 }
 
-// TODO: complete this
 const SpaghettiSelectionState = {
     NONE: {
         onPointerDown: (spaghetti, e) => {
@@ -146,7 +145,7 @@ const SpaghettiSelectionState = {
             }, true);
             setAnimationMode(AnimationMode.regionAll);
             
-            // TODO: also, show measurement label when hovering over a second point
+            // TODO: show measurement label when hovering over a second point
             // this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
         },
         colorPoints: (spaghetti) => {
@@ -175,7 +174,6 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
             spaghetti.highlightRegion.start = index;
             spaghetti.highlightRegion.end = index;
-            // TODO: update timeline appropriately
         }
     },
     RANGE: {
@@ -200,11 +198,6 @@ const SpaghettiSelectionState = {
                 setAnimationMode(AnimationMode.cursor);
                 realityEditor.analytics.setCursorTime(spaghetti.currentPoints[spaghetti.cursorIndex].timestamp, true);
             }
-            
-            // TODO: show corresponding pose if valid hover for state
-            // TODO: update timeline appropriately, special timeline case for SINGLE selection state
-            // TODO: also, show measurement label when hovering over a second point
-            // this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
         },
         colorPoints: (spaghetti) => {
             spaghetti.currentPoints.forEach((point, index) => {
@@ -252,7 +245,7 @@ export class SpaghettiMeshPath extends MeshPath {
             start: -1,
             end: -1
         }
-        this.cursorIndex = -1; // TODO: ensure this is updated in timeline when updated here
+        this.cursorIndex = -1;
         
         realityEditor.gui.threejsScene.onAnimationFrame(() => {
             this.updateColors();
@@ -449,7 +442,6 @@ export class SpaghettiMeshPath extends MeshPath {
             secondIndex = this.currentPoints.length - 1;
         }
         if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
-            // TODO: check if this case needs special handling
             if (this.selectionState !== SpaghettiSelectionState.NONE) {
                 SpaghettiSelectionState.NONE.transition(this);
             }
@@ -494,7 +486,7 @@ export class SpaghettiMeshPath extends MeshPath {
 
         this.setPoints(this.allPoints.slice(firstIndex, secondIndex + 1));
         if (this.selectionState !== SpaghettiSelectionState.NONE) {
-            SpaghettiSelectionState.NONE.transition(this); // TODO: check if this is necessary
+            SpaghettiSelectionState.NONE.transition(this);
         }
     }
 
