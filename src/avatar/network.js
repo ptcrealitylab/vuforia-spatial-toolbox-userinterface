@@ -196,7 +196,7 @@ createNameSpace("realityEditor.avatar.network");
 
     // signal the server that this avatar object is still active and shouldn't be deleted
     function keepObjectAlive(objectKey) {
-        realityEditor.app.sendUDPMessage({type: 'keepObjectAlive', objectKey: objectKey });
+        realityEditor.app.sendUDPMessage({action: {type: 'keepObjectAlive', objectKey: objectKey}});
     }
 
     exports.addAvatarObject = addAvatarObject;
