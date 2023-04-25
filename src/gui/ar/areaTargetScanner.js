@@ -23,7 +23,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     let hasFirstSeenInstantWorld = false;
 
-    let limitScanRAM = false; // if true (toggled through menu), stop area target capture when device memory usage is high
+    const limitScanRAM = false; // if true, stop area target capture when device memory usage is high
     let maximumPercentRAM = 0.33; // the app will stop scanning when it reaches this threshold of total device memory
 
     let callbacks = {
@@ -115,18 +115,19 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         realityEditor.app.onAreaTargetGenerateProgress('realityEditor.gui.ar.areaTargetScanner.onAreaTargetGenerateProgress');
 
-        realityEditor.app.subscribeToAppMemoryEvents('realityEditor.gui.ar.areaTargetScanner.onAppMemoryEvent');
+        // realityEditor.app.subscribeToAppMemoryEvents('realityEditor.gui.ar.areaTargetScanner.onAppMemoryEvent');
 
-        realityEditor.gui.settings.addToggleWithText('Limit Scan RAM', 'area target scan stops at threshold (e.g. 0.33)', 'maximumRAM', '../../../svg/powerSave.svg', false, '0.33',
-            function(newValue) {
-                console.log('limitScanRAM was set to ' + newValue);
-                limitScanRAM = newValue;
-            },
-            function(newValue) {
-                console.log('zone text was set to ' + newValue);
-                maximumPercentRAM = parseFloat(newValue) || 0.33;
-            }
-        ).moveToDevelopMenu();
+        // Disabled due to lack of access to develop menu in current UI
+        // realityEditor.gui.settings.addToggleWithText('Limit Scan RAM', 'area target scan stops at threshold (e.g. 0.33)', 'maximumRAM', '../../../svg/powerSave.svg', false, '0.33',
+        //     function(newValue) {
+        //         console.log('limitScanRAM was set to ' + newValue);
+        //         limitScanRAM = newValue;
+        //     },
+        //     function(newValue) {
+        //         console.log('zone text was set to ' + newValue);
+        //         maximumPercentRAM = parseFloat(newValue) || 0.33;
+        //     }
+        // ).moveToDevelopMenu();
     }
 
     function showNotificationIfNeeded() {
