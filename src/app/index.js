@@ -210,6 +210,20 @@ realityEditor.app.tap = function() {
 };
 
 /**
+ * Enable mode for stationary device. At the time of this call, a pose of device in the world is frozen. 
+ */
+realityEditor.app.enableStationaryDevice = function () {
+    this.appFunctionCall('enableStationaryDevice', null, null);
+};
+
+/**
+ * Disable mode for stationary device. A pose of device in the world updates continuously as usual. 
+ */
+realityEditor.app.disableStationaryDevice = function () {
+    this.appFunctionCall('disableStationaryDevice', null, null);
+};
+
+/**
  **************UDP****************
   **/
  
