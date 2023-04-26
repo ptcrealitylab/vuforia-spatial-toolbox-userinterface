@@ -226,13 +226,18 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
-    if(realityEditor.network.state.proxyNetwork) {
+    if (realityEditor.network.state.proxyNetwork) {
         if (realityEditor.cloud.socket && message.action) {
             realityEditor.cloud.socket.action('udp/action', message);
         }
+    } else if (realityEditor.device.environment.isDesktop()) {
+        realityEditor.network.realtime.sendMessageToSocketSet(
+            'realityServers',
+            'udp/action',
+            message
+        );
     } else {
         this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
-
     }
 };
 
