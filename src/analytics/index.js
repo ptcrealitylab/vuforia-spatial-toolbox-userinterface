@@ -77,19 +77,21 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
-            if (!analyticsByFrame[msgData.frame] || activeFrame === msgData.frame) {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            getActiveAnalytics().blur();
+            if (activeFrame !== msgData.frame) {
+                getActiveAnalytics().blur();
+            }
             activeFrame = msgData.frame;
             getActiveAnalytics().focus();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsBlur', (msgData) => {
-            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            getActiveAnalytics().blur(msgData.frame);
+            analyticsByFrame[msgData.frame].blur(msgData.frame);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
