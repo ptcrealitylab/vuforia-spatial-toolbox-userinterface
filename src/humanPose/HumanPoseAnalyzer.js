@@ -2,7 +2,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {
     JOINTS,
 } from './utils.js';
-import {SpaghettiMeshPath, Spaghetti} from './spaghetti.js'; // TODO: remove SpaghettiMeshPath entirely
+import {Spaghetti} from './spaghetti.js'; // TODO: remove SpaghettiMeshPath entirely
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
 import {AccelerationLens} from "./AccelerationLens.js";
