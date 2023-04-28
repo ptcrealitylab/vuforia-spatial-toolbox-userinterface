@@ -76,6 +76,7 @@ export class Analytics {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
         }
+        this.resetPatchVisibility();
     }
 
     /**
@@ -155,6 +156,23 @@ export class Analytics {
             this.timeline.draw();
         }
         requestAnimationFrame(this.draw);
+    }
+
+    /**
+     * We take control over CameraVis patch visibility for
+     * animation reasons so this restores them all
+     */
+    resetPatchVisibility() {
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = Object.values(desktopRenderer.getCameraVisPatches() || {});
+
+        for (const patch of patches) {
+            patch.visible = true;
+        }
     }
 
     /**
