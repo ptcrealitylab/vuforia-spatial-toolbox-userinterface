@@ -291,10 +291,11 @@ export class Analytics {
 
         for (let desc of regionCardDescriptions) {
             const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
-            if (poses.length === 0) {
-                continue;
-            }
             let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses);
+            if (poses.length === 0) {
+                regionCard.startTime = desc.startTime;
+                regionCard.endTime = desc.endTime;
+            }
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);
@@ -386,6 +387,10 @@ export class Analytics {
         ];
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
+            if (regionCard.poses.length === 0) {
+                continue;
+            }
+
             lines.push([
                 regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
