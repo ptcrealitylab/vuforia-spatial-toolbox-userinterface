@@ -275,11 +275,15 @@ export class RegionCard {
             this.endTime = this.poses[this.poses.length - 1].timestamp;
         }
 
-        const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
-        dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
-            new Date(this.startTime),
-            new Date(this.endTime),
-        );
+        try {
+            const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
+            dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
+                new Date(this.startTime),
+                new Date(this.endTime),
+            );
+        } catch (_) {
+            // formatRange failed for some time-related reason
+        }
 
         if (this.poses.length === 0) {
             return;
