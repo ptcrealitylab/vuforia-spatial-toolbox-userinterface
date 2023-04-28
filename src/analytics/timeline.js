@@ -195,6 +195,7 @@ export class Timeline {
         this.calculateAndDrawTicks();
         this.drawPoses();
         this.drawPinnedRegionCards();
+        this.drawPatches();
 
         this.drawHighlightRegion();
 
@@ -500,7 +501,53 @@ export class Timeline {
                 this.gfx.setLineDash([]);
             }
         }
+    }
 
+    drawPatches() {
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        let patches = Object.values(desktopRenderer.getCameraVisPatches() || {});
+        if (patches.length === 0) {
+            return;
+        }
+
+        const timeMax = this.timeMin + this.widthMs;
+
+        const rowY = boardStart + rowPad + (rowHeight + rowPad) * 2;
+
+        this.gfx.fillStyle = 'rgb(200, 200, 200)';
+
+        for (const patch of patches) {
+            let timeStart = patch.__creationTime - 1000;
+            let timeEnd = patch.__creationTime + 2000;
+
+            let patchVisible = this.cursorTime > timeStart && this.cursorTime < timeEnd;
+            if (this.cursorTime < this.timeMin || this.cursorTime > timeMax) {
+                patchVisible = true;
+            }
+
+            patch.visible = patchVisible;
+
+            if (timeEnd < this.timeMin || timeStart > timeMax) {
+                continue;
+            }
+
+            // Limit to timeline bounds
+            timeStart = Math.max(timeStart, this.timeMin);
+            timeEnd = Math.min(timeEnd, timeMax);
+
+            const startX = this.timeToX(timeStart);
+            const endX = this.timeToX(timeEnd);
+            this.gfx.fillRect(
+                startX,
+                rowY,
+                endX - startX,
+                rowHeight
+            );
+        }
     }
 
     calculateAndDrawTicks() {
