@@ -28,8 +28,10 @@ export class RegionCard {
      * @param {Analytics} analytics - parent instance of Analytics
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
+     * @param {{startTime: number, endTime: number}?} desc - If present, the
+     * dehydrated description of this card
      */
-    constructor(analytics, container, poses) {
+    constructor(analytics, container, poses, desc) {
         this.analytics = analytics;
         this.container = container;
         this.poses = poses;
@@ -49,6 +51,10 @@ export class RegionCard {
         this.onClickShow = this.onClickShow.bind(this);
 
         this.createCard();
+        if (desc) {
+            this.startTime = desc.startTime;
+            this.endTime = desc.endTime;
+        }
         this.setPoses(poses);
 
         this.element.addEventListener('pointerover', this.onPointerOver);
@@ -248,31 +254,36 @@ export class RegionCard {
 
     setPoses(poses) {
         this.poses = poses;
-        if (this.poses.length === 0) {
-            return;
-        }
-        this.poses.sort((a, b) => {
-            return a.timestamp - b.timestamp;
-        });
-        let filteredPoses = [];
-        let lastTs = 0;
-        for (let pose of this.poses) {
-          if (pose.timestamp - lastTs < 50) {
-            continue;
-          }
-          lastTs = pose.timestamp;
-          filteredPoses.push(pose);
-        }
-        this.poses = filteredPoses;
 
-        this.startTime = this.poses[0].timestamp;
-        this.endTime = this.poses[this.poses.length - 1].timestamp;
+        // Getting times from poses is more accurate to the local data
+        if (this.poses.length > 0) {
+            this.poses.sort((a, b) => {
+                return a.timestamp - b.timestamp;
+            });
+            let filteredPoses = [];
+            let lastTs = 0;
+            for (let pose of this.poses) {
+              if (pose.timestamp - lastTs < 50) {
+                continue;
+              }
+              lastTs = pose.timestamp;
+              filteredPoses.push(pose);
+            }
+            this.poses = filteredPoses;
+
+            this.startTime = this.poses[0].timestamp;
+            this.endTime = this.poses[this.poses.length - 1].timestamp;
+        }
 
         const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
         dateTimeTitle.textContent = this.dateTimeFormat.formatRange(
             new Date(this.startTime),
             new Date(this.endTime),
         );
+
+        if (this.poses.length === 0) {
+            return;
+        }
 
         const motionSummary = this.element.querySelector('.analytics-region-card-motion-summary');
         motionSummary.textContent = this.getMotionSummaryText();

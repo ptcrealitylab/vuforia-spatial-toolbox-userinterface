@@ -291,11 +291,7 @@ export class Analytics {
 
         for (let desc of regionCardDescriptions) {
             const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
-            let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses);
-            if (poses.length === 0) {
-                regionCard.startTime = desc.startTime;
-                regionCard.endTime = desc.endTime;
-            }
+            let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses, desc);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);
