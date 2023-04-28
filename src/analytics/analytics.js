@@ -325,6 +325,16 @@ export class Analytics {
         this.nextStepNumber += 1;
 
         this.updateCsvExportLink();
+
+        // wider tolerance for associating local cameravis patches with
+        // potentially remote region cards
+        const patchTolerance = 3000;
+        if (Math.abs(regionCard.endTime - Date.now()) < patchTolerance) {
+            const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+            if (desktopRenderer) {
+                desktopRenderer.cloneCameraVisPatches();
+            }
+        }
     }
 
     writeDehydratedRegionCards() {
