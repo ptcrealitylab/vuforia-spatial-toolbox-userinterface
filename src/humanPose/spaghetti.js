@@ -76,7 +76,7 @@ class MeasurementLabel {
 const SpaghettiSelectionState = {
     NONE: {
         onPointerDown: (spaghetti, e) => {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 return;
             }
@@ -84,7 +84,7 @@ const SpaghettiSelectionState = {
             SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
         },
         onPointerMove: (spaghetti, e) => {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 spaghetti.cursorIndex = -1;
                 // Note: Cannot set cursor time to -1 here because other spaghettis may be hovering, handled by HPA
@@ -115,7 +115,7 @@ const SpaghettiSelectionState = {
     },
     SINGLE: {
         onPointerDown: (spaghetti, e) => {
-            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
                 return;
@@ -130,7 +130,7 @@ const SpaghettiSelectionState = {
             }
         },
         onPointerMove: (spaghetti, e) => {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 spaghetti.cursorIndex = -1;
                 // Note: Cannot set cursor time to -1 here because other spaghettis may be hovering, handled by HPA
@@ -187,7 +187,7 @@ const SpaghettiSelectionState = {
     },
     RANGE: {
         onPointerDown: (spaghetti, e) => {
-            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
                 return;
@@ -196,7 +196,7 @@ const SpaghettiSelectionState = {
             SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
         },
         onPointerMove: (spaghetti, e) => {
-            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [spaghetti.horizontalMesh, spaghetti.wallMesh]);
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [/*spaghetti.horizontalMesh, spaghetti.wallMesh*/]); // TODO: fix raycast
             if (intersects.length === 0) {
                 spaghetti.cursorIndex = -1;
                 return;
@@ -249,20 +249,6 @@ export class SpaghettiMeshPath extends MeshPath {
     constructor(path, params) {
         super(path, params);
         this.allPoints = this.currentPoints;
-
-        this.pathId = realityEditor.device.utilities.uuidTime();
-        this.setupPointerEvents();
-        
-        this.selectionState = SpaghettiSelectionState.NONE;
-        this.highlightRegion = {
-            start: -1,
-            end: -1
-        }
-        this.cursorIndex = -1;
-        
-        realityEditor.gui.threejsScene.onAnimationFrame(() => {
-            this.updateColors();
-        })
     }
     
     setAllPoints(points) {
@@ -521,5 +507,264 @@ export class SpaghettiMeshPath extends MeshPath {
             return -1;
         }
         return this.currentPoints[this.currentPoints.length - 1].timestamp;
+    }
+}
+
+/**
+ * A spaghetti object handles the rendering of multiple paths and the touch events for selecting on those paths
+ */
+export class Spaghetti extends THREE.Group {
+    constructor(points, name, params) {
+        super();
+        this.points = [];
+        this.name = name;
+        this.meshPathParams = params; // Used for mesh path creation
+        this.meshPaths = [];
+        this.pathId = realityEditor.device.utilities.uuidTime(); // Used for measurement label
+
+        this.selectionState = SpaghettiSelectionState.NONE;
+        this.highlightRegion = {
+            startIndex: -1,
+            endIndex: -1
+        }
+        this.cursorIndex = -1;
+
+        this.setupPointerEvents();
+        this.addPoints(points);
+        
+        realityEditor.gui.threejsScene.onAnimationFrame(() => {
+            // this.updateColors(); // TODO: update colors somewhere
+        });
+    }
+
+    /**
+     * Adds points to the spaghetti line, creating new mesh paths as needed.
+     * Only supports appending points to the end of the spaghetti line.
+     * @param {Array} points - points to add
+     */
+    addPoints(points) {
+        // TODO: take into account highlight region
+        if (points.length === 0) {
+            return;
+        }
+        let pointsToAdd = []; // Queue up points that will be part of the same MeshPath into a buffer to enable adding them in bulk
+        points.forEach((point) => {
+            if (this.points.length === 0) {
+                // Create a new mesh path for the first point of the spaghetti line
+                const initialMeshPath = new MeshPath([point], this.meshPathParams);
+                this.meshPaths.push(initialMeshPath);
+                this.add(initialMeshPath);
+                this.points.push(point);
+                return;
+            }
+
+            const lastPoint = this.points[this.points.length - 1]; // Get the most recent point on the spaghetti line
+            const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
+            const currentPointVector = new THREE.Vector3(point.x, point.y, point.z);
+            
+            // Split into separate mesh paths if the distance between points is too large
+            if (lastPointVector.distanceToSquared(currentPointVector) > 800 * 800) {
+                // lastMeshPath is guaranteed to exist if there is a lastPoint
+                const lastMeshPath = this.meshPaths[this.meshPaths.length - 1];
+                // Add bulk points to most recent path
+                lastMeshPath.addPoints(pointsToAdd);
+                this.points.push(...pointsToAdd);
+                pointsToAdd = [];
+                // Create a new path for the current point
+                const newMeshPath = new MeshPath([point], this.meshPathParams);
+                this.meshPaths.push(newMeshPath);
+                this.add(newMeshPath);
+                this.points.push(point);
+            } else {
+                // Queue up the point to be added in bulk if close enough to be part of the same MeshPath
+                pointsToAdd.push(point);
+            }
+        });
+        // Add any remaining points to the last mesh path
+        if (pointsToAdd.length > 0) {
+            const lastMeshPath = this.meshPaths[this.meshPaths.length - 1];
+            lastMeshPath.addPoints(pointsToAdd);
+            this.points.push(...pointsToAdd);
+        }
+        
+        // TODO: this is a state change, ensure regions are split properly
+    }
+
+    /**
+     * Deallocates all mesh paths and points, and removes them from the scene
+     */
+    reset() {
+        // TODO: implement properly
+        this.meshPaths.forEach((meshPath) => {
+            meshPath.resetPoints();
+            this.remove(meshPath);
+        });
+        this.meshPaths = [];
+    }
+
+    isVisible() {
+        let ancestorsAllVisible = true;
+        let parent = this.parent;
+        while (parent) {
+            if (!parent.visible) {
+                ancestorsAllVisible = false;
+                break;
+            }
+            parent = parent.parent;
+        }
+        return this.visible && ancestorsAllVisible;
+    }
+
+    setupPointerEvents() {
+        document.addEventListener('pointerdown', (e) => {
+            if (realityEditor.device.isMouseEventCameraControl(e)) {
+                this.getMeasurementLabel().requestVisible(false, this.pathId);
+                return;
+            }
+            if (!this.isVisible()) {
+                return;
+            }
+            this.onPointerDown(e);
+        });
+        document.addEventListener('pointermove', (e) => {
+            if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            if (!this.isVisible()) {
+                return;
+            }
+            this.onPointerMove(e);
+        });
+    }
+
+    /**
+     * @param {number} timestamp - time that is hovered in ms
+     */
+    setCursorTime(timestamp) {
+        let index = -1;
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
+            if (Math.abs(point.timestamp - timestamp) < 0.9 * POINT_RES_MS) {
+                index = i;
+                break;
+            }
+            if (point.timestamp > timestamp) {
+                // Exit early if we will never find a matching point
+                break;
+            }
+        }
+
+        this.cursorIndex = index;
+    }
+
+    /**
+     * @param {{startTime: number, endTime: number}} highlightRegion
+     */
+    setHighlightRegion(highlightRegion) {
+        const firstTimestamp = highlightRegion.startTime;
+        const secondTimestamp = highlightRegion.endTime;
+
+        let startIndex = -1;
+        let endIndex = -1;
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
+            if (startIndex < 0 && point.timestamp >= firstTimestamp) {
+                startIndex = i;
+            }
+            if (endIndex < 0 && point.timestamp >= secondTimestamp) {
+                endIndex = i;
+                break;
+            }
+        }
+        if (startIndex >= 0 && endIndex < 0) {
+            endIndex = this.points.length - 1;
+        }
+        if (startIndex < 0 || endIndex < 0 || startIndex === endIndex) {
+            if (this.selectionState !== SpaghettiSelectionState.NONE) {
+                SpaghettiSelectionState.NONE.transition(this);
+            }
+            return;
+        }
+
+        // NOTE: this transition is done manually to prevent animation modes from being replaced when timeline sets it
+        // to regionAll during a drag selection
+        // TODO: update this now that there is only one spaghetti line
+        this.selectionState = SpaghettiSelectionState.RANGE;
+        this.highlightRegion = {
+            startIndex,
+            endIndex
+        }
+        
+        // TODO: this is a state change, ensure regions are split properly
+    }
+
+    /**
+     * Limits currentPoints to a subset of allPoints based on the display
+     * region
+     *
+     * @param {{startTime: number, endTime: number}} displayRegion
+     */
+    setDisplayRegion(displayRegion) {
+        const firstTimestamp = displayRegion.startTime;
+        const secondTimestamp = displayRegion.endTime;
+
+        let firstIndex = -1;
+        let secondIndex = -1;
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
+            if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
+                firstIndex = i;
+            }
+            if (secondIndex < 0 && point.timestamp >= secondTimestamp) {
+                secondIndex = i;
+                break;
+            }
+        }
+        if (firstIndex >= 0 && secondIndex < 0) {
+            secondIndex = this.points.length - 1;
+        }
+        if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
+            return;
+        }
+
+        // this.setPoints(this.points.slice(firstIndex, secondIndex + 1)); // TODO: re-evaluate how this is done
+        if (this.selectionState !== SpaghettiSelectionState.NONE) {
+            SpaghettiSelectionState.NONE.transition(this);
+        }
+
+        // TODO: this is a state change, ensure regions are split properly
+    }
+
+    getMeasurementLabel() {
+        if (!sharedMeasurementLabel) {
+            sharedMeasurementLabel = new MeasurementLabel();
+        }
+        return sharedMeasurementLabel;
+    }
+
+    onPointerDown(e) {
+        this.selectionState.onPointerDown(this, e);
+    }
+
+    onPointerMove(e) {
+        this.selectionState.onPointerMove(this, e);
+    }
+
+    /**
+     * @return {number} start time of mesh path or -1 if zero-length
+     */
+    getStartTime() {
+        if (this.points.length === 0) {
+            return -1;
+        }
+        return this.points[0].timestamp;
+    }
+
+    /**
+     * @return {number} end time of mesh path or -1 if zero-length
+     */
+    getEndTime() {
+        if (this.points.length === 0) {
+            return -1;
+        }
+        return this.points[this.points.length - 1].timestamp;
     }
 }

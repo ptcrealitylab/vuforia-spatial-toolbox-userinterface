@@ -238,6 +238,10 @@ export class MeshPath extends THREE.Group
             }
         }
     }
+    
+    addPoints(points) { // TODO: replace with optimized version that appends to the mesh if performance is an issue
+        this.setPoints(this.currentPoints.concat(points));
+    }
 
     // internal helper function - adds the vertex information to the horizontalMesh
     addHorizontalVertexHelper(vertexComponents, startEnd, leftRight, topBottom, colors) {
