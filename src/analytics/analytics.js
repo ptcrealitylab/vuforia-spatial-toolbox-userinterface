@@ -347,12 +347,26 @@ export class Analytics {
         // wider tolerance for associating local cameravis patches with
         // potentially remote region cards
         const patchTolerance = 3000;
-        if (Math.abs(regionCard.endTime - Date.now()) < patchTolerance) {
-            const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
-            if (desktopRenderer) {
-                desktopRenderer.cloneCameraVisPatches();
-            }
+        if (Math.abs(regionCard.endTime - Date.now()) > patchTolerance) {
+            return;
         }
+
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = desktopRenderer.cloneCameraVisPatches();
+        if (!patches) {
+            return;
+        }
+
+        // Hide cloned patches after brief delay to not clutter the space
+        setTimeout(() => {
+            for (const patch of Object.values(patches)) {
+                patch.visible = false;
+            }
+        }, patchTolerance);
     }
 
     writeDehydratedRegionCards() {
