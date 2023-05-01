@@ -231,7 +231,7 @@ export class HumanPoseAnalyzer {
             MAX_POSE_INSTANCES_MOBILE;
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.5,
+            opacity: POSE_OPACITY_BASE,
         }), maxPoseInstances);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
