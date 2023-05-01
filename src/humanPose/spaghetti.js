@@ -105,8 +105,10 @@ const SpaghettiSelectionState = {
             });
         },
         transition: (spaghetti) => {
-            spaghetti.highlightRegion.startIndex = -1;
-            spaghetti.highlightRegion.endIndex = -1;
+            spaghetti.highlightRegion = {
+                startIndex: -1,
+                endIndex: -1,
+            }
             spaghetti.selectionState = SpaghettiSelectionState.NONE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
