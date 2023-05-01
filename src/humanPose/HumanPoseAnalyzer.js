@@ -50,9 +50,9 @@ export class HumanPoseAnalyzer {
         /** @type {AnalyticsLens[]} */
         this.lenses = [
             new RebaLens(),
-            new OverallRebaLens(),
+            // new OverallRebaLens(),
             new AccelerationLens(),
-            new TimeLens(),
+            // new TimeLens(),
             new PoseObjectIdLens()
         ]
         this.activeLensIndex = 0;
