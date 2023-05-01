@@ -95,7 +95,6 @@ const SpaghettiSelectionState = {
             realityEditor.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
         },
         colorPoints: (spaghetti) => {
-            // TODO: update to color points correctly
             spaghetti.points.forEach((point, index) => {
                 if (index === spaghetti.cursorIndex) {
                     point.color = [...point.cursorColor];
@@ -154,7 +153,7 @@ const SpaghettiSelectionState = {
             setAnimationMode(AnimationMode.regionAll);
 
             const points = spaghetti.points;
-            const distanceMm = spaghetti.getDistanceAlongPath(minIndex, maxIndex); // TODO: implement properly
+            const distanceMm = spaghetti.getDistanceAlongPath(minIndex, maxIndex);
             const timeMs = points[maxIndex].timestamp - points[minIndex].timestamp;
             spaghetti.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
             spaghetti.getMeasurementLabel().requestVisible(true, spaghetti.pathId);
@@ -489,8 +488,6 @@ export class Spaghetti extends THREE.Group {
         if (this.selectionState !== SpaghettiSelectionState.NONE) {
             SpaghettiSelectionState.NONE.transition(this);
         }
-
-        // TODO: this is a state change, ensure regions are split properly
     }
     
     getDistanceAlongPath(index1, index2) {
