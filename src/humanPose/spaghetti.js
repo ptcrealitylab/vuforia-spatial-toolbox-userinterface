@@ -161,7 +161,6 @@ const SpaghettiSelectionState = {
             spaghetti.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
         },
         colorPoints: (spaghetti) => {
-            // TODO: update to color points correctly
             spaghetti.points.forEach((point, index) => {
                 if (index === spaghetti.cursorIndex || index === spaghetti.highlightRegion.startIndex) {
                     // Highlight handles (cursor point and selected point)
@@ -217,7 +216,6 @@ const SpaghettiSelectionState = {
             }
         },
         colorPoints: (spaghetti) => {
-            // TODO: update to color points correctly
             spaghetti.points.forEach((point, index) => {
                 if (index === spaghetti.highlightRegion.startIndex || index === spaghetti.highlightRegion.endIndex) {
                     // Highlight handles (selected points)
@@ -301,7 +299,6 @@ export class Spaghetti extends THREE.Group {
      * @param {Array} points - points to add
      */
     addPoints(points) {
-        // TODO: take into account highlight region
         if (points.length === 0) {
             return;
         }
@@ -352,8 +349,8 @@ export class Spaghetti extends THREE.Group {
             lastMeshPath.addPoints(pointsToAdd);
             this.points.push(...pointsToAdd);
         }
-        
-        // TODO: this is a state change, ensure regions are split properly
+
+        this.updateColors();
     }
 
     /**
@@ -452,14 +449,11 @@ export class Spaghetti extends THREE.Group {
 
         // NOTE: this transition is done manually to prevent animation modes from being replaced when timeline sets it
         // to regionAll during a drag selection
-        // TODO: update this now that there is only one spaghetti line
         this.highlightRegion = {
             startIndex,
             endIndex
         }
         this.selectionState = SpaghettiSelectionState.RANGE;
-        
-        // TODO: this is a state change, ensure regions are split properly
     }
 
     /**
@@ -515,10 +509,7 @@ export class Spaghetti extends THREE.Group {
     }
 
     updateColors() {
-        // update colors of points based on selection state and cursor index
         this.selectionState.colorPoints(this)
-        // super.updateColors(this.points.map((pt, index) => index));
-        // TODO: update colors of children
         this.meshPaths.forEach((meshPath) => {
             meshPath.updateColors(meshPath.currentPoints.map((pt, index) => index));
         });
