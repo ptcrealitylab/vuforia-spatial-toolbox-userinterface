@@ -2,18 +2,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {
     JOINTS,
 } from './utils.js';
-import {Spaghetti} from './spaghetti.js'; // TODO: remove SpaghettiMeshPath entirely
+import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
 import {AccelerationLens} from "./AccelerationLens.js";
-import {TimeLens} from "./TimeLens.js";
 import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
 import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
-import {MAX_POSE_INSTANCES} from './constants.js';
-import {setAnimationMode} from "./draw.js";
+import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
 
 const POSE_OPACITY_BASE = 0.5;
 const POSE_OPACITY_BACKGROUND = 0.2;
@@ -50,9 +48,8 @@ export class HumanPoseAnalyzer {
         /** @type {AnalyticsLens[]} */
         this.lenses = [
             new RebaLens(),
-            // new OverallRebaLens(),
+            new OverallRebaLens(),
             new AccelerationLens(),
-            // new TimeLens(),
             new PoseObjectIdLens()
         ]
         this.activeLensIndex = 0;
@@ -97,8 +94,12 @@ export class HumanPoseAnalyzer {
         this.animationMode = AnimationMode.region;
         this.lastAnimationTime = Date.now();
 
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
+
         // The renderer for poses that need to be rendered opaquely
-        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES);
+        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), maxPoseInstances);
         this.opaquePoseRenderer.addToScene(this.opaqueContainer);
 
         // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
@@ -223,10 +224,13 @@ export class HumanPoseAnalyzer {
      * @return {HumanPoseRenderer} - the new renderer
      */
     addLivePoseRenderer() {
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0.5,
-        }), MAX_POSE_INSTANCES);
+        }), maxPoseInstances);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
         return livePoseRenderer;
@@ -271,9 +275,11 @@ export class HumanPoseAnalyzer {
      * @param {boolean} historical - whether the pose is historical or live
      */
     poseUpdated(pose, historical) {
-        this.addCloneFromPose(pose, historical);
+        if (this.recordingClones || historical) {
+            this.addCloneFromPose(pose, historical);
+        }
         if(!pose.metadata.poseHasParent) {
-            // add to history line non-auxiliary poses
+            // add to spaghetti non-auxiliary poses
             this.updateSpaghetti(pose, historical);
         }
     }
@@ -400,7 +406,8 @@ export class HumanPoseAnalyzer {
      * @return {Spaghetti} - the spaghetti line that was created
      */
     createSpaghetti(lens, id, historical) {
-        const spaghetti = new Spaghetti([], `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
+        const analytics = realityEditor.analytics.getActiveAnalytics();
+        const spaghetti = new Spaghetti([], analytics, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
             widthMm: 30,
             heightMm: 30,
             usePerVertexColors: true,
@@ -914,7 +921,10 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            realityEditor.analytics.setCursorTime(this.animationPosition, true);
+            const analytics = realityEditor.analytics.getActiveAnalytics();
+            if (analytics) {
+                analytics.setCursorTime(this.animationPosition, true);
+            }
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);

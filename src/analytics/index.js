@@ -4,70 +4,133 @@ import {Analytics} from './analytics.js'
 import {AnalyticsMobile} from './AnalyticsMobile.js'
 
 (function(exports) {
-    const DEBUG_ALWAYS_OPEN = false;
-    const analytics = realityEditor.device.environment.isDesktop() ?
-        new Analytics() :
-        new AnalyticsMobile();
-    exports.analytics = analytics;
-
-    exports.analytics.initService = function() {
-        if (DEBUG_ALWAYS_OPEN) {
-            exports.analytics.open();
+    /**
+     * @param {string} frame - frame id associated with instance of
+     * analytics
+     */
+    function makeAnalytics(frame) {
+        if (realityEditor.device.environment.isDesktop()) {
+            return new Analytics(frame);
+        } else {
+            return new AnalyticsMobile(frame);
         }
+    }
+
+    const noneFrame = 'none';
+    let activeFrame = '';
+    let analyticsByFrame = {};
+
+    /**
+     * @return {Analytics}
+     */
+    function getActiveAnalytics() {
+        return analyticsByFrame[activeFrame];
+    }
+    exports.getActiveAnalytics = getActiveAnalytics;
+
+    /**
+     * @return {HumanPoseAnalyzer}
+     */
+    function getActiveHumanPoseAnalyzer() {
+        let analytics = getActiveAnalytics();
+        if (!analytics) {
+            return;
+        }
+        return analytics.humanPoseAnalyzer;
+    }
+    exports.getActiveHumanPoseAnalyzer = getActiveHumanPoseAnalyzer;
+
+    /**
+     * @return {Timeline}
+     */
+    function getActiveTimeline() {
+        let analytics = getActiveAnalytics();
+        if (!analytics) {
+            return;
+        }
+        return analytics.timeline;
+    }
+    exports.getActiveTimeline = getActiveTimeline;
+
+    function initService() {
+        activeFrame = noneFrame;
+        analyticsByFrame[noneFrame] = makeAnalytics(noneFrame);
 
         realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
-            analytics.open(msgData.frame);
+            if (!analyticsByFrame[msgData.frame]) {
+                analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
+            }
+            activeFrame = msgData.frame;
+            getActiveAnalytics().open();
+            realityEditor.app.enableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsClose', (msgData) => {
-            analytics.close(msgData.frame);
+            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
+                return;
+            }
+            getActiveAnalytics().close();
+
+            // Could disable proactively, not a priority since it may lead to
+            // unexpected behavior
+            // realityEditor.app.disableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
-            analytics.focus(msgData.frame);
+            if (!analyticsByFrame[msgData.frame]) {
+                return;
+            }
+            if (activeFrame !== msgData.frame) {
+                getActiveAnalytics().blur();
+            }
+            activeFrame = msgData.frame;
+            getActiveAnalytics().focus();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsBlur', (msgData) => {
-            analytics.blur(msgData.frame);
+            if (!analyticsByFrame[msgData.frame]) {
+                return;
+            }
+            analyticsByFrame[msgData.frame].blur(msgData.frame);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
-            analytics.setCursorTime(msgData.time);
+            getActiveAnalytics().setCursorTime(msgData.time);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetHighlightRegion', (msgData) => {
-            analytics.setHighlightRegion(msgData.highlightRegion);
+            getActiveAnalytics().setHighlightRegion(msgData.highlightRegion);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
-            analytics.setDisplayRegion(msgData.displayRegion);
+            getActiveAnalytics().setDisplayRegion(msgData.displayRegion);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsHydrateRegionCards', (msgData) => {
-            analytics.hydrateRegionCards(msgData.regionCards);
+            getActiveAnalytics().hydrateRegionCards(msgData.regionCards);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetLens', (msgData) => {
-            analytics.setLens(msgData.lens);
+            getActiveAnalytics().setLens(msgData.lens);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetLensDetail', (msgData) => {
-            analytics.setLensDetail(msgData.lensDetail);
+            getActiveAnalytics().setLensDetail(msgData.lensDetail);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiAttachPoint', (msgData) => {
-            analytics.setSpaghettiAttachPoint(msgData.spaghettiAttachPoint);
+            getActiveAnalytics().setSpaghettiAttachPoint(msgData.spaghettiAttachPoint);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiVisible', (msgData) => {
-            analytics.setSpaghettiVisible(msgData.spaghettiVisible);
+            getActiveAnalytics().setSpaghettiVisible(msgData.spaghettiVisible);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetAllClonesVisible', (msgData) => {
-            analytics.setSpaghettiVisible(msgData.allClonesVisible);
+            getActiveAnalytics().setSpaghettiVisible(msgData.allClonesVisible);
         });
-    };
-}(realityEditor));
+    }
+    exports.initService = initService;
+}(realityEditor.analytics));
 
 export const initService = realityEditor.analytics.initService;
-

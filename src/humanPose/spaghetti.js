@@ -1,6 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
-import * as utils from './utils.js'
 import {
     setAnimationMode,
     AnimationMode,
@@ -92,7 +91,9 @@ const SpaghettiSelectionState = {
             }
             spaghetti.cursorIndex = spaghetti.getPointFromIntersect(intersects[0]);
             setAnimationMode(AnimationMode.cursor);
-            realityEditor.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            }
         },
         colorPoints: (spaghetti) => {
             spaghetti.points.forEach((point, index) => {
@@ -145,11 +146,13 @@ const SpaghettiSelectionState = {
             const minIndex = Math.min(spaghetti.cursorIndex, initialSelectionIndex);
             const maxIndex = Math.max(spaghetti.cursorIndex, initialSelectionIndex);
 
-            realityEditor.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
-            realityEditor.analytics.setHighlightRegion({
-                startTime: spaghetti.points[minIndex].timestamp,
-                endTime: spaghetti.points[maxIndex].timestamp
-            }, true);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+                spaghetti.analytics.setHighlightRegion({
+                    startTime: spaghetti.points[minIndex].timestamp,
+                    endTime: spaghetti.points[maxIndex].timestamp
+                }, true);
+            }
             setAnimationMode(AnimationMode.regionAll);
 
             const points = spaghetti.points;
@@ -209,7 +212,9 @@ const SpaghettiSelectionState = {
             if (index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex) {
                 spaghetti.cursorIndex = index;
                 setAnimationMode(AnimationMode.cursor);
-                realityEditor.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+                if (spaghetti.analytics) {
+                    spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+                }
             } else {
                 spaghetti.cursorIndex = -1;
             }
@@ -238,11 +243,13 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
 
-            realityEditor.analytics.setCursorTime(spaghetti.points[spaghetti.highlightRegion.startIndex].timestamp, true);
-            realityEditor.analytics.setHighlightRegion({
-                startTime: spaghetti.points[startIndex].timestamp,
-                endTime: spaghetti.points[endIndex].timestamp
-            }, true);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.highlightRegion.startIndex].timestamp, true);
+                spaghetti.analytics.setHighlightRegion({
+                    startTime: spaghetti.points[startIndex].timestamp,
+                    endTime: spaghetti.points[endIndex].timestamp
+                }, true);
+            }
             setAnimationMode(AnimationMode.region);
         }
     }
@@ -252,9 +259,10 @@ const SpaghettiSelectionState = {
  * A spaghetti object handles the rendering of multiple paths and the touch events for selecting on those paths
  */
 export class Spaghetti extends THREE.Group {
-    constructor(points, name, params) {
+    constructor(points, analytics, name, params) {
         super();
         this.points = [];
+        this.analytics = analytics; // Null when used outside of pose analytics, e.g. camera spaghetti lines 
         this.name = name;
         this.meshPathParams = params; // Used for mesh path creation
         this.meshPaths = [];
@@ -304,6 +312,9 @@ export class Spaghetti extends THREE.Group {
         let pointsToAdd = []; // Queue up points that will be part of the same MeshPath into a buffer to enable adding them in bulk
         points.forEach((point) => {
             // [0-255, 0-255, 0-255] format
+            if (!point.color.isColor) {
+                point.color = new THREE.Color(point.color[0] / 255, point.color[1] / 255, point.color[2] / 255);
+            }
             point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
             const fadeColor = AnalyticsColors.fade(point.color, 0.2);
             point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 255];
@@ -350,6 +361,11 @@ export class Spaghetti extends THREE.Group {
         }
 
         this.updateColors();
+    }
+    
+    setPoints(points) {
+        this.reset();
+        this.addPoints(points);
     }
 
     /**

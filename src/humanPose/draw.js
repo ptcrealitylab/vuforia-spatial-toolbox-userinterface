@@ -8,13 +8,9 @@ import {
 } from './utils.js';
 import {Pose} from "./Pose.js";
 
-import {HumanPoseAnalyzer} from './HumanPoseAnalyzer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {RENDER_CONFIDENCE_COLOR} from './constants.js';
 
-let activeHumanPoseAnalyzer = null;
-// Map from frame id to humanPoseAnalyzer
-let humanPoseAnalyzers = {};
 /**
  * @typedef {string} AnimationMode
  */
@@ -34,36 +30,13 @@ export const AnimationMode = {
     all: 'all',
 };
 
-function setActiveFrame(frameId) {
-    if (!humanPoseAnalyzers[frameId]) {
-        const humanPoseAnalyzer = new HumanPoseAnalyzer();
-        humanPoseAnalyzers[frameId] = humanPoseAnalyzer;
-    }
-    if (activeHumanPoseAnalyzer) {
-        activeHumanPoseAnalyzer.active = false;
-    }
-    activeHumanPoseAnalyzer = humanPoseAnalyzers[frameId];
-    activeHumanPoseAnalyzer.active = true;
-}
-
 /**
  * Processes the given historical poses and renders them efficiently
  * @param {Pose[]}  poses - the poses to render
  */
 function bulkRenderHistoricalPoses(poses) {
-    if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
-    if (!activeHumanPoseAnalyzer) {
-        console.error('Unable to bulkRenderHistoricalPoses, no active HPA');
-        return;
-    }
-    poses.forEach(pose => {
-        if (realityEditor.analytics) {
-            realityEditor.analytics.appendPose({
-                time: pose.timestamp,
-            });
-        }
-    });
-    activeHumanPoseAnalyzer.bulkHistoricalPosesUpdated(poses);
+    let analytics = realityEditor.analytics.getActiveAnalytics();
+    analytics.bulkRenderHistoricalPoses(poses);
 }
 
 /**
@@ -73,6 +46,8 @@ function bulkRenderHistoricalPoses(poses) {
  */
 function renderLiveHumanPoseObjects(poseObjects, timestamp) {
     if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
 
     if (!activeHumanPoseAnalyzer) {
         console.error('No active HPA');
@@ -93,6 +68,8 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {number} timestamp - the timestamp of when the poseObject was recorded
  */
 function updatePoseRenderer(poseObject, timestamp) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+
     if (!activeHumanPoseAnalyzer) {
         console.error('No active HPA');
         return;
@@ -129,6 +106,8 @@ const mostRecentPoseByObjectId = {};
  * @param {number} timestamp - when the pose was recorded
  */
 function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
     const jointPositions = {};
@@ -177,9 +156,12 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
     activeHumanPoseAnalyzer.poseUpdated(pose, false);
     if (realityEditor.analytics) {
-        realityEditor.analytics.appendPose({
-            time: timestamp,
-        });
+        let timeline = realityEditor.analytics.getActiveTimeline();
+        if (timeline) {
+            timeline.appendPose({
+                time: timestamp,
+            });
+        }
     }
 }
 
@@ -187,6 +169,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
  * Resets the HumanPoseAnalyzer's live history lines
  */
 function resetLiveHistoryLines() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -208,6 +191,7 @@ function resetHistoryLines() {
  * Resets the HumanPoseAnalyzer's live history clones
  */
 function resetLiveHistoryClones() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -226,25 +210,13 @@ function resetHistoryClones() {
 }
 
 /**
- * Sets the time interval to highlight on the HumanPoseAnalyzer
- * @param {TimeRegion} highlightRegion
- * @param {boolean} fromSpaghetti - whether a history mesh originated this call
- */
-function setHighlightRegion(highlightRegion, fromSpaghetti) {
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
-    }
-    activeHumanPoseAnalyzer.setHighlightRegion(highlightRegion, fromSpaghetti);
-}
-
-/**
  * Gets the poses that are within the given time interval
  * @param {number} firstTimestamp - start of time interval in ms
  * @param {number} secondTimestamp - end of time interval in ms
  * @return {Pose[]} - the poses that are within the given time interval
  */
 function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         return [];
     }
@@ -256,6 +228,7 @@ function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
  * @param {boolean} visible - whether to show the historical history lines
  */
 function setHistoricalHistoryLinesVisible(visible) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -268,6 +241,7 @@ function setHistoricalHistoryLinesVisible(visible) {
  * @param {boolean} visible - whether to show the live history lines
  */
 function setLiveHistoryLinesVisible(visible) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -276,23 +250,10 @@ function setLiveHistoryLinesVisible(visible) {
 }
 
 /**
- * Resets the HumanPoseAnalyzer's historical data
- */
-function clearHistoricalData(frameId) {
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
-    }
-    activeHumanPoseAnalyzer.clearHistoricalData();
-    if (humanPoseAnalyzers[frameId]) {
-        delete humanPoseAnalyzers[frameId];
-    }
-}
-
-/**
  * @param {AnimationMode} animationMode
  */
 function setAnimationMode(animationMode) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -305,6 +266,7 @@ function setAnimationMode(animationMode) {
  * @param {boolean} enabled - whether to render all clones or just one
  */
 function setRecordingClonesEnabled(enabled) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -321,6 +283,7 @@ function setRecordingClonesEnabled(enabled) {
  * Advances the human pose analyzer's analytics lens
  */
 function advanceLens() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -346,6 +309,7 @@ function advanceCloneMaterial() {
  * function
  */
 function setCursorTime(time, fromSpaghetti) {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -353,28 +317,12 @@ function setCursorTime(time, fromSpaghetti) {
     activeHumanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
 }
 
-/** @typedef {Object} TimeRegion
- * @property {number} startTime - start of time interval in ms
- * @property {number} endTime - end of time interval in ms
- */
-
-/**
- * Sets the time interval to display on the HumanPoseAnalyzer
- * @param {TimeRegion} displayRegion - the time interval to display
- */
-function setDisplayRegion(displayRegion) {
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
-    }
-    activeHumanPoseAnalyzer.setDisplayRegion(displayRegion);
-}
-
 /**
  * Finalize historical renderer matrices after loading them from
  * history logs
  */
 function finishHistoryPlayback() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -386,6 +334,7 @@ function finishHistoryPlayback() {
  * Shows the HumanPoseAnalyzer's settings UI
  */
 function showAnalyzerSettingsUI() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -399,6 +348,7 @@ function showAnalyzerSettingsUI() {
  * Hides the HumanPoseAnalyzer's settings UI
  */
 function hideAnalyzerSettingsUI() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -412,6 +362,7 @@ function hideAnalyzerSettingsUI() {
  * Toggles the HumanPoseAnalyzer's settings UI
  */
 function toggleAnalyzerSettingsUI() {
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -426,11 +377,10 @@ function toggleAnalyzerSettingsUI() {
  * @param {boolean} visible - whether to show or not
  */
 function setHumanPosesVisible(visible) {
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
+    const humanPoseAnalyzers = realityEditor.analytics.getAllHumanPoseAnalyzers();
+    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
+        humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
     }
-    activeHumanPoseAnalyzer.setLiveHumanPosesVisible(visible);
 }
 
 /**
@@ -439,17 +389,19 @@ function setHumanPosesVisible(visible) {
  * @param {boolean} visible - whether to show or not
  */
 function setChildHumanPosesVisible(visible) {
-    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
-        humanPoseAnalyzer.childHumanObjectsVisible = visible;
-        if (humanPoseAnalyzer.settingsUi) {
-            humanPoseAnalyzer.settingsUi.setChildHumanPosesVisible(visible);
-        }
+    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    if (!activeHumanPoseAnalyzer) {
+        console.warn('No active HPA');
+        return;
+    }
+    activeHumanPoseAnalyzer.childHumanObjectsVisible = visible;
+    if (activeHumanPoseAnalyzer.settingsUi) {
+        activeHumanPoseAnalyzer.settingsUi.setChildHumanPosesVisible(visible);
     }
 }
 
 // TODO: Remove deprecated API use
 export {
-    setActiveFrame,
     bulkRenderHistoricalPoses,
     renderLiveHumanPoseObjects,
     resetLiveHistoryLines,
@@ -458,11 +410,8 @@ export {
     resetHistoryClones,
     setAnimationMode,
     setCursorTime,
-    setHighlightRegion,
-    setDisplayRegion,
     setLiveHistoryLinesVisible,
     setHistoricalHistoryLinesVisible,
-    clearHistoricalData,
     setRecordingClonesEnabled,
     advanceLens,
     advanceCloneMaterial,
