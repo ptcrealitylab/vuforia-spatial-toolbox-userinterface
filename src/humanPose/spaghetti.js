@@ -105,9 +105,9 @@ const SpaghettiSelectionState = {
             });
         },
         transition: (spaghetti) => {
-            spaghetti.selectionState = SpaghettiSelectionState.NONE;
             spaghetti.highlightRegion.startIndex = -1;
             spaghetti.highlightRegion.endIndex = -1;
+            spaghetti.selectionState = SpaghettiSelectionState.NONE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
@@ -182,9 +182,9 @@ const SpaghettiSelectionState = {
             });
         },
         transition: (spaghetti, index) => {
-            spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
             spaghetti.highlightRegion.startIndex = index;
             spaghetti.highlightRegion.endIndex = index;
+            spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
         }
@@ -227,15 +227,15 @@ const SpaghettiSelectionState = {
                     if (index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex) {
                         point.color = [...point.originalColor];
                     } else {
-                        point.color = [...point.fadedColor];
+                        point.color = [...point.fullFadedColor];
                     }
                 }
             });
         },
         transition: (spaghetti, startIndex, endIndex) => {
-            spaghetti.selectionState = SpaghettiSelectionState.RANGE;
             spaghetti.highlightRegion.startIndex = startIndex;
             spaghetti.highlightRegion.endIndex = endIndex;
+            spaghetti.selectionState = SpaghettiSelectionState.RANGE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
 
@@ -261,19 +261,36 @@ export class Spaghetti extends THREE.Group {
         this.meshPaths = [];
         this.pathId = realityEditor.device.utilities.uuidTime(); // Used for measurement label
 
-        this.selectionState = SpaghettiSelectionState.NONE;
+        this._selectionState = SpaghettiSelectionState.NONE;
         this.highlightRegion = {
             startIndex: -1,
             endIndex: -1
         }
-        this.cursorIndex = -1;
+        this._cursorIndex = -1;
 
         this.setupPointerEvents();
         this.addPoints(points);
-        
-        realityEditor.gui.threejsScene.onAnimationFrame(() => {
-            // this.updateColors(); // TODO: update colors somewhere
-        });
+    }
+    
+    get selectionState() {
+        return this._selectionState;
+    }
+    
+    set selectionState(state) {
+        this._selectionState = state;
+        this.updateColors();
+    }
+    
+    get cursorIndex() {
+        return this._cursorIndex;
+    }
+    
+    set cursorIndex(index) {
+        if (index === this._cursorIndex) {
+            return;
+        }
+        this._cursorIndex = index;
+        this.updateColors();
     }
 
     /**
@@ -289,11 +306,12 @@ export class Spaghetti extends THREE.Group {
         let pointsToAdd = []; // Queue up points that will be part of the same MeshPath into a buffer to enable adding them in bulk
         points.forEach((point) => {
             // [0-255, 0-255, 0-255] format
-            point.originalColor = [...point.color];
-            const threeFadeColor = AnalyticsColors.fade(new THREE.Color(point.color[0] / 255, point.color[1] / 255, point.color[2] / 255), 0.2);
-            point.fadedColor = [threeFadeColor.r * 255, threeFadeColor.g * 255, threeFadeColor.b * 255];
-            const threeHighlightColor = AnalyticsColors.highlight(new THREE.Color(point.color[0] / 255, point.color[1] / 255, point.color[2] / 255));
-            point.cursorColor = [threeHighlightColor.r * 255, threeHighlightColor.g * 255, threeHighlightColor.b * 255];
+            point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
+            const fadeColor = AnalyticsColors.fade(point.color, 0.2);
+            point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 255];
+            point.fullFadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.1 * 255];
+            const cursorColor = AnalyticsColors.highlight(point.color);
+            point.cursorColor = [cursorColor.r * 255, cursorColor.g * 255, cursorColor.b * 255, 255];
             
             if (this.points.length === 0) {
                 // Create a new mesh path for the first point of the spaghetti line
@@ -433,11 +451,11 @@ export class Spaghetti extends THREE.Group {
         // NOTE: this transition is done manually to prevent animation modes from being replaced when timeline sets it
         // to regionAll during a drag selection
         // TODO: update this now that there is only one spaghetti line
-        this.selectionState = SpaghettiSelectionState.RANGE;
         this.highlightRegion = {
             startIndex,
             endIndex
         }
+        this.selectionState = SpaghettiSelectionState.RANGE;
         
         // TODO: this is a state change, ensure regions are split properly
     }
@@ -496,9 +514,12 @@ export class Spaghetti extends THREE.Group {
 
     updateColors() {
         // update colors of points based on selection state and cursor index
-        this.selectionState.colorPoints(this);
+        this.selectionState.colorPoints(this)
         // super.updateColors(this.points.map((pt, index) => index));
         // TODO: update colors of children
+        this.meshPaths.forEach((meshPath) => {
+            meshPath.updateColors(meshPath.currentPoints.map((pt, index) => index));
+        });
     }
     
     getPointFromIntersect(intersect) {

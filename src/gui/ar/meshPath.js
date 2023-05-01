@@ -14,7 +14,29 @@ let VERT_PATH = Object.freeze({
     end: 'end'
 });
 const POSITIONS_PER_POINT = 24; // each point on the path has 8 triangles
-const COMPONENTS_PER_POSITION = 3; // each vertex has 3 position components (x,y,z) and 3 color components (r,g,b)
+const COMPONENTS_PER_POSITION = 3; // each vertex has 3 position components (x,y,z)
+const COMPONENTS_PER_COLOR = 4; // each color has 4 components (r,g,b,a)
+
+// Vertex shader
+const vertexShader = `
+  attribute vec4 color;
+
+  varying vec4 vColor;
+
+  void main() {
+    vColor = color;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+// Fragment shader
+const fragmentShader = `
+  varying vec4 vColor;
+
+  void main() {
+    gl_FragColor = vec4(vColor.rgb, vColor.a);
+  }
+`;
 
 /**
  * MeshPath is similar to MeshLine but is an extruded rectangular path where you can also specify color and size
@@ -87,6 +109,9 @@ export class MeshPath extends THREE.Group
             // Convert THREE.Color colors into the correct format
             if (point.color && point.color.isColor) {
                 point.color = [point.color.r * 255, point.color.g * 255, point.color.b * 255];
+            }
+            if (point.color.length === 3) {
+                point.color.push(255);
             }
         });
 
@@ -212,8 +237,8 @@ export class MeshPath extends THREE.Group
 
         if (this.usePerVertexColors) {
             const normalized = true; // maps the uints from 0-255 to 0-1
-            horizontalGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.horizontalColorsBuffer), COMPONENTS_PER_POSITION, normalized));
-            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), COMPONENTS_PER_POSITION, normalized));
+            horizontalGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.horizontalColorsBuffer), COMPONENTS_PER_COLOR, normalized));
+            wallGeometry.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(this.wallColorsBuffer), COMPONENTS_PER_COLOR, normalized));
         }
 
         const horizontalMesh = new THREE.Mesh(horizontalGeometry, horizontalMaterial);
@@ -259,7 +284,7 @@ export class MeshPath extends THREE.Group
     addHorizontalVertex(x, y, z, color) {
         this.horizontalPositionsBuffer.push(x, y, z);
         if (this.usePerVertexColors) {
-            this.horizontalColorsBuffer.push(color[0], color[1], color[2]);
+            this.horizontalColorsBuffer.push(color[0], color[1], color[2], color[3]);
         }
     }
 
@@ -270,7 +295,8 @@ export class MeshPath extends THREE.Group
             let r = Math.max(0, color[0] * this.wallBrightness);
             let g = Math.max(0, color[1] * this.wallBrightness);
             let b = Math.max(0, color[2] * this.wallBrightness);
-            this.wallColorsBuffer.push(r, g, b);
+            let a = color[3];
+            this.wallColorsBuffer.push(r, g, b, a);
         }
     }
 
@@ -316,22 +342,22 @@ export class MeshPath extends THREE.Group
 
     // use this to get the indices in the color and position BufferAttributes that correspond to a certain point in the path
     // geometry is constructed backwards, from length-1 down to 0, so buffer attribute indices are "opposite" what you may expect
-    getBufferIndices(pointIndex) {
+    getBufferIndices(pointIndex, componentsPerIndex) {
         // if i = length-1, indices = 0-23... if i = length-2, indices = 24-47... if i = length-3, indices = 48-71...
         // generalized formula: if i = length-N, indices = (24 * (N-1)) to (24 * N - 1)
         // special case: if i = 0, indices = (24 * (length-1)) to (24 * length - 1 - 12) // last index only has 12 not 24
 
         const length = this.currentPoints.length;
         const i = length - pointIndex;
-        const startBufferIndex = (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * (i-2); // todo: this was off by 1 on my first attempt so i'm subtracting (i-2) instead of (i-1), but i'm not sure why
-        let endBufferIndex = (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * (i-1) - 1;
+        const startBufferIndex = (POSITIONS_PER_POINT * componentsPerIndex) * (i-2); // todo: this was off by 1 on my first attempt so i'm subtracting (i-2) instead of (i-1), but i'm not sure why
+        let endBufferIndex = (POSITIONS_PER_POINT * componentsPerIndex) * (i-1) - 1;
         if (i === length - 1) {
-            endBufferIndex -= (POSITIONS_PER_POINT * COMPONENTS_PER_POSITION) * 0.5; // last index has half as many positions
+            endBufferIndex -= (POSITIONS_PER_POINT * componentsPerIndex) * 0.5; // last index has half as many positions
         }
 
         let bufferIndices = [];
-        for (let j = startBufferIndex; j <= endBufferIndex; j += COMPONENTS_PER_POSITION) {
-            bufferIndices.push(Math.floor(j/COMPONENTS_PER_POSITION));
+        for (let j = startBufferIndex; j <= endBufferIndex; j += componentsPerIndex) {
+            bufferIndices.push(Math.floor(j/componentsPerIndex));
         }
         return bufferIndices;
     }
@@ -365,15 +391,16 @@ export class MeshPath extends THREE.Group
         let brightness = this.wallBrightness;
 
         pointIndicesThatNeedUpdate.forEach(index => {
-            let bufferIndices = this.getBufferIndices(index);
-            bufferIndices.forEach(bfrIndex => {
+            let colorBufferIndices = this.getBufferIndices(index, COMPONENTS_PER_COLOR);
+            colorBufferIndices.forEach(bfrIndex => {
                 let newColor = {
                     r: this.currentPoints[index].color[0],
                     g: this.currentPoints[index].color[1],
-                    b: this.currentPoints[index].color[2]
+                    b: this.currentPoints[index].color[2],
+                    a: this.currentPoints[index].length === 3 ? 255 : this.currentPoints[index].color[3]
                 }
-                horizontalColorAttribute.setXYZ(bfrIndex, newColor.r, newColor.g, newColor.b);
-                wallColorAttribute.setXYZ(bfrIndex, newColor.r * brightness, newColor.g * brightness, newColor.b * brightness);
+                horizontalColorAttribute.setXYZW(bfrIndex, newColor.r, newColor.g, newColor.b, newColor.a);
+                wallColorAttribute.setXYZW(bfrIndex, newColor.r * brightness, newColor.g * brightness, newColor.b * brightness, newColor.a);
             });
         })
         geometry.horizontal.attributes.color.needsUpdate = true;
@@ -415,7 +442,12 @@ function getMaterial(color, opacity = 1, usePerVertexColors = false, colorBlendi
         if (usePerVertexColors) {
             params.vertexColors = true;
         }
-        cachedMaterials[materialKey] = new THREE.MeshBasicMaterial(params);
+        // cachedMaterials[materialKey] = new THREE.MeshBasicMaterial(params);
+        cachedMaterials[materialKey] = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true,
+        });
     }
     return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
 }
