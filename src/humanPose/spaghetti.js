@@ -492,6 +492,23 @@ export class Spaghetti extends THREE.Group {
 
         // TODO: this is a state change, ensure regions are split properly
     }
+    
+    getDistanceAlongPath(index1, index2) {
+        const minIndex = Math.min(index1, index2);
+        const maxIndex = Math.max(index1, index2);
+        let distance = 0;
+        let meshPath = this.getMeshPathFromIndex(minIndex);
+        let finalMeshPath = this.getMeshPathFromIndex(maxIndex);
+        if (meshPath === finalMeshPath) {
+            return meshPath.getDistanceAlongPath(this.getIndexWithinPath(minIndex), this.getIndexWithinPath(maxIndex));
+        }
+        distance += meshPath.getDistanceAlongPath(this.getIndexWithinPath(minIndex), meshPath.currentPoints.length - 1);
+        for (let i = this.meshPaths.indexOf(meshPath) + 1; i < this.meshPaths.indexOf(finalMeshPath); i++) {
+            distance += this.meshPaths[i].getDistanceAlongPath(0, this.meshPaths[i].currentPoints.length - 1);
+        }
+        distance += finalMeshPath.getDistanceAlongPath(0, this.getIndexWithinPath(maxIndex));
+        return distance;
+    }
 
     getMeasurementLabel() {
         if (!sharedMeasurementLabel) {
@@ -513,6 +530,40 @@ export class Spaghetti extends THREE.Group {
         this.meshPaths.forEach((meshPath) => {
             meshPath.updateColors(meshPath.currentPoints.map((pt, index) => index));
         });
+    }
+    
+    getMeshPathFromIndex(index) {
+        if (index < 0) {
+            return this.meshPaths[0];
+        } else if (index >= this.points.length) {
+            return this.meshPaths[this.meshPaths.length - 1];
+        }
+        let meshPathIndex = 0;
+        let meshPath = this.meshPaths[meshPathIndex];
+        let i = 0;
+        while (i + meshPath.currentPoints.length - 1 < index) {
+            i += meshPath.currentPoints.length;
+            meshPathIndex++;
+            meshPath = this.meshPaths[meshPathIndex];
+        }
+        return meshPath;
+    }
+    
+    getIndexWithinPath(index) {
+        if (index < 0) {
+            return 0;
+        } else if (index >= this.points.length) {
+            return this.meshPaths[this.meshPaths.length - 1].currentPoints.length - 1;
+        }
+        let meshPathIndex = 0;
+        let meshPath = this.meshPaths[meshPathIndex];
+        let i = 0;
+        while (i + meshPath.currentPoints.length - 1 < index) {
+            i += meshPath.currentPoints.length;
+            meshPathIndex++;
+            meshPath = this.meshPaths[meshPathIndex];
+        }
+        return index - i;
     }
     
     getPointFromIntersect(intersect) {
