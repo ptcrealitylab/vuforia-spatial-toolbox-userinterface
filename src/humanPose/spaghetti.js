@@ -76,20 +76,19 @@ const SpaghettiSelectionState = {
     NONE: {
         onPointerDown: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
                 return;
             }
-            const index = spaghetti.getPointFromIntersect(intersects[0]);
             SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
-                spaghetti.cursorIndex = -1;
+            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            if (spaghetti.cursorIndex === -1) {
                 // Note: Cannot set analytics cursor time to -1 here because other spaghettis may be hovering, handled by HPA
                 return;
             }
-            spaghetti.cursorIndex = spaghetti.getPointFromIntersect(intersects[0]);
             setAnimationMode(AnimationMode.cursor);
             if (spaghetti.analytics) {
                 spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
@@ -103,6 +102,9 @@ const SpaghettiSelectionState = {
                     point.color = [...point.originalColor];
                 }
             });
+        },
+        isIndexSelectable: (_spaghetti, _index) => {
+            return true;
         },
         transition: (spaghetti) => {
             spaghetti.highlightRegion = {
@@ -119,11 +121,11 @@ const SpaghettiSelectionState = {
     SINGLE: {
         onPointerDown: (spaghetti, e) => {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
                 return;
             }
-            const index = spaghetti.getPointFromIntersect(intersects[0]);
             const initialSelectionIndex = spaghetti.highlightRegion.startIndex;
             if (index === initialSelectionIndex) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
@@ -135,12 +137,11 @@ const SpaghettiSelectionState = {
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
-                spaghetti.cursorIndex = -1;
+            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            if (spaghetti.cursorIndex === -1) {
                 // Note: Cannot set cursor time to -1 here because other spaghettis may be hovering, handled by HPA
                 return;
             }
-            spaghetti.cursorIndex = spaghetti.getPointFromIntersect(intersects[0]);
 
             const initialSelectionIndex = spaghetti.highlightRegion.startIndex
             const minIndex = Math.min(spaghetti.cursorIndex, initialSelectionIndex);
@@ -184,6 +185,9 @@ const SpaghettiSelectionState = {
                 }
             });
         },
+        isIndexSelectable: (_spaghetti, _index) => {
+            return true;
+        },
         transition: (spaghetti, index) => {
             spaghetti.highlightRegion.startIndex = index;
             spaghetti.highlightRegion.endIndex = index;
@@ -195,28 +199,26 @@ const SpaghettiSelectionState = {
     RANGE: {
         onPointerDown: (spaghetti, e) => {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
                 return;
             }
-            const index = spaghetti.getPointFromIntersect(intersects[0]);
+
             SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            if (intersects.length === 0) {
+            const index = spaghetti.getPointFromIntersects(intersects); // Ensures if index is returned, it is within the selection range
+            if (index === -1) {
                 spaghetti.cursorIndex = -1;
                 return;
             }
-            const index = spaghetti.getPointFromIntersect(intersects[0]);
-            if (index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex) {
-                spaghetti.cursorIndex = index;
-                setAnimationMode(AnimationMode.cursor);
-                if (spaghetti.analytics) {
-                    spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
-                }
-            } else {
-                spaghetti.cursorIndex = -1;
+
+            spaghetti.cursorIndex = index;
+            setAnimationMode(AnimationMode.cursor);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
             }
         },
         colorPoints: (spaghetti) => {
@@ -235,6 +237,9 @@ const SpaghettiSelectionState = {
                     }
                 }
             });
+        },
+        isIndexSelectable: (spaghetti, index) => {
+            return index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex;
         },
         transition: (spaghetti, startIndex, endIndex) => {
             spaghetti.highlightRegion.startIndex = startIndex;
@@ -579,6 +584,22 @@ export class Spaghetti extends THREE.Group {
             meshPath = this.meshPaths[meshPathIndex];
         }
         return index - i;
+    }
+
+    /**
+     * Get the index of the point in the currentPoints array that the closest valid intersect is closest to
+     * @param {Array} intersects - the array of intersect objects returned by three.js raycasting
+     * @return {number} index of the point in the currentPoints array that the closest valid intersect is closest to
+     */
+    getPointFromIntersects(intersects) {
+        for (let i = 0; i < intersects.length; i++) {
+            const intersect = intersects[i];
+            const index = this.getPointFromIntersect(intersect);
+            if (this.selectionState.isIndexSelectable(this, index)) {
+                return index;
+            }
+        }
+        return -1;
     }
     
     getPointFromIntersect(intersect) {
