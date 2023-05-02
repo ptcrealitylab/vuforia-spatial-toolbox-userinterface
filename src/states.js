@@ -169,14 +169,15 @@ var globalStates = {
     framePullThreshold: 20, // 2cm
 
     // default scale for new frames and nodes
-    defaultScale: 0.5,
+    defaultScale: 1,
 
     // retail
     reality: false,
     interface: "gui",
 
     useGroundPlane: false,
-    defaultFullscreenFrameZ: 100
+    defaultFullscreenFrameZ: -10,
+    defaultFullscreenFull2DFrameZ: 100
 };
 
 var globalCanvas = {};

@@ -295,8 +295,7 @@ realityEditor.device.onload = function () {
             return;
         }
 
-        let message = 'Network Offline. Showing last known state';
-        let lifetime = 5000;
+        let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
 
         // create UI
         let notificationUI = document.createElement('div');
@@ -315,13 +314,6 @@ realityEditor.device.onload = function () {
         notificationUI.classList.add('statusBar');
         notificationUI.classList.remove('statusBarHidden');
         notificationTextContainer.innerHTML = message;
-
-        setTimeout(function() {
-            if (!notificationUI) {
-                return;
-            } // no need to hide it if it doesn't exist
-            notificationUI.parentElement.removeChild(notificationUI);
-        }, lifetime);
     });
 
     // set up the global canvas for drawing the links
@@ -377,6 +369,7 @@ realityEditor.device.onload = function () {
     realityEditor.gui.spatialIndicator.initService();
     realityEditor.gui.spatialArrow.initService();
     realityEditor.gui.recentlyUsedBar.initService();
+    realityEditor.gui.envelopeIconRenderer.initService();
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
         globalStates.device = deviceName;

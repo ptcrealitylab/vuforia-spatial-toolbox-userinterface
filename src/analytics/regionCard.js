@@ -25,10 +25,12 @@ export const RegionCardState = {
  */
 export class RegionCard {
     /**
+     * @param {Analytics} analytics - parent instance of Analytics
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
      */
-    constructor(container, poses) {
+    constructor(analytics, container, poses) {
+        this.analytics = analytics;
         this.container = container;
         this.poses = poses;
         this.element = document.createElement('div');
@@ -58,7 +60,7 @@ export class RegionCard {
     onPointerOver() {
         this.element.classList.remove('minimized');
         // if (this.state === RegionCardState.Pinned) {
-        //     realityEditor.analytics.setHighlightRegion({
+        //     this.analytics.setHighlightRegion({
         //         startTime: this.startTime,
         //         endTime: this.endTime,
         //     });
@@ -91,12 +93,12 @@ export class RegionCard {
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                realityEditor.analytics.setActiveRegionCard(null);
-                realityEditor.analytics.setHighlightRegion(null);
-                realityEditor.analytics.setCursorTime(-1);
+                this.analytics.setActiveRegionCard(null);
+                this.analytics.setHighlightRegion(null);
+                this.analytics.setCursorTime(-1);
             } else {
-                realityEditor.analytics.setActiveRegionCard(this);
-                realityEditor.analytics.setHighlightRegion({
+                this.analytics.setActiveRegionCard(this);
+                this.analytics.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
                     label: this.getLabel(),
@@ -119,7 +121,7 @@ export class RegionCard {
         this.element.classList.add('pinAnimation', 'minimized');
         this.updatePinButtonText();
 
-        realityEditor.analytics.pinRegionCard(this);
+        this.analytics.pinRegionCard(this);
     }
 
     save() {
@@ -147,7 +149,7 @@ export class RegionCard {
 
     unpin() {
         this.remove();
-        realityEditor.analytics.unpinRegionCard(this);
+        this.analytics.unpinRegionCard(this);
     }
 
     updatePinButtonText() {
@@ -218,7 +220,7 @@ export class RegionCard {
                 clearTimeout(debouncedSave);
             }
             debouncedSave = setTimeout(() => {
-                realityEditor.analytics.writeDehydratedRegionCards();
+                this.analytics.writeDehydratedRegionCards();
                 debouncedSave = null;
             }, 1000);
         });
@@ -271,7 +273,7 @@ export class RegionCard {
                 maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude || 0);
             });
             return maxAcceleration;
-        }, 0, 40000);
+        }, 0, 40);
     }
 
     getMotionSummaryText() {

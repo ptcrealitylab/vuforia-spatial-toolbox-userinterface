@@ -73,7 +73,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                 if (lastRenderTime - lastUpdateTime > IDLE_TIMEOUT_MS) {
                     // Clear out all human pose renderers because we've
                     // received no updates from any of them
-                    draw.renderLiveHumanPoseObjects([], Date.now(), null);
+                    draw.renderLiveHumanPoseObjects([], Date.now());
                     lastUpdateTime = Date.now();
                     return;
                 }
@@ -92,12 +92,12 @@ import {JOINT_TO_INDEX} from './constants.js';
                             lastRenderedPoses[id] = newPoseHash;
                         }
                     }
-                }                
+                }
                 if (updatedHumanPoseObjects.length == 0) return;
 
                 lastUpdateTime = Date.now();
 
-                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now(), null);
+                draw.renderLiveHumanPoseObjects(updatedHumanPoseObjects, Date.now());
 
             } catch (e) {
                 console.warn('error in renderLiveHumanPoseObjects', e);
@@ -127,10 +127,13 @@ import {JOINT_TO_INDEX} from './constants.js';
      * @param {TimeRegion} historyRegion
      */
     async function loadHistory(historyRegion) {
-        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
+        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
                 loadHistory(historyRegion);
             }, 500);
+            return;
+        }
+        if (!realityEditor.device.environment.isDesktop()) {
             return;
         }
         const regionStartTime = historyRegion.startTime;
@@ -190,6 +193,7 @@ import {JOINT_TO_INDEX} from './constants.js';
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
         const poses = [];
+        const mostRecentPoseByObjectId = {};
         timestampStrings.forEach(timestampString => {
             let historyEntry = history[timestampString];
             let objectNames = Object.keys(historyEntry);
@@ -200,9 +204,6 @@ import {JOINT_TO_INDEX} from './constants.js';
             }
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
-                if (!poseObject.uuid) {
-                    poseObject.uuid = poseObject.objectId;
-                }
                 let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
                 const jointPositions = {};
                 const jointConfidences = {};
@@ -212,7 +213,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
                 for (let jointId of Object.values(JOINTS)) {
-                    let frame = poseObject.frames[poseObject.uuid + jointId];
+                    let frame = poseObject.frames[poseObject.objectId + jointId];
                     if (!frame.ar.matrix) {
                         continue;
                     }
@@ -238,15 +239,17 @@ import {JOINT_TO_INDEX} from './constants.js';
                 if (Object.keys(jointPositions).length === 0) {
                     return;
                 }
-                const identifier = `historical-${poseObject.uuid}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
+                const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
                 const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
                     poseObjectId: identifier,
                     poseHasParent: poseObject.parent && (poseObject.parent !== 'none'),
                 });
+                pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
+                mostRecentPoseByObjectId[poseObject.objectId] = pose;
                 poses.push(pose);
             }
         });
-        draw.bulkRenderHistoricalPoses(poses, null);
+        draw.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
     }
 

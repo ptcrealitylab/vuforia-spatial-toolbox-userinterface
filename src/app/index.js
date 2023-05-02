@@ -210,6 +210,20 @@ realityEditor.app.tap = function() {
 };
 
 /**
+ * Enable mode for stationary device. At the time of this call, a pose of device in the world is frozen. 
+ */
+realityEditor.app.enableStationaryDevice = function () {
+    this.appFunctionCall('enableStationaryDevice', null, null);
+};
+
+/**
+ * Disable mode for stationary device. A pose of device in the world updates continuously as usual. 
+ */
+realityEditor.app.disableStationaryDevice = function () {
+    this.appFunctionCall('disableStationaryDevice', null, null);
+};
+
+/**
  **************UDP****************
   **/
  
@@ -226,13 +240,18 @@ realityEditor.app.getUDPMessages = function(callBack) {
  * @param {Object} message - must be a JSON object
  */
 realityEditor.app.sendUDPMessage = function(message) {
-    if(realityEditor.network.state.proxyNetwork) {
+    if (realityEditor.network.state.proxyNetwork) {
         if (realityEditor.cloud.socket && message.action) {
             realityEditor.cloud.socket.action('udp/action', message);
         }
+    } else if (realityEditor.device.environment.isDesktop()) {
+        realityEditor.network.realtime.sendMessageToSocketSet(
+            'realityServers',
+            'udp/action',
+            message
+        );
     } else {
         this.appFunctionCall('sendUDPMessage', {message: JSON.stringify(message)}, null);
-
     }
 };
 
@@ -361,6 +380,22 @@ realityEditor.app.startVideoRecording = function (objectKey, objectIP, objectPor
 realityEditor.app.stopVideoRecording = function (videoId) {
     console.log("stopVideoRecording");
     this.appFunctionCall('stopVideoRecording', {videoId: videoId}, null);
+};
+
+/**
+ * Enable human tracking, telling the app to submit frames to the human
+ * tracking MediaPipe graph.
+ */
+realityEditor.app.enableHumanTracking = function () {
+    this.appFunctionCall('enableHumanTracking', null, null);
+};
+
+/**
+ * Disable human tracking, some frames may already be in pipeline and show up
+ * shortly after this call
+ */
+realityEditor.app.disableHumanTracking = function () {
+    this.appFunctionCall('disableHumanTracking', null, null);
 };
 
 /**
