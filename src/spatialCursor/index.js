@@ -719,7 +719,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     //function to orient cursor to specific screen coordinates
     function getOrientedCursorAtSpecificCoords(screenX, screenY) {
-        // move cursor to center, then get the matrix, then move the cursor back to where it was
+        // get specific coordinates of cursor
         worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
         updateSpatialCursor();
         updateTestSpatialCursor();
