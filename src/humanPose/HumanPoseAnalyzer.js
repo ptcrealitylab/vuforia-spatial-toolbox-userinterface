@@ -14,7 +14,7 @@ import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
 
-const POSE_OPACITY_BASE = 0.5;
+const POSE_OPACITY_BASE = 1;
 const POSE_OPACITY_BACKGROUND = 0.2;
 
 /**
@@ -231,7 +231,7 @@ export class HumanPoseAnalyzer {
             MAX_POSE_INSTANCES_MOBILE;
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.5,
+            opacity: POSE_OPACITY_BASE,
         }), maxPoseInstances);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
@@ -954,7 +954,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            realityEditor.analytics.setCursorTime(this.animationPosition, true);
+            realityEditor.analytics.getActiveAnalytics().setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);
