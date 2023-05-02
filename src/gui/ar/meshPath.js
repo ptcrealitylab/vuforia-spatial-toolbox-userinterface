@@ -447,6 +447,7 @@ function getMaterial(color, opacity = 1, usePerVertexColors = false, colorBlendi
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             transparent: true,
+            side: THREE.DoubleSide
         });
     }
     return cachedMaterials[materialKey]; // allows us to reuse materials that have the exact same params
