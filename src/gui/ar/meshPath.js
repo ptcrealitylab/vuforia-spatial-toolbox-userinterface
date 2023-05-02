@@ -397,7 +397,7 @@ export class MeshPath extends THREE.Group
                     r: this.currentPoints[index].color[0],
                     g: this.currentPoints[index].color[1],
                     b: this.currentPoints[index].color[2],
-                    a: this.currentPoints[index].length === 3 ? 255 : this.currentPoints[index].color[3]
+                    a: this.currentPoints[index].color.length === 3 ? 255 : this.currentPoints[index].color[3]
                 }
                 horizontalColorAttribute.setXYZW(bfrIndex, newColor.r, newColor.g, newColor.b, newColor.a);
                 wallColorAttribute.setXYZW(bfrIndex, newColor.r * brightness, newColor.g * brightness, newColor.b * brightness, newColor.a);
