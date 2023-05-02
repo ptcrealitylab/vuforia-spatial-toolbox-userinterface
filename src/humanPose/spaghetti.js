@@ -322,8 +322,8 @@ export class Spaghetti extends THREE.Group {
             }
             point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
             const fadeColor = AnalyticsColors.fade(point.color, 0.2);
-            point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 255];
-            point.fullFadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.1 * 255];
+            point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.5 * 255];
+            point.fullFadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.3 * 255];
             const cursorColor = AnalyticsColors.highlight(point.color);
             point.cursorColor = [cursorColor.r * 255, cursorColor.g * 255, cursorColor.b * 255, 255];
             
