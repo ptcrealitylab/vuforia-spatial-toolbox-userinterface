@@ -14,7 +14,7 @@ import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
 
-const POSE_OPACITY_BASE = 0.9;
+const POSE_OPACITY_BASE = 1;
 const POSE_OPACITY_BACKGROUND = 0.2;
 
 /**
