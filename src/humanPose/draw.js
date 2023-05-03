@@ -317,7 +317,6 @@ function setCursorTime(time, fromSpaghetti) {
     activeHumanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
 }
 
-
 /**
  * Finalize historical renderer matrices after loading them from
  * history logs

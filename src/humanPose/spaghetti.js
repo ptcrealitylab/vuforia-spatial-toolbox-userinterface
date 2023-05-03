@@ -1,10 +1,10 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { MeshPath } from "../gui/ar/meshPath.js";
-import * as utils from './utils.js'
 import {
     setAnimationMode,
     AnimationMode,
 } from './draw.js';
+import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // Approximate milliseconds between points (10 fps)
 const POINT_RES_MS = 100;
@@ -54,7 +54,7 @@ class MeasurementLabel {
         labelContainer.classList.add('avatarBeamLabel');
         labelContainer.style.width = width + 'px';
         labelContainer.style.fontSize = fontSize + 'px';
-        labelContainer.style.transform = 'translateX(-50%) translateY(-100%) translateZ(3000px) scale(' + scale + ')';
+        labelContainer.style.transform = 'translateX(-50%) translateY(-135%) translateZ(3000px) scale(' + scale + ')';
         document.body.appendChild(labelContainer);
 
         let label = document.createElement('div');
@@ -72,155 +72,319 @@ class MeasurementLabel {
     }
 }
 
-// creates a Path that you can click on to measure the time and distance between points on the path
-export class SpaghettiMeshPath extends MeshPath {
-    constructor(path, params) {
-        super(path, params);
-        this.allPoints = this.currentPoints;
-
-        this.pathId = realityEditor.device.utilities.uuidTime();
-        this.comparer = new KeyframeComparer();
-        this.comparer.setMeshPath(this);
-        this.cursor = this.createCursor(this.widthMm);
-        this.setupPointerEvents();
-        
-        this.cursorDestination = null;
-        this.cursorSnapDestination = null;
-        
-        realityEditor.gui.ar.draw.addUpdateListener(() => {
-            if (this.cursor && this.cursorDestination) {
-                let animatedPos = {
-                    x: 0.5 * this.cursorDestination[0] + 0.5 * this.cursor.position.x,
-                    y: 0.5 * this.cursorDestination[1] + 0.5 * this.cursor.position.y,
-                    z: 0.5 * this.cursorDestination[2] + 0.5 * this.cursor.position.z
-                };
-                this.cursor.position.set(animatedPos.x, animatedPos.y, animatedPos.z);
-            }
-        });
-    }
-    
-    setAllPoints(points) {
-        this.allPoints = points;
-        this.setPoints(points);
-    }
-
-    /**
-     * @typedef {MeshPathPoint} SpaghettiMeshPathPoint
-     * @property {number} timestamp - the time in milliseconds since the start of the path
-     */
-
-    /**
-     * Sets the points of the path, and also calculates the horizontal plane at the average Y height of the path
-     * @param {SpaghettiMeshPathPoint[]} points - the points to set
-     */
-    setPoints(points) {
-        super.setPoints(points);
-        
-        // calculate the horizontal plane at the average Y height of the path
-        let yPoints = this.currentPoints.map(pt => pt.y);
-        let avgY = yPoints.reduce((a, b) => a + b, 0) / yPoints.length;
-        
-        let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
-        let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
-        this.planeOrigin = realityEditor.sceneGraph.convertToNewCoordSystem([0, avgY, 0], groundPlaneCoords, rootCoords);
-        this.planeNormal = [0, 1, 0];
-    }
-
-    getMeasurementLabel() {
-        if (!sharedMeasurementLabel) {
-            sharedMeasurementLabel = new MeasurementLabel();
-        }
-        return sharedMeasurementLabel;
-    }
-
-    onPointerDown(e) {
-        if (!this.horizontalMesh || !this.wallMesh) {
-            return;
-        }
-
-        // If we're clicking the spaghetti at the end of a selection (selecting
-        // second point), we want to freeze the current highlight interval
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length > 0 &&
-            this.comparer.selectionState === SelectionState.SECOND) {
-            this.comparer.selectionState = SelectionState.TIMELINE;
-            this.frozen = true;
-            setAnimationMode(AnimationMode.region);
-            return;
-        }
-
-        const isHover = false;
-        this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
-    }
-
-    onPointerMove(e) {
-        if (this.frozen) {
-            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, [this.horizontalMesh, this.wallMesh]);
-            if (intersects.length === 0) {
+const SpaghettiSelectionState = {
+    NONE: {
+        onPointerDown: (spaghetti, e) => {
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
                 return;
             }
-            this.prevState = {
-                firstPointIndex: this.comparer.firstPointIndex,
-                secondPointIndex: this.comparer.secondPointIndex
-            };
-            this.frozen = false;
-            this.comparer.reset();
-        }
+            SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
+        },
+        onPointerMove: (spaghetti, e) => {
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            if (spaghetti.cursorIndex === -1) {
+                // Note: Cannot set analytics cursor time to -1 here because other spaghettis may be hovering, handled by HPA
+                return;
+            }
+            setAnimationMode(AnimationMode.cursor);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            }
+        },
+        colorPoints: (spaghetti) => {
+            spaghetti.points.forEach((point, index) => {
+                if (index === spaghetti.cursorIndex) {
+                    point.color = [...point.cursorColor];
+                } else {
+                    point.color = [...point.originalColor];
+                }
+            });
+        },
+        isIndexSelectable: (_spaghetti, _index) => {
+            return true;
+        },
+        transition: (spaghetti) => {
+            spaghetti.highlightRegion = {
+                startIndex: -1,
+                endIndex: -1,
+            }
+            spaghetti.selectionState = SpaghettiSelectionState.NONE;
 
-        if (this.comparer.firstPointIndex === null || this.comparer.selectionState === SelectionState.FIRST) {
-            const isHover = true;
-            this.selectFirstPathPoint(e.pageX, e.pageY, isHover);
-            if (this.comparer.firstPointIndex === null && this.prevState) {
-                this.frozen = true;
-                this.comparer.setFirstPoint(this.prevState.firstPointIndex, false);
-                this.comparer.setEndPoint(this.prevState.secondPointIndex);
-                this.comparer.selectionState = SelectionState.TIMELINE;
-                setAnimationMode(AnimationMode.region);
-                this.updateMeshWithComparer();
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
+            
+            // Cannot set animation mode here, other spaghetti may be selected, HPA update function resolves this
+        }
+    },
+    SINGLE: {
+        onPointerDown: (spaghetti, e) => {
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
+                SpaghettiSelectionState.NONE.transition(spaghetti);
+                return;
+            }
+            const initialSelectionIndex = spaghetti.highlightRegion.startIndex;
+            if (index === initialSelectionIndex) {
+                SpaghettiSelectionState.NONE.transition(spaghetti);
+            } else {
+                const minIndex = Math.min(index, initialSelectionIndex);
+                const maxIndex = Math.max(index, initialSelectionIndex);
+                SpaghettiSelectionState.RANGE.transition(spaghetti, minIndex, maxIndex);
+            }
+        },
+        onPointerMove: (spaghetti, e) => {
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            if (spaghetti.cursorIndex === -1) {
+                // Note: Cannot set cursor time to -1 here because other spaghettis may be hovering, handled by HPA
+                return;
             }
 
+            const initialSelectionIndex = spaghetti.highlightRegion.startIndex
+            const minIndex = Math.min(spaghetti.cursorIndex, initialSelectionIndex);
+            const maxIndex = Math.max(spaghetti.cursorIndex, initialSelectionIndex);
+
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+                spaghetti.analytics.setHighlightRegion({
+                    startTime: spaghetti.points[minIndex].timestamp,
+                    endTime: spaghetti.points[maxIndex].timestamp
+                }, true);
+            }
+            setAnimationMode(AnimationMode.regionAll);
+
+            const points = spaghetti.points;
+            const distanceMm = spaghetti.getDistanceAlongPath(minIndex, maxIndex);
+            const timeMs = points[maxIndex].timestamp - points[minIndex].timestamp;
+            spaghetti.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
+            spaghetti.getMeasurementLabel().requestVisible(true, spaghetti.pathId);
+            spaghetti.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
+        },
+        colorPoints: (spaghetti) => {
+            spaghetti.points.forEach((point, index) => {
+                if (index === spaghetti.cursorIndex || index === spaghetti.highlightRegion.startIndex) {
+                    // Highlight handles (cursor point and selected point)
+                    point.color = [...point.cursorColor];
+                } else {
+                    if (spaghetti.cursorIndex === -1 || spaghetti.cursorIndex === spaghetti.highlightRegion.startIndex) {
+                        // If no cursor, or cursor still on selection point, show faded color everywhere
+                        point.color = [...point.fadedColor];
+                    } else {
+                        // If cursor, show original color for points within handles, faded color for points outside
+                        const minIndex = Math.min(spaghetti.cursorIndex, spaghetti.highlightRegion.startIndex);
+                        const maxIndex = Math.max(spaghetti.cursorIndex, spaghetti.highlightRegion.startIndex);
+                        if (index >= minIndex && index <= maxIndex) {
+                            point.color = [...point.originalColor];
+                        } else {
+                            point.color = [...point.fadedColor];
+                        }
+                    }
+                }
+            });
+        },
+        isIndexSelectable: (_spaghetti, _index) => {
+            return true;
+        },
+        transition: (spaghetti, index) => {
+            spaghetti.highlightRegion.startIndex = index;
+            spaghetti.highlightRegion.endIndex = index;
+            spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
+
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
+        }
+    },
+    RANGE: {
+        onPointerDown: (spaghetti, e) => {
+            let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            const index = spaghetti.getPointFromIntersects(intersects);
+            if (index === -1) {
+                SpaghettiSelectionState.NONE.transition(spaghetti);
+                return;
+            }
+
+            SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
+        },
+        onPointerMove: (spaghetti, e) => {
+            const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
+            const index = spaghetti.getPointFromIntersects(intersects); // Ensures if index is returned, it is within the selection range
+            if (index === -1) {
+                spaghetti.cursorIndex = -1;
+                return;
+            }
+
+            spaghetti.cursorIndex = index;
+            setAnimationMode(AnimationMode.cursor);
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            }
+        },
+        colorPoints: (spaghetti) => {
+            spaghetti.points.forEach((point, index) => {
+                if (index === spaghetti.highlightRegion.startIndex || index === spaghetti.highlightRegion.endIndex) {
+                    // Highlight handles (selected points)
+                    point.color = [...point.cursorColor];
+                } else if (index === spaghetti.cursorIndex && spaghetti.cursorIndex >= spaghetti.highlightRegion.startIndex && spaghetti.cursorIndex <= spaghetti.highlightRegion.endIndex) {
+                    // Highlight cursor point as well if it is within the selection range
+                    point.color = [...point.cursorColor];
+                } else {
+                    if (index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex) {
+                        point.color = [...point.originalColor];
+                    } else {
+                        point.color = [...point.fullFadedColor];
+                    }
+                }
+            });
+        },
+        isIndexSelectable: (spaghetti, index) => {
+            return index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex;
+        },
+        transition: (spaghetti, startIndex, endIndex) => {
+            spaghetti.highlightRegion.startIndex = startIndex;
+            spaghetti.highlightRegion.endIndex = endIndex;
+            spaghetti.selectionState = SpaghettiSelectionState.RANGE;
+
+            spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
+
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.highlightRegion.startIndex].timestamp, true);
+                spaghetti.analytics.setHighlightRegion({
+                    startTime: spaghetti.points[startIndex].timestamp,
+                    endTime: spaghetti.points[endIndex].timestamp
+                }, true);
+            }
+            setAnimationMode(AnimationMode.region);
+        }
+    }
+}
+
+/**
+ * A spaghetti object handles the rendering of multiple paths and the touch events for selecting on those paths
+ */
+export class Spaghetti extends THREE.Group {
+    constructor(points, analytics, name, params) {
+        super();
+        this.points = [];
+        this.analytics = analytics; // Null when used outside of pose analytics, e.g. camera spaghetti lines 
+        this.name = name;
+        this.meshPathParams = params; // Used for mesh path creation
+        this.meshPaths = [];
+        this.pathId = realityEditor.device.utilities.uuidTime(); // Used for measurement label
+
+        this._selectionState = SpaghettiSelectionState.NONE;
+        this.highlightRegion = {
+            startIndex: -1,
+            endIndex: -1
+        }
+        this._cursorIndex = -1;
+
+        this.setupPointerEvents();
+        this.addPoints(points);
+    }
+    
+    get selectionState() {
+        return this._selectionState;
+    }
+    
+    set selectionState(state) {
+        this._selectionState = state;
+        this.updateColors();
+    }
+    
+    get cursorIndex() {
+        return this._cursorIndex;
+    }
+    
+    set cursorIndex(index) {
+        if (index === this._cursorIndex) {
             return;
         }
+        this._cursorIndex = index;
+        this.updateColors();
+    }
 
-        this.getMeasurementLabel().goToPointer(e.pageX, e.pageY);
-
-        // move cursor to where the pointer coordinates hit the plane that the spaghetti lies on
-        let pointOnPlane = this.raycastOntoPathPlane(e.pageX, e.pageY);
-        if (!pointOnPlane) {
+    /**
+     * Adds points to the spaghetti line, creating new mesh paths as needed.
+     * Only supports appending points to the end of the spaghetti line.
+     * @param {Array} points - points to add
+     */
+    addPoints(points) {
+        if (points.length === 0) {
             return;
         }
-        this.cursorDestination = [pointOnPlane.x, pointOnPlane.y, pointOnPlane.z];
-        this.cursor.material.color.setHex(0xffffff);
-        this.cursor.scale.set(1,1,1);
+        let pointsToAdd = []; // Queue up points that will be part of the same MeshPath into a buffer to enable adding them in bulk
+        points.forEach((point) => {
+            // [0-255, 0-255, 0-255] format
+            if (!point.color.isColor) {
+                point.color = new THREE.Color(point.color[0] / 255, point.color[1] / 255, point.color[2] / 255);
+            }
+            point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
+            const fadeColor = AnalyticsColors.fade(point.color, 0.2);
+            point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.5 * 255];
+            point.fullFadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.3 * 255];
+            const cursorColor = AnalyticsColors.highlight(point.color);
+            point.cursorColor = [cursorColor.r * 255, cursorColor.g * 255, cursorColor.b * 255, 255];
+            
+            if (this.points.length === 0) {
+                // Create a new mesh path for the first point of the spaghetti line
+                const initialMeshPath = new MeshPath([point], this.meshPathParams);
+                this.meshPaths.push(initialMeshPath);
+                this.add(initialMeshPath);
+                this.points.push(point);
+                return;
+            }
 
-        // figure out where cursor would snap to the closest point on the path
-        // for now, ignore y-distance... only x-z distance matters for snapping
-        let snapIndex = null;
-        let distanceSquaredToEachPoint = this.currentPoints.map(point => {
-            return (point.x - this.cursorDestination[0]) * (point.x - this.cursorDestination[0]) +
-                // (point.y - this.cursorDestination[1]) * (point.y - this.cursorDestination[1]) +
-                (point.z - this.cursorDestination[2]) * (point.z - this.cursorDestination[2]);
+            const lastPoint = this.points[this.points.length - 1]; // Get the most recent point on the spaghetti line
+            const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
+            const currentPointVector = new THREE.Vector3(point.x, point.y, point.z);
+            
+            // Split into separate mesh paths if the distance between points is too large
+            if (lastPointVector.distanceToSquared(currentPointVector) > 800 * 800) {
+                // lastMeshPath is guaranteed to exist if there is a lastPoint
+                const lastMeshPath = this.meshPaths[this.meshPaths.length - 1];
+                // Add bulk points to most recent path
+                lastMeshPath.addPoints(pointsToAdd);
+                this.points.push(...pointsToAdd);
+                pointsToAdd = [];
+                // Create a new path for the current point
+                const newMeshPath = new MeshPath([point], this.meshPathParams);
+                this.meshPaths.push(newMeshPath);
+                this.add(newMeshPath);
+                this.points.push(point);
+            } else {
+                // Queue up the point to be added in bulk if close enough to be part of the same MeshPath
+                pointsToAdd.push(point);
+            }
         });
-
-        let closestIndex = utils.indexOfMin(distanceSquaredToEachPoint);
-        const SNAP_DISTANCE = 250;
-        if (distanceSquaredToEachPoint[closestIndex] < SNAP_DISTANCE * SNAP_DISTANCE) {
-            snapIndex = closestIndex;
-
-            let closestPoint = this.currentPoints[closestIndex];
-            let adjacentPoint = closestIndex < (this.currentPoints.length-1) ? this.currentPoints[closestIndex+1] : this.currentPoints[closestIndex-1];
-
-            // snap to halfway point between two endpoints of the selected segment
-            let avgX = (closestPoint.x + adjacentPoint.x) / 2;
-            let avgY = ((closestPoint.y + this.heightMm/2) + (adjacentPoint.y + this.heightMm/2)) / 2;
-            let avgZ = (closestPoint.z + adjacentPoint.z) / 2;
-            this.cursorSnapDestination = [avgX, avgY, avgZ];
-
-            this.cursor.material.color.setHex(0xff0000);
-            this.cursor.scale.set(1.5, 1.5, 1.5);
+        // Add any remaining points to the last mesh path
+        if (pointsToAdd.length > 0) {
+            const lastMeshPath = this.meshPaths[this.meshPaths.length - 1];
+            lastMeshPath.addPoints(pointsToAdd);
+            this.points.push(...pointsToAdd);
         }
 
-        this.selectSecondPathPoint(e.pageX, e.pageY, snapIndex);
+        this.updateColors();
+    }
+    
+    setPoints(points) {
+        this.reset();
+        this.addPoints(points);
+    }
+
+    /**
+     * Deallocates all mesh paths and points, and removes them from the scene
+     */
+    reset() {
+        this.meshPaths.forEach((meshPath) => {
+            meshPath.resetPoints();
+            this.remove(meshPath);
+        });
+        this.points = [];
+        this.meshPaths = [];
+        SpaghettiSelectionState.NONE.transition(this);
+        this.cursorIndex = -1;
     }
 
     isVisible() {
@@ -256,163 +420,13 @@ export class SpaghettiMeshPath extends MeshPath {
         });
     }
 
-    raycastOntoPathPlane(screenX, screenY) {
-        let cameraNode = realityEditor.sceneGraph.getCameraNode();
-        let pointOnPlane = realityEditor.gui.ar.utilities.getPointOnPlaneFromScreenXY(this.planeOrigin, this.planeNormal, cameraNode, screenX, screenY);
-        let rootCoords = realityEditor.sceneGraph.getSceneNodeById('ROOT');
-        let groundPlaneCoords = realityEditor.sceneGraph.getGroundPlaneNode();
-        if (!pointOnPlane) {
-            return;
-        }
-        return realityEditor.sceneGraph.convertToNewCoordSystem(pointOnPlane, rootCoords, groundPlaneCoords);
-    }
-    
-    selectFirstPathPoint(screenX, screenY, isHover) {
-        if (this.resetIfNoGeometry()) return;
-
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length === 0) {
-            this.comparer.reset();
-            this.updateMeshWithComparer();
-            this.updateAnalyticsHighlightRegion();
-            this.cursor.visible = false;
-            return;
-        }
-        let intersect = intersects[0];
-        let pointIndex = this.getPointFromFace([intersect.face.a, intersect.face.b, intersect.face.c]);
-        if (this.comparer.selectionState === SelectionState.SECOND) {
-            this.comparer.reset();
-            this.cursor.visible = false;
-        } else {
-            this.comparer.setFirstPoint(pointIndex, isHover);
-        }
-        this.updateMeshWithComparer();
-        this.updateAnalyticsHighlightRegion();
-    }
-
-    selectSecondPathPoint(screenX, screenY, possibleSnapIndex) {
-        if (this.resetIfNoGeometry()) return;
-
-        let pointIndex = possibleSnapIndex;
-        let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [this.horizontalMesh, this.wallMesh]);
-        if (intersects.length > 0) {
-            pointIndex = this.getPointFromFace([intersects[0].face.a, intersects[0].face.b, intersects[0].face.c]);
-        } else if (typeof possibleSnapIndex === 'number') {
-            this.cursorDestination = this.cursorSnapDestination;
-        }
-
-        this.comparer.setEndPoint(pointIndex);
-        this.cursor.visible = true;
-        this.updateMeshWithComparer();
-
-        setAnimationMode(AnimationMode.regionAll);
-        this.updateAnalyticsHighlightRegion();
-        this.prevState = null;
-    }
-    
-    resetIfNoGeometry() {
-        if (!this.horizontalMesh || !this.wallMesh) {
-            this.comparer.reset();
-            this.updateMeshWithComparer();
-            this.cursor.visible = false;
-            return true;
-        }
-        return false;
-    }
-
-    updateAnalyticsHighlightRegion() {
-        const comparer = this.comparer;
-        const points = this.currentPoints;
-        const analytics = realityEditor.analytics.getActiveAnalytics();
-        if (!analytics) {
-            return;
-        }
-
-        if (comparer.firstPointIndex === null) {
-            return;
-        }
-
-        const firstTimestamp = points[comparer.firstPointIndex].timestamp;
-        if (comparer.secondPointIndex !== null) {
-            const secondTimestamp = points[comparer.secondPointIndex].timestamp;
-            analytics.setCursorTime(-1, true);
-            analytics.setHighlightRegion({
-                startTime: Math.min(firstTimestamp, secondTimestamp),
-                endTime: Math.max(firstTimestamp, secondTimestamp),
-            }, true);
-        } else {
-            setAnimationMode(AnimationMode.cursor);
-            analytics.setCursorTime(firstTimestamp, true);
-        }
-    }
-
-    updateMeshWithComparer() {
-        let comparer = this.comparer;
-        let points = this.currentPoints;
-
-        // revert to original state, and store indices of each vertex whose color changed
-        let indicesToUpdate = this.comparer.restorePreviousColors();
-
-        // refresh the color of the first point
-        if (comparer.firstPointIndex !== null && points[comparer.firstPointIndex].color) {
-            comparer.savePreviousColor(comparer.firstPointIndex, points[comparer.firstPointIndex].color);
-            if (comparer.selectionState === SelectionState.FIRST) {
-                points[comparer.firstPointIndex].color = [200, 255, 200];
-            } else if (comparer.selectionState === SelectionState.SECOND) {
-                points[comparer.firstPointIndex].color = [0, 127, 255];
-            } else {
-                points[comparer.firstPointIndex].color = [255, 255, 0];
-            }
-            indicesToUpdate.push(comparer.firstPointIndex);
-        }
-
-        // refresh the color of the second point, and color all the points in between
-        // also displays a text label showing the time and distance along the path
-
-        if (comparer.secondPointIndex === null) {
-            this.getMeasurementLabel().requestVisible(false, this.pathId);
-        } else {
-            if (points[comparer.secondPointIndex].color) {
-                // set all points in between first and second
-                let biggerIndex = Math.max(comparer.firstPointIndex, comparer.secondPointIndex);
-                let smallerIndex = Math.min(comparer.firstPointIndex, comparer.secondPointIndex);
-                for (let i = smallerIndex + 1; i < biggerIndex; i++) {
-                    comparer.savePreviousColor(i, points[i].color);
-                    points[i].color = [255, 255, 0];
-                    indicesToUpdate.push(i);
-                }
-
-                if (comparer.selectionState !== SelectionState.TIMELINE) {
-                    comparer.savePreviousColor(comparer.secondPointIndex, points[comparer.secondPointIndex].color);
-                    points[comparer.secondPointIndex].color = [255, 0, 0];
-                    indicesToUpdate.push(comparer.secondPointIndex);
-                }
-            }
-
-            let distanceMm = this.getDistanceAlongPath(comparer.firstPointIndex, comparer.secondPointIndex);
-            let timeMs = 0;
-            let firstTimestamp = points[comparer.firstPointIndex].timestamp;
-            let secondTimestamp = points[comparer.secondPointIndex].timestamp;
-            if (typeof firstTimestamp !== 'undefined' && typeof secondTimestamp !== 'undefined') {
-                timeMs = Math.abs(firstTimestamp - secondTimestamp);
-            }
-            this.getMeasurementLabel().updateTextLabel(distanceMm, timeMs);
-            if (!this.frozen) {
-                this.getMeasurementLabel().requestVisible(true, this.pathId);
-            }
-        }
-
-        // update the mesh buffer attributes to render the updated point colors
-        this.updateColors(indicesToUpdate);
-    }
-
     /**
      * @param {number} timestamp - time that is hovered in ms
      */
     setCursorTime(timestamp) {
         let index = -1;
-        for (let i = 0; i < this.currentPoints.length; i++) {
-            let point = this.currentPoints[i];
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
             if (Math.abs(point.timestamp - timestamp) < 0.9 * POINT_RES_MS) {
                 index = i;
                 break;
@@ -423,13 +437,7 @@ export class SpaghettiMeshPath extends MeshPath {
             }
         }
 
-        if (index < 0) {
-            return;
-        }
-
-        this.comparer.selectionState = SelectionState.TIMELINE;
-        this.comparer.setFirstPoint(index, true);
-        this.updateMeshWithComparer();
+        this.cursorIndex = index;
     }
 
     /**
@@ -439,30 +447,35 @@ export class SpaghettiMeshPath extends MeshPath {
         const firstTimestamp = highlightRegion.startTime;
         const secondTimestamp = highlightRegion.endTime;
 
-        let firstIndex = -1;
-        let secondIndex = -1;
-        for (let i = 0; i < this.currentPoints.length; i++) {
-            let point = this.currentPoints[i];
-            if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
-                firstIndex = i;
+        let startIndex = -1;
+        let endIndex = -1;
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
+            if (startIndex < 0 && point.timestamp >= firstTimestamp) {
+                startIndex = i;
             }
-            if (secondIndex < 0 && point.timestamp >= secondTimestamp) {
-                secondIndex = i;
+            if (endIndex < 0 && point.timestamp >= secondTimestamp) {
+                endIndex = i;
                 break;
             }
         }
-        if (firstIndex >= 0 && secondIndex < 0) {
-            secondIndex = this.currentPoints.length - 1;
+        if (startIndex >= 0 && endIndex < 0) {
+            endIndex = this.points.length - 1;
         }
-        if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
+        if (startIndex < 0 || endIndex < 0 || startIndex === endIndex) {
+            if (this.selectionState !== SpaghettiSelectionState.NONE) {
+                SpaghettiSelectionState.NONE.transition(this);
+            }
             return;
         }
 
-        this.frozen = true;
-        this.comparer.setFirstPoint(firstIndex, false);
-        this.comparer.setEndPoint(secondIndex);
-        this.comparer.selectionState = SelectionState.TIMELINE;
-        this.updateMeshWithComparer();
+        // NOTE: this transition is done manually to prevent animation modes from being replaced when timeline sets it
+        // to regionAll during a drag selection
+        this.highlightRegion = {
+            startIndex,
+            endIndex
+        }
+        this.selectionState = SpaghettiSelectionState.RANGE;
     }
 
     /**
@@ -477,8 +490,8 @@ export class SpaghettiMeshPath extends MeshPath {
 
         let firstIndex = -1;
         let secondIndex = -1;
-        for (let i = 0; i < this.allPoints.length; i++) {
-            let point = this.allPoints[i];
+        for (let i = 0; i < this.points.length; i++) {
+            let point = this.points[i];
             if (firstIndex < 0 && point.timestamp >= firstTimestamp) {
                 firstIndex = i;
             }
@@ -488,92 +501,132 @@ export class SpaghettiMeshPath extends MeshPath {
             }
         }
         if (firstIndex >= 0 && secondIndex < 0) {
-            secondIndex = this.allPoints.length - 1;
+            secondIndex = this.points.length - 1;
         }
         if (firstIndex < 0 || secondIndex < 0 || firstIndex === secondIndex) {
             return;
         }
 
-        this.setPoints(this.allPoints.slice(firstIndex, secondIndex + 1));
-        this.comparer.reset();
-        this.updateMeshWithComparer();
+        // this.setPoints(this.points.slice(firstIndex, secondIndex + 1)); // TODO: re-evaluate how this is done
+        if (this.selectionState !== SpaghettiSelectionState.NONE) {
+            SpaghettiSelectionState.NONE.transition(this);
+        }
+    }
+    
+    getDistanceAlongPath(index1, index2) {
+        const minIndex = Math.min(index1, index2);
+        const maxIndex = Math.max(index1, index2);
+        let distance = 0;
+        let meshPath = this.getMeshPathFromIndex(minIndex);
+        let finalMeshPath = this.getMeshPathFromIndex(maxIndex);
+        if (meshPath === finalMeshPath) {
+            return meshPath.getDistanceAlongPath(this.getIndexWithinPath(minIndex), this.getIndexWithinPath(maxIndex));
+        }
+        distance += meshPath.getDistanceAlongPath(this.getIndexWithinPath(minIndex), meshPath.currentPoints.length - 1);
+        for (let i = this.meshPaths.indexOf(meshPath) + 1; i < this.meshPaths.indexOf(finalMeshPath); i++) {
+            distance += this.meshPaths[i].getDistanceAlongPath(0, this.meshPaths[i].currentPoints.length - 1);
+        }
+        distance += finalMeshPath.getDistanceAlongPath(0, this.getIndexWithinPath(maxIndex));
+        return distance;
     }
 
+    getMeasurementLabel() {
+        if (!sharedMeasurementLabel) {
+            sharedMeasurementLabel = new MeasurementLabel();
+        }
+        return sharedMeasurementLabel;
+    }
 
-    createCursor(radius = 50) {
-        let cursorMesh = new THREE.Mesh(new THREE.SphereGeometry(radius,12,12), new THREE.MeshBasicMaterial({color:0xff0000})); // new THREE.MeshNormalMaterial());
-        cursorMesh.visible = false;
-        this.add(cursorMesh);
-        return cursorMesh;
+    onPointerDown(e) {
+        this.selectionState.onPointerDown(this, e);
+    }
+
+    onPointerMove(e) {
+        this.selectionState.onPointerMove(this, e);
+    }
+
+    updateColors() {
+        this.selectionState.colorPoints(this)
+        this.meshPaths.forEach((meshPath) => {
+            meshPath.updateColors(meshPath.currentPoints.map((pt, index) => index));
+        });
+    }
+    
+    getMeshPathFromIndex(index) {
+        if (index < 0) {
+            return this.meshPaths[0];
+        } else if (index >= this.points.length) {
+            return this.meshPaths[this.meshPaths.length - 1];
+        }
+        let meshPathIndex = 0;
+        let meshPath = this.meshPaths[meshPathIndex];
+        let i = 0;
+        while (i + meshPath.currentPoints.length - 1 < index) {
+            i += meshPath.currentPoints.length;
+            meshPathIndex++;
+            meshPath = this.meshPaths[meshPathIndex];
+        }
+        return meshPath;
+    }
+    
+    getIndexWithinPath(index) {
+        if (index < 0) {
+            return 0;
+        } else if (index >= this.points.length) {
+            return this.meshPaths[this.meshPaths.length - 1].currentPoints.length - 1;
+        }
+        let meshPathIndex = 0;
+        let meshPath = this.meshPaths[meshPathIndex];
+        let i = 0;
+        while (i + meshPath.currentPoints.length - 1 < index) {
+            i += meshPath.currentPoints.length;
+            meshPathIndex++;
+            meshPath = this.meshPaths[meshPathIndex];
+        }
+        return index - i;
+    }
+
+    /**
+     * Get the index of the point in the currentPoints array that the closest valid intersect is closest to
+     * @param {Array} intersects - the array of intersect objects returned by three.js raycasting
+     * @return {number} index of the point in the currentPoints array that the closest valid intersect is closest to
+     */
+    getPointFromIntersects(intersects) {
+        for (let i = 0; i < intersects.length; i++) {
+            const intersect = intersects[i];
+            const index = this.getPointFromIntersect(intersect);
+            if (this.selectionState.isIndexSelectable(this, index)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+    
+    getPointFromIntersect(intersect) {
+        const meshPath = intersect.object.parent;
+        const indexWithinMeshPath = meshPath.getPointFromIntersect(intersect);
+        const meshPathIndex = this.meshPaths.indexOf(meshPath);
+        const priorMeshPathPointCount = this.meshPaths.slice(0, meshPathIndex).reduce((sum, meshPath) => sum + meshPath.currentPoints.length, 0);
+        return priorMeshPathPointCount + indexWithinMeshPath;
     }
 
     /**
      * @return {number} start time of mesh path or -1 if zero-length
      */
     getStartTime() {
-        if (!this.currentPoints || this.currentPoints.length === 0) {
+        if (this.points.length === 0) {
             return -1;
         }
-        return this.currentPoints[0].timestamp;
+        return this.points[0].timestamp;
     }
 
     /**
      * @return {number} end time of mesh path or -1 if zero-length
      */
     getEndTime() {
-        if (!this.currentPoints || this.currentPoints.length === 0) {
+        if (this.points.length === 0) {
             return -1;
         }
-        return this.currentPoints[this.currentPoints.length - 1].timestamp;
-    }
-}
-
-const SelectionState = {
-    FIRST: 'first',
-    SECOND: 'second',
-    TIMELINE: 'timeline',
-};
-
-// Handles some state management for comparing two points on a MeshPath to each other
-export class KeyframeComparer {
-    constructor() {
-        this.reset();
-        this.previousColors = [];
-    }
-    reset() {
-        this.selectionState = SelectionState.FIRST;
-        this.firstPointIndex = null;
-        this.secondPointIndex = null;
-    }
-    setMeshPath(meshPath) {
-        this.meshPath = meshPath;
-    }
-    setFirstPoint(index, isHover) {
-        if (isHover) {
-            this.selectionState = SelectionState.FIRST;
-        } else {
-            this.selectionState = SelectionState.SECOND;
-        }
-        this.firstPointIndex = index;
-    }
-    setEndPoint(index) {
-        if (this.firstPointIndex === null) return;
-        if (index === this.firstPointIndex) return;
-        this.secondPointIndex = index;
-    }
-    savePreviousColor(index, color) {
-        this.previousColors.push({
-            index: index,
-            rgb: [color[0], color[1], color[2]]
-        });
-    }
-    restorePreviousColors() {
-        let restoredIndices = [];
-        this.previousColors.forEach(elt => {
-            this.meshPath.currentPoints[elt.index].color = [elt.rgb[0], elt.rgb[1], elt.rgb[2]];
-            restoredIndices.push(elt.index);
-        });
-        this.previousColors = [];
-        return restoredIndices;
+        return this.points[this.points.length - 1].timestamp;
     }
 }

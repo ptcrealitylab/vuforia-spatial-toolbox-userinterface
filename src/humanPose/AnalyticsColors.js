@@ -20,5 +20,14 @@ export const AnalyticsColors = {
     fade: (color, saturation = 0.8) => {
         const h = color.getHSL({}).h;
         return new THREE.Color().setHSL(h, saturation, 0.3);
+    },
+    /**
+     * Highlights a color to a brighter version of itself.
+     * @param {Color} color The color to highlight.
+     * @return {Color} The highlighted color.
+     */
+    highlight: (color) => {
+        const h = color.getHSL({}).h;
+        return new THREE.Color().setHSL(h, 1, 0.6);
     }
 };

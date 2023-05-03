@@ -610,6 +610,7 @@ export class Timeline {
             startTime,
             endTime,
         });
+        setAnimationMode(AnimationMode.regionAll);
     }
 
     onPointerMoveDragModePan(event) {
