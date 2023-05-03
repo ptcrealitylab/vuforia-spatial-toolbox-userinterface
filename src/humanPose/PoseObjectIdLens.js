@@ -117,6 +117,6 @@ export class PoseObjectIdLens extends AnalyticsLens {
     }
 
     getColorForPose(pose) {
-        return this.getColorFromId(pose.metadata.poseObjectId);
+        return AnalyticsColors.fade(this.getColorFromId(pose.metadata.poseObjectId));
     }
 }

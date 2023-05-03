@@ -254,12 +254,21 @@ createNameSpace("realityEditor.avatar");
             providerId: '',
         };
 
-        if (objectKey === myAvatarId) {
-            myAvatarObject = object;
-            onMyAvatarInitialized();
-        } else {
-            onOtherAvatarInitialized(object);
+        function finalizeAvatar() {
+            // There is a race between object discovery here and object
+            // discovery as a result of creation which sets myAvatarId
+            if (!myAvatarId) {
+                setTimeout(finalizeAvatar, 500);
+            }
+
+            if (objectKey === myAvatarId) {
+                myAvatarObject = object;
+                onMyAvatarInitialized();
+            } else {
+                onOtherAvatarInitialized(object);
+            }
         }
+        finalizeAvatar();
     }
 
     // update the avatar object to match the camera position each frame (if it exists), and realtime broadcast to others

@@ -64,7 +64,7 @@ class EnvelopeIconRenderer {
             let object = realityEditor.getObject(objectId);
             let name = frame.src;
             let port = realityEditor.network.getPort(object);
-            let path = '/frames/' + name + '/icon.gif';
+            let path = '/frames/' + name + '/icon-foreground.svg';
             let src = realityEditor.network.getURL(object.ip, port, path);
             iconDiv = this.createIconDiv(frameId, src);
         }
@@ -83,21 +83,12 @@ class EnvelopeIconRenderer {
     createIconDiv(frameId, src) {
         let container = document.createElement('div');
         container.id = 'envelopeIcon_' + frameId;
-        container.classList.add('main', 'visibleFrameContainer');
-        container.style.width = '100vw';
-        container.style.height = '100vh';
+        container.classList.add('main', 'visibleFrameContainer', 'minimizedEnvelopeContainer');
         this.gui.appendChild(container);
 
         let icon = document.createElement('img');
         icon.src = src;
-        let iconWidth = 440, borderWidth = 16;
-        icon.style.position = 'absolute';
-        icon.style.width = `${iconWidth}px`;
-        icon.style.height = `${iconWidth}px`;
-        icon.style.left = `calc(100vw/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
-        icon.style.top = `calc(100vh/2 - ${iconWidth}px/2 - ${borderWidth}px)`;
-        icon.style.border = `${borderWidth}px solid white`;
-        icon.style.borderRadius = '96px';
+        icon.classList.add('minimizedEnvelopeIcon', 'tool-color-gradient');
         container.appendChild(icon);
 
         icon.addEventListener('pointerup', () => {
