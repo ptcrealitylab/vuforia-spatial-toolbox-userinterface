@@ -387,7 +387,11 @@ export class HumanPoseAnalyzer {
                     color,
                     timestamp,
                 };
-                pointsById[id] = pointsById[id] ? [...pointsById[id], historyPoint] : [historyPoint];
+                if (!pointsById[id]) {
+                    pointsById[id] = [historyPoint];
+                } else {
+                    pointsById[id].push(historyPoint);
+                }
             });
 
             Object.keys(pointsById).forEach(id => {
