@@ -229,6 +229,8 @@ export class Analytics {
         }
         this.livePlayback = livePlayback;
         this.loadingHistory = true;
+        this.humanPoseAnalyzer.resetLiveHistoryClones();
+        this.humanPoseAnalyzer.resetLiveHistoryLines();
         await realityEditor.humanPose.loadHistory(region);
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
