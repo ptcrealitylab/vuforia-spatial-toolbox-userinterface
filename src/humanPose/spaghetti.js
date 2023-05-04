@@ -336,10 +336,13 @@ export class Spaghetti extends THREE.Group {
                 return;
             }
 
-            const lastPoint = this.points[this.points.length - 1]; // Get the most recent point on the spaghetti line
+            // Get the most recent point on the spaghetti line including the points we plan to add
+            const lastPoint = pointsToAdd.length > 0 ?
+                pointsToAdd[pointsToAdd.length - 1] :
+                this.points[this.points.length - 1];
             const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
             const currentPointVector = new THREE.Vector3(point.x, point.y, point.z);
-            
+
             // Split into separate mesh paths if the distance between points is too large
             if (lastPointVector.distanceToSquared(currentPointVector) > 800 * 800) {
                 // lastMeshPath is guaranteed to exist if there is a lastPoint
