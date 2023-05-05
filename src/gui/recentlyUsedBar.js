@@ -17,7 +17,7 @@ class RecentlyUsedBar {
         this.capacity = 3;
         this.hoveredFrameId = null;
         this.hoverAnimationPercent = 0;
-        this.hoverAnimationDurationMs = 60; // speed of the slowest part of the line
+        this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line
         this.lastAnimationPositions = null;
         this.lastDraw = Date.now();
         this.canvasHasContent = false;
