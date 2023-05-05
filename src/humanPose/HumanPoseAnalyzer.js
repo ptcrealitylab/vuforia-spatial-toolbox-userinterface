@@ -569,6 +569,11 @@ export class HumanPoseAnalyzer {
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
+            if (!fromSpaghetti) {
+                for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                    mesh.setHighlightRegion(null);
+                }
+            }
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;

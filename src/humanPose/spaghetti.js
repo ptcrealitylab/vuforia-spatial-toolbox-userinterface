@@ -150,7 +150,10 @@ const SpaghettiSelectionState = {
                 updateAllSpaghettiColors();
             }
             
-            // Cannot set animation mode here, other spaghetti may be selected, HPA update function resolves this
+            if (spaghetti.analytics) {
+                spaghetti.analytics.setHighlightRegion(null, true);
+                spaghetti.analytics.setCursorTime(-1, true);
+            }
         }
     },
     SINGLE: {
@@ -515,6 +518,10 @@ export class Spaghetti extends THREE.Group {
      * @param {{startTime: number, endTime: number}} highlightRegion
      */
     setHighlightRegion(highlightRegion) {
+        if (!highlightRegion) {
+            SpaghettiSelectionState.NONE.transition(this);
+            return;
+        }
         const firstTimestamp = highlightRegion.startTime;
         const secondTimestamp = highlightRegion.endTime;
 
