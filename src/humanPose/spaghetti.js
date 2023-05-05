@@ -498,6 +498,9 @@ export class Spaghetti extends THREE.Group {
 
     setupPointerEvents() {
         document.addEventListener('pointerdown', (e) => {
+            if (!e.target.classList.contains('mainProgram')) {
+                return;
+            }
             if (realityEditor.device.isMouseEventCameraControl(e)) {
                 this.getMeasurementLabel().requestVisible(false, this.pathId);
                 return;
@@ -508,6 +511,9 @@ export class Spaghetti extends THREE.Group {
             this.onPointerDown(e);
         });
         document.addEventListener('pointermove', (e) => {
+            if (!e.target.classList.contains('mainProgram')) {
+                return;
+            }
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
             if (!this.isVisible()) {
                 return;
