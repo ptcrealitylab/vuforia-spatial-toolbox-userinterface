@@ -86,6 +86,12 @@ const SpaghettiSelectionState = {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
             const index = spaghetti.getPointFromIntersects(intersects);
             if (index === -1) {
+                spaghetti.highlightRegion = {
+                    startIndex: -1,
+                    endIndex: -1,
+                    regionExists: false
+                }
+                spaghetti.updateColors();
                 return;
             }
             SpaghettiSelectionState.SINGLE.transition(spaghetti, index);
@@ -147,7 +153,6 @@ const SpaghettiSelectionState = {
             const index = spaghetti.getPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
-                e.stopImmediatePropagation();
                 return;
             }
             const initialSelectionIndex = spaghetti.highlightRegion.startIndex;
@@ -234,7 +239,6 @@ const SpaghettiSelectionState = {
             const index = spaghetti.getPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
-                e.stopImmediatePropagation();
                 return;
             }
 
