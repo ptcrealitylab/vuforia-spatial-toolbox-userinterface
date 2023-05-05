@@ -659,7 +659,6 @@ export class Timeline {
      */
     setDisplayRegion(displayRegion) {
         this.displayRegion = displayRegion;
-        this.poses = [];
         if (!this.displayRegion) {
             this.resetBounds();
             return;
@@ -685,7 +684,7 @@ export class Timeline {
         // Snap zoom to equal entire displayRegion
         let newWidthMs = endTime - startTime;
         this.timeMin = startTime;
-        this.widthMs = newWidthMs;
+        this.widthMs = Math.max(newWidthMs, MIN_WIDTH_MS);
         this.minTimeMin = this.timeMin;
         if (this.width > 0) {
             this.pixelsPerMs = this.width / this.widthMs;
