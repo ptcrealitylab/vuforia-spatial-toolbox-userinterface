@@ -169,8 +169,12 @@ class RecentlyUsedBar {
             icon.src = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/frames/' + name + '/icon.gif');
 
             icon.addEventListener('pointerdown', this.onIconPointerDown);
-            icon.addEventListener('pointerover', this.onIconPointerOver);
-            icon.addEventListener('pointerout', this.onIconPointerOut);
+            // hovering over the button only makes sense on a desktop environment – touchscreens don't have hover
+            if (realityEditor.device.environment.requiresMouseEvents()) {
+                icon.addEventListener('pointerover', this.onIconPointerOver);
+                icon.addEventListener('pointerout', this.onIconPointerOut);
+                icon.addEventListener('pointercancel', this.onIconPointerOut);
+            }
 
             this.iconElts.push(icon);
 
