@@ -120,6 +120,6 @@ export class AccelerationLens extends AnalyticsLens {
         pose.forEachJoint(joint => {
             maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude);
         });
-        return this.getColorForAcceleration(maxAcceleration);
+        return AnalyticsColors.fade(this.getColorForAcceleration(maxAcceleration));
     }
 }
