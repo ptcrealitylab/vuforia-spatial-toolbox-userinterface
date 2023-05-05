@@ -105,10 +105,15 @@ const SpaghettiSelectionState = {
         colorPoints: (spaghetti) => {
             spaghetti.points.forEach((point, index) => {
                 if (spaghetti.isActive()) {
-                    if (index === spaghetti.cursorIndex) {
-                        point.color = [...point.cursorColor];
+                    if (spaghetti.highlightRegion.regionExists) {
+                        // If a region outside of the spaghetti is selected by the timeline
+                        point.color = [...point.selectableOutOfRangeColor];
                     } else {
-                        point.color = [...point.originalColor];
+                        if (index === spaghetti.cursorIndex) {
+                            point.color = [...point.cursorColor];
+                        } else {
+                            point.color = [...point.originalColor];
+                        }
                     }
                 } else {
                     point.color = [...point.inactiveColor];
@@ -122,6 +127,7 @@ const SpaghettiSelectionState = {
             spaghetti.highlightRegion = {
                 startIndex: -1,
                 endIndex: -1,
+                regionExists: false
             }
             spaghetti.selectionState = SpaghettiSelectionState.NONE;
 
@@ -207,8 +213,11 @@ const SpaghettiSelectionState = {
             return spaghetti.isActive();
         },
         transition: (spaghetti, index) => {
-            spaghetti.highlightRegion.startIndex = index;
-            spaghetti.highlightRegion.endIndex = index;
+            spaghetti.highlightRegion = {
+                startIndex: index,
+                endIndex: index,
+                regionExists: true
+            }
             spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
@@ -266,8 +275,11 @@ const SpaghettiSelectionState = {
             return spaghetti.isActive() && index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex;
         },
         transition: (spaghetti, startIndex, endIndex) => {
-            spaghetti.highlightRegion.startIndex = startIndex;
-            spaghetti.highlightRegion.endIndex = endIndex;
+            spaghetti.highlightRegion = {
+                startIndex: startIndex,
+                endIndex: endIndex,
+                regionExists: true
+            }
             spaghetti.selectionState = SpaghettiSelectionState.RANGE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
@@ -305,7 +317,8 @@ export class Spaghetti extends THREE.Group {
         this._selectionState = SpaghettiSelectionState.NONE;
         this.highlightRegion = {
             startIndex: -1,
-            endIndex: -1
+            endIndex: -1,
+            regionExists: false // Used to determine the difference between no region and a region that has no overlap with the spaghetti
         }
         this._cursorIndex = -1;
 
@@ -512,6 +525,12 @@ export class Spaghetti extends THREE.Group {
             if (this.selectionState !== SpaghettiSelectionState.NONE) {
                 SpaghettiSelectionState.NONE.transition(this);
             }
+            this.highlightRegion = {
+                startIndex: -1,
+                endIndex: -1,
+                regionExists: true
+            };
+            this.updateColors();
             return;
         }
 
@@ -519,7 +538,8 @@ export class Spaghetti extends THREE.Group {
         // to regionAll during a drag selection
         this.highlightRegion = {
             startIndex,
-            endIndex
+            endIndex,
+            regionExists: true
         }
         this.selectionState = SpaghettiSelectionState.RANGE;
     }
