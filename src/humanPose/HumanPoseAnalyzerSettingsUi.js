@@ -112,6 +112,16 @@ export class HumanPoseAnalyzerSettingsUi {
     }
     
     setUpEventListeners() {
+        this.root.addEventListener('pointerdown', (event) => {
+            event.stopPropagation();
+        });
+        this.root.addEventListener('pointermove', (event) => {
+            event.stopPropagation();
+        });
+        this.root.addEventListener('pointerup', (event) => {
+            event.stopPropagation();
+        });
+        
         // Toggle menu minimization when clicking on the header, but only if not dragging
         this.root.querySelector('.hpa-settings-header').addEventListener('mousedown', event => {
             let mouseDownX = event.clientX;
