@@ -2021,6 +2021,20 @@ Logic Interface CSS
     pointer-events: none; /* deactivates the tool's touchPropagation cover when an envelope loses focus */
 }
 
+.slider-container {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 3002;
+}
+
+.debug-slider {
+    width: 200px;
+}
+
 .minimizedEnvelopeContainer {
     width: 100vw;
     height: 100vh;

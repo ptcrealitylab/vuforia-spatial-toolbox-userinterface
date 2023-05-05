@@ -16,6 +16,12 @@ createNameSpace("realityEditor.avatar");
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
     const RAYCAST_AGAINST_GROUNDPLANE = false;
 
+    let linkCanvas = null, linkCanvasCtx = null;
+    let linkObject = {
+        ballAnimationCount: 0
+    };
+    let menuBarHeight;
+    
     let myAvatarId = null;
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
@@ -96,6 +102,12 @@ createNameSpace("realityEditor.avatar");
                 refreshStatusUI();
             }, AVATAR_CREATION_TIMEOUT_LENGTH);
         });
+
+        if (document.getElementsByClassName('link-canvas-container')[0] === undefined) {
+            addLinkCanvas();
+            resizeLinkCanvas();
+            translateLinkCanvas();
+        }
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
@@ -186,6 +198,42 @@ createNameSpace("realityEditor.avatar");
             // write user name will also persist providerId
             writeUsername(myUsername);
         });
+    }
+    
+    function addLinkCanvas() {
+        let linkCanvasContainer = document.createElement('div');
+        linkCanvasContainer.className = 'link-canvas-container';
+        linkCanvasContainer.style.position = 'absolute';
+        linkCanvasContainer.style.top = '0';
+        linkCanvasContainer.style.left = '0';
+        linkCanvasContainer.style.pointerEvents = 'none';
+        document.body.appendChild(linkCanvasContainer);
+
+        linkCanvas = document.createElement('canvas');
+        linkCanvas.className = 'link-canvas';
+        linkCanvas.style.position = 'absolute';
+        menuBarHeight = realityEditor.device.environment.variables.screenTopOffset;
+        linkCanvas.style.top = `${menuBarHeight}px`;
+        linkCanvas.style.left = '0';
+        linkCanvas.style.zIndex = '3001';
+        linkCanvasContainer.appendChild(linkCanvas);
+
+        linkCanvasCtx = linkCanvas.getContext("2d");
+    }
+
+    function resizeLinkCanvas() {
+        if (linkCanvas !== undefined) {
+            linkCanvas.width = window.innerWidth;
+            linkCanvas.height = window.innerHeight - menuBarHeight;
+        }
+    }
+    
+    function translateLinkCanvas() {
+        linkCanvasCtx.translate(0, -menuBarHeight);
+    }
+
+    function clearLinkCanvas() {
+        linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
     }
 
     function reestablishAvatarIfNeeded() {
@@ -601,6 +649,14 @@ createNameSpace("realityEditor.avatar");
             return utils.getColor(realityEditor.getObject(objectKey));
         }
     }
+    
+    function getLinkCanvasInfo() {
+        return {
+            canvas: linkCanvas,
+            ctx: linkCanvasCtx,
+            linkObject: linkObject
+        };
+    }
 
     exports.initService = initService;
     exports.setBeamOn = setBeamOn;
@@ -608,5 +664,7 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
+    exports.clearLinkCanvas = clearLinkCanvas;
+    exports.getLinkCanvasInfo = getLinkCanvasInfo;
 
 }(realityEditor.avatar));

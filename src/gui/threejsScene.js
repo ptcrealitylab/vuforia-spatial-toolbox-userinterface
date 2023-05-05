@@ -38,6 +38,17 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
+    
+    let debug_fov = 30;
+    let debug_ratio = 6;
+    let debug_near = 10;
+    let debug_far = 5000;
+    let debug_offset_linear = 1.7;
+    let debug_offset_ratio_x = 1;
+    let debug_offset_ratio_y = 0.4;
+    // todo Steve: instead of just multiplying phoneNdcSpaceXY x and y with a single ratio value,
+    // todo Steve: maybe I should instead set 4 sliders for the phoneNdcSpaceXY x and y ranges, 
+    // todo Steve: and then in the shader, normalize this range to 0 - 1
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
@@ -103,6 +114,203 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             realityEditor.gui.settings.addToggle('Display Origin Boxes', 'show debug cubes at origin', 'displayOriginCubes',  '../../../svg/move.svg', false, function(newValue) {
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
+        }
+
+        addDebugSliders();
+    }
+    
+    function addDebugSliders() {
+        const container = document.createElement('div');
+        container.classList.add('slider-container');
+
+        {
+            // 1st slider: FOV
+            const slider1 = document.createElement("input");
+            slider1.classList.add('debug-slider');
+            slider1.setAttribute("type", "range");
+            slider1.setAttribute("id", "debug-fov-slider");
+            slider1.setAttribute("min", "10");
+            slider1.setAttribute("max", "90");
+            slider1.setAttribute("step", "1");
+            slider1.setAttribute("value", `${debug_fov}`);
+    
+            const label1 = document.createElement("label");
+            label1.id = 'debug-fov-label';
+            label1.setAttribute("for", "debug-fov-slider");
+            label1.textContent = `FOV: ${debug_fov}`;
+    
+            slider1.addEventListener("input", (event) => {
+                label1.textContent = `FOV: ${event.target.value}`;
+                debug_fov = event.target.value;
+            });
+    
+            container.appendChild(slider1);
+            container.appendChild(label1);
+            container.appendChild(document.createElement('br'));
+        }
+
+        {
+            // 2nd slider: Ratio
+            const slider2 = document.createElement("input");
+            slider2.classList.add('debug-slider');
+            slider2.setAttribute("type", "range");
+            slider2.setAttribute("id", "debug-ratio-slider");
+            slider2.setAttribute("min", "0.33");
+            slider2.setAttribute("max", "10");
+            slider2.setAttribute("step", "0.01");
+            slider2.setAttribute("value", `${debug_ratio}`);
+    
+            const label2 = document.createElement("label");
+            label2.id = 'debug-ratio-label';
+            label2.setAttribute("for", "debug-ratio-slider");
+            label2.textContent = `Ratio: ${debug_ratio}`;
+    
+            slider2.addEventListener("input", (event) => {
+                label2.textContent = `Ratio: ${event.target.value}`;
+                debug_ratio = event.target.value;
+            });
+    
+            container.appendChild(slider2);
+            container.appendChild(label2);
+            container.appendChild(document.createElement('br'));
+        }
+
+        {
+            // 3rd slider: near plane
+            const slider3 = document.createElement("input");
+            slider3.classList.add('debug-slider');
+            slider3.setAttribute("type", "range");
+            slider3.setAttribute("id", "debug-near-slider");
+            slider3.setAttribute("min", "1");
+            slider3.setAttribute("max", "30");
+            slider3.setAttribute("step", "1");
+            slider3.setAttribute("value", `${debug_near}`);
+    
+            const label3 = document.createElement("label");
+            label3.id = 'debug-near-label';
+            label3.setAttribute("for", "debug-near-slider");
+            label3.textContent = `Near plane: ${debug_near}`;
+    
+            slider3.addEventListener("input", (event) => {
+                label3.textContent = `Near plane: ${event.target.value}`;
+                debug_near = event.target.value;
+            });
+    
+            container.appendChild(slider3);
+            container.appendChild(label3);
+            container.appendChild(document.createElement('br'));
+        }
+
+        {
+            // 4th slider: far plane
+            const slider4 = document.createElement("input");
+            slider4.classList.add('debug-slider');
+            slider4.setAttribute("type", "range");
+            slider4.setAttribute("id", "debug-far-slider");
+            slider4.setAttribute("min", "1000");
+            slider4.setAttribute("max", "10000");
+            slider4.setAttribute("step", "10");
+            slider4.setAttribute("value", `${debug_far}`);
+
+            const label5 = document.createElement("label");
+            label5.id = 'debug-far-label';
+            label5.setAttribute("for", "debug-far-slider");
+            label5.textContent = `Far plane: ${debug_far}`;
+
+            slider4.addEventListener("input", (event) => {
+                label5.textContent = `Far plane: ${event.target.value}`;
+                debug_far = event.target.value;
+            });
+
+            container.appendChild(slider4);
+            container.appendChild(label5);
+            container.appendChild(document.createElement('br'));
+
+            document.body.appendChild(container);
+        }
+
+        {
+            // 5th slider: frustum shader offset linear
+            const slider5 = document.createElement("input");
+            slider5.classList.add('debug-slider');
+            slider5.setAttribute("type", "range");
+            slider5.setAttribute("id", "debug-offset-linear-slider");
+            slider5.setAttribute("min", "-3");
+            slider5.setAttribute("max", "5.8");
+            slider5.setAttribute("step", "0.1");
+            slider5.setAttribute("value", `${debug_offset_linear}`);
+
+            const label5 = document.createElement("label");
+            label5.id = 'debug-offset-linear-label';
+            label5.setAttribute("for", "debug-offset-linear-slider");
+            label5.textContent = `Frustum shader linear offset: ${debug_offset_linear}`;
+
+            slider5.addEventListener("input", (event) => {
+                label5.textContent = `Frustum shader linear offset: ${event.target.value}`;
+                debug_offset_linear = event.target.value;
+            });
+
+            container.appendChild(slider5);
+            container.appendChild(label5);
+            container.appendChild(document.createElement('br'));
+
+            document.body.appendChild(container);
+        }
+
+        {
+            // 6th slider: frustum shader x ratio
+            const slider6 = document.createElement("input");
+            slider6.classList.add('debug-slider');
+            slider6.setAttribute("type", "range");
+            slider6.setAttribute("id", "debug-offset-ratio-x-slider");
+            slider6.setAttribute("min", "0.1");
+            slider6.setAttribute("max", "5");
+            slider6.setAttribute("step", "0.1");
+            slider6.setAttribute("value", `${debug_offset_ratio_x}`);
+
+            const label6 = document.createElement("label");
+            label6.id = 'debug-offset-ratio-x-label';
+            label6.setAttribute("for", "debug-offset-ratio-x-slider");
+            label6.textContent = `Frustum shader uv x ratio: ${debug_offset_ratio_x}`;
+
+            slider6.addEventListener("input", (event) => {
+                label6.textContent = `Frustum shader uv x ratio: ${event.target.value}`;
+                debug_offset_ratio_x = event.target.value;
+            });
+
+            container.appendChild(slider6);
+            container.appendChild(label6);
+            container.appendChild(document.createElement('br'));
+
+            document.body.appendChild(container);
+        }
+
+        {
+            // 7th slider: frustum shader y ratio
+            const slider7 = document.createElement("input");
+            slider7.classList.add('debug-slider');
+            slider7.setAttribute("type", "range");
+            slider7.setAttribute("id", "debug-offset-ratio-y-slider");
+            slider7.setAttribute("min", "0.1");
+            slider7.setAttribute("max", "5");
+            slider7.setAttribute("step", "0.1");
+            slider7.setAttribute("value", `${debug_offset_ratio_y}`);
+
+            const label7 = document.createElement("label");
+            label7.id = 'debug-offset-ratio-y-label';
+            label7.setAttribute("for", "debug-offset-ratio-y-slider");
+            label7.textContent = `Frustum shader uv y ratio: ${debug_offset_ratio_y}`;
+
+            slider7.addEventListener("input", (event) => {
+                label7.textContent = `Frustum shader uv y ratio: ${event.target.value}`;
+                debug_offset_ratio_y = event.target.value;
+            });
+
+            container.appendChild(slider7);
+            container.appendChild(label7);
+            container.appendChild(document.createElement('br'));
+
+            document.body.appendChild(container);
         }
     }
 
@@ -630,15 +838,19 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      * @param {number} maxDepthMeters - furthest point detected by the LiDAR sensor this frame
      * @returns {{normal1: Vector3, normal2: Vector3, normal3: Vector3, normal4: Vector3, normal5: Vector3, normal6: Vector3, D1: number, D2: number, D3: number, D4: number, D5: number, D6: number}}
      */
-    function updateMaterialCullingFrustum(id, cameraPosition, cameraLookAtPosition, cameraUp, maxDepthMeters) {
+    function updateMaterialCullingFrustum(id, cameraPosition, cameraLookAtPosition, cameraUp, maxDepthMeters, depthMap, phoneViewMatrix) {
         if (typeof materialCullingFrustums[id] === 'undefined') {
             materialCullingFrustums[id] = createCullingFrustum();
         }
 
         let frustum = materialCullingFrustums[id];
 
+        let phoneProjectionMatrix = null;
         if (typeof maxDepthMeters !== 'undefined') {
+            // let phoneProjectionMatrixArray = frustum.setCameraInternals(frustum.angle, frustum.ratio, frustum.nearD, (frustum.farD + maxDepthMeters) / 2, true);
             frustum.setCameraInternals(frustum.angle, frustum.ratio, frustum.nearD, (frustum.farD + maxDepthMeters) / 2, true);
+            let phoneProjectionMatrixArray = frustum.projectionMatrixFrom(debug_fov, debug_ratio, debug_near, debug_far);
+            phoneProjectionMatrix = new THREE.Matrix4().fromArray(phoneProjectionMatrixArray);
         }
 
         frustum.setCameraDef(cameraPosition, cameraLookAtPosition, cameraUp);
@@ -648,19 +860,27 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         viewAngleSimilarity = Math.max(0, viewAngleSimilarity); // limit it to 0 instead of going to -1 if viewing from anti-parallel direction
         
         return {
-            normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
-            normal2: array3ToXYZ(materialCullingFrustums[id].planes[1].normal),
-            normal3: array3ToXYZ(materialCullingFrustums[id].planes[2].normal),
-            normal4: array3ToXYZ(materialCullingFrustums[id].planes[3].normal),
-            normal5: array3ToXYZ(materialCullingFrustums[id].planes[4].normal),
-            normal6: array3ToXYZ(materialCullingFrustums[id].planes[5].normal),
-            D1: materialCullingFrustums[id].planes[0].D,
-            D2: materialCullingFrustums[id].planes[1].D,
-            D3: materialCullingFrustums[id].planes[2].D,
-            D4: materialCullingFrustums[id].planes[3].D,
-            D5: materialCullingFrustums[id].planes[4].D,
-            D6: materialCullingFrustums[id].planes[5].D,
-            viewAngleSimilarity: viewAngleSimilarity
+            planes: {
+                normal1: array3ToXYZ(materialCullingFrustums[id].planes[0].normal),
+                normal2: array3ToXYZ(materialCullingFrustums[id].planes[1].normal),
+                normal3: array3ToXYZ(materialCullingFrustums[id].planes[2].normal),
+                normal4: array3ToXYZ(materialCullingFrustums[id].planes[3].normal),
+                normal5: array3ToXYZ(materialCullingFrustums[id].planes[4].normal),
+                normal6: array3ToXYZ(materialCullingFrustums[id].planes[5].normal),
+                D1: materialCullingFrustums[id].planes[0].D,
+                D2: materialCullingFrustums[id].planes[1].D,
+                D3: materialCullingFrustums[id].planes[2].D,
+                D4: materialCullingFrustums[id].planes[3].D,
+                D5: materialCullingFrustums[id].planes[4].D,
+                D6: materialCullingFrustums[id].planes[5].D,
+                viewAngleSimilarity: viewAngleSimilarity,
+                phoneViewMatrix: phoneViewMatrix,
+                phoneProjectionMatrix: phoneProjectionMatrix,
+                offsetLinear: debug_offset_linear,
+                offsetRatioX: debug_offset_ratio_x,
+                offsetRatioY: debug_offset_ratio_y
+            },
+            depthMap: depthMap
         }
     }
 
@@ -749,7 +969,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     D4: 0,
                     D5: 0,
                     D6: 0,
-                    viewAngleSimilarity: 0
+                    viewAngleSimilarity: 0,
+                    phoneViewMatrix: new THREE.Matrix4(),
+                    phoneProjectionMatrix: new THREE.Matrix4(),
+                    offsetLinear: debug_offset_linear,
+                    offsetRatioX: debug_offset_ratio_x,
+                    offsetRatioY: debug_offset_ratio_y
                 })
             }
             return frustums;
@@ -772,10 +997,17 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             // with placeholder data (e.g. normals and constants for all 5 frustums),
             // but as long as numFrustums is 0 then it won't have any effect
             let defaultFrustums = this.buildDefaultFrustums(MAX_VIEW_FRUSTUMS);
+
+            let depthMap2 = new THREE.Texture();
+            depthMap2.minFilter = THREE.LinearFilter;
+            depthMap2.magFilter = THREE.LinearFilter;
+            depthMap2.generateMipmaps = false;
+            depthMap2.isVideoTexture = true;
             
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.physical.uniforms,
                 {
+                    depthMap: depthMap2,
                     maxHeight: {value: maxHeight},
                     numFrustums: {value: 0},
                     frustums: {value: defaultFrustums}

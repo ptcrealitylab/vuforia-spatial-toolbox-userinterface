@@ -127,6 +127,39 @@ class ViewFrustum {
         }
         return true; // inside
     }
+
+    // copied from remote operator desktopAdapter.js
+    projectionMatrixFrom(vFOV, aspect, near, far) {
+        var top = near * Math.tan((Math.PI / 180) * 0.5 * vFOV );
+        // console.debug('top', top);
+        var height = 2 * top;
+        var width = aspect * height;
+        var left = -0.5 * width;
+        // console.debug(vFOV, aspect, near, far);
+        return this.makePerspective( left, left + width, top, top - height, near, far );
+    }
+    
+    makePerspective ( left, right, top, bottom, near, far ) {
+
+        var te = [];
+        var x = 2 * near / ( right - left );
+        var y = 2 * near / ( top - bottom );
+
+        var a = ( right + left ) / ( right - left );
+        var b = ( top + bottom ) / ( top - bottom );
+        var c = - ( far + near ) / ( far - near );
+        var d = - 2 * far * near / ( far - near );
+
+        // console.debug('makePerspective', x, y, a, b, c);
+
+        te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
+        te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13] = 0;
+        te[ 2 ] = 0;    te[ 6 ] = 0;    te[ 10 ] = c;   te[ 14 ] = d;
+        te[ 3 ] = 0;    te[ 7 ] = 0;    te[ 11 ] = - 1; te[ 15 ] = 0;
+
+        return te;
+
+    }
 }
 
 /**
@@ -212,6 +245,7 @@ const frustumVertexShader = function({useLoadingAnimation, center}) {
     return ShaderChunk.meshphysical_vert
         .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
         ${loadingCalcString}
+        vWorldPosition = worldPosition.xyz;
         vPosition = position.xyz; // makes position accessible in the fragment shader
         vBarycentric = a_barycentric; // Pass barycentric to fragment shader for wireframe effect
     `).replace('#include <common>', `#include <common>
@@ -219,6 +253,7 @@ const frustumVertexShader = function({useLoadingAnimation, center}) {
         attribute vec3 a_barycentric;
         varying vec3 vBarycentric;
         varying vec3 vPosition;
+        varying vec3 vWorldPosition;
     `);
 }
 
@@ -272,6 +307,7 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
 
             // render the area inside the frustum as a wireframe
             } else if (clipped) {
+                // todo Steve: comment out the wireframe effect below & replace with phoneNdcSpace color to debug
                 // mesh fades out if it's cutout by a frustum that is closely aligned with the viewing angle
                 float textureOpacity = 0.3 * (0.1 + max(0.0, 0.95 - maxViewAngleSimilarity));
                 float wireframeOpacity = 0.3 * (0.1 + max(0.0, 0.8 - maxViewAngleSimilarity)); // wireframe fades out earlier
@@ -288,11 +324,51 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
                 } else {
                     gl_FragColor.a = textureOpacity;
                 }
+                
+                
+                // // todo Steve: vWorldPosition is in millimeter scale......
+                // vec4 phoneCamSpace = frustums[0].phoneViewMatrix * vec4(vWorldPosition, 1.0);
+                // vec4 phoneClipSpace = frustums[0].phoneProjectionMatrix * phoneCamSpace;
+                // vec2 phoneNdcSpaceXY = phoneClipSpace.xy / phoneClipSpace.w;
+                // // need to add vec2(0.5) to phoneNdcSpaceXY, to mimic CameraVis.js "geometry.translate(width / 2, height / 2);"
+                // phoneNdcSpaceXY += vec2(0.5);
+                // // final result looks exactly like CameraVis vUv, except flipped in x direction, b/c in CameraVis.js 
+                // // it flipped the mesh by "mesh.scale.set(-1, 1, -1);"
+                // // 1.4 - magic number. need it to flip the y direction of the phoneNdcSpaceXY coordinates, to correctly read the depth map
+                // 
+                // // todo Steve: why 1.4 ???
+                // // phoneNdcSpaceXY.y = 1.4 - phoneNdcSpaceXY.y;
+                // phoneNdcSpaceXY.y = frustums[0].offsetLinear - phoneNdcSpaceXY.y;
+                // phoneNdcSpaceXY.x *= frustums[0].offsetRatioX;
+                // phoneNdcSpaceXY.y *= frustums[0].offsetRatioY;
+                // gl_FragColor = vec4(phoneNdcSpaceXY, 0., 1.);
+                
+                // 
+                // // todo Steve: now test out the depthMap
+                // vec4 depth = texture2D(depthMap, phoneNdcSpaceXY);
+                // float depthConverted = 5000.0 * (depth.r + depth.g / 255.0 + depth.b / (255.0 * 255.0));
+                // float mapDepthZ = depthConverted / 1000.0; // convert mapDepthZ from milimeters to meters
+                // float color2 = remap01(mapDepthZ, 0., 5.);
+                // // gl_FragColor = vec4(color2, 0., 0., 1.);
+                // // todo Steve: compare the normalized phoneCamPos.z and depthMap, see what's the difference, and then adjust the threshold in the isInsideFarPlane()
+                // float color1 = remap01(phoneCamSpace.z / 1000., 0., 5.);
+                // // gl_FragColor = vec4(color1, 0., 0., 1.);
+                // float threshold = 0.08;
+                // vec3 finalColor = vec3(0.);
+                // if ( abs(color1 - color2) < threshold ) {
+                //     // within the frustum, should be culled
+                //     finalColor.g = 1.;
+                // } else {
+                //     // outside the frustum, should not be culled
+                //     finalColor.r = 1.;
+                // }
+                // gl_FragColor = vec4(finalColor, 1.);
             }
             `)
         .replace(`#include <common>`, `
                          #include <common>
     ${loadingUniformString}
+    // precision mediump float;
     uniform int numFrustums; // current number of frustums to apply 
     struct Frustum { // each Frustum is defined by 24 values (6 normals + 6 constants)
         vec3 normal1;
@@ -308,11 +384,19 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
         float D5;
         float D6;
         float viewAngleSimilarity; // 1 if camera is pointing in same direction as frustum
+        mat4 phoneViewMatrix;
+        mat4 phoneProjectionMatrix;
+        float offsetLinear;
+        float offsetRatioX;
+        float offsetRatioY;
     };
+    uniform sampler2D depthMap;
     uniform Frustum frustums[${MAX_VIEW_FRUSTUMS}]; // MAX number of frustums that can cull the geometry
     
     varying vec3 vBarycentric;
+    // we might need to use vWorldPosition instead of vPosition. But we'll see.
     varying vec3 vPosition;
+    varying vec3 vWorldPosition;
     // todo: this shader only works if the mesh is exported with origin at (0,0,0)
     //   and has identity scale and rotation (1 unit = 1 meter)
     //   ... perhaps swapping vPosition to vWorldPosition could fix this?
@@ -322,6 +406,61 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
     {
         return dot(normal, point) + D > 0.0;
     }
+    
+    float remap01(float x, float low, float high) {
+        return clamp((x - low) / (high - low), 0., 1.);
+    }
+    
+    vec3 remap01(vec3 v, vec3 low, vec3 high) {
+        return vec3(remap01(v.x, low.x, high.x), remap01(v.y, low.y, high.y), remap01(v.z, low.z, high.z));
+    }
+    
+    // checking if a point is inside a far plane is different from other planes in the frustum, b/c the far plane varies based on the depth texture
+    bool isInsideFarPlane(vec3 normal, float D, vec3 point) {
+        // todo Steve: remap vPosition to frustum (phone) camera (0, 1) range, and get the depth of that screen position
+        // todo Steve: vWorldPosition is in millimeter scale......
+        vec4 phoneCamSpace = frustums[0].phoneViewMatrix * vec4(vWorldPosition, 1.0);
+        vec4 phoneClipSpace = frustums[0].phoneProjectionMatrix * phoneCamSpace;
+        vec2 phoneNdcSpaceXY = phoneClipSpace.xy / phoneClipSpace.w;
+        // need to add vec2(0.5) to phoneNdcSpaceXY, to mimic CameraVis.js "geometry.translate(width / 2, height / 2);"
+        phoneNdcSpaceXY += vec2(0.5);
+        // final result looks exactly like CameraVis vUv, except flipped in x direction, b/c in CameraVis.js 
+        // it flipped the mesh by "mesh.scale.set(-1, 1, -1);"
+        // 1.4 - magic number. need it to flip the y direction of the phoneNdcSpaceXY coordinates, to correctly read the depth map
+        
+        // todo Steve: why 1.4 ???
+        // phoneNdcSpaceXY.y = 1.4 - phoneNdcSpaceXY.y;
+        phoneNdcSpaceXY.y = frustums[0].offsetLinear - phoneNdcSpaceXY.y;
+        phoneNdcSpaceXY.x *= frustums[0].offsetRatioX;
+        phoneNdcSpaceXY.y *= frustums[0].offsetRatioY;
+        // gl_FragColor = vec4(phoneNdcSpaceXY, 0., 1.);
+        
+        // // todo Steve: now test out the depthMap
+        vec4 depth = texture2D(depthMap, phoneNdcSpaceXY);
+        float depthConverted = 5000.0 * (depth.r + depth.g / 255.0 + depth.b / (255.0 * 255.0));
+        float mapDepthZ = depthConverted / 1000.0; // convert mapDepthZ from milimeters to meters
+        float color2 = remap01(mapDepthZ, 0., 5.);
+        // gl_FragColor = vec4(color2, 0., 0., 1.);
+        // todo Steve: compare the normalized phoneCamPos.z and depthMap, see what's the difference, and then adjust the threshold in the isInsideFarPlane()
+        float color1 = remap01(phoneCamSpace.z / 1000., 0., 5.);
+        // gl_FragColor = vec4(color1, 0., 0., 1.);
+        float threshold = 0.08;
+        // vec3 finalColor = vec3(0.);
+        if ( abs(color1 - color2) < threshold ) {
+            // within the frustum, should be culled
+            // finalColor.g = 1.;
+            return true;
+        } else {
+            // outside the frustum, should not be culled
+            // finalColor.r = 1.;
+            return false;
+        }
+        // // gl_FragColor = vec4(finalColor, 1.);
+        
+        // return true;
+        
+        // return dot(normal, point) + D > 0.0;
+    }
 
     bool isInsideFrustum(Frustum f)
     {
@@ -330,7 +469,8 @@ const frustumFragmentShader = function({useLoadingAnimation, inverted}) {
         bool inside3 = isInsidePlane(f.normal3, f.D3, vPosition); // left
         bool inside4 = isInsidePlane(f.normal4, f.D4, vPosition); // right (when un-rotated)
         bool inside5 = isInsidePlane(f.normal5, f.D5, vPosition); // near
-        bool inside6 = isInsidePlane(f.normal6, f.D6, vPosition); // far
+        // todo Steve: change checking if inside the far plane here. Include the depth map check.
+        bool inside6 = isInsideFarPlane(f.normal6, f.D6, vPosition); // far
         
         return (inside1 && inside2 && inside3 && inside4 && inside5 && inside6);
     }
