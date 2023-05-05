@@ -68,6 +68,8 @@ createNameSpace("realityEditor.avatar");
         didRecentlySend: false
     }
 
+    let isDesktop = false;
+
     function initService() {
         network = realityEditor.avatar.network;
         draw = realityEditor.avatar.draw;
@@ -104,6 +106,7 @@ createNameSpace("realityEditor.avatar");
         });
 
         if (document.getElementsByClassName('link-canvas-container')[0] === undefined) {
+            isDesktop = realityEditor.device.environment.isDesktop();
             addLinkCanvas();
             resizeLinkCanvas();
             translateLinkCanvas();
@@ -666,5 +669,6 @@ createNameSpace("realityEditor.avatar");
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
+    exports.isDesktop = function() {return isDesktop};
 
 }(realityEditor.avatar));

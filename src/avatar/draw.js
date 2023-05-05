@@ -19,7 +19,6 @@ createNameSpace("realityEditor.avatar.draw");
 
     const ICON_WIDTH = 30; // layout information for circular icons
     const ICON_GAP = 10;
-    const isDesktop = realityEditor.device.environment.isDesktop();
 
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
     function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
@@ -389,7 +388,7 @@ createNameSpace("realityEditor.avatar.draw");
         realityEditor.avatar.clearLinkCanvas();
         let colorArr = HSLStrToRGBArr(color);
         let lightColorArr = HSLStrToRGBArr(lightColor);
-        if (isDesktop) {
+        if (realityEditor.avatar.isDesktop()) {
             realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
         } else {
             realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
