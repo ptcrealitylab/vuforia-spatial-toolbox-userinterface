@@ -83,8 +83,14 @@ class MeasurementLabel {
 const SpaghettiSelectionState = {
     NONE: {
         onPointerDown: (spaghetti, e) => {
+            if (e.deselectedSpaghetti) {
+                // If another spaghetti was deselected on this click, do nothing
+                // This prevents the user from selecting a new invisible spaghetti when they are trying to deselect one,
+                // and the deselection happens first
+                return;
+            }
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            const index = spaghetti.getPointFromIntersects(intersects);
+            const index = spaghetti.getValidPointFromIntersects(intersects);
             if (index === -1) {
                 spaghetti.highlightRegion = {
                     startIndex: -1,
@@ -98,7 +104,7 @@ const SpaghettiSelectionState = {
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            spaghetti.cursorIndex = spaghetti.getValidPointFromIntersects(intersects);
             if (spaghetti.cursorIndex === -1) {
                 // Note: Cannot set analytics cursor time to -1 here because other spaghettis may be hovering, handled by HPA
                 return;
@@ -150,9 +156,10 @@ const SpaghettiSelectionState = {
     SINGLE: {
         onPointerDown: (spaghetti, e) => {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            const index = spaghetti.getPointFromIntersects(intersects);
+            const index = spaghetti.getValidPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
+                e.deselectedSpaghetti = true;
                 return;
             }
             const initialSelectionIndex = spaghetti.highlightRegion.startIndex;
@@ -166,7 +173,7 @@ const SpaghettiSelectionState = {
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            spaghetti.cursorIndex = spaghetti.getPointFromIntersects(intersects);
+            spaghetti.cursorIndex = spaghetti.getValidPointFromIntersects(intersects);
             if (spaghetti.cursorIndex === -1) {
                 // Note: Cannot set cursor time to -1 here because other spaghettis may be hovering, handled by HPA
                 return;
@@ -236,9 +243,10 @@ const SpaghettiSelectionState = {
     RANGE: {
         onPointerDown: (spaghetti, e) => {
             let intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            const index = spaghetti.getPointFromIntersects(intersects);
+            const index = spaghetti.getValidPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
+                e.deselectedSpaghetti = true;
                 return;
             }
 
@@ -246,7 +254,7 @@ const SpaghettiSelectionState = {
         },
         onPointerMove: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
-            const index = spaghetti.getPointFromIntersects(intersects); // Ensures if index is returned, it is within the selection range
+            const index = spaghetti.getValidPointFromIntersects(intersects); // Ensures if index is returned, it is within the selection range
             if (index === -1) {
                 spaghetti.cursorIndex = -1;
                 return;
@@ -661,7 +669,7 @@ export class Spaghetti extends THREE.Group {
      * @param {Array} intersects - the array of intersect objects returned by three.js raycasting
      * @return {number} index of the point in the currentPoints array that the closest valid intersect is closest to
      */
-    getPointFromIntersects(intersects) {
+    getValidPointFromIntersects(intersects) {
         for (let i = 0; i < intersects.length; i++) {
             const intersect = intersects[i];
             const index = this.getPointFromIntersect(intersect);
