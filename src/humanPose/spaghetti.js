@@ -85,7 +85,6 @@ const SpaghettiSelectionState = {
         onPointerDown: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
             const index = spaghetti.getPointFromIntersects(intersects);
-            console.log(activeSpaghetti, spaghetti.isActive(), index);
             if (index === -1) {
                 return;
             }
