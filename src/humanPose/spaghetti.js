@@ -6,6 +6,14 @@ import {
 } from './draw.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
+const spaghettiList = [];
+let activeSpaghetti = null;
+function updateAllSpaghettiColors() {
+    spaghettiList.forEach((spaghetti) => {
+        spaghetti.updateColors();
+    });
+}
+
 // Approximate milliseconds between points (10 fps)
 const POINT_RES_MS = 100;
 
@@ -77,6 +85,7 @@ const SpaghettiSelectionState = {
         onPointerDown: (spaghetti, e) => {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
             const index = spaghetti.getPointFromIntersects(intersects);
+            console.log(activeSpaghetti, spaghetti.isActive(), index);
             if (index === -1) {
                 return;
             }
@@ -96,15 +105,19 @@ const SpaghettiSelectionState = {
         },
         colorPoints: (spaghetti) => {
             spaghetti.points.forEach((point, index) => {
-                if (index === spaghetti.cursorIndex) {
-                    point.color = [...point.cursorColor];
+                if (spaghetti.isActive()) {
+                    if (index === spaghetti.cursorIndex) {
+                        point.color = [...point.cursorColor];
+                    } else {
+                        point.color = [...point.originalColor];
+                    }
                 } else {
-                    point.color = [...point.originalColor];
+                    point.color = [...point.inactiveColor];
                 }
             });
         },
-        isIndexSelectable: (_spaghetti, _index) => {
-            return true;
+        isIndexSelectable: (spaghetti, _index) => {
+            return spaghetti.isActive();
         },
         transition: (spaghetti) => {
             spaghetti.highlightRegion = {
@@ -115,6 +128,11 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
+            if (activeSpaghetti === spaghetti) {
+                activeSpaghetti = null;
+                updateAllSpaghettiColors();
+            }
+            
             // Cannot set animation mode here, other spaghetti may be selected, HPA update function resolves this
         }
     },
@@ -124,6 +142,7 @@ const SpaghettiSelectionState = {
             const index = spaghetti.getPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
+                e.stopImmediatePropagation();
                 return;
             }
             const initialSelectionIndex = spaghetti.highlightRegion.startIndex;
@@ -171,7 +190,7 @@ const SpaghettiSelectionState = {
                 } else {
                     if (spaghetti.cursorIndex === -1 || spaghetti.cursorIndex === spaghetti.highlightRegion.startIndex) {
                         // If no cursor, or cursor still on selection point, show faded color everywhere
-                        point.color = [...point.fadedColor];
+                        point.color = [...point.selectableOutOfRangeColor];
                     } else {
                         // If cursor, show original color for points within handles, faded color for points outside
                         const minIndex = Math.min(spaghetti.cursorIndex, spaghetti.highlightRegion.startIndex);
@@ -179,14 +198,14 @@ const SpaghettiSelectionState = {
                         if (index >= minIndex && index <= maxIndex) {
                             point.color = [...point.originalColor];
                         } else {
-                            point.color = [...point.fadedColor];
+                            point.color = [...point.selectableOutOfRangeColor];
                         }
                     }
                 }
             });
         },
-        isIndexSelectable: (_spaghetti, _index) => {
-            return true;
+        isIndexSelectable: (spaghetti, _index) => {
+            return spaghetti.isActive();
         },
         transition: (spaghetti, index) => {
             spaghetti.highlightRegion.startIndex = index;
@@ -194,6 +213,11 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.SINGLE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
+            
+            if (activeSpaghetti !== spaghetti) {
+                activeSpaghetti = spaghetti;
+                updateAllSpaghettiColors();
+            }
         }
     },
     RANGE: {
@@ -202,6 +226,7 @@ const SpaghettiSelectionState = {
             const index = spaghetti.getPointFromIntersects(intersects);
             if (index === -1) {
                 SpaghettiSelectionState.NONE.transition(spaghetti);
+                e.stopImmediatePropagation();
                 return;
             }
 
@@ -233,13 +258,13 @@ const SpaghettiSelectionState = {
                     if (index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex) {
                         point.color = [...point.originalColor];
                     } else {
-                        point.color = [...point.fullFadedColor];
+                        point.color = [...point.unselectableColor];
                     }
                 }
             });
         },
         isIndexSelectable: (spaghetti, index) => {
-            return index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex;
+            return spaghetti.isActive() && index >= spaghetti.highlightRegion.startIndex && index <= spaghetti.highlightRegion.endIndex;
         },
         transition: (spaghetti, startIndex, endIndex) => {
             spaghetti.highlightRegion.startIndex = startIndex;
@@ -256,6 +281,11 @@ const SpaghettiSelectionState = {
                 }, true);
             }
             setAnimationMode(AnimationMode.region);
+
+            if (activeSpaghetti !== spaghetti) {
+                activeSpaghetti = spaghetti;
+                updateAllSpaghettiColors();
+            }
         }
     }
 }
@@ -282,6 +312,8 @@ export class Spaghetti extends THREE.Group {
 
         this.setupPointerEvents();
         this.addPoints(points);
+        
+        spaghettiList.push(this);
     }
     
     get selectionState() {
@@ -322,8 +354,9 @@ export class Spaghetti extends THREE.Group {
             }
             point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
             const fadeColor = AnalyticsColors.fade(point.color, 0.2);
-            point.fadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.5 * 255];
-            point.fullFadedColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.3 * 255];
+            point.selectableOutOfRangeColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.5 * 255];
+            point.unselectableColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.3 * 255];
+            point.inactiveColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0];
             const cursorColor = AnalyticsColors.highlight(point.color);
             point.cursorColor = [cursorColor.r * 255, cursorColor.g * 255, cursorColor.b * 255, 255];
             
@@ -388,6 +421,17 @@ export class Spaghetti extends THREE.Group {
         this.meshPaths = [];
         SpaghettiSelectionState.NONE.transition(this);
         this.cursorIndex = -1;
+        if (activeSpaghetti === this) {
+            activeSpaghetti = null;
+        }
+    }
+
+    /**
+     * Returns true if the user is currently interacting with this spaghetti line or with no spaghetti line.
+     * Returns false otherwise.
+     */
+    isActive() {
+        return activeSpaghetti === this || activeSpaghetti === null;
     }
 
     isVisible() {
