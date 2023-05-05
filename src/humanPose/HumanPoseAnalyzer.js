@@ -1088,28 +1088,25 @@ export class HumanPoseAnalyzer {
             return [];
         }
 
-        const maxDeltaT = 100; // ms, don't show clones that are more than some time interval away from the current time
+        const maxDeltaT = 200; // ms, don't show clones that are more than some time interval away from the current time
         let bestData = [];
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
             const clone = this.clones.all[i];
+            const distance = Math.abs(clone.pose.timestamp - timestamp);
+            if (distance > maxDeltaT) {
+                continue;
+            }
             const objectId = clone.pose.metadata.poseObjectId;
             const bestDatum = bestData.find(data => data.objectId === objectId);
             if (!bestDatum) {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
                 bestData.push({
                     clone,
-                    distance: Math.abs(clone.pose.timestamp - timestamp),
+                    distance,
                     objectId
                 });
             } else {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
-                const distance = Math.abs(clone.pose.timestamp - timestamp);
                 if (distance < bestDatum.distance) {
                     bestDatum.clone = clone;
                     bestDatum.distance = distance;
