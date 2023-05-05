@@ -509,6 +509,8 @@ export class HumanPoseAnalyzer {
      * @param {AnalyticsLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
+        const previousLens = this.activeLens;
+
         this.activeLensIndex = this.lenses.indexOf(lens);
         this.applyCurrentLensToHistory();
 
@@ -519,12 +521,17 @@ export class HumanPoseAnalyzer {
         });
 
         // Swap history lines
-        this.lenses.forEach(l => {
-            this.historyLineContainers.historical[l.name].visible = false;
-            this.historyLineContainers.live[l.name].visible = false;
-        });
+        this.historyLineContainers.historical[previousLens.name].visible = false;
+        this.historyLineContainers.live[previousLens.name].visible = false;
         this.historyLineContainers.historical[lens.name].visible = true;
         this.historyLineContainers.live[lens.name].visible = true;
+
+        // Update corresponding spaghettis to match previous selection state
+        Object.keys(this.historyLines[previousLens.name].all).forEach(key => {
+            const previousSpaghetti = this.historyLines[previousLens.name].all[key];
+            const nextSpaghetti = this.historyLines[lens.name].all[key];
+            previousSpaghetti.transferStateTo(nextSpaghetti);
+        });
 
         // Update UI
         if (this.settingsUi) {
@@ -569,6 +576,11 @@ export class HumanPoseAnalyzer {
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
+            if (!fromSpaghetti) {
+                for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                    mesh.setHighlightRegion(null);
+                }
+            }
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;
