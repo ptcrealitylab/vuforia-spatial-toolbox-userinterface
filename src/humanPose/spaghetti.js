@@ -435,6 +435,28 @@ export class Spaghetti extends THREE.Group {
         this.reset();
         this.addPoints(points);
     }
+    
+    transferStateTo(otherSpaghetti) {
+        if (activeSpaghetti === this) {
+            activeSpaghetti = otherSpaghetti;
+        }
+        otherSpaghetti.selectionState = this.selectionState;
+        otherSpaghetti.highlightRegion = {
+            startIndex: this.highlightRegion.startIndex,
+            endIndex: this.highlightRegion.endIndex,
+            regionExists: this.highlightRegion.regionExists
+        }
+        otherSpaghetti.cursorIndex = this.cursorIndex;
+        otherSpaghetti.updateColors();
+        this.selectionState = SpaghettiSelectionState.NONE;
+        this.highlightRegion = {
+            startIndex: -1,
+            endIndex: -1,
+            regionExists: false
+        }
+        this.cursorIndex = -1;
+        this.updateColors();
+    }
 
     /**
      * Deallocates all mesh paths and points, and removes them from the scene
