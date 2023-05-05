@@ -225,7 +225,6 @@ createNameSpace("realityEditor.avatar.draw");
 
         const THREE = realityEditor.gui.threejsScene.THREE;
         const color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey)) || 'hsl(60, 100%, 50%)';
-        console.log(color);
 
         // lazy-create the meshes and text label if they don't exist yet
         if (typeof avatarMeshes[objectKey] === 'undefined') {

@@ -102,10 +102,12 @@ createNameSpace("realityEditor.avatar");
                 refreshStatusUI();
             }, AVATAR_CREATION_TIMEOUT_LENGTH);
         });
-        
-        addLinkCanvas();
-        resizeLinkCanvas();
-        translateLinkCanvas();
+
+        if (document.getElementsByClassName('link-canvas-container')[0] === undefined) {
+            addLinkCanvas();
+            resizeLinkCanvas();
+            translateLinkCanvas();
+        }
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
@@ -228,6 +230,10 @@ createNameSpace("realityEditor.avatar");
     
     function translateLinkCanvas() {
         linkCanvasCtx.translate(0, -menuBarHeight);
+    }
+
+    function clearLinkCanvas() {
+        linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
     }
 
     function reestablishAvatarIfNeeded() {
@@ -642,10 +648,6 @@ createNameSpace("realityEditor.avatar");
             }
             return utils.getColor(realityEditor.getObject(objectKey));
         }
-    }
-    
-    function clearLinkCanvas() {
-        linkCanvasCtx.clearRect(0, 0, window.innerWidth, window.innerHeight - menuBarHeight);
     }
     
     function getLinkCanvasInfo() {
