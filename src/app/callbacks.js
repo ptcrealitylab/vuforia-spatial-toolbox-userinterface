@@ -199,11 +199,11 @@ createNameSpace('realityEditor.app.callbacks');
 
     /**
      * Callback for realityEditor.app.getPosesStream
-     * @param {Array<Object>} pose (in world CS, in mm units)
-     * @param {number} timestamp of the pose (in miliseconds, but floating point number with nanosecond precision)
-     * @param {Array<number>} [width, height] of the image which the pose was computed from
+     * @param {Array< {x: number, y: number, z: number, confidence: number} >} pose - joints (in world CS, in mm units)
+     * @param { {timestamp: number, imageSize: [number], focalLength: [number], principalPoint: [number], transformW2C: [number]} } frameData - frame data associated with the pose 
+     *         (timestamp in miliseconds, but floating point number with nanosecond precision); image size which the pose was computed from; camera intrinsics and extrinsics
      */
-    function receivePoses(pose, timestamp, imageSize) {
+    function receivePoses(pose, frameData) {
 
         let poseInWorld = [];
 
@@ -216,7 +216,7 @@ createNameSpace('realityEditor.app.callbacks');
             });
         }
 
-        realityEditor.gui.poses.drawPoses(pose, imageSize);
+        realityEditor.gui.poses.drawPoses(pose, frameData.imageSize);
 
         const USE_DEBUG_POSE = false;
 
@@ -224,7 +224,7 @@ createNameSpace('realityEditor.app.callbacks');
             subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
         } else {
             // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
-            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, timestamp));
+            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
             
         }
     }
