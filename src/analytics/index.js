@@ -103,7 +103,7 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
-            if (activeFrame === 'none') {
+            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
                 return;
             }
             getActiveAnalytics().setDisplayRegion(msgData.displayRegion);
