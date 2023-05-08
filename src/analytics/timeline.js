@@ -658,7 +658,7 @@ export class Timeline {
      * @param {TimeRegion} displayRegion
      */
     setDisplayRegion(displayRegion) {
-        this.displayRegion = displayRegion;
+        this.displayRegion = Object.assign({}, displayRegion);
         if (!this.displayRegion) {
             this.resetBounds();
             return;
