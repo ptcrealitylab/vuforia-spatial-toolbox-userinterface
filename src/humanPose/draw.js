@@ -68,6 +68,7 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {number} timestamp - the timestamp of when the poseObject was recorded
  */
 function updatePoseRenderer(poseObject, timestamp) {
+    let activeAnalytics = realityEditor.analytics.getActiveAnalytics();
     let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
 
     if (!activeHumanPoseAnalyzer) {
@@ -83,12 +84,13 @@ function updatePoseRenderer(poseObject, timestamp) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, activeHumanPoseAnalyzer.activeLens);
     }
     const poseRenderInstance = poseRenderInstances[identifier];
+    const hideId = activeAnalytics.frame + '-' + poseRenderInstance.id;
     updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
-    if (hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]) {
-        clearTimeout(hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id]);
-        hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = null;
+    if (hidePoseRenderInstanceTimeoutIds[hideId]) {
+        clearTimeout(hidePoseRenderInstanceTimeoutIds[hideId]);
+        hidePoseRenderInstanceTimeoutIds[hideId] = null;
     }
-    hidePoseRenderInstanceTimeoutIds[poseRenderInstance.id] = setTimeout(() => {
+    hidePoseRenderInstanceTimeoutIds[hideId] = setTimeout(() => {
         poseRenderInstance.remove();
         poseRenderInstance.renderer.markNeedsUpdate();
         delete poseRenderInstances[poseRenderInstance.id];

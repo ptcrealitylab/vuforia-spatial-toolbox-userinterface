@@ -63,6 +63,7 @@ export class Analytics {
         }
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.show();
+            this.humanPoseAnalyzer.setLiveHumanPosesVisible(true);
         }
     }
 
@@ -75,6 +76,7 @@ export class Analytics {
         }
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
+            this.humanPoseAnalyzer.setLiveHumanPosesVisible(false);
         }
     }
 
@@ -229,7 +231,12 @@ export class Analytics {
         }
         this.livePlayback = livePlayback;
         this.loadingHistory = true;
-        await realityEditor.humanPose.loadHistory(region);
+        this.humanPoseAnalyzer.resetLiveHistoryClones();
+        this.humanPoseAnalyzer.resetLiveHistoryLines();
+        if (region.startTime >= 0 && region.endTime >= 0) {
+            // Only load history if display region is unbounded, new tools set displayRegion to (Date.now(), -1)
+            await realityEditor.humanPose.loadHistory(region);
+        }
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);

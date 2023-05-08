@@ -387,7 +387,11 @@ export class HumanPoseAnalyzer {
                     color,
                     timestamp,
                 };
-                pointsById[id] = pointsById[id] ? [...pointsById[id], historyPoint] : [historyPoint];
+                if (!pointsById[id]) {
+                    pointsById[id] = [historyPoint];
+                } else {
+                    pointsById[id].push(historyPoint);
+                }
             });
 
             Object.keys(pointsById).forEach(id => {
@@ -505,6 +509,8 @@ export class HumanPoseAnalyzer {
      * @param {AnalyticsLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
+        const previousLens = this.activeLens;
+
         this.activeLensIndex = this.lenses.indexOf(lens);
         this.applyCurrentLensToHistory();
 
@@ -515,12 +521,17 @@ export class HumanPoseAnalyzer {
         });
 
         // Swap history lines
-        this.lenses.forEach(l => {
-            this.historyLineContainers.historical[l.name].visible = false;
-            this.historyLineContainers.live[l.name].visible = false;
-        });
+        this.historyLineContainers.historical[previousLens.name].visible = false;
+        this.historyLineContainers.live[previousLens.name].visible = false;
         this.historyLineContainers.historical[lens.name].visible = true;
         this.historyLineContainers.live[lens.name].visible = true;
+
+        // Update corresponding spaghettis to match previous selection state
+        Object.keys(this.historyLines[previousLens.name].all).forEach(key => {
+            const previousSpaghetti = this.historyLines[previousLens.name].all[key];
+            const nextSpaghetti = this.historyLines[lens.name].all[key];
+            previousSpaghetti.transferStateTo(nextSpaghetti);
+        });
 
         // Update UI
         if (this.settingsUi) {
@@ -565,6 +576,11 @@ export class HumanPoseAnalyzer {
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
+            if (!fromSpaghetti) {
+                for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                    mesh.setHighlightRegion(null);
+                }
+            }
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;
@@ -1072,28 +1088,25 @@ export class HumanPoseAnalyzer {
             return [];
         }
 
-        const maxDeltaT = 100; // ms, don't show clones that are more than some time interval away from the current time
+        const maxDeltaT = 200; // ms, don't show clones that are more than some time interval away from the current time
         let bestData = [];
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
             const clone = this.clones.all[i];
+            const distance = Math.abs(clone.pose.timestamp - timestamp);
+            if (distance > maxDeltaT) {
+                continue;
+            }
             const objectId = clone.pose.metadata.poseObjectId;
             const bestDatum = bestData.find(data => data.objectId === objectId);
             if (!bestDatum) {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
                 bestData.push({
                     clone,
-                    distance: Math.abs(clone.pose.timestamp - timestamp),
+                    distance,
                     objectId
                 });
             } else {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
-                const distance = Math.abs(clone.pose.timestamp - timestamp);
                 if (distance < bestDatum.distance) {
                     bestDatum.clone = clone;
                     bestDatum.distance = distance;

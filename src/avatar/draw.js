@@ -109,6 +109,7 @@ createNameSpace("realityEditor.avatar.draw");
     // create an icon for this avatar, and add hover event listeners to show tooltip with full name
     function createAvatarIcon(parent, objectKey, initials, index, isMyIcon, isEllipsis) {
         let iconDiv = document.createElement('div');
+        iconDiv.id = 'avatarIcon' + objectKey;
         iconDiv.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
         iconDiv.style.left = ((ICON_WIDTH + ICON_GAP) * index) + 'px';
         parent.appendChild(iconDiv);
@@ -197,6 +198,15 @@ createNameSpace("realityEditor.avatar.draw");
         }
     }
 
+    // return a quadratic function with a lower & upper bound
+    // when input below threshold, the output maintains at outputLimit
+    // but when input above threshold, the output quadratically shrinks
+    function quadraticRemap(x, lowIn, highIn, lowOut, highOut) {
+        if (x < lowIn) return highOut;
+        else if (x > highIn) return lowOut;
+        else return ((highOut - lowOut) / Math.pow((highIn - lowIn), 2)) * Math.pow((highIn - x), 2);
+    }
+
     // main rendering function for a single avatar – creates a beam, a sphere at the endpoint, and a text label if a name is provided
     function renderAvatar(objectKey, touchState, avatarName) {
         if (!touchState) { return; }
@@ -208,12 +218,13 @@ createNameSpace("realityEditor.avatar.draw");
                 avatarMeshes[objectKey].beam.visible = false;
                 avatarMeshes[objectKey].textLabel.style.display = 'none';
                 realityEditor.gui.spatialArrow.deleteLaserBeamIndicator(objectKey);
+                realityEditor.avatar.clearLinkCanvas();
             }
             return;
         }
 
         const THREE = realityEditor.gui.threejsScene.THREE;
-        const color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey)) || '#ffff00';
+        const color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey)) || 'hsl(60, 100%, 50%)';
 
         // lazy-create the meshes and text label if they don't exist yet
         if (typeof avatarMeshes[objectKey] === 'undefined') {
@@ -345,9 +356,9 @@ createNameSpace("realityEditor.avatar.draw");
         // replace the old laser beam cylinder with a new one that goes from the avatar position to the beam destination
         avatarMeshes[objectKey].beam = updateCylinderMesh(avatarMeshes[objectKey].beam, startPosition, endPosition, color);
         avatarMeshes[objectKey].beam.name = objectKey + 'beam';
-        realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
+        // realityEditor.gui.threejsScene.addToScene(avatarMeshes[objectKey].beam);
         // if laser beam is off screen, add an arrow pointing to the laser beam destination position
-        let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey)) || '#ffff00';
+        let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey)) || 'hsl(60, 100%, 50%)';
         // get the world position of the laser pointer sphere, and draw arrow to it if off screen
         let endWorldPosition = new THREE.Vector3();
         if (avatarMeshes[objectKey].pointer.visible) {
@@ -359,6 +370,51 @@ createNameSpace("realityEditor.avatar.draw");
         }
         // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
         realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
+        // todo Steve: draw a fake 3d line from avatar icon to the position of the laser pointer sphere (endWorldPosition)
+        let linkCanvasInfo = realityEditor.avatar.getLinkCanvasInfo();
+        let avatarIconElement = document.getElementById('avatarIcon' + objectKey);
+        let avatarIconElementRect = avatarIconElement.getBoundingClientRect();
+        let linkStartPos = [avatarIconElementRect.x + avatarIconElementRect.width / 2, avatarIconElementRect.y + avatarIconElementRect.height / 2];
+        let camWorldPos = new THREE.Vector3();
+        realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
+        let linkStartZ = camWorldPos;
+        let linkEndZ = endWorldPosition;
+        let linkDistance = linkStartZ.sub(linkEndZ).length();
+        // console.log(linkDistance);
+        let ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
+        // console.log(ratio);
+        let endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        let linkEndPos = [endScreenXY.x, endScreenXY.y];
+        realityEditor.avatar.clearLinkCanvas();
+        let colorArr = HSLStrToRGBArr(color);
+        let lightColorArr = HSLStrToRGBArr(lightColor);
+        if (realityEditor.avatar.isDesktop()) {
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
+        } else {
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
+        }
+    }
+    
+    function HSLStrToRGBArr(hslStr) {
+        let hslObj = parseHSLStr(hslStr);
+        return HSLToRGB(hslObj.h, hslObj.s, hslObj.l);
+    }
+
+    // https://www.30secondsofcode.org/js/s/to-hsl-object/
+    function parseHSLStr(hslStr) {
+        const regex = /-?\d+(?:\.\d+)?/g;
+        const [h, s, l] = hslStr.match(regex).map(Number);
+        return {h, s, l};
+    }
+
+    function HSLToRGB (h, s, l) {
+        s /= 100;
+        l /= 100;
+        const k = n => (n + h / 30) % 12;
+        const a = s * Math.min(l, 1 - l);
+        const f = n =>
+            l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+        return [255 * f(0), 255 * f(8), 255 * f(4)];
     }
 
     // helper to create a box mesh
