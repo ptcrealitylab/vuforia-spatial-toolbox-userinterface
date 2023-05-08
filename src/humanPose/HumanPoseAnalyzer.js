@@ -40,10 +40,9 @@ export class HumanPoseAnalyzer {
      * Creates a new HumanPoseAnalyzer
      * @param {Object3D} parent - container to add the analyzer's containers to
      */
-    constructor(parent) {
+    constructor(analytics, parent) {
+        this.analytics = analytics
         this.setupContainers(parent);
-
-        this.active = true;
 
         /** @type {AnalyticsLens[]} */
         this.lenses = [
@@ -125,6 +124,10 @@ export class HumanPoseAnalyzer {
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
+    }
+
+    get active() {
+      return realityEditor.analytics.getActiveHumanPoseAnalyzer() === this;
     }
 
     get activeLens() {
@@ -410,7 +413,7 @@ export class HumanPoseAnalyzer {
      * @return {Spaghetti} - the spaghetti line that was created
      */
     createSpaghetti(lens, id, historical) {
-        const analytics = realityEditor.analytics.getActiveAnalytics();
+        const analytics = this.analytics;
         const spaghetti = new Spaghetti([], analytics, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
             widthMm: 30,
             heightMm: 30,
@@ -937,7 +940,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            realityEditor.analytics.getActiveAnalytics().setCursorTime(this.animationPosition, true);
+            this.analytics.setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);

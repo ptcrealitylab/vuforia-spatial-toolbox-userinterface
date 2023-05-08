@@ -28,7 +28,7 @@ export class Analytics {
         this.timeline = new Timeline(this, this.timelineContainer);
 
         this.threejsContainer = new THREE.Group();
-        this.humanPoseAnalyzer = new HumanPoseAnalyzer(this.threejsContainer);
+        this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
         this.loadingHistory = false;
         this.livePlayback = false;
