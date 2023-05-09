@@ -481,6 +481,11 @@ createNameSpace("realityEditor.envelopeManager");
                     if (!frameToDelete) { return; }
                     realityEditor.device.deleteFrame(frameToDelete, params.objectKey, containedFrameKey);
                 });
+
+                delete knownEnvelopes[params.frameKey];
+
+                // if deleted envelope was the open envelope, remove the close/minimize buttons
+                updateExitButton();
             }
         }
     }
