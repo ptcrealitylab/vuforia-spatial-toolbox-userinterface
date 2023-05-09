@@ -271,7 +271,6 @@ class RecentlyUsedBar {
     }
 
     updateIcon(frame, lastActive) {
-        let object = objects[frame.objectId];
         let icon = this.getIcon(frame.uuid);
 
         if (!icon) {
