@@ -940,7 +940,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            this.analytics.setCursorTime(this.animationPosition, false);
+            this.analytics.setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);
