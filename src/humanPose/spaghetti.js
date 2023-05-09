@@ -146,7 +146,7 @@ const SpaghettiSelectionState = {
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
             if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] === spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
+                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = null;
                 updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
             }
             
@@ -340,6 +340,9 @@ export class Spaghetti extends THREE.Group {
         this.setupPointerEvents();
         this.addPoints(points);
         
+        if (!spaghettiListsByAnalyticsFrame[this.analytics.frame]) {
+            spaghettiListsByAnalyticsFrame[this.analytics.frame] = [];
+        }
         spaghettiListsByAnalyticsFrame[this.analytics.frame].push(this);
     }
     
@@ -480,7 +483,8 @@ export class Spaghetti extends THREE.Group {
      * Returns false otherwise.
      */
     isActive() {
-        return activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this || activeSpaghettiByAnalyticsFrame[this.analytics.frame] === null;
+        const activeSpaghetti = activeSpaghettiByAnalyticsFrame[this.analytics.frame];
+        return activeSpaghetti === this || activeSpaghetti === null || activeSpaghetti === undefined;
     }
 
     isVisible() {
