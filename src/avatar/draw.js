@@ -389,9 +389,9 @@ createNameSpace("realityEditor.avatar.draw");
         let colorArr = HSLStrToRGBArr(color);
         let lightColorArr = HSLStrToRGBArr(lightColor);
         if (realityEditor.avatar.isDesktop()) {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
         } else {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 0.1, 1);
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
         }
     }
     
