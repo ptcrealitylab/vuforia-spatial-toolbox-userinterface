@@ -473,7 +473,7 @@ createNameSpace("realityEditor.envelopeManager");
             
             // if deleted frame was an envelope, delete its contained frames too
             if (typeof knownEnvelopes[params.frameKey] !== 'undefined') {
-                var deletedEnvelope = knownEnvelopes[params.frameKey];
+                let deletedEnvelope = knownEnvelopes[params.frameKey];
                     
                 deletedEnvelope.containedFrameIds.forEach(function(containedFrameKey) {
                     // contained frame always belongs to same object as envelope, so ok to use params.objectKey
@@ -481,6 +481,10 @@ createNameSpace("realityEditor.envelopeManager");
                     if (!frameToDelete) { return; }
                     realityEditor.device.deleteFrame(frameToDelete, params.objectKey, containedFrameKey);
                 });
+
+                if (deletedEnvelope.isFull2D) {
+                    hideBlurredBackground(params.frameKey);
+                }
 
                 delete knownEnvelopes[params.frameKey];
 
