@@ -8,16 +8,30 @@ class EnvelopeIconRenderer {
     constructor() {
         this.knownEnvelopes = {};
         this.arUtilities = realityEditor.gui.ar.utilities;
+        this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
     }
 
     initService() {
         this.gui = document.getElementById('GUI');
+
+        realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             Object.values(this.knownEnvelopes).forEach(envelope => {
                 this.updateEnvelope(envelope);
             });
         });
+    }
+
+    onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+
+        this.removeEnvelopeIcon(event.frameKey);
+
+        delete this.knownEnvelopes[event.frameKey];
     }
 
     onEnvelopeRegistered(envelope) {

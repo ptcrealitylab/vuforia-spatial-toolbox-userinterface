@@ -1143,15 +1143,20 @@ realityEditor.device.isPointerInTrashZone = function(x, y) {
     }
 };
 
-realityEditor.device.tryToDeleteSelectedVehicle = function() {
-    let activeVehicle = this.getEditingVehicle();
+/**
+ * By default, we can exclude the specifiedVehicle and it will try to delete the editingVehicle,
+ * but you can pass in a specific vehicle if you want to delete that one
+ * @param {Frame|Node} specifiedVehicle
+ */
+realityEditor.device.tryToDeleteSelectedVehicle = function(specifiedVehicle) {
+    let activeVehicle = specifiedVehicle || this.getEditingVehicle();
     if (!activeVehicle) return;
 
     const isFrame = realityEditor.isVehicleAFrame(activeVehicle);
     const additionalInfo = isFrame ? { frameType: activeVehicle.src } : {};
-    const objectId = this.editingState.object;
-    const frameId = this.editingState.frame;
-    const nodeId = this.editingState.node;
+    const objectId = activeVehicle.objectId;
+    const frameId = isFrame ? activeVehicle.uuid : activeVehicle.frameId;
+    const nodeId = (isFrame) ? null : activeVehicle.uuid;
     let didDelete = false;
 
     if (isFrame && activeVehicle.location === 'global') {
