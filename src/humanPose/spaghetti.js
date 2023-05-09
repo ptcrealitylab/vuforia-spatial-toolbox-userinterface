@@ -6,10 +6,10 @@ import {
 } from './draw.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
-const spaghettiList = [];
-let activeSpaghetti = null;
-function updateAllSpaghettiColors() {
-    spaghettiList.forEach((spaghetti) => {
+const spaghettiListsByAnalyticsFrame = {};
+const activeSpaghettiByAnalyticsFrame = {};
+function updateAllSpaghettiColorsByAnalytics(analytics) {
+    spaghettiListsByAnalyticsFrame[analytics.frame].forEach((spaghetti) => {
         spaghetti.updateColors();
     });
 }
@@ -145,9 +145,9 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
-            if (activeSpaghetti === spaghetti) {
-                activeSpaghetti = null;
-                updateAllSpaghettiColors();
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] === spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
+                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
             }
             
             if (spaghetti.analytics) {
@@ -237,9 +237,9 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
-            if (activeSpaghetti !== spaghetti) {
-                activeSpaghetti = spaghetti;
-                updateAllSpaghettiColors();
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] !== spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
+                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
             }
         }
     },
@@ -308,9 +308,9 @@ const SpaghettiSelectionState = {
             }
             setAnimationMode(AnimationMode.region);
 
-            if (activeSpaghetti !== spaghetti) {
-                activeSpaghetti = spaghetti;
-                updateAllSpaghettiColors();
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] !== spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
+                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
             }
         }
     }
@@ -340,7 +340,7 @@ export class Spaghetti extends THREE.Group {
         this.setupPointerEvents();
         this.addPoints(points);
         
-        spaghettiList.push(this);
+        spaghettiListsByAnalyticsFrame[this.analytics.frame].push(this);
     }
     
     get selectionState() {
@@ -437,8 +437,8 @@ export class Spaghetti extends THREE.Group {
     }
     
     transferStateTo(otherSpaghetti) {
-        if (activeSpaghetti === this) {
-            activeSpaghetti = otherSpaghetti;
+        if (activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this) {
+            activeSpaghettiByAnalyticsFrame[this.analytics.frame] = otherSpaghetti;
         }
         otherSpaghetti.selectionState = this.selectionState;
         otherSpaghetti.highlightRegion = {
@@ -470,8 +470,8 @@ export class Spaghetti extends THREE.Group {
         this.meshPaths = [];
         SpaghettiSelectionState.NONE.transition(this);
         this.cursorIndex = -1;
-        if (activeSpaghetti === this) {
-            activeSpaghetti = null;
+        if (activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this) {
+            activeSpaghettiByAnalyticsFrame[this.analytics.frame] = null;
         }
     }
 
@@ -480,7 +480,7 @@ export class Spaghetti extends THREE.Group {
      * Returns false otherwise.
      */
     isActive() {
-        return activeSpaghetti === this || activeSpaghetti === null;
+        return activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this || activeSpaghettiByAnalyticsFrame[this.analytics.frame] === null;
     }
 
     isVisible() {
