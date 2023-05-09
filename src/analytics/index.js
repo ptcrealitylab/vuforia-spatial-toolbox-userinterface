@@ -79,7 +79,7 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
-                return;
+                analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
             }
             if (activeFrame !== msgData.frame) {
                 getActiveAnalytics().blur();
@@ -92,7 +92,7 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            analyticsByFrame[msgData.frame].blur(msgData.frame);
+            analyticsByFrame[msgData.frame].blur();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
@@ -104,14 +104,17 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
-            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            getActiveAnalytics().setDisplayRegion(msgData.displayRegion);
+            analyticsByFrame[msgData.frame].setDisplayRegion(msgData.displayRegion);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsHydrateRegionCards', (msgData) => {
-            getActiveAnalytics().hydrateRegionCards(msgData.regionCards);
+            if (!analyticsByFrame[msgData.frame]) {
+                return;
+            }
+            analyticsByFrame[msgData.frame].hydrateRegionCards(msgData.regionCards);
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetLens', (msgData) => {

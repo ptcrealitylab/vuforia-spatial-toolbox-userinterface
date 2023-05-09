@@ -63,7 +63,6 @@ export class Analytics {
         }
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.show();
-            this.humanPoseAnalyzer.setLiveHumanPosesVisible(true);
         }
     }
 
@@ -76,7 +75,6 @@ export class Analytics {
         }
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
-            this.humanPoseAnalyzer.setLiveHumanPosesVisible(false);
         }
     }
 
