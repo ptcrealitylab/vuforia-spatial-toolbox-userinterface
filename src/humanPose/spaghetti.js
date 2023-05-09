@@ -509,6 +509,9 @@ export class Spaghetti extends THREE.Group {
                 this.getMeasurementLabel().requestVisible(false, this.pathId);
                 return;
             }
+            if (this.analytics && realityEditor.analytics.getActiveAnalytics() !== this.analytics) {
+                return;
+            }
             if (!this.isVisible()) {
                 return;
             }
@@ -519,6 +522,9 @@ export class Spaghetti extends THREE.Group {
                 return;
             }
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
+            if (this.analytics && realityEditor.analytics.getActiveAnalytics() !== this.analytics) {
+                return;
+            }
             if (!this.isVisible()) {
                 return;
             }
