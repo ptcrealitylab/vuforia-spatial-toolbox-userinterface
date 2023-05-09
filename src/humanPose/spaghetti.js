@@ -620,10 +620,7 @@ export class Spaghetti extends THREE.Group {
             return;
         }
 
-        // this.setPoints(this.points.slice(firstIndex, secondIndex + 1)); // TODO: re-evaluate how this is done
-        if (this.selectionState !== SpaghettiSelectionState.NONE) {
-            SpaghettiSelectionState.NONE.transition(this);
-        }
+        this.setPoints(this.points.slice(firstIndex, secondIndex + 1));
     }
     
     getDistanceAlongPath(index1, index2) {
