@@ -55,6 +55,7 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
     function initService() {
         activeFrame = noneFrame;
         analyticsByFrame[noneFrame] = makeAnalytics(noneFrame);
+        analyticsByFrame[noneFrame].show3D();
 
         realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
