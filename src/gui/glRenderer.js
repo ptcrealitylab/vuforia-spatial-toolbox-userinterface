@@ -549,27 +549,6 @@ let lastRender = Date.now();
  */
 let defaultGLState = null;
 
-function throwOnGLError(err, funcName, args) {
-    throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
-}
-
-function logGLCall(functionName, args) {
-    console.log("gl." + functionName + "(" + WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");
-}
-
-function validateNoneOfTheArgumentsAreUndefined(functionname, args) {
-    for (var ii = 0; ii < args.length; ++ii) {
-        if (args[ii] === undefined) {
-            console.error("undefined passed to gl." + functionname + "(" + WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");
-        }
-    }
-}
-
-function logAndValidate(functionName, args) {
-    logGLCall(functionName, args);
-    validateNoneOfTheArgumentsAreUndefined(functionName, args);
-}
-
 function initService() {
     console.log("renderer is in a secure context: " + self.isSecureContext + " and isolated: " + self.crossOriginIsolated);
     // canvas = globalCanvas.canvas;
