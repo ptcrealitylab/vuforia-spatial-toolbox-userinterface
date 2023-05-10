@@ -103,6 +103,7 @@ createNameSpace("realityEditor.avatar.draw");
         iconContainer.classList.add('avatarIconContainerScaleAdjustment')
         iconContainer.style.top = (realityEditor.device.environment.variables.screenTopOffset + 20) + 'px';
         document.body.appendChild(iconContainer)
+        realityEditor.gui.stackingOrder.addToLayer(iconContainer, realityEditor.gui.LAYERS.GUI_BUTTONS);
         return iconContainer;
     }
 
@@ -531,6 +532,7 @@ createNameSpace("realityEditor.avatar.draw");
             overlay.style.backgroundColor = color;
             overlay.style.opacity = '0.5';
             document.body.appendChild(overlay);
+            realityEditor.gui.stackingOrder.addToLayer(overlay, realityEditor.gui.LAYERS.GUI_POINTER);
         }
         overlay.style.transform = 'translate3d(' + screenX + 'px, ' + screenY + 'px, 1201px)';
         overlay.style.display = isVisible ? 'inline' : 'none';
@@ -546,6 +548,7 @@ createNameSpace("realityEditor.avatar.draw");
             statusUI.style.left = '5px';
             statusUI.style.top = (realityEditor.device.environment.variables.screenTopOffset + 5) + 'px';
             document.body.appendChild(statusUI);
+            realityEditor.gui.stackingOrder.addToLayer(statusUI, realityEditor.gui.LAYERS.GUI_BUTTONS);
         }
         if (hasConnectionFeedbackBeenShown) { return; }
         if (isConnected) {

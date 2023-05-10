@@ -33,6 +33,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         canvasContainer.style.left = '0';
         canvasContainer.style.pointerEvents = 'none';
         document.body.appendChild(canvasContainer);
+        realityEditor.gui.stackingOrder.addToLayer(canvasContainer, realityEditor.gui.LAYERS.SCENE_FOREGROUND);
 
         canvas = document.createElement('canvas');
         canvas.className = 'arrow-canvas';

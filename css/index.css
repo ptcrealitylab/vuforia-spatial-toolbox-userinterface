@@ -64,6 +64,19 @@
     -webkit-user-drag: none;
 }
 
+.stacking-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+}
+
+.stacking-layer > * {
+    pointer-events: auto;
+}
+
 #GUI {
     /* This will affect the z-index of the tool iframes added to the scene */
     /* If larger than the glcanvas z-index, the tools render on top of the 3D content */
