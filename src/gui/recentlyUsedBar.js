@@ -25,7 +25,7 @@ class RecentlyUsedBar {
         this.callbacks = {
             onIconStartDrag: [],
             onIconStopDrag: []
-        }
+        };
 
         this.dragState = {
             pointerDown: false,
@@ -36,7 +36,7 @@ class RecentlyUsedBar {
                 frameId: null
             },
             draggedIcon: null
-        }
+        };
 
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
         this.onIconPointerDown = this.onIconPointerDown.bind(this);
@@ -173,6 +173,7 @@ class RecentlyUsedBar {
     }
 
     activateDrag() {
+        if (this.dragState.didStartDrag) return;
         this.dragState.didStartDrag = true;
 
         //create ghost of button
@@ -283,7 +284,7 @@ class RecentlyUsedBar {
                 icon.addEventListener('pointerover', this.onIconPointerOver);
             }
             icon.addEventListener('pointerout', this.onIconPointerOut);
-            icon.addEventListener('pointercancel', this.onIconPointerOut);
+            icon.addEventListener('pointercancel', this.onIconPointerUp);
 
             this.iconElts.push(icon);
 
