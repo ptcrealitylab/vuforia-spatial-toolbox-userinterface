@@ -9,21 +9,23 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let ctx;
     let screenW, screenH;
     let screenRatio;
+    let menuBarHeight;
 
     function initService() {
         addCanvas();
         resizeCanvas();
         initCanvas();
         update();
-    }
 
-    window.addEventListener('resize', () => {
-        resizeCanvas();
-        initCanvas();
-        update();
-    });
-    
-    let menuBarHeight;
+        window.addEventListener('resize', () => {
+            // translate the canvas back to its original place and clear it
+            translate(-translateX, -translateY);
+            clear();
+            resizeCanvas();
+            initCanvas();
+            update();
+        });
+    }
 
     function addCanvas() {
         canvasContainer = document.createElement('div');
