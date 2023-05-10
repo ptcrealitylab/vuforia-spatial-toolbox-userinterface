@@ -483,8 +483,20 @@ import {JOINT_TO_INDEX} from './constants.js';
         }
     }
 
+    function deleteLocalHumanObjects() {
+        myHumanPoseId = null;
+    
+        for (let objectId of Object.values(nameIdMap)) {
+            delete humanPoseObjects[objectId];
+            delete realityEditor.objects[objectId];
+        }
+        nameIdMap = {}
+    }
+
     exports.initService = initService;
     exports.loadHistory = loadHistory;
+    exports.deleteLocalHumanObjects = deleteLocalHumanObjects;
+
 }(realityEditor.humanPose));
 
 export const initService = realityEditor.humanPose.initService;
