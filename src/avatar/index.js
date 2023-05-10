@@ -110,6 +110,10 @@ createNameSpace("realityEditor.avatar");
             addLinkCanvas();
             resizeLinkCanvas();
             translateLinkCanvas();
+            window.addEventListener('resize', () => {
+                clearLinkCanvas();
+                resizeLinkCanvas();
+            });
         }
 
         network.onAvatarDiscovered((object, objectKey) => {
@@ -125,6 +129,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            clearLinkCanvas();
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
             if (objectKey === myAvatarId) {
