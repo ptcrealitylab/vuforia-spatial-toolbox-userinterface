@@ -396,6 +396,7 @@ realityEditor.app.enableHumanTracking = function () {
  */
 realityEditor.app.disableHumanTracking = function () {
     this.appFunctionCall('disableHumanTracking', null, null);
+    realityEditor.humanPose.deleteLocalHumanObjects();
 };
 
 /**
