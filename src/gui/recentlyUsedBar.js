@@ -274,16 +274,6 @@ class RecentlyUsedBar {
         let icon = this.getIcon(frame.uuid);
 
         if (!icon) {
-            // Don't bother adding icons that won't appear in the final list
-            // due to being old
-            if (this.iconElts.length === this.capacity) {
-                let oldestIcon = this.iconElts[this.iconElts.length - 1];
-                let oldestTime = parseFloat(oldestIcon.dataset.lastActive);
-                if (oldestTime > lastActive) {
-                    return;
-                }
-            }
-
             icon = this.createIconImg(frame.objectId, frame.uuid);
 
             icon.addEventListener('pointerdown', this.onIconPointerDown);
@@ -328,9 +318,28 @@ class RecentlyUsedBar {
             easing: 'ease-out',
         });
 
-        if (this.iconElts.length > this.capacity) {
-            let last = this.iconElts.pop();
-            last.animate([{
+        for (let i = 0; i < this.capacity && i < this.iconElts.length; i++) {
+            let iconInBar = this.iconElts[i];
+            if (iconInBar.style.display !== 'none') {
+                continue;
+            }
+            iconInBar.style.display = '';
+            iconInBar.animate([{
+                opacity: 0,
+            }, {
+                opacity: 1,
+            }], {
+                duration: animDur * 0.5,
+                fill: 'both',
+            });
+        }
+
+        for (let i = this.capacity; i < this.iconElts.length; i++) {
+            let iconOutOfBar = this.iconElts[i];
+            if (iconOutOfBar.style.display === 'none') {
+                continue;
+            }
+            iconOutOfBar.animate([{
                 opacity: 1,
             }, {
                 opacity: 0,
@@ -340,7 +349,7 @@ class RecentlyUsedBar {
             });
 
             setTimeout(() => {
-                this.container.removeChild(last);
+                iconOutOfBar.style.display = 'none';
             }, animDur * 0.5);
         }
     }
