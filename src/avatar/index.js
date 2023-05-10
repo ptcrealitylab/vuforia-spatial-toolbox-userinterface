@@ -110,6 +110,10 @@ createNameSpace("realityEditor.avatar");
             addLinkCanvas();
             resizeLinkCanvas();
             translateLinkCanvas();
+            window.addEventListener('resize', () => {
+                clearLinkCanvas();
+                resizeLinkCanvas();
+            });
         }
 
         network.onAvatarDiscovered((object, objectKey) => {
