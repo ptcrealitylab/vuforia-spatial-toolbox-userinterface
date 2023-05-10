@@ -8,8 +8,8 @@ import {AnalyticsColors} from "./AnalyticsColors.js";
 
 const spaghettiListsByAnalyticsFrame = {};
 const activeSpaghettiByAnalyticsFrame = {};
-function updateAllSpaghettiColorsByAnalytics(analytics) {
-    spaghettiListsByAnalyticsFrame[analytics.frame].forEach((spaghetti) => {
+function updateAllSpaghettiColorsByAnalyticsFrame(frame) {
+    spaghettiListsByAnalyticsFrame[frame].forEach((spaghetti) => {
         spaghetti.updateColors();
     });
 }
@@ -144,10 +144,10 @@ const SpaghettiSelectionState = {
             spaghetti.selectionState = SpaghettiSelectionState.NONE;
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
-            
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] === spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = null;
-                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
+
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] === spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = null;
+                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
             }
             
             if (spaghetti.analytics) {
@@ -237,9 +237,9 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] !== spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
-                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] !== spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = spaghetti;
+                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
             }
         }
     },
@@ -308,9 +308,9 @@ const SpaghettiSelectionState = {
             }
             setAnimationMode(AnimationMode.region);
 
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] !== spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.analytics.frame] = spaghetti;
-                updateAllSpaghettiColorsByAnalytics(spaghetti.analytics);
+            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] !== spaghetti) {
+                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = spaghetti;
+                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
             }
         }
     }
@@ -340,10 +340,10 @@ export class Spaghetti extends THREE.Group {
         this.setupPointerEvents();
         this.addPoints(points);
         
-        if (!spaghettiListsByAnalyticsFrame[this.analytics.frame]) {
-            spaghettiListsByAnalyticsFrame[this.analytics.frame] = [];
+        if (!spaghettiListsByAnalyticsFrame[this.frame]) {
+            spaghettiListsByAnalyticsFrame[this.frame] = [];
         }
-        spaghettiListsByAnalyticsFrame[this.analytics.frame].push(this);
+        spaghettiListsByAnalyticsFrame[this.frame].push(this);
     }
     
     get selectionState() {
@@ -365,6 +365,13 @@ export class Spaghetti extends THREE.Group {
         }
         this._cursorIndex = index;
         this.updateColors();
+    }
+    
+    get frame() {
+        if (this.analytics) {
+            return this.analytics.frame;
+        }
+        return null;
     }
 
     /**
@@ -440,8 +447,8 @@ export class Spaghetti extends THREE.Group {
     }
     
     transferStateTo(otherSpaghetti) {
-        if (activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this) {
-            activeSpaghettiByAnalyticsFrame[this.analytics.frame] = otherSpaghetti;
+        if (activeSpaghettiByAnalyticsFrame[this.frame] === this) {
+            activeSpaghettiByAnalyticsFrame[this.frame] = otherSpaghetti;
         }
         otherSpaghetti.selectionState = this.selectionState;
         otherSpaghetti.highlightRegion = {
@@ -473,8 +480,8 @@ export class Spaghetti extends THREE.Group {
         this.meshPaths = [];
         SpaghettiSelectionState.NONE.transition(this);
         this.cursorIndex = -1;
-        if (activeSpaghettiByAnalyticsFrame[this.analytics.frame] === this) {
-            activeSpaghettiByAnalyticsFrame[this.analytics.frame] = null;
+        if (activeSpaghettiByAnalyticsFrame[this.frame] === this) {
+            activeSpaghettiByAnalyticsFrame[this.frame] = null;
         }
     }
 
@@ -483,7 +490,7 @@ export class Spaghetti extends THREE.Group {
      * Returns false otherwise.
      */
     isActive() {
-        const activeSpaghetti = activeSpaghettiByAnalyticsFrame[this.analytics.frame];
+        const activeSpaghetti = activeSpaghettiByAnalyticsFrame[this.frame];
         return activeSpaghetti === this || activeSpaghetti === null || activeSpaghetti === undefined;
     }
 
