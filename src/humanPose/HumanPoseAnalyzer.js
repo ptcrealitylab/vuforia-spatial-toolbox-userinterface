@@ -612,11 +612,11 @@ export class HumanPoseAnalyzer {
         this.lenses.forEach(lens => {
             for (let spaghetti of Object.values(this.historyLines[lens.name].historical)) { // This feature only enabled for historical history lines
                 spaghetti.setDisplayRegion(displayRegion);
+                if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
+                    spaghetti.visible = false;
+                    continue;
+                }
                 if (this.activeLens === lens) {
-                    if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
-                        spaghetti.visible = false;
-                        continue;
-                    }
                     spaghetti.visible = true;
                 }
             }
