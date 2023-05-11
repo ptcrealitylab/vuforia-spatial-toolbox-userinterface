@@ -1908,7 +1908,7 @@ Logic Interface CSS
     padding: 0;
     padding-right: 8px;
     pointer-events: all;
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .analytics-pinned-region-cards-csv {
