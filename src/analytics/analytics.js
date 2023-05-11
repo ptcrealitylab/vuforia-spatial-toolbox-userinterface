@@ -356,7 +356,7 @@ export class Analytics {
             this.nextStepNumber += 1;
         }
         setTimeout(() => {
-            regionCard.moveTo(35, 120 + (14 + 14 * 3 + 10) * this.pinnedRegionCards.length);
+            regionCard.moveTo(35, 120 + 240 * this.pinnedRegionCards.length);
         }, 10);
 
         setTimeout(() => {
