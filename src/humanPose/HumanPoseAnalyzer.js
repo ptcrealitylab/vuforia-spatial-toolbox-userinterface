@@ -609,14 +609,18 @@ export class HumanPoseAnalyzer {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
 
-        for (let spaghetti of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
-            if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
-                spaghetti.visible = false;
-                continue;
+        this.lenses.forEach(lens => {
+            for (let spaghetti of Object.values(this.historyLines[lens.name].historical)) { // This feature only enabled for historical history lines
+                if (this.activeLens === lens) {
+                    if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
+                        spaghetti.visible = false;
+                        continue;
+                    }
+                    spaghetti.visible = true;
+                }
+                spaghetti.setDisplayRegion(displayRegion);
             }
-            spaghetti.visible = true;
-            spaghetti.setDisplayRegion(displayRegion);
-        }
+        });
     }
 
     /**
