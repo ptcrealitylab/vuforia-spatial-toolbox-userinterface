@@ -200,11 +200,20 @@ createNameSpace("realityEditor.avatar");
             }
         }, KEEP_ALIVE_HEARTBEAT_INTERVAL);
 
-
         realityEditor.app.promises.getProviderId().then(providerId => {
             myProviderId = providerId;
             // write user name will also persist providerId
             writeUsername(myUsername);
+        });
+
+        realityEditor.network.addPostMessageHandler('getUserDetails', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                userDetails: {
+                    name: myUsername,
+                    providerId: myProviderId,
+                    sessionId: globalStates.tempUuid
+                }
+            });
         });
     }
     
@@ -504,7 +513,13 @@ createNameSpace("realityEditor.avatar");
         });
     }
 
-    // name is one property within the avatar node's userProfile public data 
+    // you can set this even before the avatar has been created
+    function setMyUsername(name) {
+        myUsername = name;
+    }
+
+    // name is one property within the avatar node's userProfile public data
+    // avatar has to exist before calling this
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
@@ -672,6 +687,7 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
+    exports.setMyUsername = setMyUsername;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
