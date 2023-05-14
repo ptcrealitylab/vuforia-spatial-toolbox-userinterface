@@ -251,6 +251,20 @@ export class RegionCard {
         if (this.poses.length === 0) {
             return;
         }
+        this.poses.sort((a, b) => {
+            return a.timestamp - b.timestamp;
+        });
+        let filteredPoses = [];
+        let lastTs = 0;
+        for (let pose of this.poses) {
+          if (pose.timestamp - lastTs < 50) {
+            continue;
+          }
+          lastTs = pose.timestamp;
+          filteredPoses.push(pose);
+        }
+        this.poses = filteredPoses;
+
         this.startTime = this.poses[0].timestamp;
         this.endTime = this.poses[this.poses.length - 1].timestamp;
 
