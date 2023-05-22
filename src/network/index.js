@@ -1660,7 +1660,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
 
-            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
+            // z-index can be specified. if not, goes to background if not full2D, foreground if full2D
+            let zIndex = tempThisObject.fullscreenZPosition ||
+                (msgContent.fullScreenFull2D || tempThisObject.isFullScreenFull2D) ?
+                globalStates.defaultFullscreenFull2DFrameZ : globalStates.defaultFullscreenFrameZ;
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
@@ -1691,8 +1694,10 @@ realityEditor.network.onInternalPostMessage = function (e) {
             
             if (typeof msgContent.fullScreenFull2D !== 'undefined') {
                 if (msgContent.fullScreenFull2D) {
+                    tempThisObject.isFullScreenFull2D = true; // if "sticky" fullscreen, gets called multiple times, so need to store in the frame
                     realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
                 } else {
+                    tempThisObject.isFullScreenFull2D = false;
                     realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
                 }
             }

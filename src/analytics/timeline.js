@@ -31,7 +31,12 @@ const DragMode = {
 const DEFAULT_WIDTH_MS = 60 * 1000;
 
 export class Timeline {
-    constructor(container) {
+    /**
+     * @param {Analytics} analytics - parent Analytics instance of this timeline
+     * @param {Element} container - where to insert timeline
+     */
+    constructor(analytics, container) {
+        this.analytics = analytics;
         this.container = container;
 
         this.canvas = document.createElement('canvas');
@@ -283,11 +288,11 @@ export class Timeline {
             }
             this.regionCard = null;
         }
-        this.regionCard = new RegionCard(this.container, getPosesInTimeInterval(leftTime, rightTime));
+        this.regionCard = new RegionCard(this.analytics, this.container, getPosesInTimeInterval(leftTime, rightTime));
 
         this.regionCard.moveTo(midX, this.height + labelPad);
 
-        realityEditor.analytics.setTimelineRegionCard(this.regionCard);
+        this.analytics.setTimelineRegionCard(this.regionCard);
     }
 
     timeToX(timeMs) {
@@ -558,7 +563,7 @@ export class Timeline {
         } else {
             this.dragMode = DragMode.PAN;
         }
-        realityEditor.analytics.setCursorTime(-1);
+        this.analytics.setCursorTime(-1);
         event.stopPropagation();
     }
 
@@ -592,7 +597,7 @@ export class Timeline {
         }
         this.canvas.style.cursor = cursor;
 
-        realityEditor.analytics.setCursorTime(this.xToTime(this.mouseX));
+        this.analytics.setCursorTime(this.xToTime(this.mouseX));
     }
 
     onPointerMoveDragModeSelect(_event) {
@@ -601,10 +606,11 @@ export class Timeline {
 
         let startTime = Math.min(this.highlightStartTime, highlightEndTime);
         let endTime = Math.max(this.highlightStartTime, highlightEndTime);
-        realityEditor.analytics.setHighlightRegion({
+        this.analytics.setHighlightRegion({
             startTime,
             endTime,
         });
+        setAnimationMode(AnimationMode.regionAll);
     }
 
     onPointerMoveDragModePan(event) {
@@ -652,8 +658,7 @@ export class Timeline {
      * @param {TimeRegion} displayRegion
      */
     setDisplayRegion(displayRegion) {
-        this.displayRegion = displayRegion;
-        this.poses = [];
+        this.displayRegion = Object.assign({}, displayRegion);
         if (!this.displayRegion) {
             this.resetBounds();
             return;
@@ -679,7 +684,7 @@ export class Timeline {
         // Snap zoom to equal entire displayRegion
         let newWidthMs = endTime - startTime;
         this.timeMin = startTime;
-        this.widthMs = newWidthMs;
+        this.widthMs = Math.max(newWidthMs, MIN_WIDTH_MS);
         this.minTimeMin = this.timeMin;
         if (this.width > 0) {
             this.pixelsPerMs = this.width / this.widthMs;
@@ -710,13 +715,13 @@ export class Timeline {
 
         if (this.dragMode === DragMode.SELECT &&
             Math.abs(this.timeToX(this.highlightStartTime) - this.mouseX) < 3) {
-            realityEditor.analytics.setHighlightRegion(null);
+            this.analytics.setHighlightRegion(null);
         } else {
             setAnimationMode(AnimationMode.region);
         }
 
         this.dragMode = DragMode.NONE;
-        realityEditor.analytics.setCursorTime(-1);
+        this.analytics.setCursorTime(-1);
 
         event.stopPropagation();
     }
@@ -728,7 +733,7 @@ export class Timeline {
     }
 
     onPointerOut(_event) {
-        realityEditor.analytics.setCursorTime(-1);
+        this.analytics.setCursorTime(-1);
     }
 
     onWheel(event) {

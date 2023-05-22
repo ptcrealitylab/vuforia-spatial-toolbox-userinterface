@@ -449,6 +449,17 @@ realityEditor.gui.ar.lines.drawLine = function(context, lineStartPoint, lineEndP
         [255,0,124], // Red
         [255,255,255]]; // White
 
+    // if startColor/endColor format is an RGB array
+    if (Array.isArray(startColor)) {
+        this.colors.push(startColor);
+        startColor = this.colors.length - 1;
+    }
+    if (Array.isArray(endColor)) {
+        this.colors.push(endColor);
+        endColor = this.colors.length - 1;
+    }
+    // console.log(this.colors, startColor, endColor);
+
     if (linkObject.ballAnimationCount >= lineStartWeight * this.spacer)  linkObject.ballAnimationCount = 0;
 
     context.beginPath();
