@@ -46,10 +46,11 @@ function neckReba(rebaData) {
     const leftBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
     // Check for bending
-    if (upMisalignmentAngle > 20) {
-        neckScore++; // +1 for greater than 20 degrees
+    const bendingThreshold = 20 + 10; // 20 according to official REBA, adjusting due to noisy inputs
+    if (upMisalignmentAngle > bendingThreshold) {
+        neckScore++; // +1 for greater than threshold
         if (forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) {
-            neckScore++; // +1 for side-bending or back-bending greater than 20 degrees
+            neckScore++; // +1 for side-bending or back-bending greater than threshold
         }
     } else {
         if (forwardBendingAlignment < backwardBendingAlignment) {
@@ -61,7 +62,7 @@ function neckReba(rebaData) {
     const twistLeftAngle = 180 - twistRightAngle;
     
     // Check for twisting of >20 degrees from straight ahead
-    if (twistRightAngle < 70 || twistLeftAngle < 70) {
+    if (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold)) {
         neckScore++; // +1 for twisting
     }
     
@@ -382,11 +383,20 @@ function lowerArmReba(rebaData) {
     const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
     const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
     
-    if (leftElbowAngle < 60 || leftElbowAngle > 100) {
-        leftArmScore = 2; // 2 for left elbow bent < 60 degrees
+    // Standard REBA calculation marks arms straight down as bad, very confusing for users
+    // if (leftElbowAngle < 60 || leftElbowAngle > 100) {
+    //     leftArmScore = 2; // 2 for left elbow bent < 60 or > 100 degrees
+    // }
+    // if (rightElbowAngle < 60 || rightElbowAngle > 100) {
+    //     rightArmScore = 2; // 2 for right elbow bent < 60 or > 100 degrees
+    // }
+    
+    // This calculation is less accurate to REBA but more intuitive
+    if (leftElbowAngle > 100) {
+        leftArmScore = 2; // 2 for left elbow bent > 100 degrees
     }
-    if (rightElbowAngle < 60 || rightElbowAngle > 100) {
-        rightArmScore = 2; // 2 for right elbow bent < 60 degrees
+    if (rightElbowAngle > 100) {
+        rightArmScore = 2; // 2 for right elbow bent > 100 degrees
     }
     
     leftArmScore = clamp(leftArmScore, 1, 2);

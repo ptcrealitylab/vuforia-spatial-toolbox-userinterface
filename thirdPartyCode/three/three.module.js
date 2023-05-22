@@ -8105,6 +8105,9 @@ class Object3D extends EventDispatcher {
 	}
 
 	updateMatrixWorld( force ) {
+		if (!this.visible) {
+			return;
+		}
 
 		if ( this.matrixAutoUpdate ) this.updateMatrix();
 

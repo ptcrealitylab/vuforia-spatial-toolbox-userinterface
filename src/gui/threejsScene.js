@@ -432,11 +432,20 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
                 let allMeshes = [];
+                let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
+                        if (child.name && child.name.toLocaleLowerCase() === 'mesh_0') {
+                            meshesToRemove.push(child);
+                            return;
+                        }
                         allMeshes.push(child);
                     }
                 });
+
+                for (let mesh of meshesToRemove) {
+                    mesh.removeFromParent();
+                }
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
@@ -539,11 +548,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         raycaster.setFromCamera( mouse, camera );
 
         raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
-
-        // add object layer to raycast layer mask
-        objectsToCheck.forEach(obj => {
-            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
-        });
 
         //3. compute intersections
         // add object layer to raycast layer mask

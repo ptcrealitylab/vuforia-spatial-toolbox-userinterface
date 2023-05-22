@@ -280,10 +280,83 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
 
         if (!moveToCursor && !spatialCursorMatrix) {
-            let mmInFrontOfCamera = 400 * realityEditor.device.environment.variables.newFrameDistanceMultiplier
-            realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, mmInFrontOfCamera);
+            let worldCenterPoint = getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
+            if (worldCenterPoint.point === undefined) {
+                let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
+                if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
+                    // when on desktop, there is rotation center
+                    let dist = realityEditor.sceneGraph.getDistanceToCamera(rotateCenterId);
+                    console.log(dist);
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, dist);
+                } else {
+                    // when on phone, there's no rotation center
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 1000);
+                }
+            } else {
+                // when there is area target mesh at screen center
+                let worldCamPoint = new THREE.Vector3();
+                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
+            }
+        }
+        return addedElement;
+    }
+
+    // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
+    // tool added at screen coordinates
+    function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
+
+        let spatialCursorMatrix = null;
+        if (moveToCursor) {
+            spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
+        } else if (screenX !== null && screenY !== null){
+            //set spatialCursorMatrix equal to screen coordinates
+            let info = realityEditor.spatialCursor.getOrientedCursorAtSpecificCoords(screenX, screenY);
+            if (info.didFindMouseCoords) {
+                spatialCursorMatrix = info.matrix;
+            }
+        } else {
+            let info = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+            if (info.didFindCenterPoint) {
+                spatialCursorMatrix = info.matrix;
+            }
         }
 
+        // verify that the matrix is valid, otherwise tool can init with NaN values
+        if (!realityEditor.gui.ar.utilities.isValidMatrix4x4(spatialCursorMatrix)) {
+            spatialCursorMatrix = null;
+        }
+
+        let addedElement = realityEditor.gui.pocket.createFrame(toolName, {
+            noUserInteraction: true,
+            pageX: screenX,
+            pageY: screenY,
+            initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
+            onUploadComplete: () => {
+                realityEditor.network.postVehiclePosition(addedElement);
+            }
+        });
+
+        if (!moveToCursor && !spatialCursorMatrix) {
+            let worldCenterPoint = getRaycastCoordinates(screenX, screenY);
+            if (worldCenterPoint.point === undefined) {
+                let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
+                if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
+                    // when on desktop, there is rotation center
+                    let dist = realityEditor.sceneGraph.getDistanceToCamera(rotateCenterId);
+                    console.log(dist);
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, dist);
+                } else {
+                    // when on phone, there's no rotation center
+                    realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, 1000);
+                }
+            } else {
+                // when there is area target mesh at screen center
+                let worldCamPoint = new THREE.Vector3();
+                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
+            }
+        }
         return addedElement;
     }
 
@@ -644,6 +717,27 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return { matrix: result, didFindCenterPoint: didFindCenterPoint };
     }
 
+    //function to orient cursor to specific screen coordinates
+    function getOrientedCursorAtSpecificCoords(screenX, screenY) {
+        // get specific coordinates of cursor
+        worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+        updateSpatialCursor();
+        updateTestSpatialCursor();
+        indicator1.updateMatrixWorld(); // update immediately before doing the calculations
+
+        let result = getOrientedCursorRelativeToWorldObject();
+        let didFindMouseCoords = !!worldIntersectPoint.point;
+
+        // move it back
+        let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        worldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        updateSpatialCursor();
+        updateTestSpatialCursor();
+        indicator1.updateMatrixWorld();
+
+        return { matrix: result, didFindMouseCoords: didFindMouseCoords };
+    }
+
     // we need to apply multiple transformations to rotate the spatial cursor so that its local up vector is
     // best aligned with the global up, it faces towards the camera rather than away, and if it's on a
     // horizontal surface, it rotates so that its local up vector is in line with the camera forward vector
@@ -706,10 +800,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
+    exports.getOrientedCursorAtSpecificCoords = getOrientedCursorAtSpecificCoords;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
     exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
+    exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
 }(realityEditor.spatialCursor));

@@ -2,19 +2,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {
     JOINTS,
 } from './utils.js';
-import {SpaghettiMeshPath} from './spaghetti.js';
+import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
 import {AccelerationLens} from "./AccelerationLens.js";
-import {TimeLens} from "./TimeLens.js";
 import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
 import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
-import {MAX_POSE_INSTANCES} from './constants.js';
+import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
 
-const POSE_OPACITY_BASE = 0.5;
+const POSE_OPACITY_BASE = 1;
 const POSE_OPACITY_BACKGROUND = 0.2;
 
 /**
@@ -41,17 +40,15 @@ export class HumanPoseAnalyzer {
      * Creates a new HumanPoseAnalyzer
      * @param {Object3D} parent - container to add the analyzer's containers to
      */
-    constructor(parent) {
+    constructor(analytics, parent) {
+        this.analytics = analytics
         this.setupContainers(parent);
-
-        this.active = true;
 
         /** @type {AnalyticsLens[]} */
         this.lenses = [
             new RebaLens(),
             new OverallRebaLens(),
             new AccelerationLens(),
-            new TimeLens(),
             new PoseObjectIdLens()
         ]
         this.activeLensIndex = 0;
@@ -62,7 +59,7 @@ export class HumanPoseAnalyzer {
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
 
-        this.historyLines = {}; // Dictionary of {poseRenderer.id: {lensName: SpaghettiMeshPath}}, separated by historical and live
+        this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
             historical: {},
             live: {}
@@ -96,8 +93,12 @@ export class HumanPoseAnalyzer {
         this.animationMode = AnimationMode.region;
         this.lastAnimationTime = Date.now();
 
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
+
         // The renderer for poses that need to be rendered opaquely
-        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), MAX_POSE_INSTANCES);
+        this.opaquePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial(), maxPoseInstances);
         this.opaquePoseRenderer.addToScene(this.opaqueContainer);
 
         // Keeps track of the HumanPoseRenderInstances for the start and end of the current selection
@@ -123,6 +124,10 @@ export class HumanPoseAnalyzer {
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
+    }
+
+    get active() {
+      return realityEditor.analytics.getActiveHumanPoseAnalyzer() === this;
     }
 
     get activeLens() {
@@ -222,10 +227,13 @@ export class HumanPoseAnalyzer {
      * @return {HumanPoseRenderer} - the new renderer
      */
     addLivePoseRenderer() {
+        const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
+            MAX_POSE_INSTANCES :
+            MAX_POSE_INSTANCES_MOBILE;
         const livePoseRenderer = new HumanPoseRenderer(new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.5,
-        }), MAX_POSE_INSTANCES);
+            opacity: POSE_OPACITY_BASE,
+        }), maxPoseInstances);
         livePoseRenderer.addToScene(this.liveContainer);
         this.livePoseRenderers.push(livePoseRenderer);
         return livePoseRenderer;
@@ -247,21 +255,18 @@ export class HumanPoseAnalyzer {
      * Runs every frame to update the animation state
      */
     update() {
-        if (this.animationMode === AnimationMode.cursor) {
-            let anySpaghettiHovered = false;
-            for (let spaghettiMesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-                let comparer = spaghettiMesh.comparer;
-                if (comparer.firstPointIndex === null) {
-                    continue;
-                }
+        let anySpaghettiHovered = false;
+        for (let spaghetti of Object.values(this.historyLines[this.activeLens.name].all)) {
+            if (spaghetti.cursorIndex !== -1) {
                 anySpaghettiHovered = true;
-                break;
             }
-            if (!anySpaghettiHovered) {
+        }
+        if (!anySpaghettiHovered) {
+            if (this.animationMode === AnimationMode.cursor) {
                 this.restoreAnimationState();
+            } else if (this.animationMode === AnimationMode.region) {
+                this.updateAnimation();
             }
-        } else if (this.animationMode === AnimationMode.region) {
-            this.updateAnimation();
         }
 
         window.requestAnimationFrame(this.update);
@@ -273,10 +278,12 @@ export class HumanPoseAnalyzer {
      * @param {boolean} historical - whether the pose is historical or live
      */
     poseUpdated(pose, historical) {
-        this.addCloneFromPose(pose, historical);
+        if (this.recordingClones || historical) {
+            this.addCloneFromPose(pose, historical);
+        }
         if(!pose.metadata.poseHasParent) {
-            // add to history line non-auxiliary poses
-            this.updateHistoryLines(pose, historical);
+            // add to spaghetti non-auxiliary poses
+            this.updateSpaghetti(pose, historical);
         }
     }
 
@@ -291,7 +298,7 @@ export class HumanPoseAnalyzer {
         poses.forEach(pose => {
             this.addCloneFromPose(pose, true);
         });
-        this.bulkUpdateHistoryLines(poses, true);
+        this.bulkUpdateSpaghetti(poses, true);
     }
 
     /**
@@ -343,10 +350,8 @@ export class HumanPoseAnalyzer {
      * @param {Pose} pose - the pose to be added
      * @param {boolean} historical - whether the pose is historical or live
      */
-    updateHistoryLines(pose, historical) {
-        this.lenses.forEach(lens => {
-            this.addPointToHistoryLine(lens, pose, historical, true);
-        });
+    updateSpaghetti(pose, historical) {
+        this.addPointsToSpaghetti([pose], historical);
     }
 
     /**
@@ -354,99 +359,77 @@ export class HumanPoseAnalyzer {
      * @param {Pose[]} poses - the poses to be added
      * @param {boolean} historical - whether the pose is historical or live
      */
-    bulkUpdateHistoryLines(poses, historical) {
-        const updatedHistoryLines = [];
-        this.lenses.forEach(lens => {
-            poses.forEach(pose => {
-                if (pose.metadata.poseHasParent) {
-                    return;
-                }
-                const updatedHistoryLine = this.addPointToHistoryLine(lens, pose, historical, false);
-                if (!updatedHistoryLines.includes(updatedHistoryLine)) {
-                    updatedHistoryLines.push(updatedHistoryLine);
-                }
-            });
-        });
-        updatedHistoryLines.forEach(historyLine => {
-            historyLine.setAllPoints(historyLine.currentPoints);
-        });
+    bulkUpdateSpaghetti(poses, historical) {
+        this.addPointsToSpaghetti(poses.filter(pose => !pose.metadata.poseHasParent), historical);
     }
 
     /**
      * Adds a poseRenderInstance's point to the history line's points for the given lens, updating the history line if desired
-     * @param {AnalyticsLens} lens - the lens to add the point with
-     * @param {Pose} pose - the pose to add the point from
+     * @param {Pose[]} poses - the poses to add the points from
      * @param {boolean} historical - whether the pose is historical or live
-     * @param {boolean} shouldUpdate - whether to update the history line to reflect the changes immediately
-     * @return {SpaghettiMeshPath} - the history line that was updated
      */
-    addPointToHistoryLine(lens, pose, historical, shouldUpdate) {
-        const timestamp = pose.timestamp;
-        const id = pose.metadata.poseObjectId;
-        let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
-        currentPoint.y += 400;
-        if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
-            this.createHistoryLine(lens, id, historical);
-        }
-        let historyLine = this.historyLines[lens.name].all[id];
-        // Split spaghetti line if we jumped by a large amount
-        if (historyLine.currentPoints.length > 0) {
-            const lastPoint = historyLine.currentPoints[historyLine.currentPoints.length - 1];
-            const lastPointVector = new THREE.Vector3(lastPoint.x, lastPoint.y, lastPoint.z);
-            if (lastPointVector.distanceToSquared(currentPoint) > 800 * 800) {
-                this.historyLines[lens.name].all[id + '-until-' + timestamp] = historyLine;
-                if (historical) {
-                    this.historyLines[lens.name].historical[id + '-until-' + timestamp] = historyLine;
-                } else {
-                    this.historyLines[lens.name].live[id + '-until-' + timestamp] = historyLine;
+    addPointsToSpaghetti(poses, historical) {
+        this.lenses.forEach(lens => {
+            const pointsById = {};
+            poses.forEach(pose => {
+                const timestamp = pose.timestamp;
+                const id = pose.metadata.poseObjectId;
+                let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
+                currentPoint.y += 400;
+                if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
+                    this.createSpaghetti(lens, id, historical);
                 }
-                historyLine = this.createHistoryLine(lens, id, historical);
-            }
-        }
 
-        const color = lens.getColorForPose(pose);
+                const color = lens.getColorForPose(pose);
 
-        /** @type {SpaghettiMeshPathPoint} */
-        let historyPoint = {
-            x: currentPoint.x,
-            y: currentPoint.y,
-            z: currentPoint.z,
-            color,
-            timestamp,
-        };
+                /** @type {SpaghettiMeshPathPoint} */
+                const historyPoint = {
+                    x: currentPoint.x,
+                    y: currentPoint.y,
+                    z: currentPoint.z,
+                    color,
+                    timestamp,
+                };
+                if (!pointsById[id]) {
+                    pointsById[id] = [historyPoint];
+                } else {
+                    pointsById[id].push(historyPoint);
+                }
+            });
 
-        historyLine.currentPoints.push(historyPoint);
-        if (shouldUpdate) {
-            historyLine.setPoints(historyLine.currentPoints);
-        }
-
-        return historyLine;
+            Object.keys(pointsById).forEach(id => {
+                const spaghetti = this.historyLines[lens.name].all[id];
+                spaghetti.addPoints(pointsById[id]);
+            });
+        });
     }
 
     /**
-     * Creates a history line using a given lens
-     * Side effect: adds the history line to the appropriate historyLineContainer and historyLines
-     * @param {AnalyticsLens} lens - the lens to use for the history line
-     * @param {string} id - key for historyLines
-     * @param {boolean} historical - whether the history line is historical or live
+     * Creates a spaghetti line using a given lens
+     * Side effect: adds the spaghetti line to the appropriate historyLineContainer and historyLines
+     * @param {AnalyticsLens} lens - the lens to use for the spaghetti
+     * @param {string} id - key for spaghettis (the pose object id)
+     * @param {boolean} historical - whether the spaghetti is historical or live
+     * @return {Spaghetti} - the spaghetti line that was created
      */
-    createHistoryLine(lens, id, historical) {
-        const historyLine = new SpaghettiMeshPath([], {
+    createSpaghetti(lens, id, historical) {
+        const analytics = this.analytics;
+        const spaghetti = new Spaghetti([], analytics, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
             widthMm: 30,
             heightMm: 30,
             usePerVertexColors: true,
             wallBrightness: 0.6,
         });
 
-        this.historyLines[lens.name].all[id] = historyLine;
+        this.historyLines[lens.name].all[id] = spaghetti;
         if (historical) {
-            this.historyLineContainers.historical[lens.name].add(historyLine);
-            this.historyLines[lens.name].historical[id] = historyLine;
+            this.historyLineContainers.historical[lens.name].add(spaghetti);
+            this.historyLines[lens.name].historical[id] = spaghetti;
         } else {
-            this.historyLineContainers.live[lens.name].add(historyLine);
-            this.historyLines[lens.name].live[id] = historyLine;
+            this.historyLineContainers.live[lens.name].add(spaghetti);
+            this.historyLines[lens.name].live[id] = spaghetti;
         }
-        return historyLine;
+        return spaghetti;
     }
 
     /**
@@ -467,10 +450,10 @@ export class HumanPoseAnalyzer {
     resetHistoricalHistoryLines() {
         this.lenses.forEach(lens => {
             Object.keys(this.historyLines[lens.name].historical).forEach(key => {
-                const historyLine = this.historyLines[lens.name].historical[key];
-                historyLine.resetPoints();
-                if (historyLine.parent) {
-                    historyLine.parent.remove(historyLine);
+                const spaghetti = this.historyLines[lens.name].historical[key];
+                spaghetti.reset();
+                if (spaghetti.parent) {
+                    spaghetti.parent.remove(spaghetti);
                 }
                 delete this.historyLines[lens.name].all[key];
             });
@@ -484,9 +467,9 @@ export class HumanPoseAnalyzer {
     resetLiveHistoryLines() {
         this.lenses.forEach(lens => {
             Object.keys(this.historyLines[lens.name].live).forEach(key => {
-                const historyLine = this.historyLines[lens.name].live[key];
-                historyLine.resetPoints();
-                historyLine.parent.remove(historyLine);
+                const spaghetti = this.historyLines[lens.name].live[key];
+                spaghetti.reset();
+                spaghetti.parent.remove(spaghetti);
                 delete this.historyLines[lens.name].all[key];
             });
             this.historyLines[lens.name].live = {};
@@ -529,6 +512,8 @@ export class HumanPoseAnalyzer {
      * @param {AnalyticsLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
+        const previousLens = this.activeLens;
+
         this.activeLensIndex = this.lenses.indexOf(lens);
         this.applyCurrentLensToHistory();
 
@@ -539,12 +524,17 @@ export class HumanPoseAnalyzer {
         });
 
         // Swap history lines
-        this.lenses.forEach(l => {
-            this.historyLineContainers.historical[l.name].visible = false;
-            this.historyLineContainers.live[l.name].visible = false;
-        });
+        this.historyLineContainers.historical[previousLens.name].visible = false;
+        this.historyLineContainers.live[previousLens.name].visible = false;
         this.historyLineContainers.historical[lens.name].visible = true;
         this.historyLineContainers.live[lens.name].visible = true;
+
+        // Update corresponding spaghettis to match previous selection state
+        Object.keys(this.historyLines[previousLens.name].all).forEach(key => {
+            const previousSpaghetti = this.historyLines[previousLens.name].all[key];
+            const nextSpaghetti = this.historyLines[lens.name].all[key];
+            previousSpaghetti.transferStateTo(nextSpaghetti);
+        });
 
         // Update UI
         if (this.settingsUi) {
@@ -589,6 +579,11 @@ export class HumanPoseAnalyzer {
     setHighlightRegion(highlightRegion, fromSpaghetti) {
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
+            if (!fromSpaghetti) {
+                for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
+                    mesh.setHighlightRegion(null);
+                }
+            }
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;
@@ -614,14 +609,18 @@ export class HumanPoseAnalyzer {
         const firstTimestamp = displayRegion.startTime;
         const secondTimestamp = displayRegion.endTime;
 
-        for (let historyLine of Object.values(this.historyLines[this.activeLens.name].historical)) { // This feature only enabled for historical history lines
-            if (historyLine.getStartTime() > secondTimestamp || historyLine.getEndTime() < firstTimestamp) {
-                historyLine.visible = false;
-                continue;
+        this.lenses.forEach(lens => {
+            for (let spaghetti of Object.values(this.historyLines[lens.name].historical)) { // This feature only enabled for historical history lines
+                spaghetti.setDisplayRegion(displayRegion);
+                if (spaghetti.getStartTime() > secondTimestamp || spaghetti.getEndTime() < firstTimestamp) {
+                    spaghetti.visible = false;
+                    continue;
+                }
+                if (this.activeLens === lens) {
+                    spaghetti.visible = true;
+                }
             }
-            historyLine.visible = true;
-            historyLine.setDisplayRegion(displayRegion);
-        }
+        });
     }
 
     /**
@@ -637,12 +636,12 @@ export class HumanPoseAnalyzer {
             }
             return;
         }
-        for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
-            if (mesh.getStartTime() > timestamp || mesh.getEndTime() < timestamp) {
+        for (let spaghetti of Object.values(this.historyLines[this.activeLens.name].all)) {
+            if (spaghetti.getStartTime() > timestamp || spaghetti.getEndTime() < timestamp) {
                 continue;
             }
             if (!fromSpaghetti) {
-                mesh.setCursorTime(timestamp);
+                spaghetti.setCursorTime(timestamp);
 
                 if (this.animationMode !== AnimationMode.cursor) {
                     this.setAnimationMode(AnimationMode.cursor);
@@ -945,7 +944,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            realityEditor.analytics.setCursorTime(this.animationPosition, true);
+            this.analytics.setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);
@@ -1096,28 +1095,25 @@ export class HumanPoseAnalyzer {
             return [];
         }
 
-        const maxDeltaT = 100; // ms, don't show clones that are more than some time interval away from the current time
+        const maxDeltaT = 200; // ms, don't show clones that are more than some time interval away from the current time
         let bestData = [];
 
         // Dan: This used to be more optimized, but required a sorted array of clones, which we don't have when mixing historical and live data (could be added though)
         for (let i = 0; i < this.clones.all.length; i++) {
             const clone = this.clones.all[i];
+            const distance = Math.abs(clone.pose.timestamp - timestamp);
+            if (distance > maxDeltaT) {
+                continue;
+            }
             const objectId = clone.pose.metadata.poseObjectId;
             const bestDatum = bestData.find(data => data.objectId === objectId);
             if (!bestDatum) {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
                 bestData.push({
                     clone,
-                    distance: Math.abs(clone.pose.timestamp - timestamp),
+                    distance,
                     objectId
                 });
             } else {
-                if (Math.abs(clone.pose.timestamp - timestamp) > maxDeltaT) {
-                    continue;
-                }
-                const distance = Math.abs(clone.pose.timestamp - timestamp);
                 if (distance < bestDatum.distance) {
                     bestDatum.clone = clone;
                     bestDatum.distance = distance;

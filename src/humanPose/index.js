@@ -30,12 +30,15 @@ import {JOINT_TO_INDEX} from './constants.js';
     function initService() {
         console.log('init humanPose module', network, draw, utils);
 
-        realityEditor.app.callbacks.subscribeToPoses((poseJoints, timestamp) => {
-            let pose = utils.makePoseFromJoints('device' + globalStates.tempUuid + '_pose1', poseJoints, timestamp);
+        realityEditor.app.callbacks.subscribeToPoses((poseJoints, frameData) => {
+            let pose = utils.makePoseData('device' + globalStates.tempUuid + '_pose1', poseJoints, frameData);
             let poseObjectName = utils.getPoseObjectName(pose);
 
             if (typeof nameIdMap[poseObjectName] === 'undefined') {
-                tryCreatingObjectFromPose(pose, poseObjectName);
+                //create new human object only if pose is detected
+                if (pose.joints.length > 0) {    
+                    tryCreatingObjectFromPose(poseObjectName);
+                }
             } else {
                 let objectId = nameIdMap[poseObjectName];
                 if (humanPoseObjects[objectId]) {
@@ -124,10 +127,13 @@ import {JOINT_TO_INDEX} from './constants.js';
      * @param {TimeRegion} historyRegion
      */
     async function loadHistory(historyRegion) {
-        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId()) {
+        if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
                 loadHistory(historyRegion);
             }, 500);
+            return;
+        }
+        if (!realityEditor.device.environment.isDesktop()) {
             return;
         }
         const regionStartTime = historyRegion.startTime;
@@ -411,12 +417,7 @@ import {JOINT_TO_INDEX} from './constants.js';
 
     let objectsInProgress = {};
 
-    function tryCreatingObjectFromPose(pose, poseObjectName) {
-
-        // if no pose is detected, cannot create new human object
-        if (pose.joints.length <= 0) {    
-            return; 
-        }
+    function tryCreatingObjectFromPose(poseObjectName) {
 
         if (objectsInProgress[poseObjectName]) { return; }
         objectsInProgress[poseObjectName] = true;
@@ -463,6 +464,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                     console.warn('couldn\'t find the node ' + msgContent.node + ' which stores whole pose data');
                     return; 
                 }
+                // MK TODO: is it necessary to store all transfered data into the node of local object? on top of updateObjectFromRawPose below?
                 node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData];
 
                 let object = realityEditor.getObject(msgContent.object)
@@ -481,8 +483,20 @@ import {JOINT_TO_INDEX} from './constants.js';
         }
     }
 
+    function deleteLocalHumanObjects() {
+        myHumanPoseId = null;
+    
+        for (let objectId of Object.values(nameIdMap)) {
+            delete humanPoseObjects[objectId];
+            delete realityEditor.objects[objectId];
+        }
+        nameIdMap = {}
+    }
+
     exports.initService = initService;
     exports.loadHistory = loadHistory;
+    exports.deleteLocalHumanObjects = deleteLocalHumanObjects;
+
 }(realityEditor.humanPose));
 
 export const initService = realityEditor.humanPose.initService;
