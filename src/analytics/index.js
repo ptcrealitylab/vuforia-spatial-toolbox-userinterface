@@ -89,9 +89,9 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            if (activeFrame === msgData.frame) {
-                activeFrame = noneFrame;
-            }
+            // if (activeFrame === msgData.frame) {
+            //     activeFrame = noneFrame;
+            // }
             analyticsByFrame[msgData.frame].blur();
         });
 
