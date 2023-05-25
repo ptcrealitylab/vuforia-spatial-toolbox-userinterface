@@ -125,11 +125,12 @@ import {JOINT_TO_INDEX} from './constants.js';
 
     /**
      * @param {TimeRegion} historyRegion
+     * @param {Analytics} analytics
      */
-    async function loadHistory(historyRegion) {
+    async function loadHistory(historyRegion, analytics) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
-                loadHistory(historyRegion);
+                loadHistory(historyRegion, analytics);
             }, 500);
             return;
         }
@@ -179,16 +180,16 @@ import {JOINT_TO_INDEX} from './constants.js';
                 }
             }
             if (log) {
-                await replayHistory(log);
+                await replayHistory(log, analytics);
             } else {
                 console.error('Unable to load history log after retries', `${historyLogsUrl}/${logName}`);
             }
         }
 
-        draw.finishHistoryPlayback();
+        analytics.humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
     }
 
-    async function replayHistory(history) {
+    async function replayHistory(history, analytics) {
         inHistoryPlayback = true;
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
@@ -249,7 +250,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                 poses.push(pose);
             }
         });
-        draw.bulkRenderHistoricalPoses(poses);
+        analytics.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
     }
 
