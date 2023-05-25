@@ -62,7 +62,7 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
                 analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
             }
             activeFrame = msgData.frame;
-            getActiveAnalytics().open();
+            analyticsByFrame[msgData.frame].open();
             realityEditor.app.enableHumanTracking();
         });
 
@@ -70,11 +70,8 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
                 return;
             }
-            getActiveAnalytics().close();
-
-            // Could disable proactively, not a priority since it may lead to
-            // unexpected behavior
-            // realityEditor.app.disableHumanTracking();
+            activeFrame = noneFrame;
+            analyticsByFrame[msgData.frame].close();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
@@ -85,12 +82,15 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
                 getActiveAnalytics().blur();
             }
             activeFrame = msgData.frame;
-            getActiveAnalytics().focus();
+            analyticsByFrame[msgData.frame].focus();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsBlur', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
                 return;
+            }
+            if (activeFrame === msgData.frame) {
+                activeFrame = noneFrame;
             }
             analyticsByFrame[msgData.frame].blur();
         });
