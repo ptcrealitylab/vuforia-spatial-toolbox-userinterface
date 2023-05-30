@@ -233,7 +233,7 @@ export class Analytics {
         this.humanPoseAnalyzer.resetLiveHistoryLines();
         if (region.startTime >= 0 && region.endTime >= 0) {
             // Only load history if display region is unbounded, new tools set displayRegion to (Date.now(), -1)
-            await realityEditor.humanPose.loadHistory(region);
+            await realityEditor.humanPose.loadHistory(region, this);
         }
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
