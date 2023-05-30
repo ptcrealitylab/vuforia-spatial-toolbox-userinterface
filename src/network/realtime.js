@@ -72,7 +72,11 @@ createNameSpace("realityEditor.network.realtime");
         if (PROXY) {
             desktopSocket = io.connect();
         } else {
-            desktopSocket = window._oldIo.connect('localhost:8081');
+            if (location.hostname === 'localhost') {
+                desktopSocket = window._oldIo.connect('localhost:8081');
+            } else {
+                desktopSocket = window._oldIo.connect();
+            }
         }
     }
 
@@ -608,8 +612,11 @@ createNameSpace("realityEditor.network.realtime");
     function getServerSocketForObject(objectKey) {
 
         if (typeof objectSocketCache[objectKey] === 'undefined') {
-            //var object = realityEditor.getObject(objectKey);
-            var serverIP = "localhost";
+            var object = realityEditor.getObject(objectKey);
+            var serverIP = object.ip;
+            if (location.hostname === 'localhost') {
+                serverIP = 'localhost';
+            }
             // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
             //     return null;
             // }
