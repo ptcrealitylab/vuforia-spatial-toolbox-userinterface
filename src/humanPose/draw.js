@@ -31,15 +31,6 @@ export const AnimationMode = {
 };
 
 /**
- * Processes the given historical poses and renders them efficiently
- * @param {Pose[]}  poses - the poses to render
- */
-function bulkRenderHistoricalPoses(poses) {
-    let analytics = realityEditor.analytics.getActiveAnalytics();
-    analytics.bulkRenderHistoricalPoses(poses);
-}
-
-/**
  * Processes the poseObject given and renders them into the corresponding poseRenderInstances
  * @param {HumanPoseObject[]} poseObjects - the poseObjects to render
  * @param {number} timestamp - the timestamp of the poseObjects
@@ -320,19 +311,6 @@ function setCursorTime(time, fromSpaghetti) {
 }
 
 /**
- * Finalize historical renderer matrices after loading them from
- * history logs
- */
-function finishHistoryPlayback() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
-        return;
-    }
-    activeHumanPoseAnalyzer.markHistoricalColorNeedsUpdate();
-}
-
-/**
  * Shows the HumanPoseAnalyzer's settings UI
  */
 function showAnalyzerSettingsUI() {
@@ -404,7 +382,6 @@ function setChildHumanPosesVisible(visible) {
 
 // TODO: Remove deprecated API use
 export {
-    bulkRenderHistoricalPoses,
     renderLiveHumanPoseObjects,
     resetLiveHistoryLines,
     resetHistoryLines,
@@ -418,7 +395,6 @@ export {
     advanceLens,
     advanceCloneMaterial,
     getPosesInTimeInterval,
-    finishHistoryPlayback,
     showAnalyzerSettingsUI,
     hideAnalyzerSettingsUI,
     toggleAnalyzerSettingsUI,

@@ -2025,6 +2025,7 @@ Logic Interface CSS
 .minimizedEnvelopeContainer {
     width: 100vw;
     height: 100vh;
+    pointer-events: none;
 }
 
 .minimizedEnvelopeIcon {
@@ -2035,6 +2036,7 @@ Logic Interface CSS
     height: 300px;
     left: calc(100vw/2 - 300px/2 - 16px);
     top: calc(100vh/2 - 300px/2 - 16px);
+    pointer-events: auto;
 }
 
 .tool-color-gradient {
