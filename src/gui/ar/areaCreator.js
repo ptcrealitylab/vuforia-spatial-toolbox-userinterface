@@ -318,7 +318,13 @@ realityEditor.gui.ar.areaCreator.calculateGroundPlaneIntersection = function(eve
     }
 }
 
+realityEditor.gui.ar.areaCreator.cachedFloorOffset = null;
+
 realityEditor.gui.ar.areaCreator.calculateFloorOffset = function() {
+    if (realityEditor.gui.ar.areaCreator.cachedFloorOffset) {
+        return realityEditor.gui.ar.areaCreator.cachedFloorOffset;
+    }
+
     const worldObjectToolboxMatrix = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
     const worldObjectThreeMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
     realityEditor.gui.threejsScene.setMatrixFromArray(worldObjectThreeMatrix, worldObjectToolboxMatrix);
