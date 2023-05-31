@@ -121,7 +121,7 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
 
 realityEditor.network.getURL = function(server, identifier, route){
     let protocol = null;
-    let url = "localhost";
+    let url = null;
     let port = null;
     let network = null;
     let destinationIdentifier = null;
@@ -129,14 +129,18 @@ realityEditor.network.getURL = function(server, identifier, route){
 
     if (parseInt(Number(identifier))) {
         protocol = "http"
-        //url = server;
+        if (location.hostname === 'localhost') {
+            url = 'localhost';
+        } else {
+            url = server;
+        }
         port = identifier;
     } else {
         let s = realityEditor.network.state;
 
         if(s.proxyProtocol && s.proxyUrl && s.proxyPort) {
             protocol = s.proxyProtocol;
-            //url = s.proxyUrl;
+            url = s.proxyUrl;
             port = s.proxyPort;
         }
 
