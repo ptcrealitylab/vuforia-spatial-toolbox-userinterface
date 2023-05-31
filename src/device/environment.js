@@ -27,7 +27,7 @@ createNameSpace("realityEditor.device.environment");
     function isWithinToolboxApp() {
         return typeof window.webkit !== 'undefined' &&
             typeof window.webkit.messageHandlers !== 'undefined' &&
-            typeof window.webkitProxy === 'undefined';
+            typeof window.webkitWasTamperedWith === 'undefined';
     }
 
     // rather than checking for "isDesktop", this gives a more reliable way to
