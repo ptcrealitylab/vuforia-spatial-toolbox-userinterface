@@ -62,6 +62,14 @@ realityEditor.app.getDeviceReady = function(callBack) {
 };
 
 /**
+ * Response with a callback that indicates the base URL for the manager and cloud services.
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getManagerBaseURL = function(callBack) {
+    this.appFunctionCall('getManagerBaseURL', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+};
+
+/**
  * Response with true/false depending on whether app has "Local Network" permissions (required to discover edge servers)
  * @param {FunctionName} callBack
  */

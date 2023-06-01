@@ -19,6 +19,8 @@ createNameSpace("realityEditor.app.promises");
     exports.getVuforiaReady = makeAPI(app.getVuforiaReady.bind(app));
     // resolves to success: boolean
     exports.doesDeviceHaveDepthSensor = makeAPI(app.doesDeviceHaveDepthSensor.bind(app));
+    //resolves to baseURL: string
+    exports.getManagerBaseURL = makeAPI(app.getManagerBaseURL.bind(app));
 
     // params: [markerName], resolves to: {success: boolean, fileName: string]}
     exports.addNewMarker = makeAPI(app.addNewMarker.bind(app), ['success', 'fileName']);
