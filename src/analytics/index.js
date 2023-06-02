@@ -19,6 +19,11 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
     const noneFrame = 'none';
     let activeFrame = '';
     let analyticsByFrame = {};
+    
+    function getDefaultAnalytics() {
+        return analyticsByFrame[noneFrame];
+    }
+    exports.getDefaultAnalytics = getDefaultAnalytics;
 
     /**
      * @return {Analytics}
