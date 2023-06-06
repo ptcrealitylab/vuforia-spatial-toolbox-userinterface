@@ -667,6 +667,9 @@ realityEditor.gui.ar.positioning.moveFrameToCamera = function(objectKey, frameKe
  * @return {boolean}
  */
 realityEditor.gui.ar.positioning.canUnload = function(activeKey, finalMatrix, vehicleHalfWidth, vehicleHalfHeight, maxDistance) {
+    // don't bother unloading/reloading on desktop environments, as the camera moves around so quickly that this can cause more overhead than it saves
+    if (!realityEditor.device.environment.isARMode()) return false;
+
     // // if it's fully behind the viewport, it can be unloaded
     if (!realityEditor.sceneGraph.isInFrontOfCamera(activeKey)) {
         return true;

@@ -24,6 +24,7 @@ export class PoseObjectIdLens extends AnalyticsLens {
      * space the values evenly. Another benefit is that it ensures that values that are near each other in index order
      * are far apart in value order.
      * @param {number} index The index to calculate the value for.
+     * @see https://en.wikipedia.org/wiki/Van_der_Corput_sequence for more details on a very similar sequence, and why this is useful.
      */
     maximallyDifferentPositionFromIndex(index) {
         if (index === 0) {

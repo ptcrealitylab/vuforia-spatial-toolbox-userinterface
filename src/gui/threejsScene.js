@@ -414,6 +414,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     if (!gltf.scene.material) {
                         console.warn('no material', gltf.scene);
                     } else {
+                        // cache the original gltf material on mobile browsers, to improve performance
+                        if (!realityEditor.device.environment.isDesktop() && !realityEditor.device.environment.isWithinToolboxApp()) {
+                            gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        }
                         gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
                             maxHeight: maxHeight,
                             center: center,
@@ -449,6 +453,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
+                        // cache the original gltf material on mobile browsers, to improve performance
+                        if (!realityEditor.device.environment.isDesktop() && !realityEditor.device.environment.isWithinToolboxApp()) {
+                            child.originalMaterial = child.material.clone();
+                        }
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
                             maxHeight: maxHeight,
                             center: center,

@@ -516,6 +516,11 @@ export class HumanPoseAnalyzer {
 
         this.activeLensIndex = this.lenses.indexOf(lens);
         this.applyCurrentLensToHistory();
+        
+        const defaultHpa = realityEditor.analytics.getDefaultAnalytics().humanPoseAnalyzer
+        if (defaultHpa !== this) {
+            defaultHpa.setActiveLensByName(lens.name);
+        }
 
         // Swap hpri colors
         this.clones.all.forEach(clone => {
