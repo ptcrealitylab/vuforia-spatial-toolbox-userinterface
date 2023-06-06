@@ -11,7 +11,7 @@ export class HumanPoseAnalyzerSettingsUi {
         // Styled via css/humanPoseAnalyzerSettingsUi.css
         this.root.innerHTML = `
             <div class="hpa-settings-header">
-                <div class="hpa-settings-title" id="hpa-settings-title">Analytics Settings</div>
+                <div class="hpa-settings-title">Analytics Settings</div>
                 <div class="hpa-settings-header-icon">_</div>
             </div>
             <div class="hpa-settings-body">
@@ -283,6 +283,6 @@ export class HumanPoseAnalyzerSettingsUi {
     markLive() {
         this.root.querySelector('#hpa-live-settings').classList.remove('hidden');
         this.root.querySelector('#hpa-historical-settings').classList.add('hidden');
-        this.root.querySelector('#hpa-settings-title').innerText = 'Live Analytics Settings';
+        this.root.querySelector('.hpa-settings-title').innerText = 'Live Analytics Settings';
     }
 }
