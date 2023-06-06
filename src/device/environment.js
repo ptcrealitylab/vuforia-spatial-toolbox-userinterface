@@ -22,14 +22,31 @@ createNameSpace("realityEditor.device.environment");
         });
     };
 
+    // use this to distinguish between opening the remote operator in a mobile
+    // safari vs opening the userinterface in AR mode in the app
+    function isWithinToolboxApp() {
+        return typeof window.webkit !== 'undefined' &&
+            typeof window.webkit.messageHandlers !== 'undefined' &&
+            typeof window.webkitWasTamperedWith === 'undefined';
+    }
+
+    // rather than checking for "isDesktop", this gives a more reliable way to
+    // determine whether to run the AR interface or the remote operator interface
+    function isARMode() {
+        return isWithinToolboxApp() && !isDesktop();
+    }
+
     function isDesktop() {
         const userAgent = window.navigator.userAgent;
         const isWebView = userAgent.includes('Mobile') && !userAgent.includes('Safari');
         const isIpad = /Macintosh/i.test(navigator.userAgent) &&
             navigator.maxTouchPoints &&
             navigator.maxTouchPoints > 1;
+        const isIphone = /iPhone/i.test(navigator.userAgent) &&
+            navigator.maxTouchPoints &&
+            navigator.maxTouchPoints > 1;
 
-        return !isWebView && !isIpad;
+        return !isWebView && !isIpad && !isIphone;
     }
 
     // initialized with default variables for iPhone environment. add-ons can modify
@@ -47,7 +64,7 @@ createNameSpace("realityEditor.device.environment");
         shouldDisplayLogicMenuModally: false,
         isSourceOfObjectPositions: true,
         isCameraOrientationFlipped: false,
-        waitForARTracking: !isDesktop(), // set to false on remote operator
+        waitForARTracking: !isDesktop() && isWithinToolboxApp(), // set to false on remote operator
         overrideMenusAndButtons: false,
         listenForDeviceOrientationChanges: true,
         enableViewFrustumCulling: true,
@@ -235,7 +252,9 @@ createNameSpace("realityEditor.device.environment");
     exports.getInitialPocketToolRotation = function() {
         return variables.initialPocketToolRotation;
     };
-    
+
     exports.isDesktop = isDesktop;
+    exports.isWithinToolboxApp = isWithinToolboxApp;
+    exports.isARMode = isARMode;
 
 }(realityEditor.device.environment));
