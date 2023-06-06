@@ -99,7 +99,7 @@ const mostRecentPoseByObjectId = {};
  * @param {number} timestamp - when the pose was recorded
  */
 function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let liveHumanPoseAnalyzer = realityEditor.analytics.getDefaultAnalytics().humanPoseAnalyzer;
 
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
@@ -141,13 +141,13 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.objectId, poseHasParent: poseHasParent});
     pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
     mostRecentPoseByObjectId[poseObject.objectId] = pose;
-    activeHumanPoseAnalyzer.activeLens.applyLensToPose(pose);
+    liveHumanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
-    poseRenderInstance.setLens(activeHumanPoseAnalyzer.activeLens);
-    poseRenderInstance.setVisible(activeHumanPoseAnalyzer.childHumanObjectsVisible || !poseHasParent);
+    poseRenderInstance.setLens(liveHumanPoseAnalyzer.activeLens);
+    poseRenderInstance.setVisible(liveHumanPoseAnalyzer.childHumanObjectsVisible || !poseHasParent);
     poseRenderInstance.renderer.markNeedsUpdate();
 
-    activeHumanPoseAnalyzer.poseUpdated(pose, false);
+    liveHumanPoseAnalyzer.poseUpdated(pose, false);
     if (realityEditor.analytics) {
         let timeline = realityEditor.analytics.getActiveTimeline();
         if (timeline) {
