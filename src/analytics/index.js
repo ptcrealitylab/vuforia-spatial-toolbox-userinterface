@@ -66,6 +66,10 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         activeFrame = noneFrame;
         analyticsByFrame[noneFrame] = makeAnalytics(noneFrame);
         analyticsByFrame[noneFrame].show3D();
+        const settingsUi = analyticsByFrame[noneFrame].humanPoseAnalyzer.settingsUi;
+        if (settingsUi) {
+            settingsUi.markLive();
+        }
 
         realityEditor.network.addPostMessageHandler('analyticsOpen', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
