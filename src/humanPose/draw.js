@@ -340,15 +340,16 @@ function hideAnalyzerSettingsUI() {
 
 /**
  * Toggles the HumanPoseAnalyzer's settings UI
+ * Used by the remote operator menu bar
  */
 function toggleAnalyzerSettingsUI() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
-    if (!activeHumanPoseAnalyzer) {
-        console.warn('No active HPA');
+    let defaultHumanPoseAnalyzer = realityEditor.analytics.getDefaultAnalytics().humanPoseAnalyzer;
+    if (!defaultHumanPoseAnalyzer) {
+        console.warn('No default HPA');
         return;
     }
-    if (activeHumanPoseAnalyzer.settingsUi) {
-        activeHumanPoseAnalyzer.settingsUi.toggle();
+    if (defaultHumanPoseAnalyzer.settingsUi) {
+        defaultHumanPoseAnalyzer.settingsUi.toggle();
     }
 }
 

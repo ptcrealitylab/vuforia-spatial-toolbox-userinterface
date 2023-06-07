@@ -93,7 +93,10 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
                 analyticsByFrame[msgData.frame] = makeAnalytics(msgData.frame);
             }
             if (activeFrame !== msgData.frame) {
-                getActiveAnalytics().blur();
+                const activeAnalytics = getActiveAnalytics();
+                if (activeAnalytics !== realityEditor.analytics.getDefaultAnalytics()) {
+                    activeAnalytics.blur(); // Default analytics should only lose 2D UI manually via menu bar
+                }
             }
             activeFrame = msgData.frame;
             analyticsByFrame[msgData.frame].focus();
