@@ -30,15 +30,15 @@ export class HumanPoseAnalyzerSettingsUi {
                         </div>
                     </div>
                 </div>
-                <div class="hpa-settings-section">
-                    <div class="hpa-settings-section-title">Live Settings</div>
+                <div class="hpa-settings-section hidden" id="hpa-live-settings">
+                    <div class="hpa-settings-section-title">Motion Path Settings</div>
                     <div class="hpa-settings-section-body">
 <!--                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">-->
 <!--                            <div class="hpa-settings-section-row-label">Toggle Poses</div>-->
 <!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
 <!--                        </div>-->
                         <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">View Spaghetti Lines</div>
+                            <div class="hpa-settings-section-row-label">Show Motion Paths</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-live-history-lines">
                         </div>
                         <div class="hpa-settings-section-row">
@@ -46,15 +46,15 @@ export class HumanPoseAnalyzerSettingsUi {
                         </div>
                     </div>
                 </div>
-                <div class="hpa-settings-section">
-                    <div class="hpa-settings-section-title">Historical Settings</div>
+                <div class="hpa-settings-section" id="hpa-historical-settings">
+                    <div class="hpa-settings-section-title">Motion Path Settings</div>
                     <div class="hpa-settings-section-body">
 <!--                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">-->
 <!--                            <div class="hpa-settings-section-row-label">Toggle Poses</div>-->
 <!--                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-poses">-->
 <!--                        </div>-->
                         <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
-                            <div class="hpa-settings-section-row-label">View Spaghetti Lines</div>
+                            <div class="hpa-settings-section-row-label">Show Motion Paths</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-historical-history-lines">
                         </div>
                     </div>
@@ -278,5 +278,11 @@ export class HumanPoseAnalyzerSettingsUi {
 
     setActiveJointByName(_jointName) {
         // this.root.querySelector('#hpa-settings-select-joint').value = jointName; // TODO: re-add once implemented
+    }
+    
+    markLive() {
+        this.root.querySelector('#hpa-live-settings').classList.remove('hidden');
+        this.root.querySelector('#hpa-historical-settings').classList.add('hidden');
+        this.root.querySelector('.hpa-settings-title').innerText = 'Live Analytics Settings';
     }
 }
