@@ -319,6 +319,9 @@ export class Analytics {
             regionCard.setLabel('Step ' + this.nextStepNumber);
         }
 
+        let hue = (this.nextStepNumber * 17) % 360;
+        regionCard.setAccentColor(`hsl(${hue}, 100%, 50%)`);
+
         this.nextStepNumber += 1;
 
         this.updateCsvExportLink();

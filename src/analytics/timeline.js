@@ -170,6 +170,7 @@ export class Timeline {
 
         this.calculateAndDrawTicks();
         this.drawPoses();
+        this.drawPinnedRegionCards();
 
         this.drawHighlightRegion();
 
@@ -427,6 +428,53 @@ export class Timeline {
                 this.gfx.fill();
             }
         }
+    }
+
+    drawPinnedRegionCards() {
+        const rowY = boardStart + rowPad + rowHeight + rowPad;
+        const timeMax = this.timeMin + this.widthMs;
+
+        for (const prc of this.analytics.pinnedRegionCards) {
+            if (!prc.accentColor) {
+                continue;
+            }
+
+            let timeStart = prc.startTime;
+            let timeEnd = prc.endTime;
+
+            if (timeEnd < this.timeMin || timeStart > timeMax) {
+                continue;
+            }
+
+            // Limit to timeline bounds
+            timeStart = Math.max(timeStart, this.timeMin);
+            timeEnd = Math.min(timeEnd, timeMax);
+
+            const startX = this.timeToX(timeStart);
+            const endX = this.timeToX(timeEnd);
+            this.gfx.fillStyle = prc.accentColor;
+            this.gfx.fillRect(
+                startX,
+                rowY,
+                endX - startX,
+                rowHeight
+            );
+            if (prc.displayActive) {
+                let offset = (Date.now() / 500) % 8;
+                let dashes = [4, 4];
+                this.gfx.lineDashOffset = offset;
+                this.gfx.setLineDash(dashes);
+                this.gfx.strokeStyle = 'white';
+                this.gfx.strokeRect(
+                    startX,
+                    rowY,
+                    endX - startX,
+                    rowHeight
+                );
+                this.gfx.setLineDash([]);
+            }
+        }
+
     }
 
     calculateAndDrawTicks() {

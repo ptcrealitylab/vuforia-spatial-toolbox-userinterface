@@ -42,6 +42,7 @@ export class RegionCard {
             hour12: false,
         });
         this.state = RegionCardState.Tooltip;
+        this.accentColor = '';
         // If a region card has control over the timeline's displayed points
         this.displayActive = false;
         this.onPointerOver = this.onPointerOver.bind(this);
@@ -469,6 +470,14 @@ export class RegionCard {
 
     setLabel(label) {
         this.labelElement.textContent = label;
+    }
+
+    setAccentColor(accentColor) {
+        this.accentColor = accentColor;
+        const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
+        if (dateTimeTitle) {
+            dateTimeTitle.style.color = this.accentColor;
+        }
     }
 
     moveTo(x, y) {
