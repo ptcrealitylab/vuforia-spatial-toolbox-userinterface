@@ -198,7 +198,7 @@ export class Analytics {
         if (!highlightRegion && this.activeRegionCard) {
             // Unexpectedly deactivated from outside of region card logic
             this.activeRegionCard.displayActive = false;
-            this.activeRegionCard.updateShowButton();
+            this.activeRegionCard.updateDisplayActive();
             this.activeRegionCard = null;
         }
         this.timeline.setHighlightRegion(highlightRegion);
@@ -416,6 +416,10 @@ export class Analytics {
      * @param {RegionCard} activeRegionCard
      */
     setActiveRegionCard(activeRegionCard) {
+        if (this.activeRegionCard) {
+            this.activeRegionCard.displayActive = false;
+            this.activeRegionCard.updateDisplayActive();
+        }
         this.activeRegionCard = activeRegionCard;
     }
 

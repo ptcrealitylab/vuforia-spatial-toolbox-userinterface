@@ -1877,6 +1877,11 @@ Logic Interface CSS
     transform: translate3d(-50%, 0, 3000px);
 }
 
+.analytics-region-card.displayActive {
+    border: 1px dashed white;
+    padding: 13px;
+}
+
 .analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
     display: none;
 }
@@ -1925,6 +1930,15 @@ Logic Interface CSS
 
 .analytics-region-card-title {
     grid-column-start: span 3;
+}
+
+.analytics-region-card-dot {
+    border-radius: 7px;
+    width: 14px;
+    height: 14px;
+    position: absolute;
+    top: 19px;
+    right: 14px;
 }
 
 .analytics-region-card-subtitle {

@@ -103,6 +103,7 @@ export class RegionCard {
                 this.analytics.setActiveRegionCard(null);
                 this.analytics.setHighlightRegion(null);
                 this.analytics.setCursorTime(-1);
+                this.displayActive = false;
             } else {
                 this.analytics.setActiveRegionCard(this);
                 this.analytics.setHighlightRegion({
@@ -110,11 +111,11 @@ export class RegionCard {
                     endTime: this.endTime,
                     label: this.getLabel(),
                 });
+                this.displayActive = true;
             }
-            this.displayActive = !this.displayActive;
             break;
         }
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
     pin() {
@@ -164,10 +165,10 @@ export class RegionCard {
         if (pinButton) {
             pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
-    updateShowButton() {
+    updateDisplayActive() {
         let showButton = this.element.querySelector('.analytics-region-card-show');
         if (!showButton) {
             console.warn('regioncard missing element');
@@ -181,6 +182,12 @@ export class RegionCard {
         }
 
         showButton.textContent = this.displayActive ? 'Hide' : 'Show';
+
+        if (this.displayActive) {
+            this.element.classList.add('displayActive');
+        } else {
+            this.element.classList.remove('displayActive');
+        }
     }
 
     createCard() {
@@ -193,6 +200,11 @@ export class RegionCard {
             'analytics-region-card-date-time'
         );
 
+        const colorDot = document.createElement('div');
+        colorDot.classList.add(
+            'analytics-region-card-dot'
+        );
+
         const motionSummary = document.createElement('div');
         motionSummary.classList.add(
             'analytics-region-card-subtitle',
@@ -200,6 +212,7 @@ export class RegionCard {
         );
 
         this.element.appendChild(dateTimeTitle);
+        this.element.appendChild(colorDot);
         this.element.appendChild(motionSummary);
 
         this.labelElement = document.createElement('div');
@@ -250,7 +263,7 @@ export class RegionCard {
         showButton.classList.add('analytics-region-card-show');
         showButton.addEventListener('click', this.onClickShow);
         this.element.appendChild(showButton);
-        this.updateShowButton();
+        this.updateDisplayActive();
     }
 
     setPoses(poses) {
@@ -474,9 +487,9 @@ export class RegionCard {
 
     setAccentColor(accentColor) {
         this.accentColor = accentColor;
-        const dateTimeTitle = this.element.querySelector('.analytics-region-card-date-time');
-        if (dateTimeTitle) {
-            dateTimeTitle.style.color = this.accentColor;
+        const colorDot = this.element.querySelector('.analytics-region-card-dot');
+        if (colorDot) {
+            colorDot.style.backgroundColor = this.accentColor;
         }
     }
 
