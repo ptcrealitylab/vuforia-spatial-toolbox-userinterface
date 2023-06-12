@@ -86,6 +86,7 @@ export class HumanPoseAnalyzer {
         this.recordingClones = realityEditor.device.environment.isDesktop();
         this.lastDisplayedClones = [];
 
+        this.animationPlaying = true;
         this.prevAnimationState = null;
         this.animationStart = -1;
         this.animationEnd = -1;
@@ -577,6 +578,8 @@ export class HumanPoseAnalyzer {
      * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
+        // Reset animationPlaying so that we default to always playing
+        this.animationPlaying = true;
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
             if (!fromSpaghetti) {
@@ -936,7 +939,9 @@ export class HumanPoseAnalyzer {
             return;
         }
 
-        this.animationPosition += dt;
+        if (this.animationPlaying) {
+            this.animationPosition += dt;
+        }
         let progress = this.animationPosition - this.animationStart;
         let animationDuration = this.animationEnd - this.animationStart;
         let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo

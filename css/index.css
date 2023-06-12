@@ -1859,6 +1859,13 @@ Logic Interface CSS
     width: 100%;
 }
 
+.analytics-timeline-controls {
+    position: absolute;
+    right: 100%;
+    top: 0;
+    cursor: pointer;
+}
+
 .analytics-region-card {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
