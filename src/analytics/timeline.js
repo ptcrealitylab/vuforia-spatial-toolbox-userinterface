@@ -42,12 +42,14 @@ export class Timeline {
         this.canvas = document.createElement('canvas');
         this.canvas.classList.add('analytics-timeline');
         this.gfx = this.canvas.getContext('2d');
+
         this.pixelsPerMs = 0.01; // 1024 * 100 / (24 * 60 * 60 * 1000);
         this.timeMin = Date.now() - DEFAULT_WIDTH_MS;
         this.resetBounds();
         this.widthMs = DEFAULT_WIDTH_MS;
         this.scrolled = false;
         container.appendChild(this.canvas);
+
         this.poses = [];
         this.width = -1;
         this.displayRegion = null;
@@ -63,6 +65,22 @@ export class Timeline {
         this.cursorTime = -1;
 
         this.lastDraw = Date.now();
+
+        this.controlsCanvas = document.createElement('canvas');
+        this.controlsCanvas.classList.add('analytics-timeline-controls');
+        this.controlsGfx = this.controlsCanvas.getContext('2d');
+        let dpr = window.devicePixelRatio;
+        this.controlsCanvas.width = (rowHeight + rowPad) * dpr;
+        this.controlsCanvas.height = this.height * dpr;
+        this.controlsCanvas.style.width = (rowHeight + rowPad) + 'px';
+        this.controlsCanvas.style.height = this.height + 'px';
+        container.appendChild(this.controlsCanvas);
+
+        this.iconPlay = document.createElement('img');
+        this.iconPlay.src = '../../png/playing.png';
+
+        this.iconPause = document.createElement('img');
+        this.iconPause.src = '../../png/paused.png';
 
         this.boardLabelLeft = document.createElement('div');
         this.boardLabelLeft.classList.add('timelineBoardLabel');
@@ -90,12 +108,18 @@ export class Timeline {
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onWheel = this.onWheel.bind(this);
 
+        this.onControlsPointerDown = this.onControlsPointerDown.bind(this);
+        this.onControlsPointerUp = this.onControlsPointerUp.bind(this);
+
         this.canvas.addEventListener('pointerdown', this.onPointerDown);
         this.canvas.addEventListener('pointermove', this.onPointerMove);
         this.canvas.addEventListener('pointerup', this.onPointerUp);
         this.canvas.addEventListener('pointerover', this.onPointerOver);
         this.canvas.addEventListener('pointerout', this.onPointerOut);
         this.canvas.addEventListener('wheel', this.onWheel);
+
+        this.controlsCanvas.addEventListener('pointerdown', this.onControlsPointerDown);
+        this.controlsCanvas.addEventListener('pointerup', this.onControlsPointerUp);
 
         realityEditor.device.layout.onWindowResized(this.recomputeSize.bind(this));
     }
@@ -177,6 +201,8 @@ export class Timeline {
         this.drawCursor();
 
         this.drawMinimap();
+
+        this.drawControls();
 
         this.updateBoardLabels();
         this.updateRegionCard();
@@ -536,6 +562,62 @@ export class Timeline {
         let startX = (this.timeMin - this.minTimeMin) / fullTimeWidth * this.width;
         let width = this.widthMs / fullTimeWidth * this.width;
         this.gfx.fillRect(startX, minimapStart, width, minimapHeight);
+    }
+
+    drawControls() {
+        this.controlsGfx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        let dpr = window.devicePixelRatio;
+        this.controlsGfx.scale(dpr, dpr);
+        this.controlsGfx.clearRect(0, boardStart + rowPad, rowHeight, rowHeight);
+        this.controlsGfx.fillRect(0, boardStart + rowPad, rowHeight, rowHeight);
+
+        let hpa = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+        if (hpa && hpa.animationMode === AnimationMode.region) {
+            let icon = this.iconPlay;
+            if (hpa.animationPlaying) {
+                icon = this.iconPause;
+            }
+            const iconSize = rowHeight - 2 * rowPad;
+            this.controlsGfx.drawImage(icon, rowPad, boardStart + 2 * rowPad, iconSize, iconSize);
+        }
+        this.controlsGfx.resetTransform(dpr, dpr);
+    }
+
+    onControlsPointerDown(event) {
+        if (realityEditor.device.isMouseEventCameraControl(event)) return;
+
+        if (event.offsetY < boardStart + rowPad) {
+            return;
+        }
+        if (event.offsetY > boardStart + rowPad + rowHeight) {
+            return;
+        }
+
+        event.stopPropagation();
+    }
+
+    /**
+     * Handles pointer up (click end, presumably) events for the controls
+     * sidebar. e.g. pause/play pose playback
+     * @param {PointerEvent} event
+     */
+    onControlsPointerUp(event) {
+        // Currently just the play/pause icon
+        if (realityEditor.device.isMouseEventCameraControl(event)) return;
+
+        if (event.offsetY < boardStart + rowPad) {
+            return;
+        }
+        if (event.offsetY > boardStart + rowPad + rowHeight) {
+            return;
+        }
+
+        let hpa = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+        if (hpa) {
+            hpa.animationPlaying = !hpa.animationPlaying;
+        }
+
+        event.stopPropagation();
     }
 
     appendPose(pose) {
