@@ -65,7 +65,7 @@ module.exports = {
         "webkitConvertPointFromPageToNode": "writable",
     },
     "parserOptions": {
-        "ecmaVersion": 2018,
+        "ecmaVersion": 2022,
         "sourceType": "module",
     },
     "rules": {
@@ -91,7 +91,7 @@ module.exports = {
           "src/states.js",
         ],
         "parserOptions": {
-            "ecmaVersion": 2018,
+            "ecmaVersion": 2022,
             "sourceType": "script"
         }
     }]

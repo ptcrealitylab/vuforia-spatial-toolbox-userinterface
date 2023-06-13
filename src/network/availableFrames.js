@@ -66,6 +66,7 @@ createNameSpace("realityEditor.network.availableFrames");
             Object.values(frames).forEach(function(frameInfo) {
                 if (typeof frameInfo.icon === "undefined") {
                     var preloadedImage = new Image(); // download / preload the icon.gif for each frame
+                    preloadedImage.crossOrigin = "anonymous";  
                     preloadedImage.src = getFrameIconSrcByIP(serverIP, frameInfo.properties.name);
                     frameInfo.icon = preloadedImage;
                 }
