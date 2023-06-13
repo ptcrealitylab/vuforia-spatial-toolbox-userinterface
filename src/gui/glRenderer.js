@@ -350,6 +350,12 @@ class WorkerGLProxy {
             new Int32Array(localCommand.responseBuffer)[0] = res;
         } else if (localCommand.name === "getAttribLocation") {
             new Int32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "checkFramebufferStatus") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "clientWaitSync") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
+        } else if (localCommand.name === "getUniformBlockIndex") {
+            new Uint32Array(localCommand.responseBuffer)[0] = res;
         }
     }
 
@@ -555,7 +561,7 @@ function initService() {
         canvas.addEventListener("webglcontextlost", (e) => {for (const proxy of proxies) proxy.onContextLost(e);}, false);
         canvas.addEventListener("webglcontextrestored", (e) => {for (const proxy of proxies) proxy.onContextRestored(e);}, false);
         canvas.addEventListener("webglcontextcreationerror", (e) => {console.log("can't create context: " + (e.statusMessage || "Unknown error"))}, false);
-        //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'));
+        //gl = WebGLDebugUtils.makeDebugContext(canvas.getContext('webgl2'), throwOnGLError, logAndValidate);
         gl = canvas.getContext('webgl2');
 
         // the standalone tool version doesn't have this function
