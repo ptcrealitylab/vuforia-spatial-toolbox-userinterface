@@ -77,10 +77,10 @@ export class Timeline {
         container.appendChild(this.controlsCanvas);
 
         this.iconPlay = document.createElement('img');
-        this.iconPlay.src = '../../png/playing.png';
+        this.iconPlay.src = './png/playing.png';
 
         this.iconPause = document.createElement('img');
-        this.iconPause.src = '../../png/paused.png';
+        this.iconPause.src = './png/paused.png';
 
         this.boardLabelLeft = document.createElement('div');
         this.boardLabelLeft.classList.add('timelineBoardLabel');
