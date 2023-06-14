@@ -1,21 +1,40 @@
 createNameSpace("realityEditor.addons");
 
 (function(exports) {
+    /**
+     * @param {Element} element
+     * @return {Promise} resolved on load or on error of element
+     */
+    function wrapLoadOrError(element) {
+        return new Promise(resolve => {
+            function onEvent() {
+                resolve();
+                element.removeEventListener('load', onEvent);
+                element.removeEventListener('error', onEvent);
+            }
+            element.addEventListener('load', onEvent);
+            element.addEventListener('error', onEvent);
+        });
+    }
+
     // Fetch the list of all add-ons to inject
-    fetch('/addons/sources').then((res) => {
+    let allScriptsLoaded = fetch('/addons/sources').then((res) => {
         return res.json();
     }).then((addonSources) => {
         // Inject all scripts, counting on them to load asynchronously and add
         // their own callbacks
-        for (let source of addonSources) {
+        const loePromises = addonSources.map(source => {
             const scriptNode = document.createElement('script');
+            const loe = wrapLoadOrError(scriptNode);
             if (source.startsWith('/')) {
               source = '.' + source;
             }
             scriptNode.src = source;
             scriptNode.type = 'module';
             document.head.appendChild(scriptNode);
-        }
+            return loe;
+        });
+        return Promise.all(loePromises);
     });
 
     // Also fetch CSS addons
@@ -53,10 +72,12 @@ createNameSpace("realityEditor.addons");
     /**
      * On init call all init callbacks
      */
-    function onInit() {
-        initialized = true;
-        callbacks['init'].forEach(cb => {
-            cb();
+    async function onInit() {
+        return allScriptsLoaded.finally(() => {
+            initialized = true;
+            callbacks['init'].forEach(cb => {
+                cb();
+            });
         });
     }
 

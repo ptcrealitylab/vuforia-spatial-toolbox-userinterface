@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -489,9 +489,6 @@ realityEditor.app.clearCache = function () {
 realityEditor.app.focusCamera = function() {
     this.appFunctionCall('focusCamera', null, null);
 };
-
-// global shortcut for clearing the cache
-cc = realityEditor.app.clearCache.bind(realityEditor.app);
 
 /**
  ************** SAVE DATA TO DISK ****************
