@@ -651,15 +651,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
-    function getRaycastCoordinates(screenX, screenY) {
+    function getRaycastCoordinates(screenX, screenY, includeGroundPlane = false) {
         let worldIntersectPoint = null;
         let objectsToCheck = [];
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
         }
-        // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
-        //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
-        // }
+        if (includeGroundPlane) {
+            let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
+            groundPlane.updateWorldMatrix(true, false);
+            objectsToCheck.push(groundPlane);
+        }
         if (cachedWorldObject && objectsToCheck.length > 0) {
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
