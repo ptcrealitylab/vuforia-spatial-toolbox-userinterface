@@ -229,6 +229,11 @@ realityEditor.network.objectDiscoveredCallbacks = [];
  */
 realityEditor.network.addObjectDiscoveredCallback = function(callback) {
     this.objectDiscoveredCallbacks.push(callback);
+
+    // trigger the callback for existing objects, if added too late
+    for (let [objectKey, object] of Object.entries(objects)) {
+        callback(object, objectKey);
+    }
 };
 
 /**

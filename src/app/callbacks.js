@@ -239,6 +239,8 @@ createNameSpace('realityEditor.app.callbacks');
         if (!realityEditor.worldObjects) {
             return;
         } // prevents tons of error messages while app is loading but Vuforia has started
+        
+        if (!realityEditor.device.modeTransition.isARMode()) return;
 
         // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
@@ -415,7 +417,7 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receiveCameraMatricesFromAR(cameraInfo) {
         // easiest way to implement freeze button is just to not update the new matrices
-        if (!globalStates.freezeButtonState) {
+        if (!globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
             realityEditor.worldObjects.checkIfFirstLocalization();
 
             let cameraMatrix = cameraInfo.matrix;
@@ -479,7 +481,7 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
-        if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
+        if (globalStates.useGroundPlane && !globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
             
             let worldObject = realityEditor.worldObjects.getBestWorldObject();
 

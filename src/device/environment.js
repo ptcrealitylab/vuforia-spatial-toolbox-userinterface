@@ -33,7 +33,9 @@ createNameSpace("realityEditor.device.environment");
     // rather than checking for "isDesktop", this gives a more reliable way to
     // determine whether to run the AR interface or the remote operator interface
     function isARMode() {
-        return isWithinToolboxApp() && !isDesktop();
+        return isWithinToolboxApp() && 
+            !isDesktop() &&
+            realityEditor.device.modeTransition.isARMode();
     }
 
     function isDesktop() {

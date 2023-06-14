@@ -336,6 +336,7 @@ realityEditor.device.onload = function () {
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.layout.initService();
+    realityEditor.device.modeTransition.initService();
     realityEditor.device.touchInputs.initService();
     realityEditor.device.videoRecording.initService();
     realityEditor.device.tracking.initService();
