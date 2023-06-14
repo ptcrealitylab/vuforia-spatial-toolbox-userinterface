@@ -98,6 +98,9 @@ class RemoteOperatorManager {
         // env.waitForARTracking = false; // don't show loading UI waiting for vuforia to give us camera matrices
         // env.supportsAreaTargetCapture = false; // don't show Create Area Target UI when app loads
     }
+    setTransitionPercent(percent) {
+        realityEditor.device.desktopCamera.setTransitionPercentage(percent);
+    }
     hideRemoteOperator() {
         if (typeof realityEditor.gui.ar.desktopRenderer === 'undefined') return;
         // realityEditor.device.desktopRenderer.initService();
@@ -163,6 +166,16 @@ class RemoteOperatorManager {
         return currentMode === MODES.AR;
     }
     exports.isARMode = isARMode;
+    
+    function setTransitionPercent(percent) {
+        if (percent < 0.01) {
+            switchToAR();
+        } else {
+            switchToRemoteOperator(percent);
+            remoteOperatorManager.setTransitionPercent(percent);
+        }
+    }
+    exports.setTransitionPercent = setTransitionPercent;
     
 }(realityEditor.device.modeTransition));
 
