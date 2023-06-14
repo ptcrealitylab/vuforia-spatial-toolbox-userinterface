@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -67,7 +67,7 @@ realityEditor.device.loaded = false;
  * Network callback function,
  * ... and notify the native iOS code that the user interface finished loading
  */
-realityEditor.device.onload = function () {
+realityEditor.device.onload = async function () {
 
     // Initialize some global variables for the device session
     this.cout('Running on platform: ' + globalStates.platform);
@@ -77,7 +77,7 @@ realityEditor.device.onload = function () {
 
     // Add-ons may need to modify globals or do other far-reaching changes that
     // other services will need to pick up in their initializations
-    realityEditor.addons.onInit();
+    await realityEditor.addons.onInit();
 
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 

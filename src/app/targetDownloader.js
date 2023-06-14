@@ -86,7 +86,9 @@ createNameSpace("realityEditor.app.targetDownloader");
      * Worker that generates navmeshes from upload area target meshes
      * @type {Worker}
      */
-    const navmeshWorker = new Worker('src/app/navmeshWorker.js');
+    const navmeshWorker = new Worker(new URL('./navmeshWorker.js', import.meta.url), {
+          type: 'module',
+    })
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
