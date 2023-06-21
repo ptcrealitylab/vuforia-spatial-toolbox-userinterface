@@ -416,6 +416,8 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {*} cameraInfo
      */
     function receiveCameraMatricesFromAR(cameraInfo) {
+        realityEditor.sceneGraph.setDevicePosition(cameraInfo.matrix);
+
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
             realityEditor.worldObjects.checkIfFirstLocalization();
@@ -435,6 +437,8 @@ createNameSpace('realityEditor.app.callbacks');
                 let callback = listeners.onTrackingStarted.pop();
                 callback();
             }
+        } else {
+            realityEditor.device.modeTransition.setDeviceCameraPosition(cameraInfo.matrix);
         }
     }
 

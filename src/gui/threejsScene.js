@@ -803,6 +803,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
             material.transparent = (Object.keys(materialCullingFrustums).length > 0);
             areaTargetMaterials.push(material);
+            
+            // material.opacity = 0.5;
 
             if (animateOnLoad) {
                 this.materialsToAnimate.push({

@@ -3,6 +3,13 @@ createNameSpace("realityEditor.device.modeTransition");
 // import {Analytics} from './analytics.js'
 // import {AnalyticsMobile} from './AnalyticsMobile.js'
 
+let callbacks = {
+    onRemoteOperatorShown: [],
+    onRemoteOperatorHidden: [],
+    onTransitionPercent: [],
+    onDeviceCameraPosition: []
+}
+
 class RemoteOperatorManager {
     constructor() {
         console.log('created new RemoteOperatorManager');
@@ -20,11 +27,15 @@ class RemoteOperatorManager {
         this.hideRemoteOperator();
     }
     showRemoteOperator() {
-        if (typeof realityEditor.gui.ar.desktopRenderer === 'undefined') return;
+        // if (typeof realityEditor.gui.ar.desktopRenderer === 'undefined') return;
         console.log('show remote operator');
-        realityEditor.gui.ar.desktopRenderer.initService(); // init if needed
+        // realityEditor.gui.ar.desktopRenderer.initService(); // init if needed
         // turn off the pipe from AR device position to camera position, and rely on the desktopCamera controls instead
-        realityEditor.gui.ar.desktopRenderer.showScene();
+        // realityEditor.gui.ar.desktopRenderer.showScene();
+
+        callbacks.onRemoteOperatorShown.forEach(cb => {
+            cb();
+        });
 
         // let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         // worldNode.setLocalMatrix(realityEditor.gui.ar.utilities.newIdentityMatrix());
@@ -66,7 +77,7 @@ class RemoteOperatorManager {
         env.groundWireframeColor = 'rgb(255, 240, 0)'; // make the ground holo-deck styled
         
         // start the update loop
-        realityEditor.device.desktopAdapter.update();
+        // realityEditor.device.desktopAdapter.update();
 
         // try to force the browser to render the background
         // document.body.style.backgroundColor = 'rgb(50, 50, 50)';
@@ -81,13 +92,13 @@ class RemoteOperatorManager {
             this.backgroundBlur = document.createElement('div');
             this.backgroundBlur.id = 'remoteOperatorBackgroundBlur';
         }
-        this.backgroundBlur.classList.remove('animateAllProperties500ms');
+        // this.backgroundBlur.classList.remove('animateAllProperties500ms');
         document.body.appendChild(this.backgroundBlur);
-        this.backgroundBlur.style.backgroundColor = 'rgba(50, 50, 50, 0.3)';
-        setTimeout(() => {
-            this.backgroundBlur.classList.add('animateAllProperties500ms');
-            this.backgroundBlur.style.backgroundColor = 'rgba(50, 50, 50, 1.0)';
-        }, 150);
+        this.backgroundBlur.style.backgroundColor = 'rgba(50, 50, 50, 0.01)';
+        // setTimeout(() => {
+        //     this.backgroundBlur.classList.add('animateAllProperties500ms');
+        //     this.backgroundBlur.style.backgroundColor = 'rgba(50, 50, 50, 1.0)';
+        // }, 150);
         
         // Set the correct environment variables so that this add-on changes the app to run in desktop mode
         // env.requiresMouseEvents = realityEditor.device.environment.isDesktop(); // this fixes touch events to become mouse events
@@ -99,13 +110,29 @@ class RemoteOperatorManager {
         // env.supportsAreaTargetCapture = false; // don't show Create Area Target UI when app loads
     }
     setTransitionPercent(percent) {
-        realityEditor.device.desktopCamera.setTransitionPercentage(percent);
+        // realityEditor.device.desktopCamera.setTransitionPercentage(percent);
+        callbacks.onTransitionPercent.forEach(cb => {
+            cb(percent);
+        });
+        // TODO: update the background blur opacity based on the transition percentage
+        if (this.backgroundBlur) {
+            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 5.0))})`;
+        }
+    }
+    setDeviceCameraPosition(cameraMatrix) {
+        // realityEditor.device.desktopCamera.setDeviceCameraPosition(cameraMatrix);
+        callbacks.onDeviceCameraPosition.forEach(cb => {
+            cb(cameraMatrix);
+        });
     }
     hideRemoteOperator() {
-        if (typeof realityEditor.gui.ar.desktopRenderer === 'undefined') return;
-        // realityEditor.device.desktopRenderer.initService();
-        console.log('TODO: hide remote operator');
-        realityEditor.gui.ar.desktopRenderer.hideScene();
+        // if (typeof realityEditor.gui.ar.desktopRenderer === 'undefined') return;
+        // console.log('TODO: hide remote operator');
+        // realityEditor.gui.ar.desktopRenderer.hideScene();
+
+        callbacks.onRemoteOperatorHidden.forEach(cb => {
+            cb();
+        });
 
         // restore any environment variables to their AR mode values
         let env = realityEditor.device.environment.variables;
@@ -176,6 +203,27 @@ class RemoteOperatorManager {
         }
     }
     exports.setTransitionPercent = setTransitionPercent;
+    
+    // we can transition back to the correct place by using this
+    function setDeviceCameraPosition(cameraMatrix) {
+        if (!remoteOperatorManager) return;
+        remoteOperatorManager.setDeviceCameraPosition(cameraMatrix);
+    }
+    exports.setDeviceCameraPosition = setDeviceCameraPosition;
+    
+    // Callback handlers
+    exports.onRemoteOperatorShown = (callback) => {
+        callbacks.onRemoteOperatorShown.push(callback);
+    }
+    exports.onRemoteOperatorHidden = (callback) => {
+        callbacks.onRemoteOperatorHidden.push(callback);
+    }
+    exports.onTransitionPercent = (callback) => {
+        callbacks.onTransitionPercent.push(callback);
+    }
+    exports.onDeviceCameraPosition = (callback) => {
+        callbacks.onDeviceCameraPosition.push(callback);
+    }
     
 }(realityEditor.device.modeTransition));
 
