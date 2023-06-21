@@ -7,7 +7,9 @@ let callbacks = {
     onRemoteOperatorShown: [],
     onRemoteOperatorHidden: [],
     onTransitionPercent: [],
-    onDeviceCameraPosition: []
+    onDeviceCameraPosition: [],
+    onModeTransitionPinchStart: [],
+    onModeTransitionPinchEnd: []
 }
 
 class RemoteOperatorManager {
@@ -99,7 +101,10 @@ class RemoteOperatorManager {
         //     this.backgroundBlur.classList.add('animateAllProperties500ms');
         //     this.backgroundBlur.style.backgroundColor = 'rgba(50, 50, 50, 1.0)';
         // }, 150);
-        
+
+        let menuBarDiv = document.querySelector('.desktopMenuBar');
+        menuBarDiv.style.display = 'none';
+
         // Set the correct environment variables so that this add-on changes the app to run in desktop mode
         // env.requiresMouseEvents = realityEditor.device.environment.isDesktop(); // this fixes touch events to become mouse events
         // env.shouldDisplayLogicMenuModally = true; // affects appearance of crafting board
@@ -114,9 +119,9 @@ class RemoteOperatorManager {
         callbacks.onTransitionPercent.forEach(cb => {
             cb(percent);
         });
-        // TODO: update the background blur opacity based on the transition percentage
         if (this.backgroundBlur) {
-            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 5.0))})`;
+            // at 10% slider drag, it is 100% opaque
+            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 10))})`;
         }
     }
     setDeviceCameraPosition(cameraMatrix) {
@@ -149,6 +154,115 @@ class RemoteOperatorManager {
     }
 }
 
+class PinchGestureRecognizer {
+    constructor() {
+        this.mouseInput = {
+            unprocessedDX: 0,
+            unprocessedDY: 0,
+            unprocessedScroll: 0,
+            isPointerDown: false,
+            isRightClick: false,
+            isRotateRequested: false,
+            isStrafeRequested: false,
+            first: { x: 0, y: 0 },
+            last: { x: 0, y: 0 },
+            lastWorldPos: [0, 0, 0],
+        };
+        this.callbacks = {
+            onPinchChange: [],
+            onPinchStart: [],
+            onPinchEnd: []
+        };
+        this.addMultitouchEvents();
+    }
+    onPinchChange(callback) {
+        this.callbacks.onPinchChange.push(callback);
+    }
+    onPinchStart(callback) {
+        this.callbacks.onPinchStart.push(callback);
+    }
+    onPinchEnd(callback) {
+        this.callbacks.onPinchEnd.push(callback);
+    }
+    addMultitouchEvents() {
+        // on mobile browsers, we add touch controls instead of mouse controls, to move the camera. additional
+        // code is added to avoid iOS's pesky safari gestures, such as pull-to-refresh and swiping between tabs
+
+        let isMultitouchGestureActive = false;
+        let didMoveAtAll = false;
+        let initialPosition = null;
+        let initialDistance = 0;
+        let lastDistance = 0;
+
+        // Prevent the default pinch gesture response (zooming) on mobile browsers
+        document.addEventListener('gesturestart', (event) => {
+            event.preventDefault();
+        });
+
+        // Handle pinch to zoom
+        const handlePinch = (event) => {
+            event.preventDefault();
+            if (event.touches.length === 2) {
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                const currentDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+
+                if (initialDistance === 0) { // indicates the start of the pinch gesture
+                    initialDistance = currentDistance;
+                    lastDistance = initialDistance;
+                    this.callbacks.onPinchStart.forEach(callback => {
+                        callback();
+                    });
+                } else {
+                    // Calculate the pinch scale based on the change in distance over time.
+                    // 5 is empirically determined to feel natural. -= so bigger distance leads to closer zoom
+                    this.mouseInput.unprocessedScroll -= 5 * (currentDistance - lastDistance);
+                    lastDistance = currentDistance;
+                    this.callbacks.onPinchChange.forEach(callback => {
+                        callback(this.mouseInput.unprocessedScroll);
+                    });
+                    this.mouseInput.unprocessedScroll = 0;
+                }
+            }
+        }
+
+        // Add multitouch event listeners to the document
+        document.addEventListener('touchstart', (event) => {
+            if (!realityEditor.device.utilities.isEventHittingBackground(event)) return;
+
+            isMultitouchGestureActive = true;
+
+            if (event.touches.length === 2) {
+                initialDistance = 0; // Reset pinch distance
+                this.mouseInput.last.x = 0;
+                this.mouseInput.last.y = 0;
+            }
+        });
+        document.addEventListener('touchmove', (event) => {
+            if (!isMultitouchGestureActive) return;
+            event.preventDefault();
+
+            // Ensure regular zoom level
+            document.documentElement.style.zoom = '1';
+            // Ensure no page offset
+            window.scrollTo(0, 0);
+
+            if (event.touches.length === 2) {
+                // zooms based on changing distance between fingers
+                handlePinch(event);
+                didMoveAtAll = true;
+            }
+        });
+        document.addEventListener('touchend', (_event) => {
+            initialDistance = 0;
+            isMultitouchGestureActive = false;
+            this.callbacks.onPinchEnd.forEach(callback => {
+                callback();
+            });
+        });
+    }
+}
+
 (function(exports) {
     
     const MODES = Object.freeze({
@@ -157,6 +271,39 @@ class RemoteOperatorManager {
     });
     let currentMode = null;
     let remoteOperatorManager = new RemoteOperatorManager();
+    let pinchGestureRecognizer = new PinchGestureRecognizer();
+    
+    window.MAX_PINCH_AMOUNT = 1000;
+    let pinchAmount = 0;
+    pinchGestureRecognizer.onPinchStart(_ => {
+        // show the slider
+        console.log('onPinchStart');
+        // pinchAmount = 0;
+        callbacks.onModeTransitionPinchStart.forEach(callback => {
+            callback();
+        })
+    });
+    pinchGestureRecognizer.onPinchEnd(_ => {
+        // hide the slider after 5 seconds
+        console.log('onPinchEnd');
+        // pinchAmount = 0;
+        callbacks.onModeTransitionPinchEnd.forEach(callback => {
+            callback();
+        });
+    });
+    pinchGestureRecognizer.onPinchChange(scrollAmount => {
+        console.log('pinch gesture recognizer got ', scrollAmount);
+        pinchAmount += scrollAmount;
+        pinchAmount = Math.max(0, Math.min(window.MAX_PINCH_AMOUNT, pinchAmount));
+        
+        setTransitionPercent(Math.min(1, Math.max(0, pinchAmount / window.MAX_PINCH_AMOUNT)));
+    });
+    exports.onModeTransitionPinchStart = (callback) => {
+        callbacks.onModeTransitionPinchStart.push(callback);
+    }
+    exports.onModeTransitionPinchEnd = (callback) => {
+        callbacks.onModeTransitionPinchEnd.push(callback);
+    }
     
     function getInitialMode() {
         return realityEditor.device.environment.isWithinToolboxApp() ?
