@@ -292,7 +292,7 @@ class PinchGestureRecognizer {
         });
     });
     pinchGestureRecognizer.onPinchChange(scrollAmount => {
-        console.log('pinch gesture recognizer got ', scrollAmount);
+        // console.log('pinch gesture recognizer got ', scrollAmount);
         pinchAmount += scrollAmount;
         pinchAmount = Math.max(0, Math.min(window.MAX_PINCH_AMOUNT, pinchAmount));
         
@@ -348,6 +348,8 @@ class PinchGestureRecognizer {
             switchToRemoteOperator(percent);
             remoteOperatorManager.setTransitionPercent(percent);
         }
+        // update the pinch amount to allow smooth interoperability between pinch and slider interaction
+        pinchAmount = Math.max(0, Math.min(window.MAX_PINCH_AMOUNT, percent * window.MAX_PINCH_AMOUNT));
     }
     exports.setTransitionPercent = setTransitionPercent;
     

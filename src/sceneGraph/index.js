@@ -63,16 +63,16 @@ createNameSpace("realityEditor.sceneGraph");
         sceneGraph[NAMES.CAMERA] = cameraNode;
         cameraNode.setParent(rootNode);
 
-        deviceNode = new SceneNode(NAMES.DEVICE);
-        sceneGraph[NAMES.DEVICE] = deviceNode;
-        deviceNode.setParent(rootNode);
-
         // create a node representing the ground plane coordinate system
         groundPlaneNode = new SceneNode(NAMES.GROUNDPLANE);
         // groundPlaneNode.needsRotateX = true;
         // addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
         groundPlaneNode.setParent(rootNode);
+
+        deviceNode = new SceneNode(NAMES.DEVICE);
+        sceneGraph[NAMES.DEVICE] = deviceNode;
+        deviceNode.setParent(rootNode);
 
         // also init the network service when this starts
         realityEditor.sceneGraph.network.initService();
