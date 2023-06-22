@@ -995,10 +995,6 @@ realityEditor.device.onDocumentPointerDown = function(event) {
 
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
-    overlayDiv.style.display = "inline";
-    // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
@@ -1031,9 +1027,6 @@ realityEditor.device.onDocumentPointerMove = function(event) {
     event.preventDefault(); //TODO: why is this here but not in other document events?
 
     globalStates.pointerPosition = [event.clientX, event.clientY];
-
-    // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
 
     // if we are dragging a node in using the pocket, moves that element to this position
     realityEditor.gui.pocket.setPocketPosition(event);
@@ -1113,7 +1106,9 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     overlayDiv.classList.remove('overlayNegative');
     overlayDiv.classList.remove('overlayScreenFrame');
     overlayDiv.innerHTML = '';
-    
+
+    overlayDiv2.style.display = "none";
+
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
         var didDisplayGroundplane = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
@@ -1237,6 +1232,23 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     if (realityEditor.device.isMouseEventCameraControl(event)) {
       return;
     }
+
+    // if (event.pointerType === 'touch') {
+        if (event.touches.length === 1) {
+            overlayDiv.style.display = "inline";
+            // Translate up 6px to be above pocket layer
+            overlayDiv.style.transform = 'translate3d(' + event.touches[0].clientX + 'px,' + event.touches[0].clientY + 'px, 1200px)';
+        } else if (event.touches.length === 2) {
+            overlayDiv2.style.display = "inline";
+            // Translate up 6px to be above pocket layer
+            overlayDiv2.style.transform = 'translate3d(' + event.touches[1].clientX + 'px,' + event.touches[1].clientY + 'px, 1200px)';
+        }
+    // } else {
+    //     overlayDiv.style.display = "inline";
+    //     // Translate up 6px to be above pocket layer
+    //     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
+    // }
+    
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1298,16 +1310,37 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     }
     modifyTouchEventIfDesktop(event);
 
+    // // Touch event
+    // if (event.touches.length === 1 && event.touches[0].identifier === event.pointerId) {
+    //     // First finger
+    //     console.log('First finger moved.');
+    //     // Translate up 6px to be above pocket layer
+    //     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
+    //
+    // } else if (event.touches.length === 2 && event.touches[1].identifier === event.pointerId) {
+    //     // Second finger
+    //     console.log('Second finger moved.');
+    //     // Translate up 6px to be above pocket layer
+    //     overlayDiv2.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
+    //
+    // }
+
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
     
-    Array.from(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch, index) {
         realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
             return touch.identifier === currentScreenTouch.identifier;
         }).forEach(function(currentScreenTouch) {
             currentScreenTouch.position.x = touch.pageX;
             currentScreenTouch.position.y = touch.pageY;
         });
+        
+        if (index === 0) {
+            overlayDiv.style.transform = 'translate3d(' + touch.pageX + 'px,' + touch.pageY + 'px, 1200px)';
+        } else if (index === 1) {
+            overlayDiv2.style.transform = 'translate3d(' + touch.pageX + 'px,' + touch.pageY + 'px, 1200px)';
+        }
     });
     
     var activeVehicle = this.getEditingVehicle();

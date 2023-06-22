@@ -277,6 +277,7 @@ var visibleObjectTapInterval = null;
 var visibleObjectTapDelay = 1000;
 
 var overlayDiv;
+var overlayDiv2;
 
 var CRAFTING_GRID_WIDTH = 506;
 var CRAFTING_GRID_HEIGHT = 320;

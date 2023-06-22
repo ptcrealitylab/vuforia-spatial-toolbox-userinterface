@@ -383,6 +383,7 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
+    overlayDiv2 = document.getElementById('overlay2');
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;

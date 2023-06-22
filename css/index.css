@@ -720,6 +720,28 @@ body {
     -webkit-transform-style: preserve-3d;
     -webkit-transform: translateZ(6000px);
 }
+#overlay2 {
+    display: none;
+    pointer-events: none;
+    position: fixed;
+
+    box-sizing: border-box;
+    width: 60px;
+    height: 60px;
+    left: 0px;
+    top: 0px;
+    margin-left: -30px;
+    margin-top: -30px;
+    padding: 0;
+
+    border: 4px solid #01fffc;
+    border-radius: 60px;
+
+    /* render the touch overlay circle on top of everything */
+    z-index: 6000;
+    -webkit-transform-style: preserve-3d;
+    -webkit-transform: translateZ(6000px);
+}
 
 #overlay.overlayPositive,
 #overlay.overlayNegative,
