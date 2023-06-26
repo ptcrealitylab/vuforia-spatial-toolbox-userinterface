@@ -336,6 +336,7 @@ realityEditor.device.onload = function () {
     // initialize additional services
     realityEditor.device.initService();
     realityEditor.device.layout.initService();
+    realityEditor.device.modeTransition.initService();
     realityEditor.device.touchInputs.initService();
     realityEditor.device.videoRecording.initService();
     realityEditor.device.tracking.initService();
@@ -382,6 +383,7 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
+    overlayDiv2 = document.getElementById('overlay2');
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;

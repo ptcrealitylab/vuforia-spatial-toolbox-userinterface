@@ -698,7 +698,7 @@ body {
     object-fit: cover;
 }
 
-#overlay {
+.touch-overlay-circle {
     display: none;
     pointer-events: none;
     position: fixed;
@@ -2082,4 +2082,15 @@ Logic Interface CSS
     left: calc(100vw/2 - 300px/2 - 24px);
     top: calc(100vh/2 - 300px/2 - 24px);
     background: black;
+}
+
+#remoteOperatorBackgroundBlur {
+    background-color: rgba(50, 50, 50, 0.01);
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
 }

@@ -995,10 +995,6 @@ realityEditor.device.onDocumentPointerDown = function(event) {
 
     globalStates.pointerPosition = [event.clientX, event.clientY];
 
-    overlayDiv.style.display = "inline";
-    // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-
     if (realityEditor.device.utilities.isEventHittingBackground(event)) {
 
         if (globalStates.guiState === "node" && !globalStates.editingMode) {
@@ -1031,9 +1027,6 @@ realityEditor.device.onDocumentPointerMove = function(event) {
     event.preventDefault(); //TODO: why is this here but not in other document events?
 
     globalStates.pointerPosition = [event.clientX, event.clientY];
-
-    // Translate up 6px to be above pocket layer
-    overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
 
     // if we are dragging a node in using the pocket, moves that element to this position
     realityEditor.gui.pocket.setPocketPosition(event);
@@ -1104,16 +1097,18 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     // force redraw the background canvas to remove links
     globalCanvas.hasContent = true;
 
-    // hide and reset the overlay div
-    overlayDiv.style.display = "none";
-    overlayDiv.classList.remove('overlayMemory');
-    overlayDiv.classList.remove('overlayLogicNode');
-    overlayDiv.classList.remove('overlayAction');
-    overlayDiv.classList.remove('overlayPositive');
-    overlayDiv.classList.remove('overlayNegative');
-    overlayDiv.classList.remove('overlayScreenFrame');
-    overlayDiv.innerHTML = '';
-    
+    // hide and reset the overlay divs
+    [overlayDiv, overlayDiv2].forEach(overlay => {
+        overlay.style.display = "none";
+        overlay.classList.remove('overlayMemory');
+        overlay.classList.remove('overlayLogicNode');
+        overlay.classList.remove('overlayAction');
+        overlay.classList.remove('overlayPositive');
+        overlay.classList.remove('overlayNegative');
+        overlay.classList.remove('overlayScreenFrame');
+        overlay.innerHTML = '';
+    });
+
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
         var didDisplayGroundplane = realityEditor.gui.settings.toggleStates.visualizeGroundPlane;
@@ -1237,6 +1232,20 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
     if (realityEditor.device.isMouseEventCameraControl(event)) {
       return;
     }
+
+    if (typeof event.touches !== 'undefined') {
+        if (event.touches.length === 1) {
+            overlayDiv.style.display = 'inline';
+            overlayDiv.style.transform = `translate3d(${event.touches[0].clientX}px, ${event.touches[0].clientY}px, 1200px)`;
+        } else if (event.touches.length === 2) {
+            overlayDiv2.style.display = 'inline';
+            overlayDiv2.style.transform = `translate3d(${event.touches[1].clientX}px, ${event.touches[1].clientY}px, 1200px)`;
+        }
+    } else {
+        overlayDiv.style.display = 'inline';
+        overlayDiv.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 1200px)`;
+    }
+
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1298,16 +1307,28 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
     }
     modifyTouchEventIfDesktop(event);
 
+    // if it's a mouse event, move the first touch overlay div
+    if (typeof event.touches === 'undefined') {
+        overlayDiv.style.transform = 'translate3d(' + event.pageX + 'px,' + event.pageY + 'px, 1200px)';
+    }
+
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
     
-    Array.from(event.touches).forEach(function(touch) {
+    Array.from(event.touches).forEach(function(touch, index) {
         realityEditor.device.currentScreenTouches.filter(function(currentScreenTouch) {
             return touch.identifier === currentScreenTouch.identifier;
         }).forEach(function(currentScreenTouch) {
             currentScreenTouch.position.x = touch.pageX;
             currentScreenTouch.position.y = touch.pageY;
         });
+
+        // if it's a touch event, move the touch overlay div for the corresponding finger
+        if (index === 0) {
+            overlayDiv.style.transform = 'translate3d(' + touch.pageX + 'px,' + touch.pageY + 'px, 1200px)';
+        } else if (index === 1) {
+            overlayDiv2.style.transform = 'translate3d(' + touch.pageX + 'px,' + touch.pageY + 'px, 1200px)';
+        }
     });
     
     var activeVehicle = this.getEditingVehicle();
