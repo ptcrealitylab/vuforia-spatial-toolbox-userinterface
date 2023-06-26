@@ -1,17 +1,6 @@
 export class PinchGestureRecognizer {
     constructor() {
-        this.mouseInput = {
-            unprocessedDX: 0,
-            unprocessedDY: 0,
-            unprocessedScroll: 0,
-            isPointerDown: false,
-            isRightClick: false,
-            isRotateRequested: false,
-            isStrafeRequested: false,
-            first: { x: 0, y: 0 },
-            last: { x: 0, y: 0 },
-            lastWorldPos: [0, 0, 0],
-        };
+        this.unprocessedScroll = 0;
         this.callbacks = {
             onPinchChange: [],
             onPinchStart: [],
@@ -29,12 +18,8 @@ export class PinchGestureRecognizer {
         this.callbacks.onPinchEnd.push(callback);
     }
     addMultitouchEvents() {
-        // on mobile browsers, we add touch controls instead of mouse controls, to move the camera. additional
-        // code is added to avoid iOS's pesky safari gestures, such as pull-to-refresh and swiping between tabs
-
         let isMultitouchGestureActive = false;
         let didMoveAtAll = false;
-        let initialPosition = null;
         let initialDistance = 0;
         let lastDistance = 0;
 
@@ -60,12 +45,12 @@ export class PinchGestureRecognizer {
                 } else {
                     // Calculate the pinch scale based on the change in distance over time.
                     // 5 is empirically determined to feel natural. -= so bigger distance leads to closer zoom
-                    this.mouseInput.unprocessedScroll -= 5 * (currentDistance - lastDistance);
+                    this.unprocessedScroll -= 5 * (currentDistance - lastDistance);
                     lastDistance = currentDistance;
                     this.callbacks.onPinchChange.forEach(callback => {
-                        callback(this.mouseInput.unprocessedScroll);
+                        callback(this.unprocessedScroll);
                     });
-                    this.mouseInput.unprocessedScroll = 0;
+                    this.unprocessedScroll = 0;
                 }
             }
         }
@@ -78,8 +63,6 @@ export class PinchGestureRecognizer {
 
             if (event.touches.length === 2) {
                 initialDistance = 0; // Reset pinch distance
-                this.mouseInput.last.x = 0;
-                this.mouseInput.last.y = 0;
             }
         });
         document.addEventListener('touchmove', (event) => {
