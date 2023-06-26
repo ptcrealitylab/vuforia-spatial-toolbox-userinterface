@@ -112,20 +112,6 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             analyticsByFrame[msgData.frame].blur();
         });
 
-        realityEditor.network.addPostMessageHandler('analyticsSetCursorTime', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setCursorTime(msgData.time);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetHighlightRegion', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setHighlightRegion(msgData.highlightRegion);
-        });
-
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
                 return;
@@ -138,41 +124,6 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
                 return;
             }
             analyticsByFrame[msgData.frame].hydrateRegionCards(msgData.regionCards);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetLens', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setLens(msgData.lens);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetLensDetail', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setLensDetail(msgData.lensDetail);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiAttachPoint', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setSpaghettiAttachPoint(msgData.spaghettiAttachPoint);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetSpaghettiVisible', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setSpaghettiVisible(msgData.spaghettiVisible);
-        });
-
-        realityEditor.network.addPostMessageHandler('analyticsSetAllClonesVisible', (msgData) => {
-            if (!analyticsByFrame[msgData.frame]) {
-                return;
-            }
-            analyticsByFrame[msgData.frame].setSpaghettiVisible(msgData.allClonesVisible);
         });
     }
     exports.initService = initService;
