@@ -1233,7 +1233,7 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
       return;
     }
 
-    // if (event.pointerType === 'touch') {
+    if (typeof event.touches !== 'undefined') {
         if (event.touches.length === 1) {
             overlayDiv.style.display = "inline";
             // Translate up 6px to be above pocket layer
@@ -1243,11 +1243,11 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
             // Translate up 6px to be above pocket layer
             overlayDiv2.style.transform = 'translate3d(' + event.touches[1].clientX + 'px,' + event.touches[1].clientY + 'px, 1200px)';
         }
-    // } else {
-    //     overlayDiv.style.display = "inline";
-    //     // Translate up 6px to be above pocket layer
-    //     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-    // }
+    } else {
+        overlayDiv.style.display = "inline";
+        // Translate up 6px to be above pocket layer
+        overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
+    }
     
     modifyTouchEventIfDesktop(event);
 
@@ -1309,6 +1309,10 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
       return;
     }
     modifyTouchEventIfDesktop(event);
+    
+    if (typeof event.touches === 'undefined') {
+        overlayDiv.style.transform = 'translate3d(' + event.pageX + 'px,' + event.pageY + 'px, 1200px)';
+    }
 
     // // Touch event
     // if (event.touches.length === 1 && event.touches[0].identifier === event.pointerId) {

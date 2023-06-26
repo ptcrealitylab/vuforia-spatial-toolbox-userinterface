@@ -1749,6 +1749,31 @@ realityEditor.network.onInternalPostMessage = function (e) {
             }
         }
     }
+    
+    const setVehicleScale = (activeVehicle, scale) => {
+        let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+        positionData.scale = Math.max(0.1, scale); // 0.1 is the minimum scale allowed
+        realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
+    }
+    
+    if (typeof msgContent.full2D !== 'undefined') {
+        if (msgContent.full2D) {
+            // tempThisObject.
+            tempThisObject.isFull2D = true; // if "sticky" fullscreen, gets called multiple times, so need to store in the frame
+            let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+            setVehicleScale(activeVehicle, 3.0);
+            // realityEditor.envelopeManager.showBlurredBackground(msgContent.frame);
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+            }
+        } else {
+            tempThisObject.isFull2D = false;
+            // realityEditor.envelopeManager.hideBlurredBackground(msgContent.frame);
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.remove('deactivatedIframeOverlay');
+            }
+        }
+    }
 
     if(typeof msgContent.stickiness === "boolean") {
         tempThisObject.stickiness = msgContent.stickiness;

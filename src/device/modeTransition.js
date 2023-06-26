@@ -130,7 +130,7 @@ class RemoteOperatorManager {
         });
         if (this.backgroundBlur) {
             // at 10% slider drag, it is 100% opaque
-            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 5))})`;
+            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, (percent - 0.05) * 20))})`;
         }
     }
     setDeviceCameraPosition(cameraMatrix) {
