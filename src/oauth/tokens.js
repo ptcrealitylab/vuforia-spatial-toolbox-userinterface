@@ -13,6 +13,8 @@ export function loadToken(frame, urls, clientId, clientSecret) {
             edgeServer: edgeServer,
             authorizationUrl: urls.authorizationUrl,
             accessTokenUrl: urls.accessTokenUrl,
+            clientId: clientId,
+            clientSecret: clientSecret,
             toolboxUrl: window.location.href,
             frame: frame
         });
@@ -63,7 +65,6 @@ export function loadToken(frame, urls, clientId, clientSecret) {
 }
 
 export function saveToken(data, frame, authorizationUrl) {
-    console.log('Saving token', data);
     const { access_token, refresh_token, expires_in } = data;
     const key = `token-${frame}-${authorizationUrl}`;
     localStorage.setItem(key, JSON.stringify({
