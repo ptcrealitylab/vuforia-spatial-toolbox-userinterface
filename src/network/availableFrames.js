@@ -36,7 +36,7 @@ createNameSpace("realityEditor.network.availableFrames");
                 onNewServerDetected(message.action.reloadAvailableFrames.serverIP);
             }
         });
-        onNewServerDetected('127.0.0.1');
+        onNewServerDetected('localhost');
     }
 
     /**
@@ -296,7 +296,7 @@ createNameSpace("realityEditor.network.availableFrames");
         var serverIP = realityEditor.getObject(objectKey).ip;
         if (typeof framesPerServer[serverIP] === 'undefined') {
             // console.log('this object server doesnt have its own frames; load from localhost instead');
-            serverIP = '127.0.0.1';
+            serverIP = 'localhost';
         }
         return serverIP;
     }

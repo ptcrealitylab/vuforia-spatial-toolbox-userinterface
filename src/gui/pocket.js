@@ -792,7 +792,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     ipLabel.classList.add('palette-element-label');
                     
                     if (!SIMPLE_IP_LABELS) {
-                        ipLabel.innerText = realityElements[i].actualIP; // '127.0.0.1';
+                        ipLabel.innerText = realityElements[i].actualIP; // 'localhost';
                         if (realityElements[i].actualIP !== realityElements[i].proxyIP) {
                             ipLabel.innerText = realityElements[i].actualIP + ' (' + realityElements[i].proxyIP + ')';
                         }
@@ -964,7 +964,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 
                 var ipLabel = document.createElement('div');
                 ipLabel.classList.add('palette-element-label');
-                ipLabel.innerText = realityEditor.getObject(closestObjectKey).ip; // '127.0.0.1';
+                ipLabel.innerText = realityEditor.getObject(closestObjectKey).ip; // 'localhost';
                 container.appendChild(ipLabel);
             }
 

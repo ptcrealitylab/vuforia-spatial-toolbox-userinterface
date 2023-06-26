@@ -83,7 +83,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
             // wait after detecting an object to check the next step
             let delay = 5000;
-            if (object.ip === '127.0.0.1') {
+            if (object.ip === '127.0.0.1' || object.ip === 'localhost') {
                 delay = 7000;
             }
             setTimeout(function() {
@@ -141,7 +141,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         const headerText = 'No scans of this space detected. Make a scan?';
         let randomServerIP = Object.keys(detectedServers).filter(detectedServer => {
-            return detectedServer !== '127.0.0.1';
+            return detectedServer !== '127.0.0.1' && detectedServer !== 'localhost';
         })[0]; // this is guaranteed to have at least one entry if we get here
         let descriptionText = `This will create a World Object on your edge server.<br/>Selected IP: `;
         descriptionText += `<select id="modalServerIp">`;
@@ -180,7 +180,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             createPendingWorldObject(serverIp);
         } else {
             let detectedServers = realityEditor.network.discovery.getDetectedServerIPs({limitToWorldService: true});
-            let randomServerIP = Object.keys(detectedServers)[0] || '127.0.0.1';
+            let randomServerIP = Object.keys(detectedServers)[0] || 'localhost';
             //.filter(detectedServer => {
             //    return detectedServer !== '127.0.0.1';
             //})[0];
@@ -426,11 +426,11 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             return response.json();
         }).then((object) => {
             console.log('success', object);
-            if (serverIp !== '127.0.0.1') {
+            if (serverIp !== '127.0.0.1' && serverIp !== 'localhost') {
                 return;
             }
             let baseWorldObjectBeat = {
-                ip: '127.0.0.1',
+                ip: 'localhost',
                 port: realityEditor.device.environment.getLocalServerPort(),
                 vn: 320,
                 pr: 'R2',
