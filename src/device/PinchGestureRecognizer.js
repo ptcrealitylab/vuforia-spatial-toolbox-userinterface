@@ -19,7 +19,6 @@ export class PinchGestureRecognizer {
     }
     addMultitouchEvents() {
         let isMultitouchGestureActive = false;
-        let didMoveAtAll = false;
         let initialDistance = 0;
         let lastDistance = 0;
 
@@ -77,7 +76,6 @@ export class PinchGestureRecognizer {
             if (event.touches.length === 2) {
                 // zooms based on changing distance between fingers
                 handlePinch(event);
-                didMoveAtAll = true;
             }
         });
         document.addEventListener('touchend', (_event) => {
