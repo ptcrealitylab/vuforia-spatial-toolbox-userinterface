@@ -1097,17 +1097,17 @@ realityEditor.device.onDocumentPointerUp = function(event) {
     // force redraw the background canvas to remove links
     globalCanvas.hasContent = true;
 
-    // hide and reset the overlay div
-    overlayDiv.style.display = "none";
-    overlayDiv.classList.remove('overlayMemory');
-    overlayDiv.classList.remove('overlayLogicNode');
-    overlayDiv.classList.remove('overlayAction');
-    overlayDiv.classList.remove('overlayPositive');
-    overlayDiv.classList.remove('overlayNegative');
-    overlayDiv.classList.remove('overlayScreenFrame');
-    overlayDiv.innerHTML = '';
-
-    overlayDiv2.style.display = "none";
+    // hide and reset the overlay divs
+    [overlayDiv, overlayDiv2].forEach(overlay => {
+        overlay.style.display = "none";
+        overlay.classList.remove('overlayMemory');
+        overlay.classList.remove('overlayLogicNode');
+        overlay.classList.remove('overlayAction');
+        overlay.classList.remove('overlayPositive');
+        overlay.classList.remove('overlayNegative');
+        overlay.classList.remove('overlayScreenFrame');
+        overlay.innerHTML = '';
+    });
 
     // if not in crafting board, reset menu back to main
     if (globalStates.guiState !== "logic" && this.currentScreenTouches.length === 1) {
@@ -1235,20 +1235,17 @@ realityEditor.device.onDocumentMultiTouchStart = function (event) {
 
     if (typeof event.touches !== 'undefined') {
         if (event.touches.length === 1) {
-            overlayDiv.style.display = "inline";
-            // Translate up 6px to be above pocket layer
-            overlayDiv.style.transform = 'translate3d(' + event.touches[0].clientX + 'px,' + event.touches[0].clientY + 'px, 1200px)';
+            overlayDiv.style.display = 'inline';
+            overlayDiv.style.transform = `translate3d(${event.touches[0].clientX}px, ${event.touches[0].clientY}px, 1200px)`;
         } else if (event.touches.length === 2) {
-            overlayDiv2.style.display = "inline";
-            // Translate up 6px to be above pocket layer
-            overlayDiv2.style.transform = 'translate3d(' + event.touches[1].clientX + 'px,' + event.touches[1].clientY + 'px, 1200px)';
+            overlayDiv2.style.display = 'inline';
+            overlayDiv2.style.transform = `translate3d(${event.touches[1].clientX}px, ${event.touches[1].clientY}px, 1200px)`;
         }
     } else {
-        overlayDiv.style.display = "inline";
-        // Translate up 6px to be above pocket layer
-        overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
+        overlayDiv.style.display = 'inline';
+        overlayDiv.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 1200px)`;
     }
-    
+
     modifyTouchEventIfDesktop(event);
 
     realityEditor.device.touchEventObject(event, "touchstart", realityEditor.device.touchInputs.screenTouchStart);
@@ -1309,25 +1306,11 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
       return;
     }
     modifyTouchEventIfDesktop(event);
-    
+
+    // if it's a mouse event, move the first touch overlay div
     if (typeof event.touches === 'undefined') {
         overlayDiv.style.transform = 'translate3d(' + event.pageX + 'px,' + event.pageY + 'px, 1200px)';
     }
-
-    // // Touch event
-    // if (event.touches.length === 1 && event.touches[0].identifier === event.pointerId) {
-    //     // First finger
-    //     console.log('First finger moved.');
-    //     // Translate up 6px to be above pocket layer
-    //     overlayDiv.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-    //
-    // } else if (event.touches.length === 2 && event.touches[1].identifier === event.pointerId) {
-    //     // Second finger
-    //     console.log('Second finger moved.');
-    //     // Translate up 6px to be above pocket layer
-    //     overlayDiv2.style.transform = 'translate3d(' + event.clientX + 'px,' + event.clientY + 'px, 1200px)';
-    //
-    // }
 
     realityEditor.device.touchEventObject(event, "touchmove", realityEditor.device.touchInputs.screenTouchMove);
     cout("onDocumentMultiTouchMove");
@@ -1339,7 +1322,8 @@ realityEditor.device.onDocumentMultiTouchMove = function (event) {
             currentScreenTouch.position.x = touch.pageX;
             currentScreenTouch.position.y = touch.pageY;
         });
-        
+
+        // if it's a touch event, move the touch overlay div for the corresponding finger
         if (index === 0) {
             overlayDiv.style.transform = 'translate3d(' + touch.pageX + 'px,' + touch.pageY + 'px, 1200px)';
         } else if (index === 1) {

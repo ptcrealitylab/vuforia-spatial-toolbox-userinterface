@@ -242,6 +242,7 @@ createNameSpace('realityEditor.app.callbacks');
             return;
         } // prevents tons of error messages while app is loading but Vuforia has started
         
+        // If viewing the VR map instead of the AR view, don't update objects/tools based on Vuforia
         if (!realityEditor.device.modeTransition.isARMode()) return;
 
         // this first section makes the app work with extended or non-extended tracking while being backwards compatible
@@ -421,7 +422,14 @@ createNameSpace('realityEditor.app.callbacks');
         realityEditor.sceneGraph.setDevicePosition(cameraInfo.matrix);
 
         // easiest way to implement freeze button is just to not update the new matrices
-        if (!globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
+        if (!globalStates.freezeButtonState) {
+            // when viewing VR map, sceneGraph camera will get set based on virtual camera,
+            // but we can still access the device's true position through the deviceNode
+            if (!realityEditor.device.modeTransition.isARMode()) {
+                realityEditor.device.modeTransition.setDeviceCameraPosition(cameraInfo.matrix);
+                return;
+            }
+
             realityEditor.worldObjects.checkIfFirstLocalization();
 
             let cameraMatrix = cameraInfo.matrix;
@@ -439,8 +447,6 @@ createNameSpace('realityEditor.app.callbacks');
                 let callback = listeners.onTrackingStarted.pop();
                 callback();
             }
-        } else {
-            realityEditor.device.modeTransition.setDeviceCameraPosition(cameraInfo.matrix);
         }
     }
 
