@@ -20,7 +20,9 @@ window.onload = () => {
     if (code) {
         const data = {
             'code': code,
-            'redirect_uri': window.location.origin + window.location.pathname
+            'redirect_uri': window.location.origin + window.location.pathname,
+            'client_id': state.clientId,
+            'client_secret': state.clientSecret
         }
         const serverUrl = `${state.edgeServer}/oauthAcquire`;
         fetch(`${serverUrl}/${state.accessTokenUrl}`, {
