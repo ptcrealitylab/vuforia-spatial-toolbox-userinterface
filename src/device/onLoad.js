@@ -151,7 +151,7 @@ realityEditor.device.onload = function () {
             }.bind(this), 1000);
         }
 
-    }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
+    }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1') && !window.location.href.includes('localhost')); // default value is based on the current source
 
     realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
         console.log('discovery state set to ' + newValue + ' with text ' + textValue);
@@ -251,7 +251,7 @@ realityEditor.device.onload = function () {
     });
 
     let cachedSettings = {};
-    const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
     // If we're viewing this on localhost we can connect to and read settings
     // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
@@ -365,6 +365,7 @@ realityEditor.device.onload = function () {
     realityEditor.avatar.initService();
     realityEditor.humanPose.initService();
     realityEditor.analytics.initService();
+    realityEditor.oauth.initService();
     realityEditor.spatialCursor.initService();
     realityEditor.gui.spatialIndicator.initService();
     realityEditor.gui.spatialArrow.initService();
