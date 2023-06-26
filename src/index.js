@@ -67,6 +67,7 @@ var realityEditor = realityEditor || {
         environment: {},
         keyboardEvents: {},
         layout: {},
+        modeTransition: {},
         onLoad: {},
         touchInputs: {},
         touchPropagation: {},

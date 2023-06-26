@@ -47,7 +47,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalFrameScaleAdjustment, globalNodeScaleAdjustment,, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING,, acceptUDPBeats, updateFramerate */
+/* exported httpPort, defaultHttpPort, timeForContentLoaded, timeCorrection, boundListeners, TEMP_DISABLE_MEMORIES, globalStates, globalCanvas, publicDataCache, pocketItemId, globalFrameScaleAdjustment, globalNodeScaleAdjustment,, pocketFrame, pocketNode, globalDOMCache, shadowObjects, globalProgram, rotateX, rotationXMatrix, editingAnimationsMatrix, pocketDropAnimation, pocketBegin, visibleObjectTapInterval, visibleObjectTapDelay, overlayDiv, overlayDiv2, CRAFTING_GRID_WIDTH, CRAFTING_GRID_HEIGHT, DEBUG_DATACRAFTING,, acceptUDPBeats, updateFramerate */
 
 /**********************************************************************************************************************
  ******************************************** constant settings *******************************************************
@@ -277,6 +277,7 @@ var visibleObjectTapInterval = null;
 var visibleObjectTapDelay = 1000;
 
 var overlayDiv;
+var overlayDiv2;
 
 var CRAFTING_GRID_WIDTH = 506;
 var CRAFTING_GRID_HEIGHT = 320;

@@ -43,6 +43,7 @@ module.exports = {
         "io": "writable",
         "objects": "writable",
         "overlayDiv": "writable",
+        "overlayDiv2": "writable",
         "p5": "writable",
         "pocketBegin": "writable",
         "pocketDropAnimation": "writable",
