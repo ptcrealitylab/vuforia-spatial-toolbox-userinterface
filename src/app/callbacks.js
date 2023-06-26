@@ -147,7 +147,9 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receivedProjectionMatrix(matrix) {
         // console.log('got projection matrix!', matrix);
-        realityEditor.gui.ar.setProjectionMatrix(matrix);
+        if (realityEditor.device.modeTransition.isARMode()) {
+            realityEditor.gui.ar.setProjectionMatrix(matrix);
+        }
     }
 
     exports.acceptUDPBeats = true;

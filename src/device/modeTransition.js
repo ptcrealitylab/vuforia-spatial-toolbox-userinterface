@@ -16,6 +16,11 @@ class RemoteOperatorManager {
     constructor() {
         console.log('created new RemoteOperatorManager');
         this.prevEnvironmentVariables = {};
+        this.prevMatrices = {
+            projection: null,
+            realProjection: null,
+            unflippedRealProjection: null
+        }
     }
     needsInitialization() {
         return true;
@@ -35,6 +40,10 @@ class RemoteOperatorManager {
         // turn off the pipe from AR device position to camera position, and rely on the desktopCamera controls instead
         // realityEditor.gui.ar.desktopRenderer.showScene();
 
+        this.prevMatrices.projection = JSON.parse(JSON.stringify(globalStates.projectionMatrix));
+        this.prevMatrices.realProjection = JSON.parse(JSON.stringify(globalStates.realProjectionMatrix));
+        this.prevMatrices.unflippedRealProjection = JSON.parse(JSON.stringify(globalStates.unflippedRealProjectionMatrix));
+        
         callbacks.onRemoteOperatorShown.forEach(cb => {
             cb();
         });
@@ -121,7 +130,7 @@ class RemoteOperatorManager {
         });
         if (this.backgroundBlur) {
             // at 10% slider drag, it is 100% opaque
-            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 20))})`;
+            this.backgroundBlur.style.backgroundColor = `rgba(50, 50, 50, ${Math.max(0, Math.min(1, percent * 5))})`;
         }
     }
     setDeviceCameraPosition(cameraMatrix) {
@@ -145,7 +154,12 @@ class RemoteOperatorManager {
             env[key] = value;
             delete this.prevEnvironmentVariables[key];
         }
-        
+
+        // restore the projection matrix from Vuforia
+        globalStates.projectionMatrix = JSON.parse(JSON.stringify(this.prevMatrices.projection));
+        globalStates.realProjectionMatrix = JSON.parse(JSON.stringify(this.prevMatrices.realProjection));
+        globalStates.unflippedRealProjectionMatrix = JSON.parse(JSON.stringify(this.prevMatrices.unflippedRealProjection));
+
         if (this.backgroundBlur) {
             document.body.removeChild(this.backgroundBlur);
         }

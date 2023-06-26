@@ -517,6 +517,7 @@ createNameSpace("realityEditor.avatar.draw");
 
     // when sending a beam, highlight your cursor
     function renderCursorOverlay(isVisible, screenX, screenY, color) {
+        // return;
         let overlay = document.getElementById('beamOverlay');
         if (!overlay) {
             overlay = document.createElement('div');
