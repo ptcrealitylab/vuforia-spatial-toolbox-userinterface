@@ -123,7 +123,7 @@ createNameSpace("realityEditor.worldObjects");
     function tryLoadingLocalWorldObject() {
         let worldObjectBeat = {
             id: localWorldObjectKey,
-            ip: '127.0.0.1',
+            ip: 'localhost',
             port: realityEditor.device.environment.getLocalServerPort(),
             vn: 320,
             pr: 'R2',
@@ -167,7 +167,7 @@ createNameSpace("realityEditor.worldObjects");
     function onNewServerDiscovered(object) {
         // regular world objects are discovered by UDP broadcast. but the _WORLD_local on localhost gets downloaded with the old REST API
         // TODO: there's probably a simpler implementation if we're making the assumption that we only need to download the localhost server this way
-        if (object.ip !== '127.0.0.1') {
+        if (object.ip !== '127.0.0.1' && object.ip !== 'localhost') {
             return;
         }
         

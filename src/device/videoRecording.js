@@ -317,7 +317,7 @@ createNameSpace("realityEditor.device.videoRecording");
             }, 1000);
         }
 
-        const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+        const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
         if (window.location.host.split(':')[0] !== localSettingsHost.split(':')[0]) {
             const networkId = /\/n\/([^/]+)/.exec(window.location.pathname)[1];
             const networkSecret = /\/s\/([^/]+)/.exec(window.location.pathname)[1];
