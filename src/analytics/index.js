@@ -62,6 +62,20 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
     }
     exports.getActiveTimeline = getActiveTimeline;
 
+    function onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+        if (!analyticsByFrame[event.frameKey]) {
+            return;
+        }
+        analyticsByFrame[event.frameKey].close();
+        delete analyticsByFrame[event.frameKey];
+        if (activeFrame === event.frameKey) {
+            activeFrame = noneFrame;
+        }
+    }
+
     function initService() {
         activeFrame = noneFrame;
         analyticsByFrame[noneFrame] = makeAnalytics(noneFrame);
@@ -125,6 +139,9 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             }
             analyticsByFrame[msgData.frame].hydrateRegionCards(msgData.regionCards);
         });
+
+        realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
     }
     exports.initService = initService;
 }(realityEditor.analytics));
