@@ -521,15 +521,16 @@ export class Timeline {
         this.gfx.fillStyle = 'rgb(200, 200, 200)';
 
         for (const patch of patches) {
-            let timeStart = patch.__creationTime - 1000;
-            let timeEnd = patch.__creationTime + 2000;
+            let timeStart = patch.creationTime;
+            let timeEnd = patch.creationTime + 1000;
 
             let patchVisible = this.cursorTime > timeStart && this.cursorTime < timeEnd;
-            if (this.cursorTime < this.timeMin || this.cursorTime > timeMax) {
-                patchVisible = true;
-            }
 
-            patch.visible = patchVisible;
+            if (patchVisible) {
+                patch.show();
+            } else {
+                patch.hide();
+            }
 
             if (timeEnd < this.timeMin || timeStart > timeMax) {
                 continue;
