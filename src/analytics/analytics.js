@@ -171,7 +171,8 @@ export class Analytics {
         const patches = Object.values(desktopRenderer.getCameraVisPatches() || {});
 
         for (const patch of patches) {
-            patch.visible = true;
+            patch.show();
+            patch.resetShaderMode();
         }
     }
 
@@ -356,17 +357,17 @@ export class Analytics {
             return;
         }
 
-        const patches = desktopRenderer.cloneCameraVisPatches();
+        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
         if (!patches) {
             return;
         }
 
         // Hide cloned patches after brief delay to not clutter the space
-        setTimeout(() => {
-            for (const patch of Object.values(patches)) {
-                patch.visible = false;
-            }
-        }, patchTolerance);
+        // setTimeout(() => {
+        //     for (const patch of Object.values(patches)) {
+        //         patch.visible = false;
+        //     }
+        // }, patchTolerance);
     }
 
     writeDehydratedRegionCards() {
