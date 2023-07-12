@@ -95,11 +95,13 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
         });
 
         realityEditor.network.addPostMessageHandler('analyticsClose', (msgData) => {
-            if (!analyticsByFrame[msgData.frame] || activeFrame !== msgData.frame) {
+            if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            activeFrame = noneFrame;
             analyticsByFrame[msgData.frame].close();
+            if (activeFrame === msgData.frame) {
+                activeFrame = noneFrame;
+            }
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
@@ -120,10 +122,10 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
+            analyticsByFrame[msgData.frame].blur();
             if (activeFrame === msgData.frame) {
                 activeFrame = noneFrame;
             }
-            analyticsByFrame[msgData.frame].blur();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetDisplayRegion', (msgData) => {
