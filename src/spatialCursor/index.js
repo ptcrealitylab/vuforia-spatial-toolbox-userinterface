@@ -252,7 +252,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName, { moveToCursor = false } = {}) {
+    function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
         
         let spatialCursorMatrix = null;
         if (moveToCursor) {
@@ -276,6 +276,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
                 realityEditor.network.postVehiclePosition(addedElement);
+                if (typeof onToolUploadComplete === 'function') {
+                    onToolUploadComplete(addedElement);
+                }
             }
         });
 
@@ -392,6 +395,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (hasSubscribedToUpdates) return;
         hasSubscribedToUpdates = true;
         realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
+    }
+
+    exports.setCursorPosition = (x, y) => {
+        screenX = x;
+        screenY = y;
+    }
+    
+    let isHighlighted = false;
+    exports.setCursorStyle = ({highlighted}) => {
+        isHighlighted = highlighted;
+    }
+    
+    exports.isCursorOnValidPosition = () => {
+        return Object.keys(worldIntersectPoint).length > 0;
     }
 
     function updateLoop() {
@@ -546,6 +563,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
     function updateScaleFactor() {
+        let MAX_SCALE_FACTOR = isHighlighted ? 3.0 : 1.0; // get larger when highlighted
+        // scaleAccelerationFactor = isHighlighted ? 0.006 : 0.002; // get faster quicker when highlighted
+        
         if (Object.keys(worldIntersectPoint).length === 0) {
             // if doesn't intersect any point in world
             if (scaleFactor === 0) return;
@@ -554,21 +574,21 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 scaleAcceleration = -scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 3 : 1);
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         } else {
             // if intersects with some point in world
-            if (scaleFactor === 1) return;
+            if (scaleFactor === MAX_SCALE_FACTOR) return;
             if (scaleAcceleration === -scaleAccelerationFactor) {
                 // if previously, doesn't intersect with some point in world
                 scaleAcceleration = scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 3 : 1);
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         }
     }

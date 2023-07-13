@@ -2188,11 +2188,30 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
         console.log('postNewNode response: ', response);
         if (!response.node) return;
         
-        let serverNode = JSON.parse(response.node);
+        let serverNode = (typeof response.node === 'string') ? JSON.parse(response.node) : response.node;
         for (let key in serverNode) {
             node[key] = serverNode[key]; // update local node to match server node
         }
+        
+        // trigger onNodeAddedToFrame callbacks
+        if (nodeAddedCallbacks[objectKey] && nodeAddedCallbacks[objectKey][frameKey]) {
+            nodeAddedCallbacks[objectKey][frameKey].forEach(callback => {
+                if (typeof callback !== 'function') return;
+                callback(nodeKey);
+            });
+        }
     });
+}
+
+let nodeAddedCallbacks = {};
+realityEditor.network.onNodeAddedToFrame = function(objectKey, frameKey, callback) {
+    if (typeof nodeAddedCallbacks[objectKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey] = {};
+    }
+    if (typeof nodeAddedCallbacks[objectKey][frameKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey][frameKey] = [];
+    }
+    nodeAddedCallbacks[objectKey][frameKey].push(callback);
 }
 
 realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName, msgContent) {
