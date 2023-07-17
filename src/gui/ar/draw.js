@@ -1320,6 +1320,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             thisMsg.modelViewMatrix = modelViewMatrix;
                         } else {
                             thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                            thisMsg.cameraMatrix = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
                         }
                     }
 
