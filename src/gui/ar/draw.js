@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -1320,6 +1320,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                             thisMsg.modelViewMatrix = modelViewMatrix;
                         } else {
                             thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);
+                            thisMsg.cameraMatrix = realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix;
                         }
                     }
 
@@ -1979,7 +1980,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addContainer = document.createElement('div');
     addContainer.id = "object" + activeKey;
-    addContainer.className = "main";
+    addContainer.classList.add("main");
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
     if (nodeKey) {
@@ -1992,7 +1993,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addIframe = document.createElement('iframe');
     addIframe.id = "iframe" + activeKey;
-    addIframe.className = "main";
+    addIframe.classList.add("main");
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
     addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
@@ -2005,14 +2006,15 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-node-key", nodeKey);
     addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
-    addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
+    let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
+    addIframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
     addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
 
     var addOverlay = document.createElement('div');
     addOverlay.id = activeKey;
-    addOverlay.className = (globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram";
+    addOverlay.classList.add((globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram");
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
@@ -2027,7 +2029,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     addSVG.id = "svg" + activeKey;
-    addSVG.className = "mainCanvas";
+    addSVG.classList.add("mainCanvas");
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";

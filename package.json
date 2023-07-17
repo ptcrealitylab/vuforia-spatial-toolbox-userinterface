@@ -2,14 +2,15 @@
   "name": "userinterface",
   "version": "1.0.0",
   "description": "User interface of the Reality Editor",
-  "main": "src/index.js",
   "devDependencies": {
-    "eslint": "^8.42.0",
-    "jsdoc": "^4.0.0"
+    "eslint": "^8.44.0",
+    "jsdoc": "^4.0.0",
+    "vite": "^4.4.4"
   },
   "scripts": {
     "test": "npm run lint",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "build": "vite build && cp -r svg css png thirdPartyCode src dist/"
   },
   "repository": {
     "type": "git",
@@ -20,5 +21,6 @@
   "bugs": {
     "url": "https://github.com/PTCInc/RE-userinterface/issues"
   },
-  "homepage": "https://github.com/PTCInc/RE-userinterface#readme"
+  "homepage": "https://github.com/PTCInc/RE-userinterface#readme",
+  "dependencies": {}
 }

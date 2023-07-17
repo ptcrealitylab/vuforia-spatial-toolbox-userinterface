@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -51,12 +51,12 @@
  ******************************************** global namespace *******************************************************
  **********************************************************************************************************************/
 
-var objects = {}; // TODO: this is a duplicate definition from src/objects.js
+window.objects = {}; // TODO: this is a duplicate definition from src/objects.js
 
 // this is an empty template that mirrors the src/ file tree. Used for auto-completion.
 // the code will run correctly without this assuming you call:
 //  createNameSpace("realityEditor.[module].[etc]")  correctly at the top of each file
-var realityEditor = realityEditor || {
+window.realityEditor = {
     app: {
         callbacks: {},
         promises: {},
@@ -67,6 +67,7 @@ var realityEditor = realityEditor || {
         environment: {},
         keyboardEvents: {},
         layout: {},
+        modeTransition: {},
         onLoad: {},
         touchInputs: {},
         touchPropagation: {},
@@ -170,7 +171,7 @@ var realityEditor = realityEditor || {
  * @param {string} namespace string of the full namespace path
  * @return {*} object that presents the actual used namespace
  **/
-var createNameSpace = createNameSpace || function (namespace) {
+window.createNameSpace = function createNameSpace(namespace) {
     var splitNameSpace = namespace.split("."), object = this, object2;
     for (var i = 0; i < splitNameSpace.length; i++) {
         object = object[splitNameSpace[i]] = object[splitNameSpace[i]] || {};

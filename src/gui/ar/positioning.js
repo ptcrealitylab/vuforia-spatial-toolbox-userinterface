@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -74,6 +74,19 @@ realityEditor.gui.ar.positioning.tempDraggingState = {
     initialDistance: null
 };
 
+realityEditor.gui.ar.positioning.setVehicleScale = (activeVehicle, scale) => {
+    if (!activeVehicle) return;
+    if (typeof scale !== 'number') return;
+
+    let positionData = realityEditor.gui.ar.positioning.getPositionData(activeVehicle);
+    positionData.scale = Math.max(0.1, scale); // 0.1 is the minimum scale allowed
+    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
+
+    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
+    var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.scale' : 'scale';
+    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
+}
+
 /**
  * Scales the specified frame or node using the first two touches.
  * The new scale starts at the initial scale and varies linearly with the changing touch radius.
@@ -104,7 +117,6 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
 
     // calculate the new scale based on the radius between the two touches
     var newScale = this.initialScaleData.scale + (radius - this.initialScaleData.radius) / 300;
-    if (typeof newScale !== 'number') return;
 
     // TODO ben: low priority: re-implement scaling gesture to preserve touch location rather than scaling center 
     // TODO: this only works for frames right now, not nodes (at least not after scaling nodes twice in one gesture)
@@ -120,10 +132,8 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     //     positionData.x += touchOffsetFromCenter.x * scaleDifference;
     //     positionData.y += touchOffsetFromCenter.y * scaleDifference;
     // }
-    
-    positionData.scale = Math.max(0.1, newScale); // 0.1 is the minimum scale allowed
-    
-    realityEditor.sceneGraph.updatePositionData(activeVehicle.uuid);
+
+    realityEditor.gui.ar.positioning.setVehicleScale(activeVehicle, newScale);
 
     // redraw circles to visualize the new scaling
     globalCanvas.context.clearRect(0, 0, globalCanvas.canvas.width, globalCanvas.canvas.height);
@@ -138,10 +148,6 @@ realityEditor.gui.ar.positioning.scaleVehicle = function(activeVehicle, centerTo
     } else {
         realityEditor.gui.ar.lines.drawGreen(globalCanvas.context, circleCenterCoordinates, radius);
     }
-    
-    var keys = realityEditor.getKeysFromVehicle(activeVehicle);
-    var propertyPath = activeVehicle.hasOwnProperty('visualization') ? 'ar.scale' : 'scale';
-    realityEditor.network.realtime.broadcastUpdate(keys.objectKey, keys.frameKey, keys.nodeKey, propertyPath, positionData.scale);
 };
 
 /**

@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -147,7 +147,9 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receivedProjectionMatrix(matrix) {
         // console.log('got projection matrix!', matrix);
-        realityEditor.gui.ar.setProjectionMatrix(matrix);
+        if (realityEditor.device.modeTransition.isARMode()) {
+            realityEditor.gui.ar.setProjectionMatrix(matrix);
+        }
     }
 
     exports.acceptUDPBeats = true;
@@ -239,6 +241,9 @@ createNameSpace('realityEditor.app.callbacks');
         if (!realityEditor.worldObjects) {
             return;
         } // prevents tons of error messages while app is loading but Vuforia has started
+        
+        // If viewing the VR map instead of the AR view, don't update objects/tools based on Vuforia
+        if (!realityEditor.device.modeTransition.isARMode()) return;
 
         // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
@@ -414,8 +419,17 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {*} cameraInfo
      */
     function receiveCameraMatricesFromAR(cameraInfo) {
+        realityEditor.sceneGraph.setDevicePosition(cameraInfo.matrix);
+
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
+            // when viewing VR map, sceneGraph camera will get set based on virtual camera,
+            // but we can still access the device's true position through the deviceNode
+            if (!realityEditor.device.modeTransition.isARMode()) {
+                realityEditor.device.modeTransition.setDeviceCameraPosition(cameraInfo.matrix);
+                return;
+            }
+
             realityEditor.worldObjects.checkIfFirstLocalization();
 
             let cameraMatrix = cameraInfo.matrix;
@@ -479,7 +493,7 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
-        if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
+        if (globalStates.useGroundPlane && !globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
             
             let worldObject = realityEditor.worldObjects.getBestWorldObject();
 

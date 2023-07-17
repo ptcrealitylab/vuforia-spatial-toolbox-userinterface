@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -229,6 +229,11 @@ realityEditor.network.objectDiscoveredCallbacks = [];
  */
 realityEditor.network.addObjectDiscoveredCallback = function(callback) {
     this.objectDiscoveredCallbacks.push(callback);
+
+    // trigger the callback for existing objects, if added too late
+    for (let [objectKey, object] of Object.entries(objects)) {
+        callback(object, objectKey);
+    }
 };
 
 /**
@@ -1741,6 +1746,24 @@ realityEditor.network.onInternalPostMessage = function (e) {
             // check if this requiresExclusive, and there is already an exclusive one, then kick that out of fullscreen
             if (tempThisObject.isFullScreenExclusive) {
                 realityEditor.gui.ar.draw.ensureOnlyCurrentFullscreen(msgContent.object, msgContent.frame);
+            }
+        }
+    }
+
+    if (typeof msgContent.full2D !== 'undefined') {
+        if (msgContent.full2D) {
+            // this is useful to make tools from external sites bigger, since we can't manually scale them while full2D is enabled
+            const UPDATE_SCALE_OF_FULL2D_TOOLS = true;
+            if (UPDATE_SCALE_OF_FULL2D_TOOLS) {
+                let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
+                realityEditor.gui.ar.positioning.setVehicleScale(activeVehicle, 3.0);
+            }
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+            }
+        } else {
+            if (globalDOMCache[msgContent.frame]) {
+                globalDOMCache[msgContent.frame].classList.remove('deactivatedIframeOverlay');
             }
         }
     }

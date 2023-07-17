@@ -199,4 +199,11 @@ bash ./generate_docs.sh
 This will generate a `docs` directory with a hierarchical set of folders mirroring the structure
  of the `src` directory. Open each `index.html` to view the documented members of each module.
 
+## Optimized bundling
 
+The userinterface source code may optionally be bundled using `npm run build`.
+This will create a subdirectory `dist` with the compiled, optimized files. This
+subdirectory may be used anywhere the normal root of the userinterface would
+have gone previously. For example, the remote operator hardware interface can
+be configured to point to `<path to userinterface>/dist` for a significant
+speedup once the code is compiled using `npm run build`.
