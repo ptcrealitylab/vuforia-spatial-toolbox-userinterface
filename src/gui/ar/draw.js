@@ -2007,7 +2007,8 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
     addIframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
-    addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
+    // some file dragover events get blocked on localhost on Chrome unless child iframes have pointerevents-none
+    addIframe.classList.add('ignorePointerEvents');
 
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
 
@@ -2377,7 +2378,7 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
  */
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     
-    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode);
+    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode.bind(realityEditor.gui.ar.draw));
 
     delete objects[objectId].frames[frameId];
     if (this.globalDOMCache["object" + frameId]) {

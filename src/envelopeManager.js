@@ -762,6 +762,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         if (globalDOMCache[focusedFrameId]) {
             globalDOMCache[focusedFrameId].classList.add('deactivatedIframeOverlay');
+            globalDOMCache['iframe' + focusedFrameId].classList.add('usePointerEvents');
+            globalDOMCache['iframe' + focusedFrameId].classList.remove('ignorePointerEvents');
         }
 
         if (knownEnvelopes[focusedFrameId]) {
@@ -784,6 +786,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         if (globalDOMCache[focusedFrameId]) {
             globalDOMCache[focusedFrameId].classList.remove('deactivatedIframeOverlay');
+            globalDOMCache['iframe' + focusedFrameId].classList.remove('usePointerEvents');
+            globalDOMCache['iframe' + focusedFrameId].classList.add('ignorePointerEvents');
         }
 
         if (knownEnvelopes[focusedFrameId]) {
