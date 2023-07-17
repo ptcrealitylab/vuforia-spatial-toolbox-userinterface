@@ -119,6 +119,8 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
+realityEditor.network.nodeAddedCallbacks = {};
+
 realityEditor.network.getURL = function(server, identifier, route){
     let protocol = null;
     let url = null;
@@ -2188,11 +2190,33 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
         console.log('postNewNode response: ', response);
         if (!response.node) return;
         
-        let serverNode = JSON.parse(response.node);
+        let serverNode = (typeof response.node === 'string') ? JSON.parse(response.node) : response.node;
         for (let key in serverNode) {
             node[key] = serverNode[key]; // update local node to match server node
         }
+        
+        // trigger onNodeAddedToFrame callbacks
+        let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
+        if (nodeAddedCallbacks[objectKey] && nodeAddedCallbacks[objectKey][frameKey]) {
+            nodeAddedCallbacks[objectKey][frameKey].forEach(callback => {
+                if (typeof callback !== 'function') return;
+                callback(nodeKey);
+            });
+        }
     });
+}
+
+// allow modules to perform an action in response to the iframe loading and spatialInterface.initNode being processed
+// and the user interface posting the node to the server and the server responding with a success
+realityEditor.network.onNodeAddedToFrame = function(objectKey, frameKey, callback) {
+    let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
+    if (typeof nodeAddedCallbacks[objectKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey] = {};
+    }
+    if (typeof nodeAddedCallbacks[objectKey][frameKey] === 'undefined') {
+        nodeAddedCallbacks[objectKey][frameKey] = [];
+    }
+    nodeAddedCallbacks[objectKey][frameKey].push(callback);
 }
 
 realityEditor.network.setNodeFullScreen = function(objectKey, frameKey, nodeName, msgContent) {
