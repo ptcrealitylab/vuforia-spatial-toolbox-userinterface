@@ -297,23 +297,7 @@ realityEditor.device.onload = async function () {
 
         let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
 
-        // create UI
-        let notificationUI = document.createElement('div');
-        notificationUI.classList.add('statusBar');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationUI.classList.add('statusBarPortrait');
-        }
-        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-        document.body.appendChild(notificationUI);
-
-        let notificationTextContainer = document.createElement('div');
-        notificationUI.classList.add('statusBarText');
-        notificationUI.appendChild(notificationTextContainer);
-
-        // show and populate with message
-        notificationUI.classList.add('statusBar');
-        notificationUI.classList.remove('statusBarHidden');
-        notificationTextContainer.innerHTML = message;
+        realityEditor.gui.modal.showScreenTopNotification(message, -1);
     });
 
     // set up the global canvas for drawing the links
