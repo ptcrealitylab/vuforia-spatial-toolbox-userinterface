@@ -22,6 +22,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let indicator2;
     let overlapped = false;
     let isMyColorDetermined = false;
+    let isHighlighted = false;
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -397,17 +398,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
     }
 
-    exports.setCursorPosition = (x, y) => {
+    // allow external module to move the cursor to a certain screen position,
+    // as if the user moved their mouse to that position (useful e.g. if pointerevents are blocked)
+    function setCursorPosition(x, y) {
         screenX = x;
         screenY = y;
     }
-    
-    let isHighlighted = false;
-    exports.setCursorStyle = ({highlighted}) => {
+
+    // allow external module to update some visual properties of the cursor
+    function setCursorStyle({highlighted}) {
         isHighlighted = highlighted;
     }
-    
-    exports.isCursorOnValidPosition = () => {
+
+    // allow external module to check whether cursor is currently on world mesh
+    function isCursorOnValidPosition() {
         return Object.keys(worldIntersectPoint).length > 0;
     }
 
@@ -563,8 +567,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
     function updateScaleFactor() {
-        let MAX_SCALE_FACTOR = isHighlighted ? 3.0 : 1.0; // get larger when highlighted
-        // scaleAccelerationFactor = isHighlighted ? 0.006 : 0.002; // get faster quicker when highlighted
+        let MAX_SCALE_FACTOR = isHighlighted ? 3 : 1; // get larger when in "highlighted" state
         
         if (Object.keys(worldIntersectPoint).length === 0) {
             // if doesn't intersect any point in world
@@ -574,7 +577,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 scaleAcceleration = -scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration * (isHighlighted ? 3 : 1);
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1); // get larger faster when highlighted
             scaleFactor += scaleSpeed;
             scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
@@ -586,7 +589,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 scaleAcceleration = scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration * (isHighlighted ? 3 : 1);
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1);
             scaleFactor += scaleSpeed;
             scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
@@ -828,4 +831,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
+    exports.setCursorPosition = setCursorPosition;
+    exports.setCursorStyle = setCursorStyle;
+    exports.isCursorOnValidPosition = isCursorOnValidPosition;
 }(realityEditor.spatialCursor));

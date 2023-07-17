@@ -119,6 +119,8 @@ realityEditor.network.addPostMessageHandler = function(messageName, callback) {
     });
 };
 
+realityEditor.network.nodeAddedCallbacks = {};
+
 realityEditor.network.getURL = function(server, identifier, route){
     let protocol = null;
     let url = null;
@@ -2194,6 +2196,7 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
         }
         
         // trigger onNodeAddedToFrame callbacks
+        let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
         if (nodeAddedCallbacks[objectKey] && nodeAddedCallbacks[objectKey][frameKey]) {
             nodeAddedCallbacks[objectKey][frameKey].forEach(callback => {
                 if (typeof callback !== 'function') return;
@@ -2203,8 +2206,10 @@ realityEditor.network.createNode = function(objectKey, frameKey, nodeKey, nodeDa
     });
 }
 
-let nodeAddedCallbacks = {};
+// allow modules to perform an action in response to the iframe loading and spatialInterface.initNode being processed
+// and the user interface posting the node to the server and the server responding with a success
 realityEditor.network.onNodeAddedToFrame = function(objectKey, frameKey, callback) {
+    let nodeAddedCallbacks = realityEditor.network.nodeAddedCallbacks;
     if (typeof nodeAddedCallbacks[objectKey] === 'undefined') {
         nodeAddedCallbacks[objectKey] = {};
     }
