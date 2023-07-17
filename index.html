@@ -67,14 +67,16 @@
     <!--<link rel="preload" href="nodes/node/index.html" as="document">-->
 
     <!-- Javascript -->
-    <script src="thirdPartyCode/pep.min.js"></script>
-    <script src="thirdPartyCode/d3.min.js"></script>
-    <script src="thirdPartyCode/p5.min.js"></script>
-    <script src="thirdPartyCode/Tween.min.js"></script>
+    <script src="thirdPartyCode/pep.min.js" type="module"></script>
+    <script src="thirdPartyCode/d3.min.js" type="module"></script>
+    <script defer src="thirdPartyCode/p5.min.js"></script>
+    <script src="thirdPartyCode/Tween.js" type="module"></script>
     <script src="thirdPartyCode/socket.io.js"></script>
     <script src="thirdPartyCode/toolsocket/index.js"></script>
-    <script src="thirdPartyCode/hull.js"></script>
-    <script src="thirdPartyCode/stats.min.js"></script>
+    <script src="thirdPartyCode/hull.js" type="module"></script>
+    <script src="thirdPartyCode/stats.min.js" type="module"></script>
+
+    <!-- VITE_PRELOAD_THREE_HERE -->
 
     <!--
         <script src="thirdPartyCode/opencv.js"></script>
@@ -87,103 +89,103 @@
     <script src="src/objects.js"></script>
     <script src="src/index.js"></script>
     <script src="src/states.js"></script>
-    <script src="src/moduleCallbacks.js"></script>
-    <script src="src/worldObjects.js"></script>
-    <script src="src/envelopeManager.js"></script>
+    <script src="src/moduleCallbacks.js" type="module"></script>
+    <script src="src/worldObjects.js" type="module"></script>
+    <script src="src/envelopeManager.js" type="module"></script>
 
-    <script src="src/app/index.js"></script>
-    <script src="src/app/callbacks.js"></script>
-    <script src="src/app/promises.js"></script>
-    <script src="src/app/targetDownloader.js"></script>
+    <script src="src/app/index.js" type="module"></script>
+    <script src="src/app/callbacks.js" type="module"></script>
+    <script src="src/app/promises.js" type="module"></script>
+    <script src="src/app/targetDownloader.js" type="module"></script>
 
-    <script src="src/addons/index.js"></script>
+    <script src="src/addons/index.js" type="module"></script>
 
-    <script src="src/avatar/index.js"></script>
-    <script src="src/avatar/network.js"></script>
-    <script src="src/avatar/draw.js"></script>
-    <script src="src/avatar/utils.js"></script>
+    <script src="src/avatar/index.js" type="module"></script>
+    <script src="src/avatar/network.js" type="module"></script>
+    <script src="src/avatar/draw.js" type="module"></script>
+    <script src="src/avatar/utils.js" type="module"></script>
 
     <script src="src/humanPose/index.js" type="module"></script>
     <script src="src/analytics/index.js" type="module"></script>
     <script src="src/oauth/index.js" type="module"></script>
 
-    <script src="src/device/index.js"></script>
-    <script src="src/device/utilities.js"></script>
-    <script src="src/device/onLoad.js"></script>
-    <script src="src/gui/screenExtension.js"></script>
-    <script src="src/device/touchInputs.js"></script>
-    <script src="src/device/touchPropagation.js"></script>
-    <script src="src/device/layout.js"></script>
+    <script src="src/device/index.js" type="module"></script>
+    <script src="src/device/utilities.js" type="module"></script>
+    <script src="src/device/onLoad.js" type="module"></script>
+    <script src="src/gui/screenExtension.js" type="module"></script>
+    <script src="src/device/touchInputs.js" type="module"></script>
+    <script src="src/device/touchPropagation.js" type="module"></script>
+    <script src="src/device/layout.js" type="module"></script>
     <script src="src/device/modeTransition.js" type="module"></script>
     <script src="src/device/PinchGestureRecognizer.js" type="module"></script>
-    <script src="src/device/videoRecording.js"></script>
-    <script src="src/device/distanceScaling.js"></script>
-    <script src="src/device/keyboardEvents.js"></script>
-    <script src="src/device/environment.js"></script>
-    <script src="src/device/tracking.js"></script>
+    <script src="src/device/videoRecording.js" type="module"></script>
+    <script src="src/device/distanceScaling.js" type="module"></script>
+    <script src="src/device/keyboardEvents.js" type="module"></script>
+    <script src="src/device/environment.js" type="module"></script>
+    <script src="src/device/tracking.js" type="module"></script>
 
-    <script src="src/network/index.js"></script>
-    <script src="src/network/realtime.js"></script>
-    <script src="src/network/utilities.js"></script>
-    <script src="src/network/frameContentAPI.js"></script>
-    <script src="src/network/availableFrames.js"></script>
-    <script src="src/network/search.js"></script>
-    <script src="src/network/discovery.js"></script>
+    <script src="src/network/index.js" type="module"></script>
+    <script src="src/network/realtime.js" type="module"></script>
+    <script src="src/network/utilities.js" type="module"></script>
+    <script src="src/network/frameContentAPI.js" type="module"></script>
+    <script src="src/network/availableFrames.js" type="module"></script>
+    <script src="src/network/search.js" type="module"></script>
+    <script src="src/network/discovery.js" type="module"></script>
 
-    <script src="src/cloud/index.js"></script>
+    <script src="src/cloud/index.js" type="module"></script>
 
-    <script src="src/sceneGraph/sceneNode.js"></script>
-    <script src="src/sceneGraph/index.js"></script>
-    <script src="src/sceneGraph/network.js"></script>
+    <script src="src/sceneGraph/sceneNode.js" type="module"></script>
+    <script src="src/sceneGraph/index.js" type="module"></script>
+    <script src="src/sceneGraph/network.js" type="module"></script>
 
-    <script src="src/gui/utilities.js"></script>
-    <script src="src/gui/buttons.js"></script>
-    <script src="src/gui/menus.js"></script>
-    <script src="src/gui/pocket.js"></script>
-    <script src="src/gui/settings.js"></script>
-    <script src="src/gui/modal.js"></script>
-    <script src="src/gui/dropdown.js"></script>
-    <script src="src/gui/glRenderer.js"></script>
-    <script src="src/gui/navigation.js"></script>
+    <script src="src/gui/utilities.js" type="module"></script>
+    <script src="src/gui/buttons.js" type="module"></script>
+    <script src="src/gui/menus.js" type="module"></script>
+    <script src="src/gui/pocket.js" type="module"></script>
+    <script src="src/gui/settings.js" type="module"></script>
+    <script src="src/gui/modal.js" type="module"></script>
+    <script src="src/gui/dropdown.js" type="module"></script>
+    <script src="src/gui/glRenderer.js" type="module"></script>
+    <script src="src/gui/navigation.js" type="module"></script>
     <script src="src/gui/spatialArrow.js" type='module'></script>
     <script src="src/gui/spatialIndicator.js" type='module'></script>
     <script src="src/gui/threejsScene.js" type="module"></script>
     <script src="src/device/multiclientUI.js" type="module"></script>
-    <script src="src/gui/poses.js"></script>
+    <script src="src/gui/poses.js" type="module"></script>
 
-    <script src="src/gui/ar/index.js"></script>
-    <script src="src/gui/ar/utilities.js"></script>
-    <script src="src/gui/ar/draw.js"></script>
-    <script src="src/gui/ar/lines.js"></script>
-    <script src="src/gui/ar/positioning.js"></script>
-    <script src="src/gui/ar/grouping.js"></script>
-    <script src="src/gui/ar/moveabilityOverlay.js"></script>
-    <script src="src/gui/ar/frameHistoryRenderer.js"></script>
-    <script src="src/gui/ar/groundPlaneAnchors.js"></script>
-    <script src="src/gui/ar/groundPlaneRenderer.js"></script>
-    <script src="src/gui/ar/anchors.js"></script>
-    <script src="src/gui/ar/areaTargetScanner.js"></script>
-    <script src="src/gui/ar/areaCreator.js"></script>
+    <script src="src/gui/ar/index.js" type="module"></script>
+    <script src="src/gui/ar/utilities.js" type="module"></script>
+    <script src="src/gui/ar/draw.js" type="module"></script>
+    <script src="src/gui/ar/lines.js" type="module"></script>
+    <script src="src/gui/ar/positioning.js" type="module"></script>
+    <script src="src/gui/ar/grouping.js" type="module"></script>
+    <script src="src/gui/ar/moveabilityOverlay.js" type="module"></script>
+    <script src="src/gui/ar/frameHistoryRenderer.js" type="module"></script>
+    <script src="src/gui/ar/groundPlaneAnchors.js" type="module"></script>
+    <script src="src/gui/ar/groundPlaneRenderer.js" type="module"></script>
+    <script src="src/gui/ar/anchors.js" type="module"></script>
+    <script src="src/gui/ar/areaTargetScanner.js" type="module"></script>
+    <script src="src/gui/ar/areaCreator.js" type="module"></script>
     <script src="src/gui/ar/videoPlayback.js" type="module"></script>
 
-    <script src="src/gui/spatial/index.js"></script>
-    <script src="src/gui/spatial/timeRecorder.js"></script>
+    <script src="src/gui/spatial/index.js" type="module"></script>
+    <script src="src/gui/spatial/timeRecorder.js" type="module"></script>
 
-    <script src="src/gui/crafting/index.js"></script>
-    <script src="src/gui/crafting/utilities.js"></script>
-    <script src="src/gui/crafting/blockMenu.js"></script>
-    <script src="src/gui/crafting/eventHandlers.js"></script>
-    <script src="src/gui/crafting/eventHelper.js"></script>
-    <script src="src/gui/crafting/grid.js"></script>
+    <script src="src/gui/crafting/index.js" type="module"></script>
+    <script src="src/gui/crafting/utilities.js" type="module"></script>
+    <script src="src/gui/crafting/blockMenu.js" type="module"></script>
+    <script src="src/gui/crafting/eventHandlers.js" type="module"></script>
+    <script src="src/gui/crafting/eventHelper.js" type="module"></script>
+    <script src="src/gui/crafting/grid.js" type="module"></script>
 
-    <script src="src/gui/memory/index.js"></script>
-    <script src="src/gui/memory/pointer.js"></script>
-    <script src="src/gui/memory/nodeMemories.js"></script>
+    <script src="src/gui/memory/index.js" type="module"></script>
+    <script src="src/gui/memory/pointer.js" type="module"></script>
+    <script src="src/gui/memory/nodeMemories.js" type="module"></script>
 
-    <script src="src/gui/moveabilityCorners.js"></script>
+    <script src="src/gui/moveabilityCorners.js" type="module"></script>
 
-    <script src="src/gui/recentlyUsedBar.js"></script>
-    <script src="src/gui/envelopeIcons.js"></script>
+    <script src="src/gui/recentlyUsedBar.js" type="module"></script>
+    <script src="src/gui/envelopeIcons.js" type="module"></script>
 
     <script src="src/spatialCursor/index.js" type="module"></script>
     <script src="src/spatialCursor/shader/normalCursorFragmentShader.js" type="module"></script>

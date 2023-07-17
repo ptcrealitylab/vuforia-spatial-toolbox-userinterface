@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -67,7 +67,7 @@ realityEditor.device.loaded = false;
  * Network callback function,
  * ... and notify the native iOS code that the user interface finished loading
  */
-realityEditor.device.onload = function () {
+realityEditor.device.onload = async function () {
 
     // Initialize some global variables for the device session
     this.cout('Running on platform: ' + globalStates.platform);
@@ -77,7 +77,7 @@ realityEditor.device.onload = function () {
 
     // Add-ons may need to modify globals or do other far-reaching changes that
     // other services will need to pick up in their initializations
-    realityEditor.addons.onInit();
+    await realityEditor.addons.onInit();
 
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
@@ -297,23 +297,7 @@ realityEditor.device.onload = function () {
 
         let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
 
-        // create UI
-        let notificationUI = document.createElement('div');
-        notificationUI.classList.add('statusBar');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationUI.classList.add('statusBarPortrait');
-        }
-        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-        document.body.appendChild(notificationUI);
-
-        let notificationTextContainer = document.createElement('div');
-        notificationUI.classList.add('statusBarText');
-        notificationUI.appendChild(notificationTextContainer);
-
-        // show and populate with message
-        notificationUI.classList.add('statusBar');
-        notificationUI.classList.remove('statusBarHidden');
-        notificationTextContainer.innerHTML = message;
+        realityEditor.gui.modal.showScreenTopNotification(message, -1);
     });
 
     // set up the global canvas for drawing the links

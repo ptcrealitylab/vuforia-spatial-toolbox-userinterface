@@ -22,6 +22,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let indicator2;
     let overlapped = false;
     let isMyColorDetermined = false;
+    let isHighlighted = false;
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -252,7 +253,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName, { moveToCursor = false } = {}) {
+    function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
         
         let spatialCursorMatrix = null;
         if (moveToCursor) {
@@ -276,6 +277,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
                 realityEditor.network.postVehiclePosition(addedElement);
+                if (typeof onToolUploadComplete === 'function') {
+                    onToolUploadComplete(addedElement);
+                }
             }
         });
 
@@ -392,6 +396,23 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (hasSubscribedToUpdates) return;
         hasSubscribedToUpdates = true;
         realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
+    }
+
+    // allow external module to move the cursor to a certain screen position,
+    // as if the user moved their mouse to that position (useful e.g. if pointerevents are blocked)
+    function setCursorPosition(x, y) {
+        screenX = x;
+        screenY = y;
+    }
+
+    // allow external module to update some visual properties of the cursor
+    function setCursorStyle({highlighted}) {
+        isHighlighted = highlighted;
+    }
+
+    // allow external module to check whether cursor is currently on world mesh
+    function isCursorOnValidPosition() {
+        return Object.keys(worldIntersectPoint).length > 0;
     }
 
     function updateLoop() {
@@ -546,6 +567,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
     function updateScaleFactor() {
+        let MAX_SCALE_FACTOR = isHighlighted ? 3 : 1; // get larger when in "highlighted" state
+        
         if (Object.keys(worldIntersectPoint).length === 0) {
             // if doesn't intersect any point in world
             if (scaleFactor === 0) return;
@@ -554,21 +577,21 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 scaleAcceleration = -scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1); // get larger faster when highlighted
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         } else {
             // if intersects with some point in world
-            if (scaleFactor === 1) return;
+            if (scaleFactor === MAX_SCALE_FACTOR) return;
             if (scaleAcceleration === -scaleAccelerationFactor) {
                 // if previously, doesn't intersect with some point in world
                 scaleAcceleration = scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1);
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         }
     }
@@ -808,4 +831,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
+    exports.setCursorPosition = setCursorPosition;
+    exports.setCursorStyle = setCursorStyle;
+    exports.isCursorOnValidPosition = isCursorOnValidPosition;
 }(realityEditor.spatialCursor));

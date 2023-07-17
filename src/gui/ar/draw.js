@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -1979,7 +1979,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addContainer = document.createElement('div');
     addContainer.id = "object" + activeKey;
-    addContainer.className = "main";
+    addContainer.classList.add("main");
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
     if (nodeKey) {
@@ -1992,7 +1992,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addIframe = document.createElement('iframe');
     addIframe.id = "iframe" + activeKey;
-    addIframe.className = "main";
+    addIframe.classList.add("main");
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
     addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
@@ -2013,7 +2013,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addOverlay = document.createElement('div');
     addOverlay.id = activeKey;
-    addOverlay.className = (globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram";
+    addOverlay.classList.add((globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram");
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
@@ -2028,7 +2028,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     addSVG.id = "svg" + activeKey;
-    addSVG.className = "mainCanvas";
+    addSVG.classList.add("mainCanvas");
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";

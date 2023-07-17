@@ -263,8 +263,34 @@ createNameSpace("realityEditor.gui.modal");
         }
     }
 
+    function showScreenTopNotification(message, timeMs = 3000) {
+        let notificationUI = document.createElement('div');
+        notificationUI.classList.add('statusBar');
+        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
+            notificationUI.classList.add('statusBarPortrait');
+        }
+        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        document.body.appendChild(notificationUI);
+
+        let notificationTextContainer = document.createElement('div');
+        notificationUI.classList.add('statusBarText');
+        notificationUI.appendChild(notificationTextContainer);
+
+        // show and populate with message
+        notificationUI.classList.add('statusBar');
+        notificationUI.classList.remove('statusBarHidden');
+        notificationTextContainer.innerHTML = message;
+
+        if (timeMs > 0) {
+            setTimeout(() => {
+                document.body.removeChild(notificationUI);
+            }, timeMs);
+        }
+    }
+
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
     exports.showSimpleNotification = showSimpleNotification;
+    exports.showScreenTopNotification = showScreenTopNotification;
     
 })(realityEditor.gui.modal);

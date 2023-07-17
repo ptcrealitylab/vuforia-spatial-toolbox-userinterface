@@ -914,4 +914,4 @@ TWEEN.Interpolation = {
 
 	}
 
-})(this);
+})(this||window);
