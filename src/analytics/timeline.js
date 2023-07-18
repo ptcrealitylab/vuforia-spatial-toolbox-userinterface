@@ -509,7 +509,9 @@ export class Timeline {
             return;
         }
 
-        let patches = Object.values(desktopRenderer.getCameraVisPatches() || {});
+        let patches = Object.values(desktopRenderer.getCameraVisPatches() || {})
+            .filter(this.analytics.patchFilter);
+
         if (patches.length === 0) {
             return;
         }
