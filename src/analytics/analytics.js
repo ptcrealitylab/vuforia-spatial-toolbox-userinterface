@@ -24,6 +24,8 @@ export class Analytics {
         this.timelineContainer = document.createElement('div');
         this.timelineContainer.id = 'analytics-timeline-container';
 
+        this.patchFilter = this.patchFilter.bind(this);
+
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
@@ -76,7 +78,6 @@ export class Analytics {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
         }
-        this.resetPatchVisibility();
     }
 
     /**
@@ -95,6 +96,7 @@ export class Analytics {
         if (this.threejsContainer.parent) {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
+        this.resetPatchVisibility();
     }
 
     /**
@@ -159,6 +161,28 @@ export class Analytics {
     }
 
     /**
+     * @param {CameraVisPatch} patch
+     * @return {boolean}
+     */
+    patchFilter(patch) {
+        if (!this.lastDisplayRegion) {
+            return true;
+        }
+
+        if (this.lastDisplayRegion.startTime > 0 &&
+            patch.creationTime < this.lastDisplayRegion.startTime) {
+            return false;
+        }
+
+        if (this.lastDisplayRegion.endTime > 0 &&
+            patch.creationTime > this.lastDisplayRegion.endTime) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * We take control over CameraVis patch visibility for
      * animation reasons so this restores them all
      */
@@ -168,7 +192,7 @@ export class Analytics {
             return;
         }
 
-        const patches = Object.values(desktopRenderer.getCameraVisPatches() || {});
+        const patches = Object.values(desktopRenderer.getCameraVisPatches() || {}).filter(this.patchFilter);
 
         for (const patch of patches) {
             patch.show();
