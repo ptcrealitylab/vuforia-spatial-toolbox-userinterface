@@ -1208,7 +1208,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 let activeElt = globalDOMCache["object" + activeKey];
                 if (!activeVehicle.isOutsideViewport) {
-                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    // normalize the matrix and clear the last column, to avoid some browser-specific bugs
+                    let normalizedMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(finalMatrix);
+                    normalizedMatrix[3] = 0;
+                    normalizedMatrix[7] = 0;
+                    normalizedMatrix[11] = 0;
+                    activeElt.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
@@ -2007,8 +2012,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
     let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
     addIframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
-    // some file dragover events get blocked on localhost on Chrome unless child iframes have pointerevents-none
-    addIframe.classList.add('ignorePointerEvents');
+    addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
 
