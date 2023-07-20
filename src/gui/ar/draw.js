@@ -1208,7 +1208,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 let activeElt = globalDOMCache["object" + activeKey];
                 if (!activeVehicle.isOutsideViewport) {
-                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    // normalize the matrix and clear the last column, to avoid some browser-specific bugs
+                    let normalizedMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(finalMatrix);
+                    normalizedMatrix[3] = 0;
+                    normalizedMatrix[7] = 0;
+                    normalizedMatrix[11] = 0;
+                    activeElt.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
@@ -2377,7 +2382,7 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
  */
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     
-    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode);
+    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode.bind(realityEditor.gui.ar.draw));
 
     delete objects[objectId].frames[frameId];
     if (this.globalDOMCache["object" + frameId]) {
