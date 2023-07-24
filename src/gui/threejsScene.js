@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { ARButton } from '../../thirdPartyCode/three/ARButton.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
@@ -48,8 +49,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const domElement = document.getElementById('mainThreejsCanvas');
         renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
 
-        if (isWebXRSupported) {
+        if (isWebXRSupported && !realityEditor.device.environment.isARMode()) {
             renderer.xr.enabled = true;
+            document.body.appendChild(ARButton.createButton(
+                renderer,
+              ));
         }
 
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -113,6 +117,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
+    }
+
+    function setAnimationLoop(func) {
+        renderer.setAnimationLoop(func);
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -259,7 +267,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             }
             // Set layer to 0: everything but the background
             camera.layers.set(0);
-            renderer.render(scene, camera);
+            if (!renderer.xr.enabled || (renderer.xr.enabled && renderer.xr.isPresenting)) {
+                renderer.render(scene, camera);
+            }
         }
     }
 
@@ -960,6 +970,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         };
     };
 
+    exports.setAnimationLoop = setAnimationLoop;
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
