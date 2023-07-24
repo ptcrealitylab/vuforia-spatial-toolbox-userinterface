@@ -3239,7 +3239,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
         nodes: simpleNodes,
         port: realityEditor.network.getPort(object),
         interface: globalStates.interface,
-        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey)
+        firstInitialization: realityEditor.network.isFirstInitialization(objectKey, frameKey, nodeKey),
+        parentLocation: window.location.href
     };
 
     if (version < 170 && objectKey === nodeKey) {
