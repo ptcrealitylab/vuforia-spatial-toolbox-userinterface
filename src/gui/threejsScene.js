@@ -39,10 +39,19 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
 
+    const isWebXRSupported = "xr" in self.navigator;
+
     function initService() {
+        
+
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
         renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
+
+        if (isWebXRSupported) {
+            renderer.xr.enabled = true;
+        }
+
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(rendererWidth, rendererHeight);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;

@@ -435,13 +435,9 @@ createNameSpace("realityEditor.gui.glRenderer");
             }
         }
 
-        setTimeout(() => {
-            requestAnimationFrameIfNotPending();
-        }, 500);
-        setInterval(watchpuppy, 1000);
-
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted);
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted);
+        realityEditor.gui.ar.draw.addUpdateListener(renderFrame);
     }
 
     /**
@@ -505,7 +501,6 @@ createNameSpace("realityEditor.gui.glRenderer");
         let res = await Promise.all(prommies);
         if (!res) {
             console.warn('glRenderer watchdog is barking');
-            requestAnimationFrameIfNotPending();
             return;
         }
 
@@ -530,16 +525,6 @@ createNameSpace("realityEditor.gui.glRenderer");
 
         lastRender = Date.now();
         rendering = false;
-        animationFrameRequest = null;
-        requestAnimationFrameIfNotPending();
-    }
-
-    let animationFrameRequest = null;
-    function requestAnimationFrameIfNotPending() {
-        if (animationFrameRequest) {
-            return;
-        }
-        animationFrameRequest = requestAnimationFrame(renderFrame);
     }
 
     function watchpuppy() {
