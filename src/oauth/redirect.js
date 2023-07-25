@@ -20,12 +20,11 @@ window.onload = () => {
     if (code) {
         const data = {
             'code': code,
+            'frameName': state.frameName,
             'redirect_uri': window.location.origin + window.location.pathname,
-            'client_id': state.clientId,
-            'client_secret': state.clientSecret
         }
         const serverUrl = `${state.edgeServer}/oauthAcquire`;
-        fetch(`${serverUrl}/${state.accessTokenUrl}`, {
+        fetch(serverUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -34,7 +33,7 @@ window.onload = () => {
         }).then(response => {
             return response.json();
         }).then(data => {
-            saveToken(data, state.frame, state.authorizationUrl);
+            saveToken(data, state.frameName);
             window.location = state.toolboxUrl;
         }).catch(error => {
             console.error(error);
