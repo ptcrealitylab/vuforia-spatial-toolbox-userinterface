@@ -357,10 +357,14 @@ realityEditor.device.onload = async function () {
         realityEditor.gui.spatialArrow.initService();
         realityEditor.gui.recentlyUsedBar.initService();
         realityEditor.gui.envelopeIconRenderer.initService();
-    } catch (e) {
+    } catch (initError) {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
-        console.warn('error in initService functions, might lead to corrupted app state', e);
-        realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+        console.warn('error in initService functions, might lead to corrupted app state', initError);
+        try {
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+        } catch (alertError) {
+            alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
+        }
     }
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
