@@ -318,44 +318,54 @@ realityEditor.device.onload = async function () {
     }
     
     // initialize additional services
-    realityEditor.device.initService();
-    realityEditor.device.layout.initService();
-    realityEditor.device.modeTransition.initService();
-    realityEditor.device.touchInputs.initService();
-    realityEditor.device.videoRecording.initService();
-    realityEditor.device.tracking.initService();
-    realityEditor.gui.ar.frameHistoryRenderer.initService();
-    realityEditor.gui.ar.grouping.initService();
-    realityEditor.gui.ar.anchors.initService();
-    realityEditor.gui.ar.groundPlaneAnchors.initService();
-    realityEditor.gui.ar.groundPlaneRenderer.initService();
-    realityEditor.gui.ar.areaTargetScanner.initService();
-    realityEditor.gui.ar.areaCreator.initService();
-    realityEditor.gui.ar.videoPlayback.initService();
-    realityEditor.device.touchPropagation.initService();
-    realityEditor.network.discovery.initService();
-    realityEditor.network.realtime.initService();
-    realityEditor.gui.crafting.initService();
-    realityEditor.worldObjects.initService();
-    realityEditor.device.distanceScaling.initService();
-    realityEditor.device.keyboardEvents.initService();
-    realityEditor.network.frameContentAPI.initService();
-    realityEditor.envelopeManager.initService();
-    realityEditor.network.availableFrames.initService();
-    realityEditor.network.search.initService();
-    realityEditor.sceneGraph.initService();
-    realityEditor.gui.glRenderer.initService();
-    realityEditor.gui.threejsScene.initService();
-    // realityEditor.device.multiclientUI.initService();
-    realityEditor.avatar.initService();
-    realityEditor.humanPose.initService();
-    realityEditor.analytics.initService();
-    realityEditor.oauth.initService();
-    realityEditor.spatialCursor.initService();
-    realityEditor.gui.spatialIndicator.initService();
-    realityEditor.gui.spatialArrow.initService();
-    realityEditor.gui.recentlyUsedBar.initService();
-    realityEditor.gui.envelopeIconRenderer.initService();
+    try {
+        realityEditor.device.initService();
+        realityEditor.device.layout.initService();
+        realityEditor.device.modeTransition.initService();
+        realityEditor.device.touchInputs.initService();
+        realityEditor.device.videoRecording.initService();
+        realityEditor.device.tracking.initService();
+        realityEditor.gui.ar.frameHistoryRenderer.initService();
+        realityEditor.gui.ar.grouping.initService();
+        realityEditor.gui.ar.anchors.initService();
+        realityEditor.gui.ar.groundPlaneAnchors.initService();
+        realityEditor.gui.ar.groundPlaneRenderer.initService();
+        realityEditor.gui.ar.areaTargetScanner.initService();
+        realityEditor.gui.ar.areaCreator.initService();
+        realityEditor.gui.ar.videoPlayback.initService();
+        realityEditor.device.touchPropagation.initService();
+        realityEditor.network.discovery.initService();
+        realityEditor.network.realtime.initService();
+        realityEditor.gui.crafting.initService();
+        realityEditor.worldObjects.initService();
+        realityEditor.device.distanceScaling.initService();
+        realityEditor.device.keyboardEvents.initService();
+        realityEditor.network.frameContentAPI.initService();
+        realityEditor.envelopeManager.initService();
+        realityEditor.network.availableFrames.initService();
+        realityEditor.network.search.initService();
+        realityEditor.sceneGraph.initService();
+        realityEditor.gui.glRenderer.initService();
+        realityEditor.gui.threejsScene.initService();
+        // realityEditor.device.multiclientUI.initService();
+        realityEditor.avatar.initService();
+        realityEditor.humanPose.initService();
+        realityEditor.analytics.initService();
+        realityEditor.oauth.initService();
+        realityEditor.spatialCursor.initService();
+        realityEditor.gui.spatialIndicator.initService();
+        realityEditor.gui.spatialArrow.initService();
+        realityEditor.gui.recentlyUsedBar.initService();
+        realityEditor.gui.envelopeIconRenderer.initService();
+    } catch (initError) {
+        // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
+        console.warn('error in initService functions, might lead to corrupted app state', initError);
+        try {
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+        } catch (alertError) {
+            alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
+        }
+    }
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
         globalStates.device = deviceName;
