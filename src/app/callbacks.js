@@ -332,7 +332,7 @@ createNameSpace('realityEditor.app.callbacks');
                 
                 if (worldObjectKey !== realityEditor.worldObjects.getLocalWorldId()) {
                     let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-                    if (worldObjectKey === bestWorldObject.uuid) {
+                    if (!bestWorldObject || worldObjectKey === bestWorldObject.uuid) {
                         
                         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectKey);
                         if (sceneNode) {

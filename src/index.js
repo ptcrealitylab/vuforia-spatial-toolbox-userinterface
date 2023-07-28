@@ -158,7 +158,8 @@ window.realityEditor = {
         draw: {},
         rebaScore: {},
         utils: {}
-    }
+    },
+    oauth: {}
 };
 
 /**
