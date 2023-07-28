@@ -67,11 +67,7 @@ realityEditor.gui.pocket.registerCallback = function(functionName, callback) {
 };
 
 realityEditor.gui.pocket.pocketButtonAction = function() {
-
-    console.log("state: " + globalStates.pocketButtonState);
-
     if (globalStates.pocketButtonState === true) {
-        console.log("buttonon");
         globalStates.pocketButtonState = false;
 
         if (globalStates.guiState === 'logic') {
@@ -79,7 +75,6 @@ realityEditor.gui.pocket.pocketButtonAction = function() {
         }
     }
     else {
-        console.log("buttonoff");
         globalStates.pocketButtonState = true;
 
         if (globalStates.guiState === 'logic') {
@@ -142,8 +137,6 @@ realityEditor.gui.pocket.setPocketNode = function(node, positionOnLoad, closestO
  * @return {*}
  */
 realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
-    console.log("drop logic onto object (based on memory? " + logicNodeMemory + ")");
-
     var addedLogic = new Logic();
 
     // if this is being created from a logic node memory, copy over most properties from the saved pocket logic node
@@ -202,7 +195,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
         // make sure that logic nodes only stick to 2.0 server version
         if(realityEditor.network.testVersion(closestObjectKey) > 165) {
-            console.log('created node with logic key ' + logicKey + ' and added to ' + closestFrameKey);
             closestFrame.nodes[logicKey] = addedLogic;
 
             // render it
@@ -221,7 +213,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
 
             realityEditor.gui.pocket.setPocketNode(addedLogic, {pageX: globalStates.pointerPosition[0], pageY: globalStates.pointerPosition[1]}, closestObjectKey, closestFrameKey);
 
-            console.log("successfully added logic from pocket to object (" + closestObject.name + ", " + closestFrame.name + ")");
             return {
                 logicNode: addedLogic,
                 domElement: globalDOMCache[logicKey],
@@ -231,7 +222,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         }
     }
 
-    console.log("couldn't add logic from pocket to any objects");
     return null;
 };
 
@@ -307,7 +297,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
 
             pointerDownOnElement = null;
-            console.log('null 1');
         });
 
         // On touching an element-template, upload to currently visible object
@@ -322,7 +311,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             let dataset = evt.target.dataset;
 
             if (dataset.src === '_PLACEHOLDER_') {
-                console.log('dont add frame from placeholder!');
+                // Don't add frame from placeholder
                 return;
             }
             
@@ -346,7 +335,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 pocketHide();
             } else {
                 pointerDownOnElement = evt.target;
-                console.log('target = ' + dataset.name);
                 evt.target.classList.add('hoverPocketElement');
                 if (selectedElement) {
                     deselectElement(selectedElement);
@@ -383,7 +371,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             if (pointerDownOnElement && Math.abs(dY) > 1) {
                 pointerDownOnElement.classList.remove('hoverPocketElement');
                 pointerDownOnElement = null;
-                console.log('null 2', dY);
             }
             
         });
@@ -395,8 +382,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             scrollReleaseTime = Date.now();
             scrollResistance = 1;
             pointerDownOnElement = null;
-            
-            console.log('null 3');
         });
         
         function updateScroll() {
@@ -452,7 +437,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             }
 
             if (selectedElement) {
-                console.log(selectedElement.dataset.name, evt.target.dataset.name);
                 if (selectedElement.dataset.name !== evt.target.dataset.name) {
                     deselectElement(selectedElement);
                     selectedElement = null;
@@ -461,9 +445,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                     return;
                 }
             }
-            
-            // console.log('pointermove', evt.target.classList);
-
             selectedElement = evt.target;
             selectElement(evt.target);
         });
@@ -471,14 +452,11 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         if (ONLY_CLOSEST_OBJECT) {
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged_OnlyClosest); // TODO: delete / cleanup old attempts
         } else {
-            console.log('get all possible frames and assemble pocket out of all of them');
-            
             // subscribes to the closestObjectChanged event in the draw module, and triggers the pocket to refresh its UI
             realityEditor.gui.ar.draw.onClosestObjectChanged(onClosestObjectChanged); // TODO: this should actually trigger anytime the set of visibleObjects changes, not just the closest one
             
             // also triggers pocket refresh whenever a new server with frames was detected
             realityEditor.network.availableFrames.onServerFramesInfoUpdated(function() {
-                console.log('onServerFramesInfoUpdated');
                 onClosestObjectChanged(currentClosestObjectKey, currentClosestObjectKey);
             });
         }
@@ -553,7 +531,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * @param {string} newClosestObjectKey
      */
     function onClosestObjectChanged(oldClosestObjectKey, newClosestObjectKey) {
-        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
         currentClosestObjectKey = newClosestObjectKey;
         
         if (!currentClosestObjectKey) {
@@ -654,7 +631,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      * @param newClosestObjectKey
      */
     function onClosestObjectChanged_OnlyClosest(oldClosestObjectKey, newClosestObjectKey) {
-        console.log('closest object changed from ' + oldClosestObjectKey + ' to ' + newClosestObjectKey);
         currentClosestObjectKey = newClosestObjectKey;
 
         // see which frames this closest object supports
@@ -819,7 +795,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
     
     function addFrameIconHoverListeners(frameIconContainer, _frameName) {
         frameIconContainer.addEventListener('pointerenter', function(evt) {
-            // console.log('pointerenter', frameName);
             // update closest object label
             // updateTargetObjectLabel(null, frameName);
 
@@ -829,7 +804,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         });
 
         frameIconContainer.addEventListener('pointerleave', function(evt) {
-            // console.log('pointerleave', frameName);
             evt.target.classList.remove('hoverPocketElement');
         });
     }
@@ -844,7 +818,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 usableScreenWidth = clientRects[0].left - 37;
             }
         }
-        // console.log(usableScreenWidth);
         return usableScreenWidth;
     }
     
@@ -917,7 +890,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         if (realityElements.length % 4 !== 0) {
             var numToAdd = 4 - (realityElements.length % 4);
             for (let i = 0; i < numToAdd; i++) {
-                // console.log('add blank ' + i);
                 realityElements.push(null);
             }
         }
@@ -927,7 +899,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             
             var element = realityElements[i].properties;
             if (typeof element === 'undefined') {
-                console.log('could not find properties of ', realityElements[i]);
+                console.warn('could not find properties of ', realityElements[i]);
                 continue;
             }
             
@@ -986,7 +958,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 pageY: window.innerHeight / 2,
                 objectKey: objectKey
             });
-            console.log('added tutorial frame', addedElement);
         } catch (e) {
             // ensure that it fails safely if the corresponding server doesn't have a frame named uiTutorial
             console.warn(e);
@@ -1035,9 +1006,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         frame.uuid = frame.objectId + frameUniqueName;
         frame.location = 'global';
         frame.src = name;
-
-        console.log('created frame with name ' + frame.name);
-
+        
         // add the frame to the object
         closestObject.frames[frame.uuid] = frame;
 
@@ -1194,10 +1163,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                         realityEditor.gui.menus.switchToMenu("bigTrash", null, null);
                     
                     } else if (globalStates.guiState === 'ui') {
-                        
                         // create an envelope frame when dragging out from the button in UI mode
-                        console.log('create envelope by dragging out');
-                        
                         var realityElements = getRealityElements();
                         
                         var envelopeData = realityElements.find(function(elt) { return elt.name === 'all-frame-envelope'; });
@@ -1420,8 +1386,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             createPocketUIPaletteForAggregateFrames();
 
             createPocketScrollbar();
-        } else {
-            console.log('pocket hasnt changed... dont re-render it');
         }
 
         onWindowResized();
@@ -1495,7 +1459,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
         var scrollbar = document.getElementById('pocketScrollBar');
 
         if (scrollbar.children.length > 0) {
-            console.log('already built the pocket scrollbar once');
+            // Already built the pocket scrollbar once
             // check if we should rebuild it (did number of chapters change)
             if (numChapters === scrollbar.children.length) {
                 return;
@@ -1505,8 +1469,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 scrollbar.removeChild(scrollbar.lastChild);
             }
         }
-
-        console.log('building pocket scrollbar with ' + numChapters + ' chapters');
         
         if (!document.querySelector('.palette') || document.querySelector('.palette').getClientRects().length === 0) {
             return;
@@ -1593,7 +1555,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             segmentButton.dataset.index = i;
             
             segmentButton.addEventListener('pointerdown', function(e) {
-                console.log('tapped segment ' + e.currentTarget.dataset.index);
                 scrollbarPointerDown = true;
                 scrollbarPointerDownY = e.pageY;
                 
@@ -1621,7 +1582,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
                 }
             });
             segmentButton.addEventListener('pointerup', function(e) {
-                console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
@@ -1629,7 +1589,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             segmentButton.addEventListener('pointerenter', function(e) {
                 if (!pocketPointerDown) { return; }
 
-                console.log('released segment ' + e.currentTarget.dataset.index);
                 hideAllSegmentSelections();
                 selectSegment(e.currentTarget);
 
@@ -1642,8 +1601,6 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
             });
             segmentButton.addEventListener('pointerleave', function(e) {
                 if (!pocketPointerDown) { return; }
-
-                console.log('released segment ' + e.currentTarget.dataset.index);
                 e.currentTarget.classList.remove('pocketScrollBarSegmentTouched');
             });
             segmentButton.addEventListener('pointercancel', function(e) {

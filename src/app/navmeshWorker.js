@@ -50,9 +50,7 @@ const heatmapResolution = 10; // number of pixels per meter
 onmessage = function(evt) {
   const fileName = evt.data.fileName;
   const objectID = evt.data.objectID;
-  console.log(`Starting navmesh generation for ${objectID}`);
   createNavmeshFromFile(fileName).then(navmesh => {
-    console.log(`Done creating navmesh for ${objectID}`);
     postMessage({navmesh,objectID,fileName});
   }).catch(error => {
     console.error(error);

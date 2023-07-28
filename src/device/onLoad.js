@@ -83,10 +83,10 @@ realityEditor.device.onload = async function () {
 
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
         function(newValue) {
-            console.log('zone mode was set to ' + newValue);
+            // console.log('zone mode was set to ' + newValue);
         },
         function(newValue) {
-            console.log('zone text was set to ' + newValue);
+            // console.log('zone text was set to ' + newValue);
         }
     );
 
@@ -96,12 +96,10 @@ realityEditor.device.onload = async function () {
     });
 
     realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled',  '../../../svg/grouping.svg', false, function(newValue) {
-        console.log('grouping was set to ' + newValue);
         realityEditor.gui.ar.grouping.toggleGroupingMode(newValue);
     });
 
     realityEditor.gui.settings.addToggle('Realtime Collaboration', 'constantly synchronizes with other users', 'realtimeEnabled',  '../../../svg/realtime.svg', true, function(newValue) {
-        console.log('realtime was set to ' + newValue);
         if (newValue) {
             realityEditor.network.realtime.initService();
         } else {
@@ -111,7 +109,7 @@ realityEditor.device.onload = async function () {
     });
 
     realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
-        console.log('tutorial mode was set to ' + newValue);
+        // console.log('tutorial mode was set to ' + newValue);
     });
 
     let introToggle = realityEditor.gui.settings.addToggle('Show Intro Page', 'shows tips on app start', 'introTipsState',  '../../../svg/tutorial.svg', false, function(newValue) {
@@ -129,7 +127,7 @@ realityEditor.device.onload = async function () {
     }).moveToDevelopMenu();
 
     realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
-        console.log('clear sky mode set to ' + newValue);
+        // console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
     realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
@@ -154,8 +152,6 @@ realityEditor.device.onload = async function () {
     }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1') && !window.location.href.includes('localhost')); // default value is based on the current source
 
     realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
-        console.log('discovery state set to ' + newValue + ' with text ' + textValue);
-
         if (newValue) {
             setTimeout(function() {
                 realityEditor.network.discoverObjectsFromServer(textValue);
@@ -237,17 +233,17 @@ realityEditor.device.onload = async function () {
 
     let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
         function(newValue) {
-            console.log('user wants cloudConnection to be', newValue);
+            // console.log('user wants cloudConnection to be', newValue);
         },
         function(newValue) {
-            console.log('cloud url text was set to', newValue);
+            // console.log('cloud url text was set to', newValue);
         }
     );
     let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithFrozenText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
-        console.log('user wants newNetworkId to be', newValue);
+        // console.log('user wants newNetworkId to be', newValue);
     });
     let toggleNewSecret = realityEditor.gui.settings.addToggleWithFrozenText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
-        console.log('user wants newSecret to be', newValue);
+        // console.log('user wants newSecret to be', newValue);
     });
 
     let cachedSettings = {};
@@ -290,7 +286,6 @@ realityEditor.device.onload = async function () {
 
     // Check whether we're offline by adding a cache-busting search parameter
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
-        console.debug('offline check', Array.from(res.headers.entries()));
         if (!res.headers.has('X-Offline-Cache')) {
             return;
         }
@@ -464,9 +459,9 @@ realityEditor.device.onload = async function () {
             "</ul>";
 
         realityEditor.gui.modal.openClassicModal('Welcome to the Vuforia Spatial Toolbox!', modalBody, 'Close', 'Close and Don\'t Show Again', function() {
-            console.log('Closed');
+            // console.log('Closed');
         }, function() {
-            console.log('Closed and Don\'t Show Again!');
+            // console.log('Closed and Don\'t Show Again!');
             introToggle.setValue(false);
         });
     }
