@@ -950,7 +950,7 @@ realityEditor.gui.pocket.createLogicNode = function(logicNodeMemory) {
      */
     function addTutorialFrame(objectKey) {
         try {
-            let addedElement = createFrame('uiTutorial', {
+            createFrame('uiTutorial', {
                 startPositionOffset: JSON.stringify({x: 0, y: 0}),
                 width: '568',
                 height: '420',

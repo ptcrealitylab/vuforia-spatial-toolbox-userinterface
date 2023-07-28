@@ -82,10 +82,10 @@ realityEditor.device.onload = async function () {
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
-        function(newValue) {
+        function(_newValue) {
             // console.log('zone mode was set to ' + newValue);
         },
-        function(newValue) {
+        function(_newValue) {
             // console.log('zone text was set to ' + newValue);
         }
     );
@@ -108,7 +108,7 @@ realityEditor.device.onload = async function () {
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
 
-    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(_newValue) {
         // console.log('tutorial mode was set to ' + newValue);
     });
 
@@ -126,7 +126,7 @@ realityEditor.device.onload = async function () {
         realityEditor.device.setEditingMode(newValue);
     }).moveToDevelopMenu();
 
-    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
+    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(_newValue) {
         // console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
@@ -232,17 +232,17 @@ realityEditor.device.onload = async function () {
     }, {ignoreOnload: true, dontPersist: true}).moveToDevelopMenu();
 
     let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
-        function(newValue) {
+        function(_newValue) {
             // console.log('user wants cloudConnection to be', newValue);
         },
-        function(newValue) {
+        function(_newValue) {
             // console.log('cloud url text was set to', newValue);
         }
     );
-    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithFrozenText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
+    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithFrozenText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(_newValue) {
         // console.log('user wants newNetworkId to be', newValue);
     });
-    let toggleNewSecret = realityEditor.gui.settings.addToggleWithFrozenText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
+    let toggleNewSecret = realityEditor.gui.settings.addToggleWithFrozenText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(_newValue) {
         // console.log('user wants newSecret to be', newValue);
     });
 

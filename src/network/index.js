@@ -626,10 +626,6 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {string} objectKey
  */
 realityEditor.network.updateObject = function (origin, remote, objectKey) {
-
-    const oldCount = Object.keys(origin.frames).length;
-    const newCount = Object.keys(remote.frames).length;
-
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -2894,7 +2890,7 @@ realityEditor.network.postNewLink = function (ip, objectKey, frameKey, linkKey, 
     // generate action for all links to be reloaded after upload
     thisLink.lastEditor = globalStates.tempUuid;
     this.cout("sending Link");
-    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/'), thisLink, function (err, response) {
+    this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + '/addLink/'), thisLink, function (_err, _response) {
         // console.log(response);
     });
 };
@@ -3323,7 +3319,7 @@ realityEditor.network.updateFrameVisualization = function(ip, objectKey, frameKe
         visualization: newVisualization,
         oldVisualizationPositionData: oldVisualizationPositionData
     };
-    this.postData(urlEndpoint, content, function (err, response) {});
+    this.postData(urlEndpoint, content, function (_err, _response) {});
 };
 
 /**
@@ -3353,7 +3349,7 @@ realityEditor.network.postPublicData = function(ip, objectKey, frameKey, publicD
         lastEditor: globalStates.tempUuid
     };
 
-    this.postData(urlEndpoint, content, function (err, response) {});
+    this.postData(urlEndpoint, content, function (_err, _response) {});
 };
 
 /**
@@ -3381,7 +3377,7 @@ realityEditor.network.updateGroupings = function(ip, objectKey, frameKey, newGro
         group: newGroupID,
         lastEditor: globalStates.tempUuid
     };
-    this.postData(urlEndpoint, content, function (err, response) {})
+    this.postData(urlEndpoint, content, function (_err, _response) {})
 };
 
 /**
