@@ -273,8 +273,8 @@ import {JOINT_TO_INDEX} from './constants.js';
     }
 
     /**
-     * @param {Array<{x: number, y: number, z: number, confidence: number}>} all joints
-     * @param {Array<string>} selected joint names
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} joints - all joints
+     * @param {Array<string>} jointNames - selected joint names
      * @return {Array<{x: number, y: number, z: number, confidence: number}>} selected joints
      */
     function extractJoints(joints, jointNames) {
@@ -287,7 +287,7 @@ import {JOINT_TO_INDEX} from './constants.js';
     }
     
     /** Extends original tracked set of joints with derived synthetic joints 
-     * @param {Object} human pose - 17 -> 22 real joints 
+     * @param {Object} pose - 23 real joints 
      */
     function addSyntheticJoints(pose) {
         
