@@ -220,15 +220,8 @@ createNameSpace('realityEditor.app.callbacks');
 
         realityEditor.gui.poses.drawPoses(pose, frameData.imageSize);
 
-        const USE_DEBUG_POSE = false;
-
-        if (USE_DEBUG_POSE) {
-            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
-        } else {
-            // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
-            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
-            
-        }
+        // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
+        subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
     }
 
     /**

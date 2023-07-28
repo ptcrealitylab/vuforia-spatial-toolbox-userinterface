@@ -23,7 +23,7 @@ const POSE_JOINTS = {
   LEFT_ANKLE: "left ankle",
   RIGHT_ANKLE: "right ankle",
 };
-exports.POSE_JOINTS = POSE_JOINTS;
+//exports.POSE_JOINTS = POSE_JOINTS;
 
 Object.keys(POSE_JOINTS).forEach((key, i) => {
   POSE_JOINTS[key] = i;
@@ -48,7 +48,7 @@ const POSE_JOINTS_DEPTH = {
   LEFT_ANKLE: 0.04,
   RIGHT_ANKLE: 0.04,
 };
-exports.POSE_JOINTS_DEPTH = POSE_JOINTS_DEPTH;
+//exports.POSE_JOINTS_DEPTH = POSE_JOINTS_DEPTH;
 
 const JOINT_CONNECTIONS = [
   [POSE_JOINTS.LEFT_WRIST, POSE_JOINTS.LEFT_ELBOW],
@@ -64,7 +64,7 @@ const JOINT_CONNECTIONS = [
   [POSE_JOINTS.RIGHT_HIP, POSE_JOINTS.RIGHT_KNEE],
   [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.RIGHT_ANKLE],
 ];
-exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
+//exports.JOINT_CONNECTIONS = JOINT_CONNECTIONS;
 
 const JOINT_NEIGHBORS = {};
 
@@ -95,7 +95,7 @@ JOINT_NEIGHBORS[POSE_JOINTS.RIGHT_KNEE] = [POSE_JOINTS.RIGHT_KNEE, POSE_JOINTS.R
 //     JOINT_NEIGHBORS[jc[0]].push(jc[1]);
 //     // JOINT_NEIGHBORS[jc[1]].push(jc[0]);
 // }
-exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
+//exports.JOINT_NEIGHBORS = JOINT_NEIGHBORS;
 
 function isPose2DSkeletonRendered() {
     return DEBUG && !realityEditor.device.environment.requiresMouseEvents();

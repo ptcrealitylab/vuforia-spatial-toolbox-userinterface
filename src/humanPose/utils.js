@@ -27,13 +27,17 @@ const JOINTS = {
     RIGHT_KNEE: 'right_knee',
     LEFT_ANKLE: 'left_ankle',
     RIGHT_ANKLE: 'right_ankle',
+    LEFT_PINKY: 'left pinky',
+    RIGHT_PINKY: 'right pinky',
+    LEFT_INDEX: 'left index',
+    RIGHT_INDEX: 'right index',
+    LEFT_THUMB: 'left thumb', 
+    RIGHT_THUMB: 'right thumb',
     HEAD: 'head', // synthetic
     NECK: 'neck', // synthetic
     CHEST: 'chest', // synthetic
     NAVEL: 'navel', // synthetic
     PELVIS: 'pelvis', // synthetic
-    // LEFT_HAND: 'left hand synthetic',
-    // RIGHT_HAND: 'right hand synthetic',
 };
 
 const JOINT_CONNECTIONS = {
@@ -53,6 +57,14 @@ const JOINT_CONNECTIONS = {
     neckChest: [JOINTS.NECK, JOINTS.CHEST],
     chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
     navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
+    thumbLeft: [JOINTS.LEFT_THUMB, JOINTS.LEFT_WRIST],
+    indexLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_WRIST],
+    pinkyLeft: [JOINTS.LEFT_PINKY, JOINTS.LEFT_WRIST],
+    fingerSpanLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_PINKY],
+    thumbRight: [JOINTS.RIGHT_THUMB, JOINTS.RIGHT_WRIST],
+    indexRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_WRIST],
+    pinkyRight: [JOINTS.RIGHT_PINKY, JOINTS.RIGHT_WRIST],
+    fingerSpanRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_PINKY]
 };
 
 function getBoneName(bone) {
@@ -91,12 +103,14 @@ function positionToRoundedString(position) {
 }
 
 // a single piece of pose test data saved from a previous session
+/*
 function getMockPoseStandingFarAway() {
     let joints = JSON.parse(
         "[{\"x\":-0.7552632972083383,\"y\":0.2644442929211472,\"z\":0.7913752977850149},{\"x\":-0.7845470806021233,\"y\":0.2421982759192687,\"z\":0.8088129628325323},{\"x\":-0.7702630884492285,\"y\":0.3001014048608925,\"z\":0.7688086082955945},{\"x\":-0.8222937248161452,\"y\":0.24623275325440866,\"z\":0.9550474860100973},{\"x\":-0.7833413553528865,\"y\":0.3678937178976209,\"z\":0.8505136192483953},{\"x\":-0.6329333926426419,\"y\":0.12993628611940003,\"z\":1.003037519866321},{\"x\":-0.5857144750949138,\"y\":0.4589454778216688,\"z\":0.8355459885338103},{\"x\":-0.3674280483465843,\"y\":-0.015621332976114535,\"z\":1.0097465238602046},{\"x\":-0.3089154169856956,\"y\":0.5132346709005703,\"z\":0.7849136963889392},{\"x\":-0.1927517400895856,\"y\":-0.17818293753755024,\"z\":0.9756865047079787},{\"x\":-0.16714735686176868,\"y\":0.5735810435150129,\"z\":0.6760789908531224},{\"x\":-0.1250018136428199,\"y\":-0.3687589763164842,\"z\":-0.9344674156160389},{\"x\":-0.12229286355074954,\"y\":-0.3292508923208693,\"z\":-0.8945665731201982},{\"x\":-0.10352244950174398,\"y\":-0.382806122564826,\"z\":-0.9740523344761574},{\"x\":-0.09227820167479968,\"y\":-0.34637551009676415,\"z\":-0.9339987027591811},{\"x\":-0.09457788170460725,\"y\":-0.3891481311166776,\"z\":-0.9955435991385165},{\"x\":-0.07832232108450882,\"y\":-0.35210246362115816,\"z\":-0.957316956868217}]"
     );
     return joints;
 }
+*/
 
 // compute the index of the minimum element of the array
 function indexOfMin(arr) {
@@ -182,6 +196,24 @@ function getDummyJointMatrix(jointId) {
             return matrix;
         case JOINTS.RIGHT_ANKLE:
             matrix.setPosition(0.2 * SCALE, -1.6 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_PINKY:
+            matrix.setPosition(-0.3 * SCALE, -1.0 * SCALE, -0.04 * SCALE);
+            return matrix;
+        case JOINTS.RIGHT_PINKY:
+            matrix.setPosition(0.3 * SCALE, -1.0 * SCALE, -0.04 * SCALE);
+            return matrix;
+        case JOINTS.LEFT_INDEX:
+            matrix.setPosition(-0.3 * SCALE, -1.0 * SCALE, 0);
+            return matrix;
+        case JOINTS.RIGHT_INDEX:
+            matrix.setPosition(0.3 * SCALE, -1.0 * SCALE, 0);
+            return matrix;
+        case JOINTS.LEFT_THUMB:
+            matrix.setPosition(-0.3 * SCALE, -0.95 * SCALE, 0.04 * SCALE);
+            return matrix;
+        case JOINTS.RIGHT_THUMB:
+            matrix.setPosition(0.3 * SCALE, -0.95 * SCALE, 0.04 * SCALE);
             return matrix;
         case JOINTS.HEAD:
             return matrix;
@@ -293,7 +325,7 @@ export {
     makePoseData,
     getPoseObjectName,
     getPoseStringFromObject,
-    getMockPoseStandingFarAway,
+    //getMockPoseStandingFarAway,
     getGroundPlaneRelativeMatrix,
     setMatrixFromArray,
     indexOfMin,
