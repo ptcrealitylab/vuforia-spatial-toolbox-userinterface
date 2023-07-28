@@ -13,6 +13,13 @@ function handleError(error, toolboxUrl) {
     }
 }
 
+function clearLocalStorage() {
+    localStorage.removeItem('activeOAuthNonce');
+    localStorage.removeItem('activeOAuthState');
+    localStorage.removeItem('networkId');
+    localStorage.removeItem('networkSecret');
+}
+
 window.onload = () => {
     const parameters = new URLSearchParams(window.location.search);
     // Success: ?code=<code>&state=<state>
@@ -23,12 +30,10 @@ window.onload = () => {
     const state = JSON.parse(localStorage.getItem('activeOAuthState')) || {};
     if (localStorage.getItem('activeOAuthNonce') !== nonce) {
         handleError(`${localStorage.getItem('activeOAuthNonce')} does not match ${nonce}`, state.toolboxUrl);
-        localStorage.removeItem('activeOAuthNonce');
-        localStorage.removeItem('activeOAuthState');
+        clearLocalStorage();
         return;
     }
-    localStorage.removeItem('activeOAuthNonce');
-    localStorage.removeItem('activeOAuthState');
+    clearLocalStorage();
     if (code) {
         const data = {
             'code': code,

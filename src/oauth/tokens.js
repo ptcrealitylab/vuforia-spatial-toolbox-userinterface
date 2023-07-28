@@ -1,3 +1,12 @@
+function storeNetworkIdAndSecret() {
+    const windowPath = window.location.pathname;
+    const pathFragments = windowPath.split('/'); // => '', 'stable', 'n', 'networkId', 's', 'networkSecret', ''
+    const networkId = pathFragments[3];
+    const networkSecret = pathFragments[5];
+    localStorage.setItem('networkId', networkId);
+    localStorage.setItem('networkSecret', networkSecret);
+}
+
 export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
     const key = `token-${frameName}`
     const token = JSON.parse(localStorage.getItem(key));
@@ -17,9 +26,14 @@ export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
         if (window.location.hostname === '127.0.0.1' || window.location.hostname === '::1') {
             redirectUri = `${window.location.protocol}//localhost:${window.location.port}`;
         }
+        let path = redirectUri.includes('toolboxedge') ? '/stable/oauth/redirect' : '/src/oauth/redirect.html'
+        
+        if (redirectUri.includes('toolboxedge')) {
+            storeNetworkIdAndSecret(); // Needed in order for /stable/oauth/redirect to return us to the right metaverse
+        }
 
         // Redirect URI has to be the same origin to share localStorage state
-        window.location = `${authorizationUrl}?response_type=code&redirect_uri=${redirectUri}/src/oauth/redirect.html&client_id=${encodeURIComponent(clientId)}&state=${nonce}`
+        window.location = `${authorizationUrl}?response_type=code&redirect_uri=${redirectUri}${path}&client_id=${encodeURIComponent(clientId)}&state=${nonce}`
         // Returns a dummy promise since we will be navigating away from the page
         return Promise.reject();
     } else {
