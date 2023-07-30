@@ -320,6 +320,8 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
 
     let projectedZ;
     let worldIntersectPoint;
+    let projectedZCenter;
+    let worldIntersectPointCenter;
 
     if (!this.cachedWorldObject) {
         this.cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -358,6 +360,32 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             };
         }
     }
+    // todo Steve: added things below to account for mobile phone add vertices at screen center spatial cursor
+    if (this.cachedWorldObject && this.cachedOcclusionObject) {
+        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(window.innerWidth / 2, window.innerHeight / 2, [this.cachedOcclusionObject]);
+        if (raycastIntersects.length > 0) {
+            projectedZCenter = raycastIntersects[0].distance;
+
+            // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+            inverseGroundPlaneMatrix.invert();
+            raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+
+            // transpose of the inverse of the ground-plane model-view matrix
+            let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+
+            worldIntersectPointCenter = {
+                x: raycastIntersects[0].point.x,
+                y: raycastIntersects[0].point.y,
+                z: raycastIntersects[0].point.z,
+                // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
+                normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
+                // the ray direction is just a vector, so we don't need the transpose matrix
+                rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
+            };
+        }
+    }
     let eventData = {
         type: event.type,
         pointerId: event.pointerId,
@@ -371,6 +399,12 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     }
     if (typeof worldIntersectPoint !== 'undefined') {
         eventData.worldIntersectPoint = worldIntersectPoint;
+    }
+    if (typeof projectedZCenter !== 'undefined') {
+        eventData.projectedZCenter = projectedZCenter;
+    }
+    if (typeof worldIntersectPointCenter !== 'undefined') {
+        eventData.worldIntersectPointCenter = worldIntersectPointCenter;
     }
     iframe.contentWindow.postMessage(JSON.stringify({
         event: eventData

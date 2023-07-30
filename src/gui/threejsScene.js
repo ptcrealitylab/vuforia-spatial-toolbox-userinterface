@@ -104,6 +104,15 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
+
+        realityEditor.network.addPostMessageHandler('getMainCameraMatrix', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                mainCameraMatrix: {
+                    worldMatrix: camera.matrix.clone(),
+                    // projectionMatrix: camera.projectionMatrix.clone(),
+                }
+            });
+        });
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -157,10 +166,25 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         plane.name = 'groundPlaneCollider';
         groundPlaneCollider = plane;
     }
+    
+    // post main camera matrix to spatialObject, so that all the tools can get access to it
+    function postMainCameraMatrix() {
+        if (camera === undefined || camera.matrix === undefined) return;
+        // realityEditor.network.addPostMessageHandler('getMainCameraMatrix', (_, fullMessageData) => {
+        //     realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+        //         mainCameraMatrix: {
+        //             worldMatrix: camera.matrix.clone(),
+        //             // projectionMatrix: camera.projectionMatrix.clone(),
+        //         }
+        //     });
+        // });
+    }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
+        
+        // postMainCameraMatrix();
 
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
@@ -526,6 +550,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 threejsContainerObj.remove(wireMesh);
             }, 5000);
             threejsContainerObj.add( gltf.scene );
+
+            realityEditor.network.addPostMessageHandler('getAreaTargetMesh', (_, fullMessageData) => {
+                realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                    areaTargetMesh: {
+                        mesh: gltf.scene.toJSON(),
+                    }
+                });
+            });
 
             console.log('loaded gltf', pathToGltf);
 
