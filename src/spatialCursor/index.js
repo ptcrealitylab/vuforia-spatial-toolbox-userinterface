@@ -250,6 +250,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 }
             });
         }
+
+        realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                spatialCursorEvent: {
+                    clientX: screenX,
+                    clientY: screenY,
+                    x: screenX,
+                    y: screenY,
+                    projectedZ: projectedZ
+                }
+            });
+        });
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
@@ -674,6 +686,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
+    let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
         let objectsToCheck = [];
@@ -687,6 +700,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
+                projectedZ = raycastIntersects[0].distance;
                 let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
