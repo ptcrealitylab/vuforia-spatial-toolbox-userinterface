@@ -77,7 +77,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             // Ground plane must exist... if it doesn't reschedule this to happen later
             if (!groundPlaneSceneNode) {
                 setTimeout(function() {
-                    console.log('waiting for groundPlane sceneGraph before starting visualization');
                     startVisualization();
                 }, 100);
                 return;

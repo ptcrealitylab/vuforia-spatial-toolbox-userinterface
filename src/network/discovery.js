@@ -20,8 +20,6 @@ createNameSpace("realityEditor.network.discovery");
     };
 
     function initService() {
-        console.log('init network/discovery.js');
-
         realityEditor.network.registerCallback('objectDeleted', (params) => {
             deleteFromDiscoveryMap(params.objectIP, params.objectID);
         });

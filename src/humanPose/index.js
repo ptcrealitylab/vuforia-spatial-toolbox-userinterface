@@ -28,8 +28,6 @@ import {JOINT_TO_INDEX} from './constants.js';
     let inHistoryPlayback = false;
 
     function initService() {
-        console.log('init humanPose module', network, draw, utils);
-
         realityEditor.app.callbacks.subscribeToPoses((poseJoints, frameData) => {
             let pose = utils.makePoseData('device' + globalStates.tempUuid + '_pose1', poseJoints, frameData);
             let poseObjectName = utils.getPoseObjectName(pose);
@@ -427,7 +425,6 @@ import {JOINT_TO_INDEX} from './constants.js';
 
         realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, poseObjectName, () => {
             network.addHumanPoseObject(worldObject.objectId, poseObjectName, (data) => {
-                console.log('added new human pose object', data);
                 nameIdMap[poseObjectName] = data.id;
                 myHumanPoseId = data.id;
                 delete objectsInProgress[poseObjectName];

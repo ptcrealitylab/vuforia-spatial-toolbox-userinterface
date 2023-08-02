@@ -245,7 +245,9 @@ createNameSpace("realityEditor.network.realtime");
         let hasCloudProxySocket = realityEditor.cloud.socket;
 
         if (!hasCloudProxySocket) {
-            console.log('No cloud socket – add /udp/beat and /udp/action listeners to existing realtime socket');
+            if (DEBUG) {
+                console.log('No cloud socket – add /udp/beat and /udp/action listeners to existing realtime socket');
+            }
             // this allows the app to receive heartbeats when not on a Wi-Fi network that supports UDP
             addServerSocketMessageListener(serverAddress, '/udp/beat', (msg) => {
                 // console.log('realtime socket got beat', msg);
@@ -462,7 +464,9 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     function subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback) {
-        console.log('subscribe to public data for node ' + nodeKey);
+        if (DEBUG) {
+            console.log('subscribe to public data for node ' + nodeKey);
+        }
 
         let serverSocket = getServerSocketForObject(objectKey);
         let subscribeTitle = realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorPublicData');
@@ -718,7 +722,7 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     function pauseRealtime() {
-        console.warn('TODO: implement pauseRealtime instead of requiring the user to restart the app');
+        // TODO: implement pauseRealtime instead of requiring the user to restart the app
     }
 
     exports.initService = initService;
