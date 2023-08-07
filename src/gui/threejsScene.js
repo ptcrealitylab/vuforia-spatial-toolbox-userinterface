@@ -166,19 +166,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         plane.name = 'groundPlaneCollider';
         groundPlaneCollider = plane;
     }
-    
-    // post main camera matrix to spatialObject, so that all the tools can get access to it
-    function postMainCameraMatrix() {
-        if (camera === undefined || camera.matrix === undefined) return;
-        // realityEditor.network.addPostMessageHandler('getMainCameraMatrix', (_, fullMessageData) => {
-        //     realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
-        //         mainCameraMatrix: {
-        //             worldMatrix: camera.matrix.clone(),
-        //             // projectionMatrix: camera.projectionMatrix.clone(),
-        //         }
-        //     });
-        // });
-    }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
