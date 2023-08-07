@@ -272,12 +272,10 @@ createNameSpace("realityEditor.avatar");
         if (!worldObject) return;
 
         connectionStatus.isConnectionAttemptInProgress = true;
-        console.log('attempt to create new avatar on server');
 
         // cachedWorldObject = worldObject;
         realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
             network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
-                console.log('added new avatar object', data);
                 myAvatarId = data.id;
                 connectionStatus.isMyAvatarCreated = true;
                 connectionStatus.isConnectionAttemptInProgress = false;

@@ -330,12 +330,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // Code remains here, but likely won't be used due to distance-based fading looking better
 
         if (worldOcclusionObjects[objectId]) {
-            console.log(`occlusion gltf already loaded`);
+            // occlusion gltf already loaded
             return; // Don't try creating multiple occlusion objects for the same world object
         }
 
         const gltfLoader = new GLTFLoader();
-        console.log('loading occlusion gltf');
         gltfLoader.load(pathToGltf, function(gltf) {
             const geometries = [];
             gltf.scene.traverse(obj => {
@@ -373,8 +372,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
             scene.add(group);
             worldOcclusionObjects[objectId] = group;
-
-            console.log(`loaded occlusion gltf for ${objectId}`, pathToGltf);
         });
     }
 
@@ -404,7 +401,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      */
     function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
         const gltfLoader = new GLTFLoader();
-
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
@@ -543,8 +539,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     }
                 });
             });
-
-            console.log('loaded gltf', pathToGltf);
 
             if (callback) {
               callback(gltf.scene, wireMesh);
@@ -938,8 +932,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.getToolPosition = function(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        // console.log('%c debugging tool position', 'color: orange');
-        // console.log(realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode));
         return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
     }
 
@@ -949,7 +941,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
         let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
         let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
-        // console.log(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
         return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
     }
 

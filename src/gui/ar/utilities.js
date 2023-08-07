@@ -223,7 +223,6 @@ realityEditor.gui.ar.utilities.lerpMatrices = function(existingMatrix, newMatrix
         return;
     }
     if (typeof alpha === 'undefined' || alpha < 0 || alpha > 1) {
-        console.log('lerping with incompatible alpha value (' + alpha + ') -> using 0.5 instead');
         alpha = 0.5;
     }
 
@@ -481,7 +480,6 @@ realityEditor.gui.ar.utilities.isNodeWithinScreen = function(thisObject, nodeKey
         [0,screenHeight]
     ];
     return this.insidePoly([thisNode.screenX, thisNode.screenY],screenCorners);
-    //console.log(thisNode.name, [thisNode.screenX, thisNode.screenY], isInsideScreen);
 };
 
 /**
@@ -1212,8 +1210,6 @@ Matrix.prototype.unflattened = function() {
 
 // polyfill webkit functions on Chrome browser
 if (typeof window.webkitConvertPointFromPageToNode === 'undefined') {
-    console.log('Polyfilling webkitConvertPointFromPageToNode for this browser');
-
     polyfillWebkitConvertPointFromPageToNode();
 
     var ssEl = document.createElement('style'),
