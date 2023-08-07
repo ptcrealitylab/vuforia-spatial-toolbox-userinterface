@@ -170,8 +170,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
-        
-        // postMainCameraMatrix();
 
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
