@@ -20,25 +20,52 @@ import RVLParser from '../../../thirdPartyCode/rvl/RVLParser.js';
 
 const videoPlayers = [];
 
+const callbacks = {
+    onVideoCreated: [],
+    onVideoDisposed: [],
+    onVideoPlayed: [],
+    onVideoPaused: [],
+}
+
 realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
-        videoPlayers.push(new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey));
+        const videoPlayer = new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey);
+        videoPlayers.push(videoPlayer);
+        callbacks.onVideoCreated.forEach(cb => { cb(videoPlayer); });
     });
     realityEditor.network.addPostMessageHandler('disposeVideoPlayback', (msgData) => {
         const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
         videoPlayer.dispose();
         videoPlayers.splice(videoPlayers.indexOf(videoPlayer), 1);
+        callbacks.onVideoDisposed.forEach(cb => { cb(msgData.id); });
     });
     realityEditor.network.addPostMessageHandler('setVideoPlaybackCurrentTime', (msgData) => {
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).currentTime = msgData.currentTime;
     });
     realityEditor.network.addPostMessageHandler('playVideoPlayback', (msgData) => {
-        videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).play();
+        const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
+        videoPlayer.play();
+        callbacks.onVideoPlayed.forEach(cb => { cb(videoPlayer); });
     });
     realityEditor.network.addPostMessageHandler('pauseVideoPlayback', (msgData) => {
-        videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).pause();
+        const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
+        videoPlayer.pause();
+        callbacks.onVideoPlayed.forEach(cb => { cb(videoPlayer); });
     });
 }.bind(realityEditor.gui.ar.videoPlayback);
+
+realityEditor.gui.ar.videoPlayback.onVideoCreated = (cb) => {
+    callbacks.onVideoCreated.push(cb);
+};
+realityEditor.gui.ar.videoPlayback.onVideoDisposed = (cb) => {
+    callbacks.onVideoDisposed.push(cb);
+};
+realityEditor.gui.ar.videoPlayback.onVideoPlayed = (cb) => {
+    callbacks.onVideoPlayed.push(cb);
+};
+realityEditor.gui.ar.videoPlayback.onVideoPaused = (cb) => {
+    callbacks.onVideoPaused.push(cb);
+};
 
 const POINT_CLOUD_VERTEX_SHADER = `
 uniform sampler2D map;
