@@ -320,8 +320,6 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
 
     let projectedZ;
     let worldIntersectPoint;
-    let projectedZCenter;
-    let worldIntersectPointCenter;
 
     if (!this.cachedWorldObject) {
         this.cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
