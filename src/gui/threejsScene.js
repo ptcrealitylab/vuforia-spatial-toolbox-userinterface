@@ -104,15 +104,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
-
-        realityEditor.network.addPostMessageHandler('getMainCameraMatrix', (_, fullMessageData) => {
-            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
-                mainCameraMatrix: {
-                    worldMatrix: camera.matrix.clone(),
-                    // projectionMatrix: camera.projectionMatrix.clone(),
-                }
-            });
-        });
     }
 
     // light the scene with a combination of ambient and directional white light
