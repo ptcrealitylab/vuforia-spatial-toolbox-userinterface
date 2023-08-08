@@ -132,10 +132,37 @@ void main() {
   // gl_FragColor = vec4(color.rgb, 1.0);
 }`;
 
+// TODO: import these from remote-operator-addon ./Shaders.js 
+const FIRST_PERSON_FRAGMENT_SHADER = `
+// color texture
+uniform sampler2D map;
+
+// uv (0.0-1.0) texture coordinates
+varying vec2 vUv;
+// Position of this pixel relative to the camera in proper (millimeter) coordinates
+varying vec4 pos;
+
+void main() {
+// Sample the proper color for this pixel from the color image
+vec4 color = texture2D(map, vUv);
+
+gl_FragColor = vec4(color.rgb, 1.0);
+}`;
+
 const VideoPlayerStates = {
     LOADING: 'LOADING', // Loading the recording
     PAUSED: 'PAUSED', // Video paused, initial state after loading
     PLAYING: 'PLAYING', // Playing video
+};
+
+const ShaderMode = {
+    SOLID: 'SOLID',
+    // POINT: 'POINT',
+    // HOLO: 'HOLO',
+    // DIFF: 'DIFF',
+    // DIFF_DEPTH: 'DIFF_DEPTH',
+    FIRST_PERSON: 'FIRST_PERSON',
+    // HIDDEN: 'HIDDEN',
 };
 
 class VideoPlayer {
@@ -189,6 +216,9 @@ class VideoPlayer {
                 this.pause();
             }
         };
+
+        this.shaderMode = ShaderMode.SOLID;
+        this.firstPersonMode = false;
 
         this.decoder = new TextDecoder();
 
@@ -274,7 +304,7 @@ class VideoPlayer {
 
         const geometry = new THREE.PlaneGeometry(width, height, width / 5, height / 5);
         geometry.translate(width / 2, height / 2, 0);
-        const material = this.createPointCloudMaterial();
+        const material = this.createPointCloudMaterial(this.shaderMode);
         const mesh = new THREE.Mesh(geometry, material);
         mesh.scale.set(-1, 1, -1);
         mesh.rotateZ(Math.PI);
@@ -288,7 +318,7 @@ class VideoPlayer {
      * Creates the material used by the point cloud.
      * @return {*}
      */
-    createPointCloudMaterial() {
+    createPointCloudMaterial(shaderMode) {
         const width = 640;
         const height = 360;
 
@@ -312,6 +342,8 @@ class VideoPlayer {
         this.textures.depth.update = function() {
         };
 
+        let fragmentShader = shaderMode === ShaderMode.SOLID ? POINT_CLOUD_FRAGMENT_SHADER : FIRST_PERSON_FRAGMENT_SHADER;
+
         this.pointCloudMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 time: {value: window.performance.now()},
@@ -324,11 +356,42 @@ class VideoPlayer {
                 pointSize: { value: 2 * 0.666 },
             },
             vertexShader: POINT_CLOUD_VERTEX_SHADER,
-            fragmentShader: POINT_CLOUD_FRAGMENT_SHADER,
+            // fragmentShader: POINT_CLOUD_FRAGMENT_SHADER,
+            fragmentShader: fragmentShader,
             depthTest: true,
             transparent: true
         });
         return this.pointCloudMaterial;
+    }
+
+    setShaderMode(shaderMode) {
+        if (shaderMode !== this.shaderMode) {
+            this.shaderMode = shaderMode;
+
+            // if (this.matDiff) {
+            //     this.matDiff.dispose();
+            //     this.matDiff = null;
+            // }
+            // if (this.shaderMode === ShaderMode.DIFF && !this.visualDiff) {
+            //     this.visualDiff = new VisualDiff();
+            // }
+            this.pointCloudMaterial = this.createPointCloudMaterial(this.shaderMode);
+            this.pointCloud.material = this.pointCloudMaterial;
+        }
+    }
+
+    enableFirstPersonMode() {
+        this.firstPersonMode = true;
+        // if (this.shaderMode === ShaderMode.SOLID) {
+        this.setShaderMode(ShaderMode.FIRST_PERSON);
+        // }
+    }
+
+    disableFirstPersonMode() {
+        this.firstPersonMode = false;
+        // if (this.shaderMode === ShaderMode.FIRST_PERSON) {
+        this.setShaderMode(ShaderMode.SOLID);
+        // }
     }
 
     /* ---------------- Helper Functions ---------------- */
