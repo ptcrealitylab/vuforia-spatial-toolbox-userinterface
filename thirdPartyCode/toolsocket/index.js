@@ -795,7 +795,7 @@ class ToolSocket extends MainToolboxSocket {
             }
             this.socket = new this.WebSocket(url);
             const origSend = this.socket.send;
-            this.socket.send = function() {
+            this.socket.send = () => {
                 console.log('wsSend', Array.from(arguments));
                 return origSend.apply(this.socket, arguments);
             };
