@@ -523,6 +523,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             }, 5000);
             threejsContainerObj.add( gltf.scene );
 
+            realityEditor.network.addPostMessageHandler('getAreaTargetMesh', (_, fullMessageData) => {
+                realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                    areaTargetMesh: {
+                        mesh: gltf.scene.toJSON(),
+                    }
+                });
+            });
+
             if (callback) {
               callback(gltf.scene, wireMesh);
             }
