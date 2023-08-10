@@ -17,6 +17,7 @@ createNameSpace("realityEditor.gui.ar.videoPlayback");
 
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import RVLParser from '../../../thirdPartyCode/rvl/RVLParser.js';
+import {Followable} from './CameraFollowTarget.js';
 
 const videoPlayers = [];
 
@@ -165,8 +166,23 @@ const ShaderMode = {
     // HIDDEN: 'HIDDEN',
 };
 
-class VideoPlayer {
+class VideoPlayer extends Followable {
+    static count = 0;
+
     constructor(id, urls, frameKey) {
+        VideoPlayer.count++;
+        let parentNode = realityEditor.sceneGraph.getVisualElement('CameraGroupContainer');
+        if (!parentNode) {
+            let gpNode = realityEditor.sceneGraph.getGroundPlaneNode();
+            let cameraGroupContainerId = realityEditor.sceneGraph.addVisualElement('CameraGroupContainer', gpNode);
+            parentNode = realityEditor.sceneGraph.getSceneNodeById(cameraGroupContainerId);
+            let transformationMatrix = realityEditor.gui.ar.utilities.makeGroundPlaneRotationX(0);
+            transformationMatrix[13] = -realityEditor.gui.ar.areaCreator.calculateFloorOffset(); // ground plane translation
+            parentNode.setLocalMatrix(transformationMatrix);
+        }
+        let displayName = `Video Recording ${VideoPlayer.count}`;
+        super(`VideoPlayerFollowable_${id}`, displayName, parentNode);
+
         this.id = id;
         this.urls = window.location.origin.includes('toolboxedge.net') ? urls : {
             color: urls.color.replace('https://toolboxedge.net', `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit by proxying video
@@ -184,6 +200,9 @@ class VideoPlayer {
         this.phoneParent.add(this.phone);
         this.phoneParent.rotateX(Math.PI / 2);
         // this.phoneParent.position.y = this.floorOffset;
+
+        this.cameraMeshGroup = this.createCameraMeshGroup();
+        this.phone.add(this.cameraMeshGroup);
 
         this.lastRenderTime = -1; // Last rendered frame time (using video time)
         this.videoLength = 0;
@@ -236,6 +255,53 @@ class VideoPlayer {
 
         this.onAnimationFrame = () => this.render();
         realityEditor.gui.threejsScene.onAnimationFrame(this.onAnimationFrame);
+    }
+
+    /**
+     * Can add this to visualize the position where the video was recorded from
+     */
+    createCameraMeshGroup(color = null) {
+        let cameraMeshGroup = new THREE.Group();
+        
+        let id = Math.floor(Math.random() * 10000);
+
+        const geo = new THREE.BoxGeometry(100, 100, 80);
+        if (!color) {
+            let colorId = id;
+            if (typeof id === 'string') {
+                colorId = 0;
+                for (let i = 0; i < id.length; i++) {
+                    colorId ^= id.charCodeAt(i);
+                }
+            }
+            let hue = ((colorId / 29) % Math.PI) * 360 / Math.PI;
+            const colorStr = `hsl(${hue}, 100%, 50%)`;
+            this.color = new THREE.Color(colorStr);
+        } else {
+            this.color = color;
+        }
+        this.colorRGB = [
+            255 * this.color.r,
+            255 * this.color.g,
+            255 * this.color.b,
+        ];
+        let cameraMeshGroupMat = new THREE.MeshBasicMaterial({color: this.color});
+        const box = new THREE.Mesh(geo, cameraMeshGroupMat);
+        box.name = 'cameraVisCamera';
+        box.cameraVisId = this.id;
+        cameraMeshGroup.add(box);
+
+        const geoCone = new THREE.ConeGeometry(60, 180, 16, 1);
+        const cone = new THREE.Mesh(geoCone, cameraMeshGroupMat);
+        cone.rotation.x = -Math.PI / 2;
+        cone.rotation.y = Math.PI / 8;
+        cone.position.z = 65;
+        cone.name = 'cameraVisCamera';
+        cone.cameraVisId = this.id;
+        cameraMeshGroup.add(cone);
+
+        // this.phone.add(this.cameraMeshGroup);
+        return cameraMeshGroup;
     }
     
     dispose() {
@@ -380,18 +446,44 @@ class VideoPlayer {
         }
     }
 
+    /* ---------------- Override Followable Functions ---------------- */
+    
+    onCameraStartedFollowing() {
+        // this.enableFirstPersonMode();
+        // if (this.shaderMode === ShaderMode.SOLID) {
+        //     this.setShaderMode(ShaderMode.FIRST_PERSON);
+        // }
+    }
+    
+    onCameraStoppedFollowing() {
+        // this.disableFirstPersonMode();
+        if (this.shaderMode === ShaderMode.FIRST_PERSON) {
+            this.setShaderMode(ShaderMode.SOLID);
+        }
+    }
+
     enableFirstPersonMode() {
         this.firstPersonMode = true;
-        // if (this.shaderMode === ShaderMode.SOLID) {
-        this.setShaderMode(ShaderMode.FIRST_PERSON);
-        // }
+        this.cameraMeshGroup.visible = false;
+        if (this.shaderMode === ShaderMode.SOLID) {
+            this.setShaderMode(ShaderMode.FIRST_PERSON);
+        }
     }
 
     disableFirstPersonMode() {
         this.firstPersonMode = false;
-        // if (this.shaderMode === ShaderMode.FIRST_PERSON) {
-        this.setShaderMode(ShaderMode.SOLID);
-        // }
+        // this.cameraMeshGroup.visible = true;
+        if (this.shaderMode === ShaderMode.FIRST_PERSON) {
+            this.setShaderMode(ShaderMode.SOLID);
+        }
+    }
+
+    onFollowDistanceUpdated(currentDistance) {
+        this.cameraMeshGroup.visible = currentDistance > 3000;
+    }
+    
+    updateSceneNode() {
+        this.sceneNode.setLocalMatrix(this.phone.matrix.elements);
     }
 
     /* ---------------- Helper Functions ---------------- */

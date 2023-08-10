@@ -266,6 +266,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope
      */
     function focusEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        if (!knownEnvelopes[frameId]) return;
         if (knownEnvelopes[frameId].hasFocus) return;
 
         // first, blur or close the current envelope if there is one focused
@@ -308,6 +309,7 @@ createNameSpace("realityEditor.envelopeManager");
      * @param {boolean} wasTriggeredByEnvelope - can be triggered in multiple ways e.g. the minimize button or from within the envelope
      */
     function blurEnvelope(frameId, wasTriggeredByEnvelope = false) {
+        if (!knownEnvelopes[frameId]) return;
         if (!knownEnvelopes[frameId].hasFocus) return;
 
         knownEnvelopes[frameId].hasFocus = false;
