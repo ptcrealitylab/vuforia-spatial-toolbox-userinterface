@@ -795,9 +795,16 @@ class ToolSocket extends MainToolboxSocket {
             }
             this.socket = new this.WebSocket(url);
             const origSend = this.socket.send;
-            this.socket.send = () => {
-                console.log('wsSend', Array.from(arguments));
-                return origSend.apply(this.socket, arguments);
+            const origSocket = this.socket;
+            this.socket.send = function() {
+                if (typeof arguments[0] !== 'string' || (
+                    !arguments[0].includes('public') &&
+                    !arguments[0].includes('ping') &&
+                    !arguments[0].includes('keepObjectAlive') &&
+                    !arguments[0].includes('atrix'))) {
+                    console.log('wsSend', Array.from(arguments));
+                }
+                return origSend.apply(origSocket, arguments);
             };
 
             this.socket.onerror = (err) => {
