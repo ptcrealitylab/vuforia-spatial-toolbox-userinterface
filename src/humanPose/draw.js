@@ -1,11 +1,11 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {
-    JOINTS,
     JOINT_PUBLIC_DATA_KEYS,
     getJointNodeInfo,
     getGroundPlaneRelativeMatrix,
     setMatrixFromArray
 } from './utils.js';
+import {JOINTS} from './constants.js';
 import {Pose} from "./Pose.js";
 
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';

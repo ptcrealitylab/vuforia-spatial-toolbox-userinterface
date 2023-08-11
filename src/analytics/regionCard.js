@@ -1,5 +1,5 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from "../humanPose/utils.js";
+import {JOINTS} from "../humanPose/constants.js";
 
 const cardWidth = 200;
 const rowHeight = 22;

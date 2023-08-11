@@ -1,4 +1,4 @@
-import {JOINTS} from "./utils.js";
+import {JOINTS} from "./constants.js";
 import {setChildHumanPosesVisible} from "./draw.js"
 
 export class HumanPoseAnalyzerSettingsUi {

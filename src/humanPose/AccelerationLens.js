@@ -1,7 +1,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {AnalyticsLens} from "./AnalyticsLens.js";
 import {AnalyticsColors} from "./AnalyticsColors.js";
-import {JOINTS} from "./utils.js";
+import {JOINTS} from "./constants.js";
 
 const HIGH_CUTOFF = 35 // In m/s^2
 const MED_CUTOFF = 15 // In m/s^2

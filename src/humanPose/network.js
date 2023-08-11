@@ -1,4 +1,5 @@
-import {isHumanPoseObject, JOINTS} from './utils.js';
+import {isHumanPoseObject} from './utils.js';
+import {JOINTS} from './constants.js';
 
 // Tell the server (corresponding to this world object) to create a new human object with the specified ID
 function addHumanPoseObject(worldId, objectName, onSuccess, onError) {

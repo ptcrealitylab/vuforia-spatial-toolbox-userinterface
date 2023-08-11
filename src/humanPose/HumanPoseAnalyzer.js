@@ -1,7 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {
-    JOINTS,
-} from './utils.js';
+import {JOINTS} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
