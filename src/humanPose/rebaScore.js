@@ -1,5 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINT_CONNECTIONS, JOINTS, getBoneName} from './utils.js';
+import {getBoneName} from './utils.js';
+import {JOINT_CONNECTIONS, JOINTS} from './constants.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
@@ -87,9 +88,18 @@ function neckReba(rebaData) {
         rebaData.scores[joint] = neckScore;
         rebaData.colors[joint] = neckColor;
     });
+
+    [JOINT_CONNECTIONS.headNeck,
+        JOINT_CONNECTIONS.face,
+        JOINT_CONNECTIONS.earSpan,
+        JOINT_CONNECTIONS.eyeSpan,
+        JOINT_CONNECTIONS.eyeNoseLeft,
+        JOINT_CONNECTIONS.eyeNoseRight
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = neckScore;
+        rebaData.boneColors[getBoneName(bone)] = neckColor;
+    });
     
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckColor;
 }
 
 /**

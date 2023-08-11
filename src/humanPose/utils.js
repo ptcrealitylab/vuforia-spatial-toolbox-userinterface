@@ -1,4 +1,11 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import {
+    SCALE,
+    JOINTS,
+    JOINT_CONNECTIONS, 
+    JOINT_RADIUS,
+    BONE_RADIUS
+} from './constants.js';
 
 const HUMAN_POSE_ID_PREFIX = '_HUMAN_';
 
@@ -6,65 +13,6 @@ const JOINT_NODE_NAME = 'storage';
 const JOINT_PUBLIC_DATA_KEYS = {
     data: 'data',
     transferData: 'whole_pose'
-};
-const SCALE = 1000; // we want to scale up the size of individual joints, but not apply the scale to their positions
-
-const JOINTS = {
-    NOSE: 'nose',
-    LEFT_EYE: 'left_eye',
-    RIGHT_EYE: 'right_eye',
-    LEFT_EAR: 'left_ear',
-    RIGHT_EAR: 'right_ear',
-    LEFT_SHOULDER: 'left_shoulder',
-    RIGHT_SHOULDER: 'right_shoulder',
-    LEFT_ELBOW: 'left_elbow',
-    RIGHT_ELBOW: 'right_elbow',
-    LEFT_WRIST: 'left_wrist',
-    RIGHT_WRIST: 'right_wrist',
-    LEFT_HIP: 'left_hip',
-    RIGHT_HIP: 'right_hip',
-    LEFT_KNEE: 'left_knee',
-    RIGHT_KNEE: 'right_knee',
-    LEFT_ANKLE: 'left_ankle',
-    RIGHT_ANKLE: 'right_ankle',
-    LEFT_PINKY: 'left pinky',
-    RIGHT_PINKY: 'right pinky',
-    LEFT_INDEX: 'left index',
-    RIGHT_INDEX: 'right index',
-    LEFT_THUMB: 'left thumb', 
-    RIGHT_THUMB: 'right thumb',
-    HEAD: 'head', // synthetic
-    NECK: 'neck', // synthetic
-    CHEST: 'chest', // synthetic
-    NAVEL: 'navel', // synthetic
-    PELVIS: 'pelvis', // synthetic
-};
-
-const JOINT_CONNECTIONS = {
-    elbowWristLeft: [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
-    shoulderElbowLeft: [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
-    shoulderSpan: [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
-    shoulderElbowRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_SHOULDER],
-    elbowWristRight: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_ELBOW],
-    chestLeft: [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
-    hipSpan: [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
-    chestRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
-    hipKneeLeft: [JOINTS.LEFT_HIP, JOINTS.LEFT_KNEE],
-    kneeAnkleLeft: [JOINTS.LEFT_KNEE, JOINTS.LEFT_ANKLE],
-    hipKneeRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_KNEE], // 10
-    kneeAnkleRight: [JOINTS.RIGHT_KNEE, JOINTS.RIGHT_ANKLE], // 11
-    headNeck: [JOINTS.HEAD, JOINTS.NECK],
-    neckChest: [JOINTS.NECK, JOINTS.CHEST],
-    chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
-    navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
-    thumbLeft: [JOINTS.LEFT_THUMB, JOINTS.LEFT_WRIST],
-    indexLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_WRIST],
-    pinkyLeft: [JOINTS.LEFT_PINKY, JOINTS.LEFT_WRIST],
-    fingerSpanLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_PINKY],
-    thumbRight: [JOINTS.RIGHT_THUMB, JOINTS.RIGHT_WRIST],
-    indexRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_WRIST],
-    pinkyRight: [JOINTS.RIGHT_PINKY, JOINTS.RIGHT_WRIST],
-    fingerSpanRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_PINKY]
 };
 
 function getBoneName(bone) {
@@ -264,7 +212,7 @@ function createDummySkeleton() {
     const dummySkeleton = new THREE.Group();
     
     dummySkeleton.joints = {};
-    const jointGeometry = new THREE.SphereGeometry(.03 * SCALE, 12, 12);
+    const jointGeometry = new THREE.SphereGeometry(JOINT_RADIUS * SCALE, 12, 12);
     const material = new THREE.MeshLambertMaterial();
     dummySkeleton.jointInstancedMesh = new THREE.InstancedMesh(jointGeometry, material, Object.values(JOINTS).length);
     Object.values(JOINTS).forEach((jointId, i) => {
@@ -272,7 +220,7 @@ function createDummySkeleton() {
         dummySkeleton.jointInstancedMesh.setMatrixAt(i, getDummyJointMatrix(jointId));
     });
 
-    const boneGeometry = new THREE.CylinderGeometry(.01 * SCALE, .01 * SCALE, SCALE, 3);
+    const boneGeometry = new THREE.CylinderGeometry(BONE_RADIUS * SCALE, BONE_RADIUS * SCALE, SCALE, 3);
     dummySkeleton.boneInstancedMesh = new THREE.InstancedMesh(boneGeometry, material, Object.values(JOINT_CONNECTIONS).length);
     Object.values(JOINT_CONNECTIONS).forEach((bone, i) => {
         dummySkeleton.boneInstancedMesh.setMatrixAt(i, getDummyBoneMatrix(bone));
@@ -315,11 +263,8 @@ function setMatrixFromArray(matrix, array) {
 }
 
 export {
-    JOINTS,
-    JOINT_CONNECTIONS,
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
-    SCALE,
     getBoneName,
     isHumanPoseObject,
     makePoseData,

@@ -5,9 +5,8 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {getGroundPlaneRelativeMatrix, JOINTS, setMatrixFromArray} from "./utils.js";
+import {JOINTS, JOINT_TO_INDEX} from "./constants.js";
 import {Pose} from "./Pose.js";
-import {JOINT_TO_INDEX} from './constants.js';
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -203,12 +202,12 @@ import {JOINT_TO_INDEX} from './constants.js';
             }
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
-                let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
+                let groundPlaneRelativeMatrix = utils.getGroundPlaneRelativeMatrix();
                 const jointPositions = {};
                 const jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
-                    setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+                    utils.setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
                 for (let jointId of Object.values(JOINTS)) {
@@ -218,7 +217,7 @@ import {JOINT_TO_INDEX} from './constants.js';
                     }
                     // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
                     let jointMatrixThree = new THREE.Matrix4();
-                    setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
+                    utils.setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
                     jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
                     let jointPosition = new THREE.Vector3();
                     jointPosition.setFromMatrixPosition(jointMatrixThree);
@@ -280,7 +279,7 @@ import {JOINT_TO_INDEX} from './constants.js';
     function extractJoints(joints, jointNames) {
         let arr = [];
         for (let name of jointNames) {
-            let index = Object.values(utils.JOINTS).indexOf(name);
+            let index = Object.values(JOINTS).indexOf(name);
             arr.push(joints[index]);
         }
         return arr;
@@ -298,36 +297,36 @@ import {JOINT_TO_INDEX} from './constants.js';
 
         // head
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_EAR,
-            utils.JOINTS.RIGHT_EAR,
+            JOINTS.LEFT_EAR,
+            JOINTS.RIGHT_EAR,
         ])));
         // neck
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
         ])));
         // chest 
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
         // navel
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
         // pelvis
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
     }
 
@@ -362,7 +361,7 @@ import {JOINT_TO_INDEX} from './constants.js';
         
         // update relative positions of all joints/frames wrt. object positions
         pose.joints.forEach((jointInfo, index) => {
-            let jointName = Object.values(utils.JOINTS)[index];
+            let jointName = Object.values(JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
                 return key.endsWith(jointName);
             });
