@@ -168,7 +168,7 @@ createNameSpace("realityEditor.avatar");
             }
         });
 
-        network.onLoadOcclusionObject((worldObject, occlusionObject) => {
+        realityEditor.avatar.network.onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
 
