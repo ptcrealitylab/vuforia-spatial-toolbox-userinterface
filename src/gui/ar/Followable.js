@@ -10,22 +10,28 @@ export class Followable {
         this.sceneNode = realityEditor.sceneGraph.getSceneNodeById(this.sceneNodeId);
         this.frameKey = null; // assign a frameKey if you want it to be able to focus/blur the linked envelope
     }
+    updateSceneNode() {
+        // Important to implement: will be triggered in the camera update loop.
+        // this is where you should update the position/rotation of the sceneNode
+        // e.g. this.sceneNode.setLocalMatrix(this.mesh.matrix.elements)
+    }
     enableFirstPersonMode() {
-        // console.log(`override enableFirstPersonMode for ${this.id} in subclass`);
+        // Optionally add any side effects that should happen when the viewer
+        // zooms in as close as possible (e.g. for CameraVis, change shader mode)
     }
     disableFirstPersonMode() {
-        // console.log(`override disableFirstPersonMode for ${this.id} in subclass`);
+        // Optionally add any side effects that should happen when not fully
+        // zoomed in. Note: triggers repeatedly.
     }
-    onFollowDistanceUpdated() {
-        // console.log(`override onFollowDistanceUpdated for ${this.id} in subclass`);
+    onFollowDistanceUpdated(_distanceMm) {
+        // Optionally respond to camera distance updates. (e.g. for VideoPlayer,
+        // show/hide the camera mesh if distance > 3000 mm)
     }
     onCameraStartedFollowing() {
-        // console.log(`override onCameraStartedFollowing for ${this.id} in subclass`);
+        // Optionally trigger an effect when the viewer begins to follow this
     }
     onCameraStoppedFollowing() {
-        // console.log(`override onCameraStoppedFollowing for ${this.id} in subclass`);
+        // Optionally trigger an effect the viewer stops following this
     }
-    updateSceneNode() {
-        // console.log(`override updateSceneNode for ${this.id} in subclass`);
-    }
+
 }

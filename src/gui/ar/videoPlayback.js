@@ -133,7 +133,8 @@ void main() {
   // gl_FragColor = vec4(color.rgb, 1.0);
 }`;
 
-// TODO: import these from remote-operator-addon ./Shaders.js 
+// TODO: move shaders out of remote-operator-addon ./Shaders.js
+//  into jointly accessible location, rather than duplicate code
 const FIRST_PERSON_FRAGMENT_SHADER = `
 // color texture
 uniform sampler2D map;
@@ -158,18 +159,15 @@ const VideoPlayerStates = {
 
 const ShaderMode = {
     SOLID: 'SOLID',
-    // POINT: 'POINT',
-    // HOLO: 'HOLO',
-    // DIFF: 'DIFF',
-    // DIFF_DEPTH: 'DIFF_DEPTH',
     FIRST_PERSON: 'FIRST_PERSON',
-    // HIDDEN: 'HIDDEN',
 };
 
 class VideoPlayer extends Followable {
     static count = 0;
 
     constructor(id, urls, frameKey) {
+        // first we must set up the Followable so that the remote operator
+        // camera system will be able to follow this video...
         VideoPlayer.count++;
         let parentNode = realityEditor.sceneGraph.getVisualElement('CameraGroupContainer');
         if (!parentNode) {
@@ -177,12 +175,14 @@ class VideoPlayer extends Followable {
             let cameraGroupContainerId = realityEditor.sceneGraph.addVisualElement('CameraGroupContainer', gpNode);
             parentNode = realityEditor.sceneGraph.getSceneNodeById(cameraGroupContainerId);
             let transformationMatrix = realityEditor.gui.ar.utilities.makeGroundPlaneRotationX(0);
-            transformationMatrix[13] = -realityEditor.gui.ar.areaCreator.calculateFloorOffset(); // ground plane translation
+            transformationMatrix[13] = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
             parentNode.setLocalMatrix(transformationMatrix);
         }
-        let displayName = `Video Recording ${VideoPlayer.count}`;
-        super(`VideoPlayerFollowable_${id}`, displayName, parentNode);
+        // count (e.g. 1) is more user-friendly than the id (e.g. 0.123) or frameKey
+        let menuItemName = `Video Recording ${VideoPlayer.count}`;
+        super(`VideoPlayerFollowable_${id}`, menuItemName, parentNode);
 
+        // then the VideoPlayer can initialize as usual...
         this.id = id;
         this.urls = window.location.origin.includes('toolboxedge.net') ? urls : {
             color: urls.color.replace('https://toolboxedge.net', `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit by proxying video
@@ -201,6 +201,8 @@ class VideoPlayer extends Followable {
         this.phoneParent.rotateX(Math.PI / 2);
         // this.phoneParent.position.y = this.floorOffset;
 
+        // add a visual element to show the position of the camera that recorded the video
+        // note: we use the same visual style as the remote operator CameraVis 
         this.cameraMeshGroup = this.createCameraMeshGroup();
         this.phone.add(this.cameraMeshGroup);
 
@@ -236,8 +238,7 @@ class VideoPlayer extends Followable {
             }
         };
 
-        this.shaderMode = ShaderMode.SOLID;
-        this.firstPersonMode = false;
+        this.shaderMode = ShaderMode.SOLID; // default to the non-first-person shader
 
         this.decoder = new TextDecoder();
 
@@ -300,7 +301,6 @@ class VideoPlayer extends Followable {
         cone.cameraVisId = this.id;
         cameraMeshGroup.add(cone);
 
-        // this.phone.add(this.cameraMeshGroup);
         return cameraMeshGroup;
     }
     
@@ -422,7 +422,6 @@ class VideoPlayer extends Followable {
                 pointSize: { value: 2 * 0.666 },
             },
             vertexShader: POINT_CLOUD_VERTEX_SHADER,
-            // fragmentShader: POINT_CLOUD_FRAGMENT_SHADER,
             fragmentShader: fragmentShader,
             depthTest: true,
             transparent: true
@@ -430,17 +429,10 @@ class VideoPlayer extends Followable {
         return this.pointCloudMaterial;
     }
 
+    // a simplified copy of setShaderMode from remote operator CameraVis.js
     setShaderMode(shaderMode) {
         if (shaderMode !== this.shaderMode) {
             this.shaderMode = shaderMode;
-
-            // if (this.matDiff) {
-            //     this.matDiff.dispose();
-            //     this.matDiff = null;
-            // }
-            // if (this.shaderMode === ShaderMode.DIFF && !this.visualDiff) {
-            //     this.visualDiff = new VisualDiff();
-            // }
             this.pointCloudMaterial = this.createPointCloudMaterial(this.shaderMode);
             this.pointCloud.material = this.pointCloudMaterial;
         }
@@ -449,39 +441,38 @@ class VideoPlayer extends Followable {
     /* ---------------- Override Followable Functions ---------------- */
     
     onCameraStartedFollowing() {
-        // this.enableFirstPersonMode();
-        // if (this.shaderMode === ShaderMode.SOLID) {
-        //     this.setShaderMode(ShaderMode.FIRST_PERSON);
-        // }
+        // TODO: we might want to update the shader mode to a more front-legible
+        //  form as soon as we start following, but this needs experimenting
     }
     
+    // make sure the video switches back to volumetric mode when we stop following
     onCameraStoppedFollowing() {
-        // this.disableFirstPersonMode();
         if (this.shaderMode === ShaderMode.FIRST_PERSON) {
             this.setShaderMode(ShaderMode.SOLID);
         }
     }
 
+    // switch the shader mode and hide the camera mesh when fully zoomed in
     enableFirstPersonMode() {
-        this.firstPersonMode = true;
         this.cameraMeshGroup.visible = false;
         if (this.shaderMode === ShaderMode.SOLID) {
             this.setShaderMode(ShaderMode.FIRST_PERSON);
         }
     }
 
+    // switch back the shader mode when not fully zoomed in
     disableFirstPersonMode() {
-        this.firstPersonMode = false;
-        // this.cameraMeshGroup.visible = true;
         if (this.shaderMode === ShaderMode.FIRST_PERSON) {
             this.setShaderMode(ShaderMode.SOLID);
         }
     }
 
+    // hide the camera mesh if we get close to it
     onFollowDistanceUpdated(currentDistance) {
         this.cameraMeshGroup.visible = currentDistance > 3000;
     }
     
+    // continually update the Followable sceneNode to the position of the camera
     updateSceneNode() {
         this.sceneNode.setLocalMatrix(this.phone.matrix.elements);
     }
