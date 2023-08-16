@@ -17,7 +17,7 @@ createNameSpace("realityEditor.gui.ar.videoPlayback");
 
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import RVLParser from '../../../thirdPartyCode/rvl/RVLParser.js';
-import {Followable} from './CameraFollowTarget.js';
+import {Followable} from './Followable.js';
 
 const videoPlayers = [];
 
