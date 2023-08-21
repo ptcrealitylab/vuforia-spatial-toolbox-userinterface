@@ -168,6 +168,7 @@ createNameSpace("realityEditor.avatar");
             }
         });
 
+        //full path is used here as network variable may not be initialised before this function runs
         realityEditor.avatar.network.onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
