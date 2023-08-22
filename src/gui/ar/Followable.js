@@ -10,6 +10,9 @@ export class Followable {
         this.sceneNode = realityEditor.sceneGraph.getSceneNodeById(this.sceneNodeId);
         this.frameKey = null; // assign a frameKey if you want it to be able to focus/blur the linked envelope
     }
+    doesOverrideCameraUpdatesInFirstPerson() {
+        return false; // return true in subclass to eliminate jitter by handling camera updates when following in first person
+    }
     updateSceneNode() {
         // Important to implement: will be triggered in the camera update loop.
         // this is where you should update the position/rotation of the sceneNode

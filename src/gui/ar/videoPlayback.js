@@ -200,6 +200,7 @@ class VideoPlayer extends Followable {
         this.phoneParent.add(this.phone);
         this.phoneParent.rotateX(Math.PI / 2);
         // this.phoneParent.position.y = this.floorOffset;
+        this.firstPersonMode = false;
 
         // add a visual element to show the position of the camera that recorded the video
         // note: we use the same visual style as the remote operator CameraVis 
@@ -440,6 +441,10 @@ class VideoPlayer extends Followable {
 
     /* ---------------- Override Followable Functions ---------------- */
     
+    doesOverrideCameraUpdatesInFirstPerson() {
+        return true;
+    }
+
     onCameraStartedFollowing() {
         // TODO: we might want to update the shader mode to a more front-legible
         //  form as soon as we start following, but this needs experimenting
@@ -447,6 +452,7 @@ class VideoPlayer extends Followable {
     
     // make sure the video switches back to volumetric mode when we stop following
     onCameraStoppedFollowing() {
+        this.firstPersonMode = false;
         if (this.shaderMode === ShaderMode.FIRST_PERSON) {
             this.setShaderMode(ShaderMode.SOLID);
         }
@@ -454,6 +460,7 @@ class VideoPlayer extends Followable {
 
     // switch the shader mode and hide the camera mesh when fully zoomed in
     enableFirstPersonMode() {
+        this.firstPersonMode = true;
         this.cameraMeshGroup.visible = false;
         if (this.shaderMode === ShaderMode.SOLID) {
             this.setShaderMode(ShaderMode.FIRST_PERSON);
@@ -462,6 +469,7 @@ class VideoPlayer extends Followable {
 
     // switch back the shader mode when not fully zoomed in
     disableFirstPersonMode() {
+        this.firstPersonMode = false;
         if (this.shaderMode === ShaderMode.FIRST_PERSON) {
             this.setShaderMode(ShaderMode.SOLID);
         }
@@ -474,7 +482,7 @@ class VideoPlayer extends Followable {
     
     // continually update the Followable sceneNode to the position of the camera
     updateSceneNode() {
-        this.sceneNode.setLocalMatrix(this.phone.matrix.elements);
+        // this.sceneNode.setLocalMatrix(this.phone.matrix.elements);
     }
 
     /* ---------------- Helper Functions ---------------- */
@@ -522,6 +530,35 @@ class VideoPlayer extends Followable {
 
         let cameraMat = sceneNode.getMatrixRelativeTo(gpRxNode);
         this.setMatrixFromArray(this.phone.matrix, new Float32Array(cameraMat));
+        this.phone.updateMatrixWorld(true);
+
+        if (this.sceneNode) {
+            this.sceneNode.setLocalMatrix(this.phone.matrix.elements, { recomputeImmediately: true });
+        }
+
+        if (this.firstPersonMode) {
+            let matrix = this.getSceneNodeMatrix();
+            let eye = new THREE.Vector3(0, 0, 0);
+            eye.applyMatrix4(matrix);
+            let target = new THREE.Vector3(0, 0, -1000);
+            target.applyMatrix4(matrix);
+            matrix.lookAt(eye, target, new THREE.Vector3(0, 1, 0));
+            realityEditor.sceneGraph.setCameraPosition(matrix.elements);
+        }
+    }
+
+    getSceneNodeMatrix() {
+        let matrix = this.phone.matrixWorld.clone();
+
+        let initialVehicleMatrix = new THREE.Matrix4().fromArray([
+            -1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, -1, 0,
+            0, 0, 0, 1,
+        ]);
+        matrix.multiply(initialVehicleMatrix);
+
+        return matrix;
     }
 
     /**
