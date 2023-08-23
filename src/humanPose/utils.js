@@ -15,10 +15,6 @@ const JOINT_PUBLIC_DATA_KEYS = {
     transferData: 'whole_pose'
 };
 
-function getBoneName(bone) {
-    return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
-}
-
 // other modules in the project can use this to reliably check whether an object is a humanPose object
 function isHumanPoseObject(object) {
     if (!object) { return false; }
@@ -265,7 +261,6 @@ function setMatrixFromArray(matrix, array) {
 export {
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
-    getBoneName,
     isHumanPoseObject,
     makePoseData,
     getPoseObjectName,
