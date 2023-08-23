@@ -22,12 +22,12 @@ export const JOINTS = {
     RIGHT_KNEE: 'right_knee',
     LEFT_ANKLE: 'left_ankle',
     RIGHT_ANKLE: 'right_ankle',
-    LEFT_PINKY: 'left pinky',
-    RIGHT_PINKY: 'right pinky',
-    LEFT_INDEX: 'left index',
-    RIGHT_INDEX: 'right index',
-    LEFT_THUMB: 'left thumb', 
-    RIGHT_THUMB: 'right thumb',
+    LEFT_PINKY: 'left_pinky',
+    RIGHT_PINKY: 'right_pinky',
+    LEFT_INDEX: 'left_index',
+    RIGHT_INDEX: 'right_index',
+    LEFT_THUMB: 'left_thumb', 
+    RIGHT_THUMB: 'right_thumb',
     HEAD: 'head', // synthetic
     NECK: 'neck', // synthetic
     CHEST: 'chest', // synthetic
@@ -69,6 +69,17 @@ export const JOINT_CONNECTIONS = {
 
 export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
+
+// Flag for switching on/off an experimental feature of hand tracking
+export const TRACK_HANDS = true
+
+// Option to hide joint/bones which are for example considered poorly tracked in general or redundant for a use case
+// Currently, defined according to debug switch TRACK_HANDS
+export const DISPLAY_HIDDEN_ELEMENTS = TRACK_HANDS
+export const HIDDEN_JOINTS = [JOINTS.LEFT_PINKY, JOINTS.RIGHT_PINKY, JOINTS.LEFT_INDEX, JOINTS.RIGHT_INDEX, JOINTS.LEFT_THUMB, JOINTS.RIGHT_THUMB];
+export const HIDDEN_BONES = [getBoneName(JOINT_CONNECTIONS.thumbLeft), getBoneName(JOINT_CONNECTIONS.indexLeft), getBoneName(JOINT_CONNECTIONS.pinkyLeft),
+    getBoneName(JOINT_CONNECTIONS.fingerSpanLeft), getBoneName(JOINT_CONNECTIONS.thumbRight), getBoneName(JOINT_CONNECTIONS.indexRight), 
+    getBoneName(JOINT_CONNECTIONS.pinkyRight), getBoneName(JOINT_CONNECTIONS.fingerSpanRight)];
 
 export const COLOR_BASE = new THREE.Color(0, 0.5, 1);
 export const COLOR_RED = new THREE.Color(1, 0, 0);
@@ -125,3 +136,7 @@ export const RENDER_CONFIDENCE_COLOR = false;
 // Amount of pose instances per historical HumanPoseRenderer
 export const MAX_POSE_INSTANCES = 512;
 export const MAX_POSE_INSTANCES_MOBILE = 8;
+
+export function getBoneName(bone) {
+    return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
+}

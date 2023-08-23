@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {getBoneName} from './utils.js';
-import {JOINT_CONNECTIONS, JOINTS} from './constants.js';
+//import {} from './utils.js';
+import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
@@ -444,6 +444,14 @@ function wristReba(rebaData) {
     let leftWristColor = AnalyticsColors.green;
     let rightWristScore = 1;
     let rightWristColor = AnalyticsColors.green;
+
+    if (!TRACK_HANDS) {
+        rebaData.scores[JOINTS.LEFT_WRIST] = leftWristScore;
+        rebaData.colors[JOINTS.LEFT_WRIST] = leftWristColor;
+        rebaData.scores[JOINTS.RIGHT_WRIST] = rightWristScore;
+        rebaData.colors[JOINTS.RIGHT_WRIST] = rightWristColor;
+        return;
+    }
     
     /* left wrist */
     // compute main direction vectors
@@ -499,7 +507,7 @@ function wristReba(rebaData) {
     // check if the hand is bent away from midline, then +1
     // the angle limit from midline is not specified in REBA definition (chosen by us)
     wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
-    if (Math.abs(wristBendAngle) > 30) {
+    if (Math.abs(wristBendAngle) > 40) {
         rightWristScore += 1;
     }
 
