@@ -1,5 +1,4 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-//import {} from './utils.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
@@ -476,10 +475,11 @@ function wristReba(rebaData) {
     }
 
     // check if the hand is twisted (palm up), then +1
+    // disable for now because pose tracking does not capture hand twists
+    /*
     const leftElbowAxis = new THREE.Vector3(); 
     leftElbowAxis.crossVectors(leftUpperarmDirection, leftForearmDirection).normalize();
     let wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
-    /* disable for now because pose tracking does not capture hand twists
     if (wristTwistAngle > 90) {
         leftWristScore += 1;
     }
@@ -512,10 +512,10 @@ function wristReba(rebaData) {
     }
 
     // check if the hand is twisted (palm up), then +1
+    /*
     const rightElbowAxis = new THREE.Vector3(); 
     rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
     wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
-    /* disable for now because pose tracking does not capture hand twists
     if (wristTwistAngle > 90) {
         rightWristScore += 1;
     }

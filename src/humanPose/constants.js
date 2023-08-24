@@ -71,11 +71,11 @@ export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
 
 // Flag for switching on/off an experimental feature of hand tracking
-export const TRACK_HANDS = true
+export const TRACK_HANDS = true;
 
 // Option to hide joint/bones which are for example considered poorly tracked in general or redundant for a use case
 // Currently, defined according to debug switch TRACK_HANDS
-export const DISPLAY_HIDDEN_ELEMENTS = TRACK_HANDS
+export const DISPLAY_HIDDEN_ELEMENTS = TRACK_HANDS;
 export const HIDDEN_JOINTS = [JOINTS.LEFT_PINKY, JOINTS.RIGHT_PINKY, JOINTS.LEFT_INDEX, JOINTS.RIGHT_INDEX, JOINTS.LEFT_THUMB, JOINTS.RIGHT_THUMB];
 export const HIDDEN_BONES = [getBoneName(JOINT_CONNECTIONS.thumbLeft), getBoneName(JOINT_CONNECTIONS.indexLeft), getBoneName(JOINT_CONNECTIONS.pinkyLeft),
     getBoneName(JOINT_CONNECTIONS.fingerSpanLeft), getBoneName(JOINT_CONNECTIONS.thumbRight), getBoneName(JOINT_CONNECTIONS.indexRight), 
