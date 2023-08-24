@@ -459,7 +459,7 @@ function wristReba(rebaData) {
     const leftHandDirection = leftPinky.clone().add(leftIndex).normalize();
     const leftHandPinky2Index = rebaData.joints[JOINTS.LEFT_INDEX].clone().sub(rebaData.joints[JOINTS.LEFT_PINKY]).normalize();
     const leftForearmDirection = rebaData.joints[JOINTS.LEFT_WRIST].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
-    const leftUpperarmDirection = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
+    //const leftUpperarmDirection = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
 
     // check if wrist position is outside +-15 deg, then +1 
     let wristPositionAngle = angleBetween(leftHandDirection, leftForearmDirection);
@@ -496,7 +496,7 @@ function wristReba(rebaData) {
     const rightHandDirection = rightPinky.clone().add(rightIndex).normalize();
     const rightHandPinky2Index = rebaData.joints[JOINTS.RIGHT_INDEX].clone().sub(rebaData.joints[JOINTS.RIGHT_PINKY]).normalize();
     const rightForearmDirection = rebaData.joints[JOINTS.RIGHT_WRIST].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
-    const rightUpperarmDirection = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
+    //const rightUpperarmDirection = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
 
     // check if wrist position is outside +-15 deg, then +1 
     wristPositionAngle = angleBetween(rightHandDirection, rightForearmDirection);
