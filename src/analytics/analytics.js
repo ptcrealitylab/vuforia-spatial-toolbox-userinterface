@@ -205,7 +205,7 @@ export class Analytics {
      * @param {Pose[]}  poses - the poses to render
      */
     bulkRenderHistoricalPoses(poses) {
-        if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+        if (realityEditor.humanPose.draw.is2DPoseRendered()) return;
         poses.forEach(pose => {
             this.timeline.appendPose({
                 time: pose.timestamp,

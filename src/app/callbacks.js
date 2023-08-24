@@ -218,7 +218,7 @@ createNameSpace('realityEditor.app.callbacks');
             });
         }
 
-        realityEditor.gui.poses.drawPoses(pose, frameData.imageSize);
+        realityEditor.humanPose.draw.draw2DPoses(pose, frameData.imageSize);
 
         // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
         subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));

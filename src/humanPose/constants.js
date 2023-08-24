@@ -48,10 +48,6 @@ export const JOINT_CONNECTIONS = {
     kneeAnkleLeft: [JOINTS.LEFT_KNEE, JOINTS.LEFT_ANKLE],
     hipKneeRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_KNEE], // 10
     kneeAnkleRight: [JOINTS.RIGHT_KNEE, JOINTS.RIGHT_ANKLE], // 11
-    headNeck: [JOINTS.HEAD, JOINTS.NECK],
-    neckChest: [JOINTS.NECK, JOINTS.CHEST],
-    chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
-    navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
     thumbLeft: [JOINTS.LEFT_THUMB, JOINTS.LEFT_WRIST],
     indexLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_WRIST],
     pinkyLeft: [JOINTS.LEFT_PINKY, JOINTS.LEFT_WRIST],
@@ -60,11 +56,15 @@ export const JOINT_CONNECTIONS = {
     indexRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_WRIST],
     pinkyRight: [JOINTS.RIGHT_PINKY, JOINTS.RIGHT_WRIST],
     fingerSpanRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_PINKY],
-    face: [JOINTS.HEAD, JOINTS.NOSE],
     earSpan: [JOINTS.LEFT_EAR, JOINTS.RIGHT_EAR],
     eyeSpan: [JOINTS.LEFT_EYE, JOINTS.RIGHT_EYE],
     eyeNoseLeft: [JOINTS.LEFT_EYE, JOINTS.NOSE],
-    eyeNoseRight: [JOINTS.RIGHT_EYE, JOINTS.NOSE]
+    eyeNoseRight: [JOINTS.RIGHT_EYE, JOINTS.NOSE],
+    headNeck: [JOINTS.HEAD, JOINTS.NECK],   // connections between synthetic joints
+    neckChest: [JOINTS.NECK, JOINTS.CHEST],
+    chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
+    navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
+    face: [JOINTS.HEAD, JOINTS.NOSE]
 };
 
 export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
