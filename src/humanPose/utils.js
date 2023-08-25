@@ -258,6 +258,31 @@ function setMatrixFromArray(matrix, array) {
     );
 }
 
+/**
+ * Converts joint positions and confidences from schema JOINTS_V1 to the current JOINTS schema
+ * @param {Object.<string, THREE.Vector3>} jointPositions - dictionary of positions (in/out param) 
+ * @param {Object.<string, number>} jointConfidences - dictionary of confidences (in/out param)
+ */
+function convertFromJointsV1(jointPositions, jointConfidences) {
+
+    // expand with hand joints which positions are collapsed to wrist joint
+    jointPositions[JOINTS.LEFT_PINKY] = jointPositions[JOINTS.LEFT_WRIST];
+    jointPositions[JOINTS.LEFT_INDEX] = jointPositions[JOINTS.LEFT_WRIST];
+    jointPositions[JOINTS.LEFT_THUMB] = jointPositions[JOINTS.LEFT_WRIST];
+
+    jointPositions[JOINTS.RIGHT_PINKY] = jointPositions[JOINTS.RIGHT_WRIST];
+    jointPositions[JOINTS.RIGHT_INDEX] = jointPositions[JOINTS.RIGHT_WRIST];
+    jointPositions[JOINTS.RIGHT_THUMB] = jointPositions[JOINTS.RIGHT_WRIST];    
+
+    jointConfidences[JOINTS.LEFT_PINKY] = 0.0;
+    jointConfidences[JOINTS.LEFT_INDEX] = 0.0;
+    jointConfidences[JOINTS.LEFT_THUMB] = 0.0;
+    
+    jointConfidences[JOINTS.RIGHT_PINKY] = 0.0;
+    jointConfidences[JOINTS.RIGHT_INDEX] = 0.0;
+    jointConfidences[JOINTS.RIGHT_THUMB] = 0.0;
+}
+
 export {
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
@@ -270,5 +295,6 @@ export {
     setMatrixFromArray,
     indexOfMin,
     getJointNodeInfo,
-    createDummySkeleton
+    createDummySkeleton,
+    convertFromJointsV1
 };

@@ -5,7 +5,7 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {JOINTS, JOINT_TO_INDEX} from "./constants.js";
+import {JOINTS, JOINT_TO_INDEX, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
 
 (function(exports) {
@@ -203,16 +203,17 @@ import {Pose} from "./Pose.js";
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
                 let groundPlaneRelativeMatrix = utils.getGroundPlaneRelativeMatrix();
-                const jointPositions = {};
-                const jointConfidences = {};
+                let jointPositions = {};
+                let jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
                     utils.setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
+                
                 for (let jointId of Object.values(JOINTS)) {
                     let frame = poseObject.frames[poseObject.objectId + jointId];
-                    if (!frame.ar.matrix) {
+                    if (!frame || !frame.ar.matrix) {
                         continue;
                     }
                     // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
@@ -234,9 +235,20 @@ import {Pose} from "./Pose.js";
                     }
                     jointConfidences[jointId] = confidence;
                 }
-                if (Object.keys(jointPositions).length === 0) {
+                let length = Object.keys(jointPositions).length;
+                if (length === 0) {
                     return;
                 }
+                if (length !== JOINTS_PER_POSE) {
+                    if (length == JOINTS_V1_COUNT) {
+                        utils.convertFromJointsV1(jointPositions, jointConfidences);
+                    }
+                    else {
+                        console.error('Unknown joint schema of a recorded pose.');
+                        return;
+                    }
+                }
+
                 const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
                 const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
                     poseObjectId: identifier,
