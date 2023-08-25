@@ -5,7 +5,7 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {JOINTS, JOINT_TO_INDEX, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
+import {JOINTS, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
 
 (function(exports) {
