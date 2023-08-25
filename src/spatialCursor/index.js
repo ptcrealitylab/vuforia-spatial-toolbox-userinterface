@@ -522,6 +522,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // todo Steve: use ShaderMaterial.clone() to prevent the other cursor inner circles from playing the same expanding animation
         // todo Steve: probably a better idea to separate the inner & outer circles of all indicator1's, and animate the scale property, b/c that way animation can reflect to other clients when I click
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial.clone());
+        indicator1.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2 + 1;
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
         const material2 = new THREE.ShaderMaterial({
@@ -542,6 +543,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         const indicator2 = new THREE.Mesh(geometry2, material2);
         indicator2.name = 'coloredCursorMesh';
+        indicator2.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2;
 
         const cursorGroup = new THREE.Group();
         cursorGroup.add(indicator1);
@@ -564,6 +566,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function addSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
+        indicator1.renderOrder = 4;
         indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator1.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator1);
@@ -572,6 +575,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function addTestSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator2 = new THREE.Mesh(geometry, testCursorMaterial);
+        indicator2.renderOrder = 3;
         indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator2.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator2);
