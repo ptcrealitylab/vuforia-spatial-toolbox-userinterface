@@ -5,7 +5,7 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {JOINTS, JOINT_TO_INDEX} from "./constants.js";
+import {JOINTS, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
 
 (function(exports) {
@@ -203,16 +203,17 @@ import {Pose} from "./Pose.js";
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
                 let groundPlaneRelativeMatrix = utils.getGroundPlaneRelativeMatrix();
-                const jointPositions = {};
-                const jointConfidences = {};
+                let jointPositions = {};
+                let jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
                     utils.setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
+                
                 for (let jointId of Object.values(JOINTS)) {
                     let frame = poseObject.frames[poseObject.objectId + jointId];
-                    if (!frame.ar.matrix) {
+                    if (!frame || !frame.ar.matrix) {
                         continue;
                     }
                     // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
@@ -223,7 +224,7 @@ import {Pose} from "./Pose.js";
                     jointPosition.setFromMatrixPosition(jointMatrixThree);
                     jointPositions[jointId] = jointPosition;
 
-                    let keys = utils.getJointNodeInfo(poseObject, JOINT_TO_INDEX[jointId]);
+                    let keys = utils.getJointNodeInfo(poseObject, jointId);
                     // zero confidence if node's public data are not available
                     let confidence = 0.0;
                     if (keys) {
@@ -234,9 +235,20 @@ import {Pose} from "./Pose.js";
                     }
                     jointConfidences[jointId] = confidence;
                 }
-                if (Object.keys(jointPositions).length === 0) {
+                let length = Object.keys(jointPositions).length;
+                if (length === 0) {
                     return;
                 }
+                if (length !== JOINTS_PER_POSE) {
+                    if (length == JOINTS_V1_COUNT) {
+                        utils.convertFromJointsV1(jointPositions, jointConfidences);
+                    }
+                    else {
+                        console.error('Unknown joint schema of a recorded pose.');
+                        return;
+                    }
+                }
+
                 const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
                 const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
                     poseObjectId: identifier,
@@ -384,7 +396,7 @@ import {Pose} from "./Pose.js";
             frameSceneNode.setLocalMatrix(positionMatrix); 
             
             // updating a node data of tool/frame of a joint
-            let keys = utils.getJointNodeInfo(humanPoseObject, index);
+            let keys = utils.getJointNodeInfo(humanPoseObject, jointName);
             if (keys) {
                 let node = realityEditor.getNode(keys.objectKey, keys.frameKey, keys.nodeKey);
                 if (node) {
@@ -406,7 +418,7 @@ import {Pose} from "./Pose.js";
 
         // updating a 'transfer' node data of selected joint (the first one at the moment). 
         // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
-        let keys = utils.getJointNodeInfo(humanPoseObject, 0);
+        let keys = utils.getJointNodeInfo(humanPoseObject, JOINTS.NOSE);
         if (keys) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
         }
@@ -451,7 +463,7 @@ import {Pose} from "./Pose.js";
             // no action for now
         } else {
             // subscribe to public data of a selected joint node in remote HumanPoseObject which transfers whole pose
-            let keys = utils.getJointNodeInfo(object, 0);
+            let keys = utils.getJointNodeInfo(object, JOINTS.NOSE);
             if (!keys) { return; }
 
             let subscriptionCallback = (msgContent) => {

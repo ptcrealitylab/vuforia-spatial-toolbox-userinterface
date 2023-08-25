@@ -444,7 +444,11 @@ function wristReba(rebaData) {
     let rightWristScore = 1;
     let rightWristColor = AnalyticsColors.green;
 
-    if (!TRACK_HANDS) {
+    // checking if hand have a valid pose (eg. they are not just dummy hands for pose with JOINTS_V1 schema)
+    const handsInvalid = rebaData.joints[JOINTS.LEFT_INDEX].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).length() < 1e-6 &&
+                         rebaData.joints[JOINTS.RIGHT_INDEX].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).length() < 1e-6;
+
+    if (!TRACK_HANDS || handsInvalid) {
         rebaData.scores[JOINTS.LEFT_WRIST] = leftWristScore;
         rebaData.colors[JOINTS.LEFT_WRIST] = leftWristColor;
         rebaData.scores[JOINTS.RIGHT_WRIST] = rightWristScore;

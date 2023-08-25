@@ -4,6 +4,34 @@
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
+/* Previous joint scheme without simple hands. */
+export const JOINTS_V1 = {
+    NOSE: 'nose',
+    LEFT_EYE: 'left_eye',
+    RIGHT_EYE: 'right_eye',
+    LEFT_EAR: 'left_ear',
+    RIGHT_EAR: 'right_ear',
+    LEFT_SHOULDER: 'left_shoulder',
+    RIGHT_SHOULDER: 'right_shoulder',
+    LEFT_ELBOW: 'left_elbow',
+    RIGHT_ELBOW: 'right_elbow',
+    LEFT_WRIST: 'left_wrist',
+    RIGHT_WRIST: 'right_wrist',
+    LEFT_HIP: 'left_hip',
+    RIGHT_HIP: 'right_hip',
+    LEFT_KNEE: 'left_knee',
+    RIGHT_KNEE: 'right_knee',
+    LEFT_ANKLE: 'left_ankle',
+    RIGHT_ANKLE: 'right_ankle',
+    HEAD: 'head', // synthetic
+    NECK: 'neck', // synthetic
+    CHEST: 'chest', // synthetic
+    NAVEL: 'navel', // synthetic
+    PELVIS: 'pelvis', // synthetic
+};
+
+export const JOINTS_V1_COUNT = Object.keys(JOINTS_V1).length;
+
 export const JOINTS = {
     NOSE: 'nose',
     LEFT_EYE: 'left_eye',
@@ -71,7 +99,7 @@ export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
 
 // Flag for switching on/off an experimental feature of hand tracking
-export const TRACK_HANDS = true;
+export const TRACK_HANDS = false;
 
 // Option to hide joint/bones which are for example considered poorly tracked in general or redundant for a use case
 // Currently, defined according to debug switch TRACK_HANDS
