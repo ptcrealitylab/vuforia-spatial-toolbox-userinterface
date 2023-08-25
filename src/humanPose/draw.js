@@ -105,7 +105,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     const jointPositions = {};
     const jointConfidences = {};
 
-    for (const [i, jointId] of Object.values(JOINTS).entries()) {
+    for (const jointId of Object.values(JOINTS)) {
         // assume that all sub-objects are of the form poseObject.id + joint name
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(`${poseObject.objectId}${jointId}`);
 
@@ -119,7 +119,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
 
         jointPositions[jointId] = jointPosition;
 
-        let keys = getJointNodeInfo(poseObject, i);
+        let keys = getJointNodeInfo(poseObject, jointId);
         // zero confidence if node's public data are not available
         let confidence = 0.0;
         if (keys) {

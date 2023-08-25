@@ -71,11 +71,10 @@ function indexOfMin(arr) {
 }
 
 // returns the {objectKey, frameKey, nodeKey} address of the storeData node on this object
-function getJointNodeInfo(humanObject, jointIndex) {
+function getJointNodeInfo(humanObject, jointName) {
     if (!humanObject) { return null; }
 
     let humanObjectKey = humanObject.objectId;
-    let jointName = Object.values(JOINTS)[jointIndex];
     let humanFrameKey = Object.keys(humanObject.frames).find(name => name.includes(jointName));
     if (!humanObject.frames || !humanFrameKey) { return null; }
     let humanNodeKey = Object.keys(humanObject.frames[humanFrameKey].nodes).find(name => name.includes(JOINT_NODE_NAME));
