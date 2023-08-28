@@ -1,7 +1,7 @@
 module.exports = {
     "env": {
         "browser": true,
-        "es2022": true
+        "es6": true
     },
     "extends": "eslint:recommended",
     "globals": {
@@ -66,7 +66,7 @@ module.exports = {
         "webkitConvertPointFromPageToNode": "writable",
     },
     "parserOptions": {
-        "ecmaVersion": 2020,
+        "ecmaVersion": 2022,
         "sourceType": "module",
     },
     "rules": {
