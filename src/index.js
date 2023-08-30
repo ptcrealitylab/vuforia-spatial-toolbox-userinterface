@@ -121,6 +121,7 @@ window.realityEditor = {
         navigation: {},
         pocket: {},
         screenExtension : {},
+        shaders: {},
         threejsScene: {},
         spatialIndicator: {},
         spatialArrow: {},
