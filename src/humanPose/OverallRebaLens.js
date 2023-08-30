@@ -1,7 +1,7 @@
 import {AnalyticsLens} from "./AnalyticsLens.js";
 import * as Reba from "./rebaScore.js";
 import {AnalyticsColors} from "./AnalyticsColors.js";
-import {JOINTS} from "./utils.js";
+import {JOINTS} from "./constants.js";
 
 /**
  * OverallRebaLens is a lens that calculates the overall REBA score for the pose

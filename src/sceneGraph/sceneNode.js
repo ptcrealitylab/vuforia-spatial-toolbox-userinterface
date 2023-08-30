@@ -173,7 +173,7 @@ createNameSpace("realityEditor.sceneGraph");
         this.anythingInSubtreeNeedsRecompute = false;
     };
 
-    SceneNode.prototype.setLocalMatrix = function(matrix) {
+    SceneNode.prototype.setLocalMatrix = function(matrix, options = { recomputeImmediately: false } ) {
         if (!matrix || matrix.length !== 16) { return; } // ignore malformed/empty input
         utils.copyMatrixInPlace(matrix, this.localMatrix);
 
@@ -196,6 +196,14 @@ createNameSpace("realityEditor.sceneGraph");
 
         // flagging this will eventually set the other necessary flags for this and parent/children nodes
         this.flagForRecompute();
+
+        if (options.recomputeImmediately) {
+            if (this.parent) {
+                this.updateWorldMatrix(this.parent.worldMatrix);
+            } else {
+                this.updateWorldMatrix();
+            }
+        }
     };
 
     SceneNode.prototype.flagForRerender = function() {

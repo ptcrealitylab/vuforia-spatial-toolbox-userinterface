@@ -197,8 +197,15 @@ function ToolboxUtilities_parseUrl(url, schema) {
         server = serverSplit[0];
         if (serverSplit[1]) {
             port = parseInt(Number(serverSplit[1]));
+        } else {
+            if (protocol === 'https' || protocol === 'wss') {
+                port = 443;
+            } else if (protocol === 'http' || protocol === 'ws') {
+                port = 80;
+            }
         }
     }
+
     let res = {};
     let route = "";
     let querySplit = [];
@@ -211,7 +218,7 @@ function ToolboxUtilities_parseUrl(url, schema) {
         }
     }
     try {
-        if (!schema.items.properties.type) schema.items.properties.type = {"type": "string", "minLength": 1, "maxLength": 5, "enum": ["jpg", "jpeg", "gif", "zip", "glb", "html", "map", "htm", "xml", "dat", "png", "js", "json", "obj", "fbx", "svg", "mp4", "pdf", "csv", "css", "woff", "otf", "webm", "webp", "ttf"]};
+        if (!schema.items.properties.type) schema.items.properties.type = {"type": "string", "minLength": 1, "maxLength": 5, "enum": ["jpg", "jpeg", "gif", "zip", "glb", "html", "map", "htm", "xml", "dat", "png", "js", "json", "obj", "fbx", "svg", "mp4", "pdf", "csv", "css", "woff", "otf", "webm", "webp", "ttf", "wasm"]};
         if (!schema.items.properties.protocol) schema.items.properties.protocol = {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]};
         if (!schema.items.properties.query) schema.items.properties.query = {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+{}|;:,./?]*$"};
         if (!schema.items.properties.route )  schema.items.properties.route = {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9/~!@$%^&*()-_=+|;:,.]*$"};
@@ -287,7 +294,6 @@ function ToolboxUtilities_addSearchParams(baseURL, params = {}) {
 class MainToolboxSocket extends ToolboxUtilities {
     constructor(baseURL, networkID, origin) {
         super();
-        let that = this;
         this.retryAmount = 5;
         this.timetoRequestPackage = 3000;
         this.netBeatInterval = 2000;
@@ -300,7 +306,6 @@ class MainToolboxSocket extends ToolboxUtilities {
         this.CLOSED = 3;
         this.id = 0;
         this.readyState = 3;
-        this.rsOld = null;
         this.packageID = 0;
         this.packageCb = {};
         this.binaryBuffer = [];
@@ -346,7 +351,7 @@ class MainToolboxSocket extends ToolboxUtilities {
                 "required": ["i", "o", "n", "m", "r", "b"]
             }
         };
-        this.Response = function (obj) {
+        this.Response = function (that, obj) {
             this.send = (res, data) => {
                 if (obj.i) {
                     if (data) {
@@ -408,15 +413,15 @@ class MainToolboxSocket extends ToolboxUtilities {
             if (typeof objBin.obj !== "object") return;
             if (typeof objBin.obj.b === "undefined") return;
 
-            if (!that.validate(objBin.obj, msgLength, this.dataPackageSchema)) {
+            if (!this.validate(objBin.obj, msgLength, this.dataPackageSchema)) {
                 // console.log(objBin.obj.r,"not allowed");
                 console.log("not allowed");
                 return;
             }
             if (objBin.obj.m === 'ping') {
-                if (that.networkID !== objBin.obj.n) {
-                    this.emitInt('network', objBin.obj.n, that.networkID, objBin.obj);
-                    that.networkID = objBin.obj.n;
+                if (this.networkID !== objBin.obj.n) {
+                    this.emitInt('network', objBin.obj.n, this.networkID, objBin.obj);
+                    this.networkID = objBin.obj.n;
                 }
             }
             if (objBin.obj.i && objBin.obj.m === 'res') {
@@ -432,7 +437,7 @@ class MainToolboxSocket extends ToolboxUtilities {
         };
         this.routerCallback = (objBin) => {
             if (objBin.obj.i) {
-                this.emitInt(objBin.obj.m, objBin.obj.r, objBin.obj.b, new this.Response(objBin.obj), objBin.bin);
+                this.emitInt(objBin.obj.m, objBin.obj.r, objBin.obj.b, new this.Response(this, objBin.obj), objBin.bin);
             } else {
                 this.emitInt(objBin.obj.m, objBin.obj.r, objBin.obj.b, null, objBin.bin);
             }
@@ -526,6 +531,24 @@ class MainToolboxSocket extends ToolboxUtilities {
             } else if (objBin.obj.m !== 'res') {
                 objBin.obj.i = null;
             }
+            this.sendObjBinImpl(objBin);
+        };
+        this.resend = (id) => {
+            if (this.readyState !== this.OPEN) {
+                return;
+            }
+
+            if (this.packageCb.hasOwnProperty(id) && this.packageCb[id].objBin) {
+                this.sendObjBinImpl(this.packageCb[id].objBin);
+            }
+        };
+
+        /**
+         * Internal implementation of sending an objBin over the socket
+         * Sets `f` to be the number of following binary frames or null
+         * @param {any} objBin
+         */
+        this.sendObjBinImpl = (objBin) => {
             if (objBin.bin && objBin.bin.data) {
                 if (Array.isArray(objBin.bin.data)) {
                     objBin.obj.f = objBin.bin.data.length;
@@ -536,72 +559,52 @@ class MainToolboxSocket extends ToolboxUtilities {
                 } else {
                     this.socket.send(this.createBinary(objBin), {binary: true});
                 }
-                return;
+            } else {
+                objBin.obj.f = null;
+                this.socket.send(JSON.stringify(objBin.obj), {binary: false});
             }
-            objBin.obj.f = null;
-            this.socket.send(JSON.stringify(objBin.obj), {binary: false});
         };
-        this.resend = (id) => {
-            if (this.readyState !== this.OPEN) {
-                return;
-            }
 
-            if (this.packageCb.hasOwnProperty(id) && this.packageCb[id].objBin.bin) {
-                if (this.packageCb[id].objBin.bin.data) {
-                    if (Array.isArray(this.packageCb[id].objBin.bin.data)) {
-                        this.packageCb[id].objBin.obj.f = this.packageCb[id].objBin.bin.data.length;
-                        this.socket.send(JSON.stringify(this.packageCb[id].objBin.obj), {binary: false});
-                        for (let i = 0; i < this.packageCb[id].objBin.bin.data.length; i++) {
-                            this.socket.send(this.packageCb[id].objBin.bin.data[i], {binary: true});
-                        }
-                    } else {
-                        this.socket.send(this.createBinary(this.packageCb[id].objBin), {binary: true});
-                    }
-                } else {
-                    this.socket.send(JSON.stringify(this.packageCb[id].objBin.obj), {binary: false});
-                }
-            }
-        };
         this.stateEmitter = (emitterString, statusID) => {
+            const rsOld = this.readyState;
             this.readyState = statusID;
             this.emitInt(emitterString, statusID);
-            if (this.rsOld !== this.readyState) {
+            if (rsOld !== this.readyState) {
                 this.emitInt('status', this.readyState);
-                this.rsOld = this.readyState;
             }
         };
         this.attachEvents = () => {
             if (this.envNode) {
                 this.socket.on('connected', () => {
-                    that.readyState = that.OPEN;
-                    that.stateEmitter('connected', that.OPEN);
+                    this.readyState = this.OPEN;
+                    this.stateEmitter('connected', this.OPEN);
                 });
                 this.socket.on('connecting', () => {
-                    that.readyState = that.CONNECTING;
-                    that.stateEmitter('connecting', that.CONNECTING);
+                    this.readyState = this.CONNECTING;
+                    this.stateEmitter('connecting', this.CONNECTING);
                 });
             }
             this.socket.onclose = () => {
-                that.readyState = that.CLOSED;
-                that.stateEmitter('close', that.CLOSED);
+                this.readyState = this.CLOSED;
+                this.stateEmitter('close', this.CLOSED);
                 this.closer();
             };
             this.socket.onopen = () => {
-                that.readyState = that.OPEN;
-                that.stateEmitter('open', that.OPEN);
-                that.pingInt();
+                this.readyState = this.OPEN;
+                this.stateEmitter('open', this.OPEN);
+                this.pingInt();
             };
 
             if (this.envNode) {
                 this.socket.onmessage = (msg) => {
-                    that.router(msg.data);
+                    this.router(msg.data);
                 };
             } else {
                 this.socket.onmessage = async (msg) => {
                     if (typeof msg.data !== "string")
-                        that.router(new Uint8Array(await msg.data.arrayBuffer()));
+                        this.router(new Uint8Array(await msg.data.arrayBuffer()));
                     else
-                        that.router(msg.data);
+                        this.router(msg.data);
                 };
             }
             this.close = () => {
@@ -623,21 +626,22 @@ class MainToolboxSocket extends ToolboxUtilities {
             res.send("pong");
         });
         this.pingInt = () => {
-            if (that.readyState !== this.OPEN) {
-                that.readyState = that.CLOSED;
+            if (this.readyState !== this.OPEN) {
+                this.readyState = this.CLOSED;
                 return;
             }
             try {
-                this.ping('action/ping', 'ping', function (msg) {
+                this.ping('action/ping', 'ping', (msg) => {
                     if (msg === 'pong') {
-                        that.emitInt("pong");
-                        that.readyState = that.OPEN;
-                    } else
-                        that.readyState = that.CLOSED;
+                        this.emitInt("pong");
+                        this.readyState = this.OPEN;
+                    } else {
+                        this.readyState = this.CLOSED;
+                    }
                 });
             } catch (e) {
-                that.readyState = that.CLOSED;
-                console.log(e);
+                this.readyState = this.CLOSED;
+                console.error('Unhandled pingInt error', e);
             }
         };
         this.setNetworkId = (networkId) =>  this.networkID = networkId;
@@ -721,12 +725,23 @@ class MainIo extends ToolboxUtilities {
                 protocol: location.protocol,
                 ws: "ws://"
             };
+            let portAddition = ':' + proxy.port;
+            if (!proxy.port) {
+                portAddition = '';
+            }
+
             if (proxy.protocol === 'https:') {
                 proxy.ws = 'wss://';
             } else if (proxy.protocol === 'http:') {
                 proxy.ws = 'ws://';
             }
-            url = proxy.ws + proxy.ip + ':' + proxy.port + proxy.route;
+
+            if (proxy.port === '80' && proxy.ws === 'ws://') {
+                portAddition = '';
+            } else if (proxy.port === '443' && proxy.ws === 'wss://') {
+                portAddition = '';
+            }
+            url = proxy.ws + proxy.ip + portAddition + proxy.route;
         }
         if (url.indexOf("http") === 0) {
             url = url.replace('http', 'ws');
@@ -745,7 +760,6 @@ class MainIo extends ToolboxUtilities {
 class ToolSocket extends MainToolboxSocket {
     constructor(url, networkID, origin) {
         super(url, networkID, origin);
-        let that = this;
         this.WebSocket = null;
         this.socket = null;
         if (typeof window === 'undefined') {
@@ -768,23 +782,23 @@ class ToolSocket extends MainToolboxSocket {
         }
 
         this.netBeatIntervalRef = setInterval(() => {
-            if (that.readyState === that.OPEN)
-                that.pingInt();
-        }, that.netBeatInterval);
+            if (this.readyState === this.OPEN)
+                this.pingInt();
+        }, this.netBeatInterval);
 
         this.connect = (url, networkID, origin) => {
-            if (networkID) that.networkID = networkID;
-            if (origin) that.origin = origin;
-            if (that.socket) {
-                that.readyState = that.CLOSED;
-                that.socket.close();
+            if (networkID) this.networkID = networkID;
+            if (origin) this.origin = origin;
+            if (this.socket) {
+                this.readyState = this.CLOSED;
+                this.socket.close();
             }
-            that.socket = new that.WebSocket(url);
-            that.socket.onerror = (err) => {
-                that.emitInt('error', err);
+            this.socket = new this.WebSocket(url);
+            this.socket.onerror = (err) => {
+                this.emitInt('error', err);
             };
-            that.readyState = that.CONNECTING;
-            that.attachEvents();
+            this.readyState = this.CONNECTING;
+            this.attachEvents();
 
         };
         // connect for the first time when opened.
@@ -798,7 +812,6 @@ ToolSocket.Server = class Server extends ToolboxUtilities {
         if (typeof window !== 'undefined') {
             return;
         }
-        let that = this;
         this.socketID = 1;
         this.webSockets = {
         };
@@ -807,8 +820,8 @@ ToolSocket.Server = class Server extends ToolboxUtilities {
         this.server = new WebSocket.Server(param);
         this.server.on('connection', (socket, ...args) => {
             class Socket extends MainToolboxSocket {
-                constructor(socket) {
-                    super(undefined, undefined, that.origin);
+                constructor(socket, origin) {
+                    super(undefined, undefined, origin);
                     this._socket = socket._socket;
                     this.socket = socket;
                     if (!this.networkID) this.networkID = "toolbox";
@@ -821,9 +834,9 @@ ToolSocket.Server = class Server extends ToolboxUtilities {
 
             if (this.socketID >= Number.MAX_SAFE_INTEGER) this.socketID = 1;
             this.socketID++;
-            this.webSockets[this.socketID] = new Socket(socket);
+            this.webSockets[this.socketID] = new Socket(socket, this.origin);
             this.webSockets[this.socketID].id = this.socketID + '';
-            that.emitInt('connection', this.webSockets[this.socketID], ...args);
+            this.emitInt('connection', this.webSockets[this.socketID], ...args);
 
             // todo proxy origin from main class and parameters
             //  that.emitInt('connection', new Socket(socket), ...args);
@@ -845,7 +858,6 @@ ToolSocket.Io.Server = class Server extends ToolboxUtilities {
             return;
         }
         console.log('IO is waiting for ToolSocket Server');
-        let that = this;
         this.id = 1;
         this.sockets = {
             connected: {},
@@ -853,8 +865,8 @@ ToolSocket.Io.Server = class Server extends ToolboxUtilities {
         this.server = new ToolSocket.Server(param);
         this.server.on('connection', (socket, ...args) => {
             class Socket extends MainIo {
-                constructor(socket) {
-                    super(undefined, undefined, that.origin);
+                constructor(socket, origin) {
+                    super(undefined, undefined, origin);
                     this.socket = socket;
                     if (!this.socket.networkID) this.socket.networkID = "io";
                     this.envNode = true;
@@ -865,7 +877,7 @@ ToolSocket.Io.Server = class Server extends ToolboxUtilities {
             }
             if (this.id >= Number.MAX_SAFE_INTEGER) this.id = 1;
             this.id++;
-            this.sockets.connected[this.id] = new Socket(socket);
+            this.sockets.connected[this.id] = new Socket(socket, this.origin);
             this.sockets.connected[this.id].id = this.id + '';
             this.emitInt('connection', this.sockets.connected[this.id], ...args);
         });

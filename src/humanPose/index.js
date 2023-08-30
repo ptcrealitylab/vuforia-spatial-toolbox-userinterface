@@ -5,9 +5,8 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {getGroundPlaneRelativeMatrix, JOINTS, setMatrixFromArray} from "./utils.js";
+import {JOINTS, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
-import {JOINT_TO_INDEX} from './constants.js';
 
 (function(exports) {
     // Re-export submodules for use in legacy code
@@ -203,28 +202,29 @@ import {JOINT_TO_INDEX} from './constants.js';
             }
             for (let objectName of presentHumanNames) {
                 const poseObject = timeObjects[objectName];
-                let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
-                const jointPositions = {};
-                const jointConfidences = {};
+                let groundPlaneRelativeMatrix = utils.getGroundPlaneRelativeMatrix();
+                let jointPositions = {};
+                let jointConfidences = {};
                 if (poseObject.matrix && poseObject.matrix.length > 0) {
                     let objectRootMatrix = new THREE.Matrix4();
-                    setMatrixFromArray(objectRootMatrix, poseObject.matrix);
+                    utils.setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
+                
                 for (let jointId of Object.values(JOINTS)) {
                     let frame = poseObject.frames[poseObject.objectId + jointId];
-                    if (!frame.ar.matrix) {
+                    if (!frame || !frame.ar.matrix) {
                         continue;
                     }
                     // poses are in world space, three.js meshes get added to groundPlane space, so convert from world->groundPlane
                     let jointMatrixThree = new THREE.Matrix4();
-                    setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
+                    utils.setMatrixFromArray(jointMatrixThree, frame.ar.matrix);
                     jointMatrixThree.premultiply(groundPlaneRelativeMatrix);
                     let jointPosition = new THREE.Vector3();
                     jointPosition.setFromMatrixPosition(jointMatrixThree);
                     jointPositions[jointId] = jointPosition;
 
-                    let keys = utils.getJointNodeInfo(poseObject, JOINT_TO_INDEX[jointId]);
+                    let keys = utils.getJointNodeInfo(poseObject, jointId);
                     // zero confidence if node's public data are not available
                     let confidence = 0.0;
                     if (keys) {
@@ -235,9 +235,20 @@ import {JOINT_TO_INDEX} from './constants.js';
                     }
                     jointConfidences[jointId] = confidence;
                 }
-                if (Object.keys(jointPositions).length === 0) {
+                let length = Object.keys(jointPositions).length;
+                if (length === 0) {
                     return;
                 }
+                if (length !== JOINTS_PER_POSE) {
+                    if (length == JOINTS_V1_COUNT) {
+                        utils.convertFromJointsV1(jointPositions, jointConfidences);
+                    }
+                    else {
+                        console.error('Unknown joint schema of a recorded pose.');
+                        return;
+                    }
+                }
+
                 const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
                 const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
                     poseObjectId: identifier,
@@ -273,21 +284,21 @@ import {JOINT_TO_INDEX} from './constants.js';
     }
 
     /**
-     * @param {Array<{x: number, y: number, z: number, confidence: number}>} all joints
-     * @param {Array<string>} selected joint names
+     * @param {Array<{x: number, y: number, z: number, confidence: number}>} joints - all joints
+     * @param {Array<string>} jointNames - selected joint names
      * @return {Array<{x: number, y: number, z: number, confidence: number}>} selected joints
      */
     function extractJoints(joints, jointNames) {
         let arr = [];
         for (let name of jointNames) {
-            let index = Object.values(utils.JOINTS).indexOf(name);
+            let index = Object.values(JOINTS).indexOf(name);
             arr.push(joints[index]);
         }
         return arr;
     }
     
     /** Extends original tracked set of joints with derived synthetic joints 
-     * @param {Object} human pose - 17 -> 22 real joints 
+     * @param {Object} pose - 23 real joints 
      */
     function addSyntheticJoints(pose) {
         
@@ -298,36 +309,36 @@ import {JOINT_TO_INDEX} from './constants.js';
 
         // head
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_EAR,
-            utils.JOINTS.RIGHT_EAR,
+            JOINTS.LEFT_EAR,
+            JOINTS.RIGHT_EAR,
         ])));
         // neck
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
         ])));
         // chest 
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
         // navel
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_SHOULDER,
-            utils.JOINTS.RIGHT_SHOULDER,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
         // pelvis
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
-            utils.JOINTS.LEFT_HIP,
-            utils.JOINTS.RIGHT_HIP,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP,
         ])));
     }
 
@@ -362,7 +373,7 @@ import {JOINT_TO_INDEX} from './constants.js';
         
         // update relative positions of all joints/frames wrt. object positions
         pose.joints.forEach((jointInfo, index) => {
-            let jointName = Object.values(utils.JOINTS)[index];
+            let jointName = Object.values(JOINTS)[index];
             let frameId = Object.keys(humanPoseObject.frames).find(key => {
                 return key.endsWith(jointName);
             });
@@ -385,7 +396,7 @@ import {JOINT_TO_INDEX} from './constants.js';
             frameSceneNode.setLocalMatrix(positionMatrix); 
             
             // updating a node data of tool/frame of a joint
-            let keys = utils.getJointNodeInfo(humanPoseObject, index);
+            let keys = utils.getJointNodeInfo(humanPoseObject, jointName);
             if (keys) {
                 let node = realityEditor.getNode(keys.objectKey, keys.frameKey, keys.nodeKey);
                 if (node) {
@@ -407,7 +418,7 @@ import {JOINT_TO_INDEX} from './constants.js';
 
         // updating a 'transfer' node data of selected joint (the first one at the moment). 
         // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
-        let keys = utils.getJointNodeInfo(humanPoseObject, 0);
+        let keys = utils.getJointNodeInfo(humanPoseObject, JOINTS.NOSE);
         if (keys) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
         }
@@ -452,7 +463,7 @@ import {JOINT_TO_INDEX} from './constants.js';
             // no action for now
         } else {
             // subscribe to public data of a selected joint node in remote HumanPoseObject which transfers whole pose
-            let keys = utils.getJointNodeInfo(object, 0);
+            let keys = utils.getJointNodeInfo(object, JOINTS.NOSE);
             if (!keys) { return; }
 
             let subscriptionCallback = (msgContent) => {
