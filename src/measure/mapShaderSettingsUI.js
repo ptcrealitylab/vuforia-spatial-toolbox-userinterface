@@ -56,7 +56,7 @@ export class MapShaderSettingsUI {
     setInitialPosition() {
         const navbar = document.querySelector('.desktopMenuBar');
         const navbarHeight = navbar ? navbar.offsetHeight : 0;
-        const sessionMenuContainer = document.querySelector('#sessionMenuContainer');
+        // const sessionMenuContainer = document.querySelector('#sessionMenuContainer');
         // const sessionMenuLeft = sessionMenuContainer ? sessionMenuContainer.offsetLeft : 0;
         // if (sessionMenuContainer) { // Avoid the top right menu
         //     this.root.style.top = `calc(${navbarHeight}px + 2em)`;
