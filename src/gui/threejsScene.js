@@ -71,7 +71,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         setupLighting();
 
         customMaterials = new CustomMaterials();
-        let mapShaderUI = new MapShaderSettingsUI();
+        let _mapShaderUI = new MapShaderSettingsUI();
 
         // Add the BVH optimized raycast function from three-mesh-bvh.module.js
         // Assumes the BVH is available on the `boundsTree` variable
