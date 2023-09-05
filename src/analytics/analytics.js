@@ -11,6 +11,12 @@ import {
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 
+const RecordingState = {
+    empty: 'empty',
+    recording: 'recording',
+    done: 'done',
+};
+
 export class Analytics {
     /**
      * @param {string} frame - frame id associated with instance of
@@ -30,6 +36,12 @@ export class Analytics {
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
+        this.stepContainer = document.createElement('div');
+        this.stepContainer.id = 'analytics-step-container';
+        this.stepContainer.style.display = 'none';
+        this.createStepComponent();
+        this.container.appendChild(this.stepContainer);
+
         this.threejsContainer = new THREE.Group();
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
@@ -39,6 +51,7 @@ export class Analytics {
         this.pinnedRegionCards = [];
         this.activeRegionCard = null;
         this.nextStepNumber = 1;
+        this.stepLabels = [];
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
         this.createNewPinnedRegionCardsContainer();
@@ -47,6 +60,23 @@ export class Analytics {
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
+    }
+
+    createStepComponent() {
+        this.onStepFileChange = this.onStepFileChange.bind(this);
+        this.stepFileInputLabel = document.createElement('label');
+        this.stepFileInputLabel.classList.add('analytics-step');
+        this.stepFileInputLabel.setAttribute('for', 'analytics-step-file');
+        this.stepFileInputLabel.textContent = 'Upload Step File';
+
+        this.stepFileInput = document.createElement('input');
+        this.stepFileInput.id = 'analytics-step-file';
+        this.stepFileInput.type = 'file';
+        this.stepFileInput.accept = '.xml,text/xml';
+        this.stepFileInput.addEventListener('change', this.onStepFileChange);
+
+        this.stepContainer.appendChild(this.stepFileInputLabel);
+        this.stepContainer.appendChild(this.stepFileInput);
     }
 
     /**
@@ -258,6 +288,10 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     async setDisplayRegion(region, fromSpaghetti) {
+        if (region.recordingState) {
+            this.updateStepVisibility(region.recordingState);
+        }
+
         if (this.lastDisplayRegion) {
             if (Math.abs(this.lastDisplayRegion.startTime - region.startTime) < 1 &&
                 Math.abs(this.lastDisplayRegion.endTime - region.endTime) < 1) {
@@ -273,6 +307,7 @@ export class Analytics {
             await postPersistRequest();
         }
         this.livePlayback = livePlayback;
+
         this.loadingHistory = true;
         this.humanPoseAnalyzer.resetLiveHistoryClones();
         this.humanPoseAnalyzer.resetLiveHistoryLines();
@@ -284,6 +319,62 @@ export class Analytics {
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);
         }
+    }
+
+    updateStepVisibility(recordingState) {
+        switch (recordingState) {
+            case RecordingState.empty:
+            case RecordingState.recording:
+                this.stepContainer.style.display = '';
+                break;
+            case RecordingState.done:
+            default:
+                this.stepContainer.style.display = 'none';
+                break;
+        }
+
+        if (recordingState === RegionCardState.recording) {
+          this.updateStepLabel();
+          this.stepFileInputLabel.style.pointerEvents = 'none';
+        }
+    }
+
+    onStepFileChange() {
+        if (this.stepFileInput.files.length === 0) {
+            return;
+        }
+        const file = this.stepFileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          let parser = new DOMParser();
+          let doc = parser.parseFromString(e.target.result, 'text/xml');
+          let elts = doc.querySelectorAll('TextAS-KD');
+          this.stepLabels = Array.from(elts).map(elt => elt.textContent);
+          this.updateStepLabel();
+        };
+        reader.onerror = (e) => {
+            console.error(e);
+        };
+        reader.readAsText(file);
+    }
+
+    getStepLabel() {
+        const i = this.nextStepNumber - 1;
+        let label = 'Step ' + i;
+        if (i < this.stepLabels.length) {
+            label = this.stepLabels[i];
+        }
+        return label;
+    }
+
+    getStepColor() {
+        let hue = (this.nextStepNumber * 17) % 360;
+        return `hsl(${hue} 100% 50%)`;
+    }
+
+    updateStepLabel() {
+        this.stepFileInputLabel.style.color = this.getStepColor();
+        this.stepFileInputLabel.textContent = this.getStepLabel();
     }
 
     /**
@@ -371,13 +462,14 @@ export class Analytics {
         regionCard.updateValueAddWasteTimeUi(this.valueAddWasteTimeManager);
 
         if (regionCard.getLabel().length === 0) {
-            regionCard.setLabel('Step ' + this.nextStepNumber);
+            regionCard.setLabel(this.getStepLabel());
         }
 
-        let hue = (this.nextStepNumber * 17) % 360;
-        regionCard.setAccentColor(`hsl(${hue}, 100%, 50%)`);
+        regionCard.setAccentColor(this.getStepColor());
 
         this.nextStepNumber += 1;
+
+        this.updateStepLabel();
 
         this.updateCsvExportLink();
 
