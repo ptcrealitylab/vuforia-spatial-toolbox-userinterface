@@ -1853,6 +1853,28 @@ Logic Interface CSS
     pointer-events: none;
 }
 
+#analytics-step-container {
+    position: absolute;
+    bottom: calc(230px + 10px * 2 + 64px);
+    left: calc(50% + 10px);
+    pointer-events: all;
+}
+
+.analytics-step {
+    text-align: left;
+    display: block;
+    color: white;
+    background-color: #00000080;
+    padding: 10px;
+    max-width: 20vw;
+    cursor: pointer;
+}
+
+#analytics-step-file {
+    pointer-events: none;
+    opacity: 0;
+}
+
 #analytics-timeline-container {
     position: absolute;
     bottom: 48px;
