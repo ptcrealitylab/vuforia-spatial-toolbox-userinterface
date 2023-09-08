@@ -13,7 +13,38 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     let displayCooldowns = {};
 
     function initService() {
-        console.log('init profiling');
+        realityEditor.network.addPostMessageHandler('profilerStartTimeProcess', (msgContent, _fullMessage) => {
+            startTimeProcess(msgContent.name, { numStopsRequired: msgContent.numStopsRequired || null });
+        });
+
+        realityEditor.network.addPostMessageHandler('profilerStopTimeProcess', (msgContent, _fullMessage) => {
+            let showMessage = typeof msgContent.showMessage === 'boolean' ? msgContent.showMessage : false;
+            let showAggregate = typeof msgContent.showAggregate === 'boolean' ? msgContent.showAggregate : true;
+            let displayTimeout = msgContent.displayTimeout || 3000;
+            let includeCount = typeof msgContent.includeCount === 'boolean' ? msgContent.includeCount : true;
+            stopTimeProcess(msgContent.name, msgContent.category, { showMessage, showAggregate, displayTimeout, includeCount });
+        });
+
+        realityEditor.network.addPostMessageHandler('profilerLogMessage', (msgContent, _fullMessage) => {
+            let formattedTime = formatLogTime();
+            let displayText = `${msgContent.message} <span style='color:grey'>${formattedTime}</span>`
+            logIndividualProcess(displayText, { displayTimeout: msgContent.displayTimeout || 3000 });
+        });
+
+        realityEditor.network.addPostMessageHandler('profilerCountMessage', (msgContent, _fullMessage) => {
+            logProcessCount(msgContent.message);
+        });
+    }
+
+    function formatLogTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+        // Output will be like: [12:34:56.789]
+        return `[${hours}:${minutes}:${seconds}.${milliseconds}]`;
     }
 
     // computes the FNV-1a hash of a string - useful as a UUID for a stringified matrix
@@ -26,21 +57,21 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         return (hash & 0xFFFFFFFFn).toString(16).padStart(8, '0');
     }
 
-    function startTimeProcess(processTitle, options = { useDateNow: false }) {
+    function startTimeProcess(processTitle, options = { numStopsRequired: null }) {
         if (!isShown) return;
         if (!isActivated) return;
 
         if (typeof processTimes[processTitle] === 'undefined') {
             processTimes[processTitle] = {};
         }
-        processTimes[processTitle].start = options.useDateNow ? Date.now() : performance.now();
+        processTimes[processTitle].start = performance.now();
         if (options.numStopsRequired) {
             processTimes[processTitle].numStopsRequired = options.numStopsRequired;
             processTimes[processTitle].numStopsAccumulated = 0;
         }
     }
 
-    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000, exactTimestamp: null}) {
+    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000, includeCount: true }) {
         if (!isShown) return;
         if (!isActivated) return;
         if (!profilerSettingsUI) return;
@@ -57,7 +88,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
             }
         }
 
-        process.end = options.exactTimestamp || performance.now();
+        process.end = performance.now();
 
         let timeBetweenCategoryUpdates = process.end - (lastUpdateTimes[category] || 0);
         // console.log('time between updates', timeBetweenCategoryUpdates);
@@ -77,18 +108,9 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         setTimeout(() => {
             delete processTimes[processTitle];
         }, 10);
-        
+
         if (options.showMessage) {
             logIndividualProcess(processTitle, labelText, options);
-            // profilerSettingsUI.addOrUpdateLabel(processTitle, labelText);
-            // // remove after 3 seconds if no updates between now and then
-            // setTimeout(() => {
-            //     let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
-            //     if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
-            //         // console.log(`remove ${processTitle}`);
-            //         profilerSettingsUI.removeLabel(processTitle);
-            //     }
-            // }, options.displayTimeout);
         }
 
         if (!category) return;
@@ -107,36 +129,35 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
             //     return;
             // } // don't slow down process by rendering too often
             // displayCooldowns[category] = 5;
+            
+            let countString = options.includeCount ? ` (${info.count})` : '';
 
-            let meanLabelText = `${category} (${info.count}) –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
+            let meanLabelText = `${category}${countString} –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
             profilerSettingsUI.addOrUpdateLabel(`mean_${category}`, meanLabelText, { pinToTop: true });
         } else {
             console.warn('no category info', category, processTitle, processCategories);
         }
     }
-    
+
     function logIndividualProcess(processTitle, options = { displayTimeout: 3000, labelText: null }) {
         if (!isShown) return;
         if (!isActivated) return;
         if (!profilerSettingsUI) return;
-        
+
         profilerSettingsUI.addOrUpdateLabel(processTitle, options.labelText || processTitle);
-        
+
         // remove after 3 seconds if no updates between now and then
         setTimeout(() => {
-            let timeSinceLastUpdate = performance.now() - lastUpdateTimes[processTitle];
-            if (timeSinceLastUpdate > (options.displayTimeout - 100)) {
-                // console.log(`remove ${processTitle}`);
-                profilerSettingsUI.removeLabel(processTitle);
-            }
+            // TODO: if logging as part of stopTime with aggregate, don't remove later labels when earlier labels' timeouts trigger
+            profilerSettingsUI.removeLabel(processTitle);
         }, options.displayTimeout);
     }
-    
+
     function logProcessCount(processTitle) {
         if (!isShown) return;
         if (!isActivated) return;
         if (!profilerSettingsUI) return;
-        
+
         let categoryName = `${processTitle}_count`;
         // let info = updateCategory(processTitle, time, timeBetweenCategoryUpdates);
         if (typeof processCategories[categoryName] === 'undefined') {
@@ -146,8 +167,8 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         } else {
             processCategories[categoryName].count += 1;
         }
-        
-        let countLabelText = `${categoryName} has happened (${processCategories[categoryName].count}) times`;
+
+        let countLabelText = `${processTitle}: <span style='color:grey'>${processCategories[categoryName].count} times</span>`;
         profilerSettingsUI.addOrUpdateLabel(`${categoryName}`, countLabelText, { pinToTop: true });
     }
 
@@ -211,11 +232,16 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         isActivated = false;
     }
 
+    function isEnabled() {
+        return isShown && isActivated;
+    }
+
     exports.initService = initService;
     exports.show = show;
     exports.hide = hide;
     exports.activate = activate;
     exports.deactivate = deactivate;
+    exports.isEnabled = isEnabled;
     // logging methods
     exports.startTimeProcess = startTimeProcess;
     exports.stopTimeProcess = stopTimeProcess;
@@ -230,7 +256,7 @@ window.postIntoIframe = (contentWindow, message, targetOrigin = '*') => {
     // realityEditor.device.profiling.startTimeProcess('postIntoIframe');
     contentWindow.postMessage(message, targetOrigin);
     // realityEditor.device.profiling.stopTimeProcess('postIntoIframe', 'postIntoIframe', { showAggregate: true });
-    
+
     realityEditor.device.profiling.logProcessCount('postIntoIframe');
 };
 
