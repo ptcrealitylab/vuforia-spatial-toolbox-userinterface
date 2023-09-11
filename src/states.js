@@ -171,6 +171,8 @@ var globalStates = {
     // default scale for new frames and nodes
     defaultScale: 1,
 
+    unitsPerMeter: 1000,
+
     // retail
     reality: false,
     interface: "gui",

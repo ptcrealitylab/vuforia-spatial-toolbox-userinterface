@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { VRButton } from '../../thirdPartyCode/three/VRButton.js';
 import { ARButton } from '../../thirdPartyCode/three/ARButton.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
@@ -51,9 +52,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
         if (isWebXRSupported && !realityEditor.device.environment.isARMode()) {
             renderer.xr.enabled = true;
-            document.body.appendChild(ARButton.createButton(
-                renderer,
-              ));
+
+            document.body.appendChild(ARButton.createButton(renderer));
         }
 
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -179,6 +179,22 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
+        if (isWebXRSupported && !realityEditor.device.environment.isARMode() && renderer.xr.isPresenting) {
+            if (globalStates.unitsPerMeter != 1) {
+                for (let obj of threejsContainerObj.children) {
+                    obj.scale.multiplyScalar(1 / globalStates.unitsPerMeter);
+                }
+            }
+            globalStates.unitsPerMeter = 1;
+        } else {
+            if (globalStates.unitsPerMeter != 1000) {
+                for (let obj of threejsContainerObj.children) {
+                    obj.scale.multiplyScalar(1000 / globalStates.unitsPerMeter);
+                }
+            }
+            globalStates.unitsPerMeter = 1000;
+        }
+
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
@@ -267,9 +283,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             }
             // Set layer to 0: everything but the background
             camera.layers.set(0);
-            if (!renderer.xr.enabled || (renderer.xr.enabled && renderer.xr.isPresenting)) {
-                renderer.render(scene, camera);
-            }
+            renderer.render(scene, camera);
         }
     }
 
@@ -963,8 +977,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
        }} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
+        let realCam;
+        if (renderer.xr.enabled && renderer.xr.isPresenting) {
+            realCam = renderer.xr.getCamera();
+        } else {
+            realCam = camera;
+        }
         return {
-            camera,
+            camera: realCam,
             renderer,
             scene,
         };

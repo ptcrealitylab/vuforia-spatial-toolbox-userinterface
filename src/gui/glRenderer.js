@@ -144,7 +144,8 @@ createNameSpace("realityEditor.gui.glRenderer");
             /**
              * @type {Map<float, float>}
              */
-            this.shaderMap = new Map();
+            this.modelViewMatrixShaderMap = new Map();
+            this.projectionMatrixShaderMap = new Map();
             this.shaderMapLastActive;
         }
 
@@ -191,20 +192,34 @@ createNameSpace("realityEditor.gui.glRenderer");
                 }
             } else if (message.name === 'getUniformLocation') {
                 if (message.args[1] === "modelViewMatrix") { 
-                    this.shaderMap.set(message.args[0].index, {location: message.id});
+                    this.modelViewMatrixShaderMap.set(message.args[0].index, {location: message.id});
+                    this.shaderMapLastActive = message.args[0].index;
+                } else if (message.args[1] === "projectionMatrix") { 
+                    this.projectionMatrixShaderMap.set(message.args[0].index, {location: message.id});
                     this.shaderMapLastActive = message.args[0].index;
                 }
             } else if (message.name === 'uniformMatrix4fv'){
-                if(this.shaderMap.has(this.shaderMapLastActive)) {
-                    if(this.shaderMap.get(this.shaderMapLastActive).location === message.args[0].index) { 
-                        this.shaderMap.get(this.shaderMapLastActive).modelMatrix = message.args[2];
+                if(this.modelViewMatrixShaderMap.has(this.shaderMapLastActive)) {
+                    if(this.modelViewMatrixShaderMap.get(this.shaderMapLastActive).location === message.args[0].index) { 
+                        this.modelViewMatrixShaderMap.get(this.shaderMapLastActive).modelMatrix = message.args[2];
                     }
                 }
             } else if ((message.name === 'drawArrays') || (message.name === 'drawElements')) {
-                if(this.shaderMap.has(this.shaderMapLastActive)) {
-                    const viewMatrix = invert(realityEditor.sceneGraph.getSceneNodeById('CAMERA').worldMatrix);
-                    const drawInfo = this.shaderMap.get(this.shaderMapLastActive);
-                    this.gl.uniformMatrix4fv(this.uncloneables[drawInfo.location], false, multiply(drawInfo.modelMatrix, viewMatrix));
+                if(this.modelViewMatrixShaderMap.has(this.shaderMapLastActive) && this.projectionMatrixShaderMap.has(this.shaderMapLastActive)) {
+                    const internals = realityEditor.gui.threejsScene.getInternals();
+                    //const camera = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+                    //const viewMatrix = invert(camera.worldMatrix);
+                    //const projectionMatrix = globalStates.realProjectionMatrix;
+                    const viewMatrix = internals.camera.matrixWorldInverse.elements;
+                    const projectionMatrix = internals.camera.projectionMatrix.elements;
+                    const testScale = 1;
+                    const worldMatrix = [testScale, 0, 0, 0, 0, testScale, 0, 0, 0, 0, testScale, 0, 0, 0, 0, 1];
+                    //const worldMatrix = [globalStates.unitsPerMeter / 1000.0, 0, 0, 0, 0, globalStates.unitsPerMeter / 1000.0, 0, 0, 0, 0, globalStates.unitsPerMeter / 1000.0, 0, 0, 0, 0, 1];
+                    const drawInfo = this.modelViewMatrixShaderMap.get(this.shaderMapLastActive);
+                    const projectionInfo = this.projectionMatrixShaderMap.get(this.shaderMapLastActive);
+                    const testMatrix = multiply(worldMatrix, drawInfo.modelMatrix);
+                    this.gl.uniformMatrix4fv(this.uncloneables[projectionInfo.location], false, projectionMatrix);
+                    this.gl.uniformMatrix4fv(this.uncloneables[drawInfo.location], false, multiply(multiply(drawInfo.modelMatrix, worldMatrix), viewMatrix));
                 }
             }
 
