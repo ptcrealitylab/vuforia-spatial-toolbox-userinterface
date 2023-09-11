@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -233,11 +233,9 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
         if (this.visibleObjectsStatus[objectKey] === 'EXTENDED_TRACKED') {
             if (!globalStates.freezeButtonState) {
                 if (this.visibleObjectsStatusTimes[objectKey] > 60) {
-                    console.log('too long extended tracked');
                     delete visibleObjects[objectKey];
                 } else {
                     this.visibleObjectsStatusTimes[objectKey] += 1;
-                    console.log(this.visibleObjectsStatusTimes[objectKey]);
                 }
             }
         } else { // status === 'TRACKED'
@@ -824,9 +822,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     var newObjectIP = realityEditor.getObject(newObjectKey).ip;
     realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame, function(err) {
         
-        if (!err) {
-            console.log('successfully created frame on new object');
-        } else {
+        if (err) {
             console.warn('server returned error when moving frame to new object');
         }
 
@@ -872,8 +868,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         
         // update the publicData on the server to point to the new path
         if (publicDataCache.hasOwnProperty(oldFrameKey)) {
-            console.log('moving public data from ' + oldFrameKey);
-
             // update locally
             publicDataCache[newFrameKey] = publicDataCache[oldFrameKey];
             delete publicDataCache[oldFrameKey];
@@ -881,8 +875,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             // update on the server
             realityEditor.network.deletePublicData(oldObject.ip, oldObjectKey, oldFrameKey);
             realityEditor.network.postPublicData(newObject.ip, newObjectKey, newFrameKey, publicDataCache[newFrameKey]);
-
-            console.log('to ' + newFrameKey);
         }
 
         // remove the frame from the old object
@@ -957,8 +949,6 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  * @param _cout - reference to debug logging function (unused)
  */
 realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
-    //console.log(JSON.stringify(activeObjectMatrix));
-
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
     var shouldRenderFramesInNodeView = (globalStates.guiState === 'node' && activeType === 'ui'); // && globalStates.renderFrameGhostsInNodeViewEnabled;
 
@@ -1126,7 +1116,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
                 var svg = globalDOMCache["svg" + activeKey];
                 if (svg.children.length === 0) {
-                    console.log('retroactively creating the svg overlay');
                     let iFrame = globalDOMCache["iframe" + activeKey];
                     svg.style.width = iFrame.style.width;
                     svg.style.height = iFrame.style.height;
@@ -1208,7 +1197,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
 
                 let activeElt = globalDOMCache["object" + activeKey];
                 if (!activeVehicle.isOutsideViewport) {
-                    activeElt.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+                    // normalize the matrix and clear the last column, to avoid some browser-specific bugs
+                    let normalizedMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(finalMatrix);
+                    normalizedMatrix[3] = 0;
+                    normalizedMatrix[7] = 0;
+                    normalizedMatrix[11] = 0;
+                    activeElt.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
@@ -1469,14 +1463,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 globalDOMCache['object' + activeKey].classList.add('ignoreAllTouches');
                 globalDOMCache['iframe' + activeKey].classList.add('ignoreAllTouches');
                 globalDOMCache[activeKey].classList.add('ignoreAllTouches');
-                console.log('ignore all touches for ' + activeKey);
             }
         } else {
             if ( globalDOMCache['object' + activeKey].classList.contains('ignoreAllTouches') ) {
                 globalDOMCache['object' + activeKey].classList.remove('ignoreAllTouches');
                 globalDOMCache['iframe' + activeKey].classList.remove('ignoreAllTouches');
                 globalDOMCache[activeKey].classList.remove('ignoreAllTouches');
-                console.log('STOP ignoring all touches for ' + activeKey);
             }
         }
     }
@@ -1549,14 +1541,10 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
     globalDOMCache["iframe" + activeKey].classList.remove('snappableFrame');
 
     if ( !realityEditor.device.isEditingUnconstrained(activeVehicle) && snapX && snapY) {
-        
         // actually update the frame's matrix if meets the conditions
         snappedMatrix = computeSnappedMatrix(this.ar.utilities.copyMatrix(positionData.matrix));
         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
-        console.log('snapped');
-        
     } else if (snapX && snapY) {
-        
         // otherwise if it is close but you are still moving it, show some visual feedback to warn you it will snap
         globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
     }
@@ -1878,9 +1866,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     var isFrameElement = activeKey === frameKey;
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
-        
-        console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
-
         this.notLoading = activeKey;
         
         // assign the element some default properties if they don't exist
@@ -1910,7 +1895,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         if (isFrameElement && activeVehicle.location === 'global') {
             // loads frames from server of the object it is being added to
             thisUrl = realityEditor.network.availableFrames.getFrameSrc(objectKey, activeVehicle.src);
-            console.log('addElement with url = ' + thisUrl);
         }
         
         // Create DOM elements for everything associated with this frame/node
@@ -1979,7 +1963,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addContainer = document.createElement('div');
     addContainer.id = "object" + activeKey;
-    addContainer.className = "main";
+    addContainer.classList.add("main");
     addContainer.style.width = globalStates.height + "px";
     addContainer.style.height = globalStates.width + "px";
     if (nodeKey) {
@@ -1992,7 +1976,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addIframe = document.createElement('iframe');
     addIframe.id = "iframe" + activeKey;
-    addIframe.className = "main";
+    addIframe.classList.add("main");
     addIframe.frameBorder = 0;
     addIframe.style.width = (activeVehicle.width || activeVehicle.frameSizeX) + "px";
     addIframe.style.height = (activeVehicle.height || activeVehicle.frameSizeY) + "px";
@@ -2005,14 +1989,15 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
     addIframe.setAttribute("data-node-key", nodeKey);
     addIframe.setAttribute("onload", 'realityEditor.network.onElementLoad("' + objectKey + '","' + frameKey + '","' + nodeKey + '")');
     // TODO: remove this 'sandbox' attribute if you try to embed iframes within the tool's iframe and you run into browser restrictions
-    addIframe.setAttribute("sandbox", "allow-forms allow-pointer-lock allow-same-origin allow-scripts");
+    let allowPopups = realityEditor.device.environment.isWithinToolboxApp() ? '' : 'allow-popups';
+    addIframe.setAttribute("sandbox", `allow-forms allow-pointer-lock allow-same-origin allow-scripts ${allowPopups}`);
     addIframe.classList.add('usePointerEvents'); // override parent (addContainer) pointerEvents value
 
     // TODO: try to load elements with an XHR request so they don't block the rendering loop
 
     var addOverlay = document.createElement('div');
     addOverlay.id = activeKey;
-    addOverlay.className = (globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram";
+    addOverlay.classList.add((globalStates.editingMode && activeVehicle.developer) ? "mainEditing" : "mainProgram");
     addOverlay.frameBorder = 0;
     addOverlay.style.width = activeVehicle.frameSizeX + "px";
     addOverlay.style.height = activeVehicle.frameSizeY + "px";
@@ -2027,7 +2012,7 @@ realityEditor.gui.ar.draw.createSubElements = function(iframeSrc, objectKey, fra
 
     var addSVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     addSVG.id = "svg" + activeKey;
-    addSVG.className = "mainCanvas";
+    addSVG.classList.add("mainCanvas");
     addSVG.style.width = "100%";
     addSVG.style.height = "100%";
     addSVG.style.zIndex = "3";
@@ -2098,12 +2083,11 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
         svgElement[i].addEventListener('pointerenter', function () {
             globalProgram.logicSelector = this.number;
 
-            if (globalProgram.nodeA === activeKey)
+            if (globalProgram.nodeA === activeKey) {
                 globalProgram.logicA = this.number;
-            else
+            } else {
                 globalProgram.logicB = this.number;
-
-            console.log(globalProgram.logicSelector);
+            }
         });
         addLogic.appendChild(svgContainer);
     }
@@ -2284,7 +2268,7 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     }
     if (realityEditor.getObject(activeVehicle.objectId)) {
         if (realityEditor.getObject(activeVehicle.objectId).containsStickyFrame) {
-            console.log('dont kill object with sticky frame');
+            // Don't kill object with sticky frame
             return;
         }
     }
@@ -2376,7 +2360,7 @@ realityEditor.gui.ar.draw.deleteNode = function (objectId, frameId, nodeId) {
  */
 realityEditor.gui.ar.draw.deleteFrame = function (objectId, frameId) {
     
-    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode);
+    realityEditor.forEachNodeInFrame(objectId, frameId, realityEditor.gui.ar.draw.deleteNode.bind(realityEditor.gui.ar.draw));
 
     delete objects[objectId].frames[frameId];
     if (this.globalDOMCache["object" + frameId]) {

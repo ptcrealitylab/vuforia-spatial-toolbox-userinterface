@@ -1,7 +1,7 @@
 import {AnalyticsLens} from "./AnalyticsLens.js";
 import * as Reba from "./rebaScore.js";
 import {AnalyticsColors} from "./AnalyticsColors.js";
-import {JOINTS} from "./utils.js";
+import {JOINTS} from "./constants.js";
 
 /**
  * RebaLens is a lens that calculates the REBA score for each bone in the pose history.

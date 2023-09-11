@@ -28,6 +28,7 @@ createNameSpace("realityEditor.sceneGraph");
     }
     let rootNode;
     let cameraNode;
+    let deviceNode;
     let groundPlaneNode;
     // TODO: use these cached values when possible instead of recomputing
     let relativeToCamera = {};
@@ -39,6 +40,7 @@ createNameSpace("realityEditor.sceneGraph");
     const NAMES = Object.freeze({
         ROOT: 'ROOT',
         CAMERA: 'CAMERA',
+        DEVICE: 'DEVICE',
         GROUNDPLANE: 'GROUNDPLANE'
     });
     exports.NAMES = NAMES;
@@ -67,6 +69,10 @@ createNameSpace("realityEditor.sceneGraph");
         // addRotateX(groundPlaneNode, NAMES.GROUNDPLANE, true);
         sceneGraph[NAMES.GROUNDPLANE] = groundPlaneNode;
         groundPlaneNode.setParent(rootNode);
+
+        deviceNode = new SceneNode(NAMES.DEVICE);
+        sceneGraph[NAMES.DEVICE] = deviceNode;
+        deviceNode.setParent(rootNode);
 
         // also init the network service when this starts
         realityEditor.sceneGraph.network.initService();
@@ -149,10 +155,16 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
-        cameraNode.setLocalMatrix(cameraMatrix);
+        cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);
         }
+    }
+
+    // this is the true position of the device, even if we are in VR mode
+    function setDevicePosition(cameraMatrix) {
+        if (!deviceNode) { return; }
+        deviceNode.setLocalMatrix(cameraMatrix);
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {
@@ -180,6 +192,10 @@ createNameSpace("realityEditor.sceneGraph");
     
     function getCameraNode() {
         return sceneGraph[NAMES.CAMERA];
+    }
+
+    function getDeviceNode() {
+        return sceneGraph[NAMES.DEVICE];
     }
 
     function getGroundPlaneNode() {
@@ -645,9 +661,10 @@ createNameSpace("realityEditor.sceneGraph");
      * @param {number} screenY - in screen pixels
      * @param {number} distance - in millimeters
      * @param {SceneNode} coordinateSystem - which coordinate system you want the result calculated relative to
+     * @param {SceneNode} camNode - which node should act as the cameraNode
      * @returns {{x: number, y: number, z: number}} - position in ROOT coordinates, or whatever coordinateSystem is specified
      */
-    function getPointAtDistanceFromCamera(screenX, screenY, distance, coordinateSystem = rootNode) {
+    function getPointAtDistanceFromCamera(screenX, screenY, distance, coordinateSystem = rootNode, camNode = cameraNode) {
         let distanceRaycastVector = [
             (screenX / window.innerWidth) * 2.0 - 1,
             - (screenY / window.innerHeight) * 2.0 + 1,
@@ -657,7 +674,7 @@ createNameSpace("realityEditor.sceneGraph");
         let unprojectedVector = utils.multiplyMatrix4(distanceRaycastVector, utils.invertMatrix(globalStates.realProjectionMatrix));
         let localDistanceVector = utils.scalarMultiply(utils.normalize([unprojectedVector[0], unprojectedVector[1], unprojectedVector[2]]), distance);
         let inputPosition = {x: localDistanceVector[0], y: localDistanceVector[1], z: localDistanceVector[2]};
-        return convertToNewCoordSystem(inputPosition, cameraNode, coordinateSystem);
+        return convertToNewCoordSystem(inputPosition, camNode, coordinateSystem);
     }
 
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
@@ -718,7 +735,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         // image target objects require one coordinate system rotation. ground plane requires another.
         if (groundPlaneVariation) {
-            sceneNodeRotateX.setLocalMatrix(makeGroundPlaneRotationX(-(Math.PI/2)));
+            sceneNodeRotateX.setLocalMatrix(realityEditor.gui.ar.utilities.makeGroundPlaneRotationX(-(Math.PI/2)));
         } else {
             sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
                 1, 0, 0, 0,
@@ -735,14 +752,6 @@ createNameSpace("realityEditor.sceneGraph");
             return getSceneNodeById(childRotateXId);
         }
         return sceneNode;
-    }
-
-    function makeGroundPlaneRotationX(theta) {
-        var c = Math.cos(theta), s = Math.sin(theta);
-        return [  1, 0, 0, 0,
-            0, c, -s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1];
     }
 
     function recomputeScene() {
@@ -810,6 +819,7 @@ createNameSpace("realityEditor.sceneGraph");
 
     // public methods to update the positions of things in the sceneGraph
     exports.setCameraPosition = setCameraPosition;
+    exports.setDevicePosition = setDevicePosition;
     exports.setGroundPlanePosition = setGroundPlanePosition;
     exports.moveSceneNodeToCamera = moveSceneNodeToCamera;
     exports.updatePositionData = updatePositionData;
@@ -843,6 +853,7 @@ createNameSpace("realityEditor.sceneGraph");
     // TODO: can we get rid of full/direct access to sceneGraph?
     exports.getSceneNodeById = getSceneNodeById;
     exports.getCameraNode = getCameraNode;
+    exports.getDeviceNode = getDeviceNode;
     exports.getGroundPlaneNode = getGroundPlaneNode;
     exports.getVisualElement = getVisualElement;
 

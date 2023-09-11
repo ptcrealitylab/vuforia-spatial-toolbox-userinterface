@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -47,8 +47,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-/* exported cout */
-
 /**
  * Created by heun on 12/27/16.
  */
@@ -63,8 +61,8 @@ createNameSpace("realityEditor.device.utilities");
 /**
  * @desc function to print to console based on debug mode set to true
  **/
-function cout() {
-	if (globalStates.debug){
+window.cout = function cout() {
+	if (globalStates.debug) {
 		console.log.apply(this, arguments);
 	}
 }

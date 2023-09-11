@@ -1,4 +1,4 @@
-import {JOINTS} from "./utils.js";
+import {JOINTS} from "./constants.js";
 import {setChildHumanPosesVisible} from "./draw.js"
 
 export class HumanPoseAnalyzerSettingsUi {
@@ -202,7 +202,8 @@ export class HumanPoseAnalyzerSettingsUi {
      * If the settings menu is out of bounds, snap it back into the screen
      */
     snapToFitScreen() {
-        const navbarHeight = document.querySelector('.desktopMenuBar').offsetHeight;
+        const navbar = document.querySelector('.desktopMenuBar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
         if (this.root.offsetTop < navbarHeight) {
             this.root.style.top = `${navbarHeight}px`;
         }

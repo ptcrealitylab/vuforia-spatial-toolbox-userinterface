@@ -24,6 +24,8 @@ export class Analytics {
         this.timelineContainer = document.createElement('div');
         this.timelineContainer.id = 'analytics-timeline-container';
 
+        this.patchFilter = this.patchFilter.bind(this);
+
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
@@ -94,6 +96,7 @@ export class Analytics {
         if (this.threejsContainer.parent) {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
+        this.resetPatchVisibility();
     }
 
     /**
@@ -158,11 +161,51 @@ export class Analytics {
     }
 
     /**
+     * @param {CameraVisPatch} patch
+     * @return {boolean}
+     */
+    patchFilter(patch) {
+        if (!this.lastDisplayRegion) {
+            return true;
+        }
+
+        if (this.lastDisplayRegion.startTime > 0 &&
+            patch.creationTime < this.lastDisplayRegion.startTime) {
+            return false;
+        }
+
+        if (this.lastDisplayRegion.endTime > 0 &&
+            patch.creationTime > this.lastDisplayRegion.endTime) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * We take control over CameraVis patch visibility for
+     * animation reasons so this restores them all
+     */
+    resetPatchVisibility() {
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = Object.values(desktopRenderer.getCameraVisPatches() || {}).filter(this.patchFilter);
+
+        for (const patch of patches) {
+            patch.show();
+            patch.resetShaderMode();
+        }
+    }
+
+    /**
      * Processes the given historical poses and renders them efficiently
      * @param {Pose[]}  poses - the poses to render
      */
     bulkRenderHistoricalPoses(poses) {
-        if (realityEditor.gui.poses.isPose2DSkeletonRendered()) return;
+        if (realityEditor.humanPose.draw.is2DPoseRendered()) return;
         poses.forEach(pose => {
             this.timeline.appendPose({
                 time: pose.timestamp,
@@ -290,7 +333,11 @@ export class Analytics {
         });
 
         for (let desc of regionCardDescriptions) {
-            const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
+            let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
+            if (poses.length === 0) {
+                let defaultAnalytics = realityEditor.analytics.getDefaultAnalytics();
+                poses = defaultAnalytics.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
+            }
             let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses, desc);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
@@ -325,6 +372,30 @@ export class Analytics {
         this.nextStepNumber += 1;
 
         this.updateCsvExportLink();
+
+        // wider tolerance for associating local cameravis patches with
+        // potentially remote region cards
+        const patchTolerance = 3000;
+        if (Math.abs(regionCard.endTime - Date.now()) > patchTolerance) {
+            return;
+        }
+
+        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+        if (!desktopRenderer) {
+            return;
+        }
+
+        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
+        if (!patches) {
+            return;
+        }
+
+        // Hide cloned patches after brief delay to not clutter the space
+        // setTimeout(() => {
+        //     for (const patch of Object.values(patches)) {
+        //         patch.visible = false;
+        //     }
+        // }, patchTolerance);
     }
 
     writeDehydratedRegionCards() {

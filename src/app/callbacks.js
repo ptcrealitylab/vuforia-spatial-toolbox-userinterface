@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -84,9 +84,7 @@ createNameSpace('realityEditor.app.callbacks');
             let descriptionText = `Please enable camera and microphone access in your device's Settings app, and try again.`;
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
-                headerText, descriptionText, function () {
-                    console.log('closed...');
-                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+                headerText, descriptionText, function () {}, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
             notification.domElements.container.classList.add('loaderContainerPortraitTall');
             return;
@@ -126,7 +124,6 @@ createNameSpace('realityEditor.app.callbacks');
         if (hasActiveGroundPlaneStream) { return; } // don't do this unnecessarily because it takes a lot of resources
         if (!globalStates.useGroundPlane) { return; }
 
-        console.log('getGroundPlaneMatrixStream');
         realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
         hasActiveGroundPlaneStream = true;
         
@@ -146,8 +143,9 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} matrix
      */
     function receivedProjectionMatrix(matrix) {
-        // console.log('got projection matrix!', matrix);
-        realityEditor.gui.ar.setProjectionMatrix(matrix);
+        if (realityEditor.device.modeTransition.isARMode()) {
+            realityEditor.gui.ar.setProjectionMatrix(matrix);
+        }
     }
 
     exports.acceptUDPBeats = true;
@@ -216,17 +214,10 @@ createNameSpace('realityEditor.app.callbacks');
             });
         }
 
-        realityEditor.gui.poses.drawPoses(pose, frameData.imageSize);
+        realityEditor.humanPose.draw.draw2DPoses(pose, frameData.imageSize);
 
-        const USE_DEBUG_POSE = false;
-
-        if (USE_DEBUG_POSE) {
-            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
-        } else {
-            // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
-            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
-            
-        }
+        // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
+        subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
     }
 
     /**
@@ -239,6 +230,9 @@ createNameSpace('realityEditor.app.callbacks');
         if (!realityEditor.worldObjects) {
             return;
         } // prevents tons of error messages while app is loading but Vuforia has started
+        
+        // If viewing the VR map instead of the AR view, don't update objects/tools based on Vuforia
+        if (!realityEditor.device.modeTransition.isARMode()) return;
 
         // this first section makes the app work with extended or non-extended tracking while being backwards compatible
 
@@ -331,7 +325,7 @@ createNameSpace('realityEditor.app.callbacks');
                 
                 if (worldObjectKey !== realityEditor.worldObjects.getLocalWorldId()) {
                     let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-                    if (worldObjectKey === bestWorldObject.uuid) {
+                    if (!bestWorldObject || worldObjectKey === bestWorldObject.uuid) {
                         
                         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectKey);
                         if (sceneNode) {
@@ -414,14 +408,22 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {*} cameraInfo
      */
     function receiveCameraMatricesFromAR(cameraInfo) {
+        realityEditor.sceneGraph.setDevicePosition(cameraInfo.matrix);
+
         // easiest way to implement freeze button is just to not update the new matrices
         if (!globalStates.freezeButtonState) {
+            // when viewing VR map, sceneGraph camera will get set based on virtual camera,
+            // but we can still access the device's true position through the deviceNode
+            if (!realityEditor.device.modeTransition.isARMode()) {
+                realityEditor.device.modeTransition.setDeviceCameraPosition(cameraInfo.matrix);
+                return;
+            }
+
             realityEditor.worldObjects.checkIfFirstLocalization();
 
             let cameraMatrix = cameraInfo.matrix;
             let trackingStatus = cameraInfo.status;
             let trackingStatusInfo = cameraInfo.statusInfo;
-            // console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
 
             listeners.onDeviceTrackingStatus.forEach(function(callback) {
                 callback(trackingStatus, trackingStatusInfo);
@@ -479,7 +481,7 @@ createNameSpace('realityEditor.app.callbacks');
      */
     function receiveGroundPlaneMatricesFromAR(groundPlaneMatrix) {
         // only update groundPlane if unfrozen and at least one thing is has requested groundPlane usage
-        if (globalStates.useGroundPlane && !globalStates.freezeButtonState) {
+        if (globalStates.useGroundPlane && !globalStates.freezeButtonState && realityEditor.device.modeTransition.isARMode()) {
             
             let worldObject = realityEditor.worldObjects.getBestWorldObject();
 

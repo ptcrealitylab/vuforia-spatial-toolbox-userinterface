@@ -6,7 +6,7 @@
 //   case, we use one for loading the GLBs for the area targets and generating
 //   the corresponding navmeshes, as this is a computationally intensive process
 //   that would otherwise block the main app.
-// 
+//
 // The onmessage function is called whenever the script that spawned the worker
 //   (src/app/targetDownloader.js) sends a message to it.
 // The postMessage function allows the worker to send messages back to the
@@ -18,23 +18,27 @@
 //   through the Web Worker messaging interface and returns the resulting
 //   navmesh through the same interface
 
-importScripts('../../thirdPartyCode/three/three.min.js');
-importScripts('../../thirdPartyCode/three/GLTFLoader.js');
-importScripts('../../thirdPartyCode/three/BufferGeometryUtils.js');
+import {Cache, LoadingManager, Ray, Texture, Vector3} from '../../thirdPartyCode/three/three.module.js';
+import {GLTFLoader} from '../../thirdPartyCode/three/GLTFLoader.module.js';
+import {mergeBufferGeometries} from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 
-const ActualTextureLoader = THREE.TextureLoader;
+Cache.enabled = true;
+// Sets up a fake cache entry pointing to a blank texture since we can't load
+// textures in this environment
+const fakeCacheKey = 'fake';
+Cache.add(fakeCacheKey, new Texture());
 
-THREE.TextureLoader = class TextureLoader extends ActualTextureLoader {
-  load(url, onLoad, _onProgress, _onError) {
-    let fake = new THREE.Texture();
-    setTimeout(() => {
-      onLoad(fake);
-    }, 10);
-    return fake;
-  }
-}
+const manager = new LoadingManager();
+manager.resolveURL = function(url) {
+    if (url.endsWith('.glb')) {
+        return url;
+    }
+    // Resolve to fake cache key (empty texture)
+    return fakeCacheKey;
+};
 
-const gltfLoader = new THREE.GLTFLoader();
+const gltfLoader = new GLTFLoader(manager);
+
 globalThis.document = {
   createElementNS: function(ns, tag) {
     console.warn('createElementNS called for', tag, new Error().stack);
@@ -46,9 +50,7 @@ const heatmapResolution = 10; // number of pixels per meter
 onmessage = function(evt) {
   const fileName = evt.data.fileName;
   const objectID = evt.data.objectID;
-  console.log(`Starting navmesh generation for ${objectID}`);
   createNavmeshFromFile(fileName).then(navmesh => {
-    console.log(`Done creating navmesh for ${objectID}`);
     postMessage({navmesh,objectID,fileName});
   }).catch(error => {
     console.error(error);
@@ -69,7 +71,7 @@ const createNavmeshFromFile = (fileName) => {
         if (geometries.length === 1) {
             resolve(createNavmesh(geometries[0], heatmapResolution));
         } else {
-            const mergedGeometry = THREE.BufferGeometryUtils.mergeBufferGeometries(geometries);
+            const mergedGeometry = mergeBufferGeometries(geometries);
             resolve(createNavmesh(mergedGeometry, heatmapResolution));
         }
     });
@@ -125,7 +127,7 @@ const addTopFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
   }
 }
 
-const splitVertex = new THREE.Vector3();
+const splitVertex = new Vector3();
 const addTriangle = (array, v1, v2, v3, value, ignoreValue) => {
   const minZVertex = [v2,v3].reduce((min, current) => current.z < min.z ? current : min, v1);
   const maxZVertex = [v1,v2,v3].filter(vertex => vertex != minZVertex).reduce((max, current) => current.z > max.z ? current : max, [v1,v2,v3].filter(vertex => vertex != minZVertex)[0]);
@@ -189,10 +191,10 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const positionAttribute = geometry.attributes.position;
   
   // Re-use vector objects for efficiency
-  const indexVector = new THREE.Vector3();
-  const vertexVector1 = new THREE.Vector3();
-  const vertexVector2 = new THREE.Vector3();
-  const vertexVector3 = new THREE.Vector3();
+  const indexVector = new Vector3();
+  const vertexVector1 = new Vector3();
+  const vertexVector2 = new Vector3();
+  const vertexVector3 = new Vector3();
   
   let vertexIndex = 0;
   const loadVertices = (v1, v2, v3) => {
@@ -223,10 +225,10 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   // The floor offset will be set by looking down from the origin first, and if nothing is found, looking up
   let floorOffsetDown = 1; // Junk positive offset that will get replaced if there is a floor beneath the origin point
   let floorOffsetUp = -1; // Junk negative offset that will get replaced if there is a floor above the origin point
-  const floorDetectionRayDown = new THREE.Ray(new THREE.Vector3(0,0,0), new THREE.Vector3(0,-1,0));
-  const floorDetectionResultDown = new THREE.Vector3();
-  const floorDetectionRayUp = new THREE.Ray(new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0));
-  const floorDetectionResultUp = new THREE.Vector3();
+  const floorDetectionRayDown = new Ray(new Vector3(0,0,0), new Vector3(0,-1,0));
+  const floorDetectionResultDown = new Vector3();
+  const floorDetectionRayUp = new Ray(new Vector3(0,0,0), new Vector3(0,1,0));
+  const floorDetectionResultUp = new Vector3();
   
   // Load the next face into our vertex vectors and evaluate until out of faces
   while(loadVertices(vertexVector1, vertexVector2, vertexVector3)) {

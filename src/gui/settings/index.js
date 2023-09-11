@@ -50,8 +50,6 @@ function setSliderValue(id, value) {
 }
 
 realityEditor.gui.settings.loadSettingsPost = function () {
-    console.log('settings/index loaded');
-
     let settingsRequest = {
         getSettings: true, // ask for the current values of all settings variables
         getEnvironmentVariables: true // ask for the current environment variables
@@ -90,22 +88,18 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         }
 
         if (typeof msg.getDevelopDynamicSettings !== 'undefined') {
-            console.log('iframe got dynamic DEVELOP settings', msg);
             if (document.querySelector('.content').id === 'developSettings') {
                 onGetMainDynamicSettings(msg.getDevelopDynamicSettings); // TODO: see if I can re-use this function or need to create another
             }
         }
 
         if (typeof msg.getEnvironmentVariables !== 'undefined') {
-            console.log('iframe got environment variables');
             onGetEnvironmentVaribles(msg.getEnvironmentVariables);
         }
 
     }.bind(realityEditor.gui.settings));
 
     var onGetSettings = function (msg) {
-        console.log('settings/index.js getSettings', msg.getSettings);
-
         for (let key in msg.getSettings) {
             this.states[key] = msg.getSettings[key];
             this.setSettings(key, this.states[key]);
@@ -136,7 +130,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     }.bind(realityEditor.gui.settings);
 
     var onGetMainDynamicSettings = function (dynamicSettings) {
-        console.log('settings/index.js getMainDynamicSettings', dynamicSettings);
         var container = document.querySelector('.content').querySelector('.table-view');
         if (!container) {
             console.warn('cant find container to create settings');
@@ -286,13 +279,10 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     }.bind(realityEditor.gui.settings);
 
     var onGetEnvironmentVaribles = function (environmentVariables) {
-        console.log('environment variables:', environmentVariables);
         // allows iOS-styled UI toggles to be clicked using mouse
         if (environmentVariables.requiresMouseEvents && !mouseListenersAdded) {
             document.addEventListener('click', function (e) {
                 if (e.target && e.target.classList.contains('toggle-handle')) {
-                    console.log('clicked toggle handle for element: ' + e.target.parentElement.id);
-
                     let wasActive = e.target.parentElement.classList.contains('active');
                     if (wasActive) {
                         e.target.parentElement.classList.remove('active');
@@ -335,7 +325,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
         if (sliderDown) {
             let sliderHandle = sliderDown.querySelector('.slider-handle');
             let value = parseFloat(sliderHandle.style.left) / parseFloat(sliderDown.getClientRects()[0].width);
-            console.log('set slider ' + sliderDown.id + ' to ' + value);
             uploadSettingsForToggle(sliderDown.id, value);
         }
         sliderDown = null;
@@ -356,7 +345,6 @@ realityEditor.gui.settings.loadSettingsPost = function () {
     }
 
     function uploadSettingText(textElementId) {
-        console.log('upload setting text');
         var msg = {};
         msg.settings = {};
         msg.settings.setSettings = {};

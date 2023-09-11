@@ -109,8 +109,6 @@ createNameSpace("realityEditor.sceneGraph.network");
             timestamp: Date.now()
         };
         
-        console.log('uploading scene graph object position for ' + sceneNode.id);
-        
         // if it's an object, post object position relative to a world object
         let worldObjectId = sceneGraph.getWorldId();
         let worldNode = sceneGraph.getSceneNodeById(worldObjectId);
@@ -172,8 +170,6 @@ createNameSpace("realityEditor.sceneGraph.network");
             localMatrix: sceneNode.localMatrix,
             timestamp: Date.now()
         };
-
-        console.log('uploading scene graph frame position for ' + sceneNode.id);
 
         realityEditor.network.postVehiclePosition(frame, false);
 

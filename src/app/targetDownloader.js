@@ -86,7 +86,9 @@ createNameSpace("realityEditor.app.targetDownloader");
      * Worker that generates navmeshes from upload area target meshes
      * @type {Worker}
      */
-    const navmeshWorker = new Worker('src/app/navmeshWorker.js');
+    const navmeshWorker = new Worker(new URL('./navmeshWorker.js', import.meta.url), {
+          type: 'module',
+    })
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
@@ -169,7 +171,6 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         // don't download XML again if already stored the same checksum version - effectively a way to cache the targets
         if (isAlreadyDownloaded(objectID, 'XML')) {
-            console.log('skip downloading XML for ' + objectID);
             onTargetXMLDownloaded(true, xmlAddress); // just directly trigger onTargetXMLDownloaded
             return;
         }
@@ -231,8 +232,6 @@ createNameSpace("realityEditor.app.targetDownloader");
 
         if (success) {
             var object = realityEditor.getObject(objectID);
-
-            console.log('successfully downloaded XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.SUCCEEDED;
             triggerDownloadStateCallbacks(objectID);
 
@@ -240,7 +239,6 @@ createNameSpace("realityEditor.app.targetDownloader");
 
             // don't download again if already stored the same checksum version
             if (isAlreadyDownloaded(objectID, 'DAT')) {
-                console.log('skip downloading DAT for ' + objectID);
                 onTargetDATDownloaded(true, datAddress); // just directly trigger onTargetXMLDownloaded
                 return;
             }
@@ -250,7 +248,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].DAT = DownloadState.STARTED;
 
         } else {
-            console.log('failed to download XML file: ' + fileName);
+            console.error('failed to download XML file: ' + fileName);
             targetDownloadStates[objectID].XML = DownloadState.FAILED;
             triggerDownloadStateCallbacks(objectID);
             onDownloadFailed(objectID);
@@ -270,8 +268,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         const jpgAddress = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/obj/' + object.name + '/target/target.jpg');
 
         if (success) {
-
-            console.log('successfully downloaded DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.SUCCEEDED;
             triggerDownloadStateCallbacks(objectID);
 
@@ -288,7 +284,6 @@ createNameSpace("realityEditor.app.targetDownloader");
 
               // don't download again if already stored the same checksum version
               if (isAlreadyDownloaded(objectID, 'GLB')) {
-                  console.log('skip downloading GLB for ' + objectID);
                   onTargetGLBDownloaded(true, glbAddress); // just directly trigger onTargetGLBDownloaded
                   return;
               }
@@ -299,7 +294,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             }
 
         } else {
-            console.log('failed to download DAT file: ' + fileName);
+            console.error('failed to download DAT file: ' + fileName);
             targetDownloadStates[objectID].DAT = DownloadState.FAILED;
             triggerDownloadStateCallbacks(objectID);
 
@@ -325,10 +320,9 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            console.log('successfully downloaded GLB file: ' + fileName);
             targetDownloadStates[objectID].GLB = DownloadState.SUCCEEDED;
         } else {
-            console.log('failed to download GLB file: ' + fileName);
+            console.error('failed to download GLB file: ' + fileName);
             targetDownloadStates[objectID].GLB = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
@@ -343,7 +337,6 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {Function?} callback
      */
     function createNavmesh(fileName, objectID, callback) {
-        console.log('got GLB address');
         if (callback) {
             callbacks.onCreateNavmesh.push(callback);
         }
@@ -360,7 +353,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            console.log('successfully downloaded JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.SUCCEEDED;
             let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
             realityEditor.app.promises.addNewMarkerJPG(fileName, objectID, targetWidth).then(({success, fileName}) => {
@@ -370,7 +362,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             targetDownloadStates[objectID].FILENAME = fileName;
             realityEditor.getObject(objectID).isJpgTarget = true;
         } else {
-            console.log('failed to download JPG file: ' + fileName);
+            console.error('failed to download JPG file: ' + fileName);
             targetDownloadStates[objectID].JPG = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
@@ -389,11 +381,10 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            console.log('successfully added marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.SUCCEEDED;
             saveDownloadInfo(objectID); // only caches the target images after we confirm that they work
         } else {
-            console.log('failed to add marker: ' + fileName);
+            console.error('failed to add marker: ' + fileName);
             targetDownloadStates[objectID].MARKER_ADDED = DownloadState.FAILED;
             onDownloadFailed(objectID);
         }
@@ -590,8 +581,6 @@ createNameSpace("realityEditor.app.targetDownloader");
         // don't download again if already stored the same checksum version
         var storedChecksum = window.localStorage.getItem('realityEditor.objectChecksums.'+objectID);
         if (storedChecksum) {
-            console.log('previously downloaded files for ' + objectID + ' with checksum ' + storedChecksum);
-            console.log('new checksum is ' + newChecksum);
             if (newChecksum === storedChecksum) {
                 // check that the files still exist in the app's temporary storage
    var xmlFileName = realityEditor.network.getURL(objectHeartbeat.ip, realityEditor.network.getPort(objectHeartbeat), '/obj/' + objectName + '/target/target.xml');
@@ -602,9 +591,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             }
         }
 
-        console.log('no matching checksum. download fresh target files (needs XML? ' + needsXML + ') (needs DAT? ' + needsDAT + ')');
+        // no matching checksum. download fresh target files.
         continueDownload(objectID, objectHeartbeat, needsXML, needsDAT);
-
     }
 
     /**
@@ -615,12 +603,10 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {boolean} needsDAT
      */
     function continueDownload(objectID, objectHeartbeat, needsXML, needsDAT) {
-
         if (!needsXML && !needsDAT) {
             return;
         }
 
-        console.log('continue download for ' + objectHeartbeat);
         var objectName = getObjectNameFromId(objectHeartbeat.id);
 
         // downloads the vuforia target.xml file if it doesn't have it yet
@@ -644,8 +630,6 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {Array.<string>} fileNameArray
      */
     function doTargetFilesExist(success, fileNameArray) {
-        console.log('doTargetFilesExist', success, fileNameArray);
-
         if (fileNameArray.length > 0) {
             var objectID = getObjectIDFromFilename(fileNameArray[0]);
             var heartbeat = temporaryHeartbeatMap[objectID];
@@ -717,7 +701,7 @@ createNameSpace("realityEditor.app.targetDownloader");
             }
         }
 
-        console.warn('tried to download a file that couldnt locate a matching object', fileName);
+        console.warn('tried to download a file that couldn\'t locate a matching object', fileName);
     }
 
     /**
@@ -737,10 +721,9 @@ createNameSpace("realityEditor.app.targetDownloader");
         var objectID = getObjectIDFromFilename(fileName);
 
         if (success) {
-            console.log('successfully downloaded file: ' + fileName);
             targetDownloadStates[objectID][fileTypeString] = DownloadState.SUCCEEDED;
         } else {
-            console.log('failed to download file: ' + fileName);
+            console.error('failed to download file: ' + fileName);
             targetDownloadStates[objectID][fileTypeString] = DownloadState.FAILED;
         }
 
@@ -766,19 +749,16 @@ createNameSpace("realityEditor.app.targetDownloader");
 
     // if the vuforia engine gets hard-restarted during the session, we can use this to add the observers back to engine
     function reinstatePreviouslyAddedTargets() {
-        console.log('>> reinstatePreviouslyAddedTargets');
         Object.keys(targetDownloadStates).forEach(function(objectID) {
             let states = targetDownloadStates[objectID];
             if (states && states.MARKER_ADDED === DownloadState.SUCCEEDED && targetDownloadStates[objectID].FILENAME) {
                 if (states.JPG === DownloadState.SUCCEEDED && states.DAT !== DownloadState.SUCCEEDED) {
-                    console.log('>> add JPG target again: ' + objectID);
                     let targetWidth = realityEditor.gui.utilities.getTargetSize(objectID).width;
                     realityEditor.app.promises.addNewMarkerJPG(targetDownloadStates[objectID].FILENAME, objectID, targetWidth).then(({success, fileName}) => {
                         onMarkerAdded(success, fileName);
                     });
                     targetDownloadStates[objectID].MARKER_ADDED = DownloadState.STARTED;
                 } else if (states.DAT === DownloadState.SUCCEEDED) {
-                    console.log('>> add DAT target again: ' + objectID);
                     realityEditor.app.promises.addNewMarker(targetDownloadStates[objectID].FILENAME).then(({success, fileName}) => {
                         onMarkerAdded(success, fileName);
                     });

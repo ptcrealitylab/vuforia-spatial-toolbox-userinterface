@@ -11,7 +11,7 @@ createNameSpace("realityEditor.network.search");
      * Public init method sets up module by registering callbacks when important events happen in other modules
      */
     function initService() {
-        console.log('network.search initService');
+        // console.log('network.search initService');
     }
     
     // function searchFrames(ip, queryParams, callback) {
@@ -49,7 +49,6 @@ createNameSpace("realityEditor.network.search");
             search.addQueryParam(key, queryParams[key]);
         }
         search.performAndForEachDownload(ip, port, function(results) {
-            console.log(results);
             callback(results);
         });
     }
@@ -82,7 +81,6 @@ createNameSpace("realityEditor.network.search");
 
             realityEditor.network.getData(null,  null, null, baseUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                 if (msg && msg.validAddresses) {
-                    console.log(msg);
                     callback(msg.validAddresses);
                 }
             });
@@ -93,7 +91,6 @@ createNameSpace("realityEditor.network.search");
                     let downloadUrl = realityEditor.network.getURL(ip, port, '/object/' + address.objectId + '/frame/' + address.frameId);
                     realityEditor.network.getData(null,  null, null, downloadUrl, function (_objectKey, _frameKey, _nodeKey, msg) {
                         if (msg) {
-                            console.log(msg);
                             callback(msg);
                         }
                     });

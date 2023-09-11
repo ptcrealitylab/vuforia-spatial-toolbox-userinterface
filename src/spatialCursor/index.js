@@ -22,6 +22,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let indicator2;
     let overlapped = false;
     let isMyColorDetermined = false;
+    let isHighlighted = false;
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -249,10 +250,22 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 }
             });
         }
+
+        realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
+            realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                spatialCursorEvent: {
+                    clientX: screenX,
+                    clientY: screenY,
+                    x: screenX,
+                    y: screenY,
+                    projectedZ: projectedZ
+                }
+            });
+        });
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName, { moveToCursor = false } = {}) {
+    function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
         
         let spatialCursorMatrix = null;
         if (moveToCursor) {
@@ -276,6 +289,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             initialMatrix: (spatialCursorMatrix) ? spatialCursorMatrix : undefined,
             onUploadComplete: () => {
                 realityEditor.network.postVehiclePosition(addedElement);
+                if (typeof onToolUploadComplete === 'function') {
+                    onToolUploadComplete(addedElement);
+                }
             }
         });
 
@@ -394,6 +410,23 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.gui.threejsScene.onAnimationFrame(updateLoop);
     }
 
+    // allow external module to move the cursor to a certain screen position,
+    // as if the user moved their mouse to that position (useful e.g. if pointerevents are blocked)
+    function setCursorPosition(x, y) {
+        screenX = x;
+        screenY = y;
+    }
+
+    // allow external module to update some visual properties of the cursor
+    function setCursorStyle({highlighted}) {
+        isHighlighted = highlighted;
+    }
+
+    // allow external module to check whether cursor is currently on world mesh
+    function isCursorOnValidPosition() {
+        return Object.keys(worldIntersectPoint).length > 0;
+    }
+
     function updateLoop() {
         if (!isCursorEnabled || !isMyColorDetermined) {
             isUpdateLoopRunning = false;
@@ -489,6 +522,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // todo Steve: use ShaderMaterial.clone() to prevent the other cursor inner circles from playing the same expanding animation
         // todo Steve: probably a better idea to separate the inner & outer circles of all indicator1's, and animate the scale property, b/c that way animation can reflect to other clients when I click
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial.clone());
+        indicator1.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2 + 1;
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
         const material2 = new THREE.ShaderMaterial({
@@ -509,6 +543,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         const indicator2 = new THREE.Mesh(geometry2, material2);
         indicator2.name = 'coloredCursorMesh';
+        indicator2.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2;
 
         const cursorGroup = new THREE.Group();
         cursorGroup.add(indicator1);
@@ -531,6 +566,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function addSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator1 = new THREE.Mesh(geometry, normalCursorMaterial);
+        indicator1.renderOrder = 4;
         indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator1.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator1);
@@ -539,6 +575,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function addTestSpatialCursor() {
         const geometry = new THREE.CircleGeometry(geometryLength, 32);
         indicator2 = new THREE.Mesh(geometry, testCursorMaterial);
+        indicator2.renderOrder = 3;
         indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator2.material.depthWrite = false;
         realityEditor.gui.threejsScene.addToScene(indicator2);
@@ -546,6 +583,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let scaleAccelerationFactor = 0.002, scaleAcceleration = scaleAccelerationFactor, scaleSpeed = 0;
     function updateScaleFactor() {
+        let MAX_SCALE_FACTOR = isHighlighted ? 3 : 1; // get larger when in "highlighted" state
+        
         if (Object.keys(worldIntersectPoint).length === 0) {
             // if doesn't intersect any point in world
             if (scaleFactor === 0) return;
@@ -554,21 +593,21 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 scaleAcceleration = -scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1); // get larger faster when highlighted
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         } else {
             // if intersects with some point in world
-            if (scaleFactor === 1) return;
+            if (scaleFactor === MAX_SCALE_FACTOR) return;
             if (scaleAcceleration === -scaleAccelerationFactor) {
                 // if previously, doesn't intersect with some point in world
                 scaleAcceleration = scaleAccelerationFactor;
                 scaleSpeed = 0;
             }
-            scaleSpeed += scaleAcceleration;
+            scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1);
             scaleFactor += scaleSpeed;
-            scaleFactor = clamp(scaleFactor, 0, 1);
+            scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
             indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
         }
     }
@@ -651,6 +690,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
     }
 
+    let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
         let objectsToCheck = [];
@@ -664,6 +704,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
+                projectedZ = raycastIntersects[0].distance;
                 let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
@@ -808,4 +849,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;
     exports.renderOtherSpatialCursor = renderOtherSpatialCursor;
     exports.deleteOtherSpatialCursor = deleteOtherSpatialCursor;
+    exports.setCursorPosition = setCursorPosition;
+    exports.setCursorStyle = setCursorStyle;
+    exports.isCursorOnValidPosition = isCursorOnValidPosition;
 }(realityEditor.spatialCursor));

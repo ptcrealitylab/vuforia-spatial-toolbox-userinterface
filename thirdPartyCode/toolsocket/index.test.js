@@ -283,13 +283,108 @@ let jsonFromURLRouteSchema = {
     }
 };
 
+const securedUrlRouteSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 25,
+                "pattern": "^[A-Za-z0-9_]*$"
+            },
+            "i": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 25,
+                "pattern": "^[A-Za-z0-9_]*$"
+            },
+            "s": {
+                "type": [
+                    "string",
+                    "null",
+                    "undefined"
+                ],
+                "minLength": 0,
+                "maxLength": 45,
+                "pattern": "^[A-Za-z0-9_]*$"
+            },
+        },
+        "required": [
+            "n"
+        ],
+        "expected": [
+            "n",
+            "s"
+        ]
+    }
+};
+
+const urlRouteSchema = {
+    "type": "object",
+    "items": {
+        "properties": {
+            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"}
+        },
+        "required": ["n"],
+        "expected": ["n"],
+    }
+};
+
 test('parseJsonFromUrl(): validation', () => {
-    var obj = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh?adhsfhdfkldsj22376dgjsjfdhkfdh";
-    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toStrictEqual({"ip": "192.168.1.2", "n": "eehsjdkalwoepsdwk2dJ", "p": "8080", "query": "adhsfhdfkldsj22376dgjsjfdhkfdh", "route": "/xse/l/skdjhlkdjh/obj/sdjhsdflkjh"});
+    var url = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh?adhsfhdfkldsj22376dgjsjfdhkfdh";
+    expect(client.parseUrl(url, jsonFromURLRouteSchema)).toStrictEqual({"ip": "192.168.1.2", "n": "eehsjdkalwoepsdwk2dJ", "p": "8080", "query": "adhsfhdfkldsj22376dgjsjfdhkfdh", "route": "/xse/l/skdjhlkdjh/obj/sdjhsdflkjh"});
 
-    obj = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh.gif?adhsfhdfkldsj22376dgjsjfdhkfdh";
-    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toStrictEqual({"ip": "192.168.1.2", "n": "eehsjdkalwoepsdwk2dJ", "p": "8080", "query": "adhsfhdfkldsj22376dgjsjfdhkfdh", "route": "/xse/l/skdjhlkdjh/obj/sdjhsdflkjh.gif", "type": "gif"}, );
+    url = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh.gif?adhsfhdfkldsj22376dgjsjfdhkfdh";
+    expect(client.parseUrl(url, jsonFromURLRouteSchema)).toStrictEqual({"ip": "192.168.1.2", "n": "eehsjdkalwoepsdwk2dJ", "p": "8080", "query": "adhsfhdfkldsj22376dgjsjfdhkfdh", "route": "/xse/l/skdjhlkdjh/obj/sdjhsdflkjh.gif", "type": "gif"}, );
 
+    // Normal local RO url
+    url = 'ws://192.168.1.137:8080';
+    expect(client.parseUrl(url, jsonFromURLRouteSchema)).toBe(null);
+
+    // Standard cloud proxy base url
+    url = '/stable/n/S5ThIachqpzVUtDXiqsR/s/hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI/';
+    expect(client.parseUrl(url, securedUrlRouteSchema)).toStrictEqual({
+        n: "S5ThIachqpzVUtDXiqsR",
+        s: "hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI",
+        route: "/stable"
+    });
+
+    // Cloud proxy websocket url (portless)
+    url = 'wss://toolboxedge.net:/stable/n/S5ThIachqpzVUtDXiqsR/s/hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI/';
+    expect(client.parseUrl(url, urlRouteSchema)).toStrictEqual({
+        n: "S5ThIachqpzVUtDXiqsR",
+        route: "/stable/s/hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI",
+        server: "toolboxedge.net",
+        protocol: "wss",
+        port: 443,
+    });
+
+    url = 'wss://toolboxedge.net:443/n/S5ThIachqpzVUtDXiqsR/i/GX30WGI92RZJppI/s/hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI';
+    expect(client.parseUrl(url, urlRouteSchema)).toStrictEqual({
+        n: "S5ThIachqpzVUtDXiqsR",
+        route: "/i/GX30WGI92RZJppI/s/hguD34bv6umfS6Caxowb6JLeNXmMHQvNvkHniehI",
+        server: "toolboxedge.net",
+        protocol: "wss",
+        port: 443,
+    });
+});
+
+test('parseJsonFromUrl(): out of range validation', () => {
+    var obj = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh?adhsfhdfkldsj";
+    expect(client.parseUrl(obj, {})).toBe(null);
+
+    obj = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1+2/obj/sdjhsdflkjh?adhsfhdfkldsj";
+    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toBe(null);
+
+    obj = "/xse/p/8080/l/skdjhlkdjh/n/eehsjdka&&7lwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh?adhsfhdfkldsj";
+    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toBe(null);
+
+    obj = "/xse/p/80998880/l/skdjhlkdjh/n/eehsjdkalwoepsdwk2dJ/ip/192.168.1.2/obj/sdjhsdflkjh?adhsfhdfkldsj";
+    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toBe(null);
+
+    obj = "/xse/sdjhsdflkjh?adhsfhdfkldsj";
+    expect(client.parseUrl(obj, jsonFromURLRouteSchema)).toBe(null);
 });
 
 test('parseJsonFromUrl(): out of range validation', () => {

@@ -77,7 +77,6 @@ createNameSpace("realityEditor.worldObjects");
 
         // when an explicit worldObject message is detected, check if we still need to add that world object
         realityEditor.network.addUDPMessageHandler('worldObject', function(message) {
-            console.log('interface discovered world object:', message);
             if (typeof message.worldObject.ip !== 'undefined') {
                 handleServerDiscovered(message.worldObject)
             }
@@ -85,8 +84,6 @@ createNameSpace("realityEditor.worldObjects");
     }
     
     function updateOriginOffsetIfNecessary(worldObject, originObject) {
-        console.log('updateOriginOffsetIfNecessary');
-
         if (worldObject && !originObject) {
             originObject = getMatchingOriginObject(worldObject.objectId);
         }
@@ -94,26 +91,18 @@ createNameSpace("realityEditor.worldObjects");
             worldObject = getMatchingWorldObject(originObject.objectId);
         }
         
-        console.log(worldObject, originObject);
-
         // only use offset if both are loaded
         if (!originObject || !worldObject) { return; }
 
         if (typeof worldObject.originOffset !== 'undefined') { return; }
 
-        console.log(originObject.matrix);
-        
         // only use offset if a non-identity matrix has been saved to that origin. we know it was localized because that is a prerequisite for saving.
         if (!originObject.matrix || originObject.matrix.length !== 16 || realityEditor.gui.ar.utilities.isIdentityMatrix(originObject.matrix, 3)) {
             return;
         }
 
-        console.log('loaded originOffset for ' + worldObject.objectId);
-
         realityEditor.getObject(worldObject.objectId).originOffset = realityEditor.gui.ar.utilities.copyMatrix(originObject.matrix);
         // worldObject.originOffset = realityEditor.gui.ar.utilities.copyMatrix(originObject.matrix);
-        
-        console.log(worldObject.originOffset);
     }
 
     /**
@@ -123,14 +112,13 @@ createNameSpace("realityEditor.worldObjects");
     function tryLoadingLocalWorldObject() {
         let worldObjectBeat = {
             id: localWorldObjectKey,
-            ip: '127.0.0.1',
+            ip: 'localhost',
             port: realityEditor.device.environment.getLocalServerPort(),
             vn: 320,
             pr: 'R2',
             tcs: null,
             zone: '',
         };
-        console.log('try loading local world object...', worldObjectBeat);
 
         // process the heartbeat automatically, in case UDP isn't allowed on this network (e.g. cellular)
         realityEditor.network.discovery.processHeartbeat(worldObjectBeat);
@@ -167,17 +155,14 @@ createNameSpace("realityEditor.worldObjects");
     function onNewServerDiscovered(object) {
         // regular world objects are discovered by UDP broadcast. but the _WORLD_local on localhost gets downloaded with the old REST API
         // TODO: there's probably a simpler implementation if we're making the assumption that we only need to download the localhost server this way
-        if (object.ip !== '127.0.0.1') {
+        if (object.ip !== '127.0.0.1' && object.ip !== 'localhost') {
             return;
         }
         
         // REST endpoint for for downloading the world object for that server
         var urlEndpoint = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object.port), '/worldObject/');
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
-            console.log("did get world object for server: " + object.ip);
-
             if (msg && Object.keys(msg).length > 0) {
-                console.log('found valid object');
                 initializeWorldObject(msg);
             }
             
@@ -210,8 +195,6 @@ createNameSpace("realityEditor.worldObjects");
 
         updateOriginOffsetIfNecessary(object, null);
         setTimeout(function() { updateOriginOffsetIfNecessary(object, null); }, 100);
-
-        console.log('successfully initialized world object: ' + object.objectId);
     }
 
     /**
@@ -379,7 +362,6 @@ createNameSpace("realityEditor.worldObjects");
         if (typeof worldCorrections[objectKey] !== 'undefined') {
             
             if (worldCorrections[objectKey] === null) {
-                console.log('set origin of ' + objectKey + ' for the first time');
                 localizedWithinWorldCallbacks.forEach(function(callback) {
                     callback(objectKey);
                 });
@@ -467,10 +449,7 @@ createNameSpace("realityEditor.worldObjects");
                     isFirstTimeSettingWorldPosition = false;
                     setTimeout(function() {
                         if (realityEditor.gui.settings.toggleStates.tutorialState) {
-                            console.log('add tutorial frame to _WORLD_local');
                             realityEditor.gui.pocket.addTutorialFrame(getLocalWorldId());
-                        } else {
-                            console.log('tutorial is disabled, dont show it');
                         }
                     }, 500);
                 }

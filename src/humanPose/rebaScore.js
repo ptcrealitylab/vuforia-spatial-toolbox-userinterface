@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINT_CONNECTIONS, JOINTS, getBoneName} from './utils.js';
+import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
@@ -87,9 +87,18 @@ function neckReba(rebaData) {
         rebaData.scores[joint] = neckScore;
         rebaData.colors[joint] = neckColor;
     });
+
+    [JOINT_CONNECTIONS.headNeck,
+        JOINT_CONNECTIONS.face,
+        JOINT_CONNECTIONS.earSpan,
+        JOINT_CONNECTIONS.eyeSpan,
+        JOINT_CONNECTIONS.eyeNoseLeft,
+        JOINT_CONNECTIONS.eyeNoseRight
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = neckScore;
+        rebaData.boneColors[getBoneName(bone)] = neckColor;
+    });
     
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.headNeck)] = neckColor;
 }
 
 /**
@@ -434,13 +443,144 @@ function wristReba(rebaData) {
     let leftWristColor = AnalyticsColors.green;
     let rightWristScore = 1;
     let rightWristColor = AnalyticsColors.green;
+
+    // checking if hand have a valid pose (eg. they are not just dummy hands for pose with JOINTS_V1 schema)
+    const handsInvalid = rebaData.joints[JOINTS.LEFT_INDEX].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).length() < 1e-6 &&
+                         rebaData.joints[JOINTS.RIGHT_INDEX].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).length() < 1e-6;
+
+    if (!TRACK_HANDS || handsInvalid) {
+        rebaData.scores[JOINTS.LEFT_WRIST] = leftWristScore;
+        rebaData.colors[JOINTS.LEFT_WRIST] = leftWristColor;
+        rebaData.scores[JOINTS.RIGHT_WRIST] = rightWristScore;
+        rebaData.colors[JOINTS.RIGHT_WRIST] = rightWristColor;
+        return;
+    }
     
-    // Tracking is not accurate enough to calculate this
+    /* left wrist */
+    // compute main direction vectors
+    const leftPinky = rebaData.joints[JOINTS.LEFT_PINKY].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).normalize();
+    const leftIndex = rebaData.joints[JOINTS.LEFT_INDEX].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).normalize();
+    const leftHandDirection = leftPinky.clone().add(leftIndex).normalize();
+    const leftHandPinky2Index = rebaData.joints[JOINTS.LEFT_INDEX].clone().sub(rebaData.joints[JOINTS.LEFT_PINKY]).normalize();
+    const leftForearmDirection = rebaData.joints[JOINTS.LEFT_WRIST].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
+    //const leftUpperarmDirection = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
+
+    // check if wrist position is outside +-15 deg, then +1 
+    let wristPositionAngle = angleBetween(leftHandDirection, leftForearmDirection);
+    if (wristPositionAngle > 15) {
+        leftWristScore += 1;
+    }
+
+    // check if the hand is bent away from midline, then +1
+    // the angle limit from midline is not specified in REBA definition (chosen by us)
+    let wristBendAngle = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);
+    if (Math.abs(wristBendAngle) > 30) {
+        leftWristScore += 1;
+    }
+
+    // check if the hand is twisted (palm up), then +1
+    // disable for now because pose tracking does not capture hand twists
+    /*
+    const leftElbowAxis = new THREE.Vector3(); 
+    leftElbowAxis.crossVectors(leftUpperarmDirection, leftForearmDirection).normalize();
+    let wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
+    if (wristTwistAngle > 90) {
+        leftWristScore += 1;
+    }
+    */
+
+    leftWristScore = clamp(leftWristScore, 1, 3);
+
+    //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+
+    /* right wrist */
+    // compute main direction vectors
+    const rightPinky = rebaData.joints[JOINTS.RIGHT_PINKY].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).normalize();
+    const rightIndex = rebaData.joints[JOINTS.RIGHT_INDEX].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).normalize();
+    const rightHandDirection = rightPinky.clone().add(rightIndex).normalize();
+    const rightHandPinky2Index = rebaData.joints[JOINTS.RIGHT_INDEX].clone().sub(rebaData.joints[JOINTS.RIGHT_PINKY]).normalize();
+    const rightForearmDirection = rebaData.joints[JOINTS.RIGHT_WRIST].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
+    //const rightUpperarmDirection = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
+
+    // check if wrist position is outside +-15 deg, then +1 
+    wristPositionAngle = angleBetween(rightHandDirection, rightForearmDirection);
+    if (wristPositionAngle > 15) {
+        rightWristScore += 1;
+    }
+
+    // check if the hand is bent away from midline, then +1
+    // the angle limit from midline is not specified in REBA definition (chosen by us)
+    wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
+    if (Math.abs(wristBendAngle) > 40) {
+        rightWristScore += 1;
+    }
+
+    // check if the hand is twisted (palm up), then +1
+    /*
+    const rightElbowAxis = new THREE.Vector3(); 
+    rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
+    wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
+    if (wristTwistAngle > 90) {
+        rightWristScore += 1;
+    }
+    */
+
+    rightWristScore = clamp(rightWristScore, 1, 3);
+
+    //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+
+    if (leftWristScore === 1) {
+        leftWristColor = AnalyticsColors.green;
+    } else if (leftWristScore == 2) {
+        leftWristColor = AnalyticsColors.yellow;
+    } else {
+        leftWristColor = AnalyticsColors.red;
+    }
+
+    if (rightWristScore === 1) {
+        rightWristColor = AnalyticsColors.green;
+    } else if (rightWristScore == 2) {
+        rightWristColor = AnalyticsColors.yellow;
+    } else {
+        rightWristColor = AnalyticsColors.red;
+    }
+
+    [JOINTS.LEFT_WRIST,
+        JOINTS.LEFT_THUMB,
+        JOINTS.LEFT_INDEX,
+        JOINTS.LEFT_PINKY
+    ].forEach(joint => {
+        rebaData.scores[joint] = leftWristScore;
+        rebaData.colors[joint] = leftWristColor;
+    });
+
+    [JOINT_CONNECTIONS.thumbLeft,
+        JOINT_CONNECTIONS.pinkyLeft,
+        JOINT_CONNECTIONS.indexLeft,
+        JOINT_CONNECTIONS.fingerSpanLeft
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = leftWristScore;
+        rebaData.boneColors[getBoneName(bone)] = leftWristColor;
+    });
+
+    [JOINTS.RIGHT_WRIST,
+        JOINTS.RIGHT_THUMB,
+        JOINTS.RIGHT_INDEX,
+        JOINTS.RIGHT_PINKY
+    ].forEach(joint => {
+        rebaData.scores[joint] = rightWristScore;
+        rebaData.colors[joint] = rightWristColor;
+    });
+
+    [JOINT_CONNECTIONS.thumbRight,
+        JOINT_CONNECTIONS.pinkyRight,
+        JOINT_CONNECTIONS.indexRight,
+        JOINT_CONNECTIONS.fingerSpanRight
+    ].forEach(bone => {
+        rebaData.boneScores[getBoneName(bone)] = rightWristScore;
+        rebaData.boneColors[getBoneName(bone)] = rightWristColor;
+    });
     
-    rebaData.scores[JOINTS.LEFT_WRIST] = leftWristScore;
-    rebaData.colors[JOINTS.LEFT_WRIST] = leftWristColor;
-    rebaData.scores[JOINTS.RIGHT_WRIST] = rightWristScore;
-    rebaData.colors[JOINTS.RIGHT_WRIST] = rightWristColor;
 }
 
 const startColor = AnalyticsColors.fade(AnalyticsColors.green);

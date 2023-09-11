@@ -1,5 +1,5 @@
 /**
- * @preserve
+ *
  *
  *                                      .,,,;;,'''..
  *                                  .'','...     ..',,,.
@@ -67,7 +67,7 @@ realityEditor.device.loaded = false;
  * Network callback function,
  * ... and notify the native iOS code that the user interface finished loading
  */
-realityEditor.device.onload = function () {
+realityEditor.device.onload = async function () {
 
     // Initialize some global variables for the device session
     this.cout('Running on platform: ' + globalStates.platform);
@@ -77,16 +77,16 @@ realityEditor.device.onload = function () {
 
     // Add-ons may need to modify globals or do other far-reaching changes that
     // other services will need to pick up in their initializations
-    realityEditor.addons.onInit();
+    await realityEditor.addons.onInit();
 
     // populate the default settings menus with toggle switches and text boxes, with associated callbacks
 
     realityEditor.gui.settings.addToggleWithText('Zone', 'limit object discovery to zone', 'zoneState', '../../../svg/zone.svg', false, 'enter zone name',
-        function(newValue) {
-            console.log('zone mode was set to ' + newValue);
+        function(_newValue) {
+            // console.log('zone mode was set to ' + newValue);
         },
-        function(newValue) {
-            console.log('zone text was set to ' + newValue);
+        function(_newValue) {
+            // console.log('zone text was set to ' + newValue);
         }
     );
 
@@ -96,12 +96,10 @@ realityEditor.device.onload = function () {
     });
 
     realityEditor.gui.settings.addToggle('Grouping', 'double-tap background to draw group around frames', 'groupingEnabled',  '../../../svg/grouping.svg', false, function(newValue) {
-        console.log('grouping was set to ' + newValue);
         realityEditor.gui.ar.grouping.toggleGroupingMode(newValue);
     });
 
     realityEditor.gui.settings.addToggle('Realtime Collaboration', 'constantly synchronizes with other users', 'realtimeEnabled',  '../../../svg/realtime.svg', true, function(newValue) {
-        console.log('realtime was set to ' + newValue);
         if (newValue) {
             realityEditor.network.realtime.initService();
         } else {
@@ -110,8 +108,8 @@ realityEditor.device.onload = function () {
         // TODO: turning this off currently doesn't actually end the realtime mode unless you restart the app
     });
 
-    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(newValue) {
-        console.log('tutorial mode was set to ' + newValue);
+    realityEditor.gui.settings.addToggle('Show Tutorial', 'add tutorial frame on app start', 'tutorialState',  '../../../svg/tutorial.svg', false, function(_newValue) {
+        // console.log('tutorial mode was set to ' + newValue);
     });
 
     let introToggle = realityEditor.gui.settings.addToggle('Show Intro Page', 'shows tips on app start', 'introTipsState',  '../../../svg/tutorial.svg', false, function(newValue) {
@@ -128,8 +126,8 @@ realityEditor.device.onload = function () {
         realityEditor.device.setEditingMode(newValue);
     }).moveToDevelopMenu();
 
-    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(newValue) {
-        console.log('clear sky mode set to ' + newValue);
+    realityEditor.gui.settings.addToggle('Clear Sky Mode', 'hides all buttons', 'clearSkyState',  '../../../svg/clear.svg', false, function(_newValue) {
+        // console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
     realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
@@ -151,11 +149,9 @@ realityEditor.device.onload = function () {
             }.bind(this), 1000);
         }
 
-    }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1')); // default value is based on the current source
+    }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1') && !window.location.href.includes('localhost')); // default value is based on the current source
 
     realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
-        console.log('discovery state set to ' + newValue + ' with text ' + textValue);
-
         if (newValue) {
             setTimeout(function() {
                 realityEditor.network.discoverObjectsFromServer(textValue);
@@ -236,22 +232,22 @@ realityEditor.device.onload = function () {
     }, {ignoreOnload: true, dontPersist: true}).moveToDevelopMenu();
 
     let toggleCloudUrl = realityEditor.gui.settings.addURLView('Cloud URL', 'link to access your metaverse', 'cloudUrl', '../../../svg/zone.svg', false, 'unavailable',
-        function(newValue) {
-            console.log('user wants cloudConnection to be', newValue);
+        function(_newValue) {
+            // console.log('user wants cloudConnection to be', newValue);
         },
-        function(newValue) {
-            console.log('cloud url text was set to', newValue);
+        function(_newValue) {
+            // console.log('cloud url text was set to', newValue);
         }
     );
-    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithFrozenText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
-        console.log('user wants newNetworkId to be', newValue);
+    let toggleNewNetworkId = realityEditor.gui.settings.addToggleWithFrozenText('New Network ID', 'generate new network id for cloud connection', 'generateNewNetworkId',  '../../../svg/object.svg', false, 'unknown', function(_newValue) {
+        // console.log('user wants newNetworkId to be', newValue);
     });
-    let toggleNewSecret = realityEditor.gui.settings.addToggleWithFrozenText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(newValue) {
-        console.log('user wants newSecret to be', newValue);
+    let toggleNewSecret = realityEditor.gui.settings.addToggleWithFrozenText('New Secret', 'generate new secret for cloud connection', 'generateNewSecret',  '../../../svg/object.svg', false, 'unknown', function(_newValue) {
+        // console.log('user wants newSecret to be', newValue);
     });
 
     let cachedSettings = {};
-    const localSettingsHost = `127.0.0.1:${realityEditor.device.environment.getLocalServerPort()}`;
+    const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
     // If we're viewing this on localhost we can connect to and read settings
     // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
@@ -290,30 +286,13 @@ realityEditor.device.onload = function () {
 
     // Check whether we're offline by adding a cache-busting search parameter
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
-        console.debug('offline check', Array.from(res.headers.entries()));
         if (!res.headers.has('X-Offline-Cache')) {
             return;
         }
 
         let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
 
-        // create UI
-        let notificationUI = document.createElement('div');
-        notificationUI.classList.add('statusBar');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationUI.classList.add('statusBarPortrait');
-        }
-        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
-        document.body.appendChild(notificationUI);
-
-        let notificationTextContainer = document.createElement('div');
-        notificationUI.classList.add('statusBarText');
-        notificationUI.appendChild(notificationTextContainer);
-
-        // show and populate with message
-        notificationUI.classList.add('statusBar');
-        notificationUI.classList.remove('statusBarHidden');
-        notificationTextContainer.innerHTML = message;
+        realityEditor.gui.modal.showScreenTopNotification(message, -1);
     });
 
     // set up the global canvas for drawing the links
@@ -334,42 +313,54 @@ realityEditor.device.onload = function () {
     }
     
     // initialize additional services
-    realityEditor.device.initService();
-    realityEditor.device.layout.initService();
-    realityEditor.device.touchInputs.initService();
-    realityEditor.device.videoRecording.initService();
-    realityEditor.device.tracking.initService();
-    realityEditor.gui.ar.frameHistoryRenderer.initService();
-    realityEditor.gui.ar.grouping.initService();
-    realityEditor.gui.ar.anchors.initService();
-    realityEditor.gui.ar.groundPlaneAnchors.initService();
-    realityEditor.gui.ar.groundPlaneRenderer.initService();
-    realityEditor.gui.ar.areaTargetScanner.initService();
-    realityEditor.gui.ar.areaCreator.initService();
-    realityEditor.gui.ar.videoPlayback.initService();
-    realityEditor.device.touchPropagation.initService();
-    realityEditor.network.discovery.initService();
-    realityEditor.network.realtime.initService();
-    realityEditor.gui.crafting.initService();
-    realityEditor.worldObjects.initService();
-    realityEditor.device.distanceScaling.initService();
-    realityEditor.device.keyboardEvents.initService();
-    realityEditor.network.frameContentAPI.initService();
-    realityEditor.envelopeManager.initService();
-    realityEditor.network.availableFrames.initService();
-    realityEditor.network.search.initService();
-    realityEditor.sceneGraph.initService();
-    realityEditor.gui.threejsScene.initService();
-    realityEditor.gui.glRenderer.initService();
-    // realityEditor.device.multiclientUI.initService();
-    realityEditor.avatar.initService();
-    realityEditor.humanPose.initService();
-    realityEditor.analytics.initService();
-    realityEditor.spatialCursor.initService();
-    realityEditor.gui.spatialIndicator.initService();
-    realityEditor.gui.spatialArrow.initService();
-    realityEditor.gui.recentlyUsedBar.initService();
-    realityEditor.gui.envelopeIconRenderer.initService();
+    try {
+        realityEditor.device.initService();
+        realityEditor.device.layout.initService();
+        realityEditor.device.modeTransition.initService();
+        realityEditor.device.touchInputs.initService();
+        realityEditor.device.videoRecording.initService();
+        realityEditor.device.tracking.initService();
+        realityEditor.gui.ar.frameHistoryRenderer.initService();
+        realityEditor.gui.ar.grouping.initService();
+        realityEditor.gui.ar.anchors.initService();
+        realityEditor.gui.ar.groundPlaneAnchors.initService();
+        realityEditor.gui.ar.groundPlaneRenderer.initService();
+        realityEditor.gui.ar.areaTargetScanner.initService();
+        realityEditor.gui.ar.areaCreator.initService();
+        realityEditor.gui.ar.videoPlayback.initService();
+        realityEditor.device.touchPropagation.initService();
+        realityEditor.network.discovery.initService();
+        realityEditor.network.realtime.initService();
+        realityEditor.gui.crafting.initService();
+        realityEditor.worldObjects.initService();
+        realityEditor.device.distanceScaling.initService();
+        realityEditor.device.keyboardEvents.initService();
+        realityEditor.network.frameContentAPI.initService();
+        realityEditor.envelopeManager.initService();
+        realityEditor.network.availableFrames.initService();
+        realityEditor.network.search.initService();
+        realityEditor.sceneGraph.initService();
+        realityEditor.gui.glRenderer.initService();
+        realityEditor.gui.threejsScene.initService();
+        // realityEditor.device.multiclientUI.initService();
+        realityEditor.avatar.initService();
+        realityEditor.humanPose.initService();
+        realityEditor.analytics.initService();
+        realityEditor.oauth.initService();
+        realityEditor.spatialCursor.initService();
+        realityEditor.gui.spatialIndicator.initService();
+        realityEditor.gui.spatialArrow.initService();
+        realityEditor.gui.recentlyUsedBar.initService();
+        realityEditor.gui.envelopeIconRenderer.initService();
+    } catch (initError) {
+        // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
+        console.error('error in initService functions, might lead to corrupted app state', initError);
+        try {
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+        } catch (alertError) {
+            alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
+        }
+    }
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
         globalStates.device = deviceName;
@@ -382,6 +373,7 @@ realityEditor.device.onload = function () {
 
     // assign global pointers to frequently used UI elements
     overlayDiv = document.getElementById('overlay');
+    overlayDiv2 = document.getElementById('overlay2');
     
     // center the menu vertically if the screen is taller than 320 px
     var MENU_HEIGHT = 320;
@@ -477,9 +469,9 @@ realityEditor.device.onload = function () {
             "</ul>";
 
         realityEditor.gui.modal.openClassicModal('Welcome to the Vuforia Spatial Toolbox!', modalBody, 'Close', 'Close and Don\'t Show Again', function() {
-            console.log('Closed');
+            // console.log('Closed');
         }, function() {
-            console.log('Closed and Don\'t Show Again!');
+            // console.log('Closed and Don\'t Show Again!');
             introToggle.setValue(false);
         });
     }
