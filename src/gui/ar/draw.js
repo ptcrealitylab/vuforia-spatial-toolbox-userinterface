@@ -1056,21 +1056,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 console.warn('removing displayNone in drawTransformed, should happen before this');
             }
 
-            /*
-            // push matrices into iframe as early as possible to reduce lag
-            // these coordinate systems are based purely on the scene graph, so they can happen early in this function
-            if (activeType === "ui") {
-                // let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(realityEditor.sceneGraph.getCameraNode().worldMatrix));
-                // let category = 'cameraReady(gui/ar/draw)';
-                // realityEditor.device.profiling.stopTimeProcess(`cameraReady__${hash}`, category, {
-                //     showMessage: false,
-                //     showAggregate: true,
-                //     displayTimeout: 1000
-                // });
-                realityEditor.network.frameContentAPI.sendCoordinateSystemsToIFrame(activeVehicle.objectId, activeVehicle.uuid);
-            }
-            */
-
             // can't change while frozen so don't recalculate
             if (realityEditor.device.environment.supportsDistanceFading() &&
                 (!globalStates.freezeButtonState || realityEditor.device.environment.ignoresFreezeButton())) {
