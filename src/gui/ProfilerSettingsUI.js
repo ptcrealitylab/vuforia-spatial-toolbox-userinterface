@@ -8,30 +8,30 @@ export class ProfilerSettingsUI {
 
         // Styled via css/humanPoseAnalyzerSettingsUi.css
         this.root.innerHTML = `
-            <div class="profiler-settings-header">
-                <div class="profiler-settings-title">Profiler</div>
-                <div class="profiler-settings-header-icon">_</div>
+            <div class="hpa-settings-header">
+                <div class="hpa-settings-title">Profiler</div>
+                <div class="hpa-settings-header-icon">_</div>
             </div>
-            <div class="profiler-settings-body">
-                <div class="profiler-settings-section">
-                    <div class="profiler-settings-section-title">FPS</div>
-                    <div class="profiler-settings-section-body">
-                        <div class="profiler-settings-section-row-tall">
-                            <div class="profiler-settings-section-row-label">FPS</div>
-                            <div class="profiler-settings-section-row-select profiler-stats-container"></div>
+            <div class="hpa-settings-body">
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">FPS</div>
+                    <div class="hpa-settings-section-body">
+                        <div class="hpa-settings-section-row-tall">
+                            <div class="hpa-settings-section-row-label">FPS</div>
+                            <div class="hpa-settings-section-row-select profiler-stats-container"></div>
                         </div>
                     </div>
                 </div>
-                <div class="profiler-settings-section">
-                    <div class="profiler-settings-section-title">Detailed Logging</div>
-                    <div class="profiler-settings-section-body">
-                        <div class="profiler-settings-section-row profiler-settings-section-row-checkbox-container">
-                            <div class="profiler-settings-section-row-label">Enable Metrics</div>
-                            <input type="checkbox" class="profiler-settings-section-row-checkbox" id="profiler-settings-enable-metrics">
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">Detailed Logging</div>
+                    <div class="hpa-settings-section-body">
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">Enable Metrics</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="profiler-settings-enable-metrics">
                         </div>
                     </div>
                 </div>
-                <div class="profiler-settings-section profiler-log-container">
+                <div class="hpa-settings-section profiler-log-container">
                 </div>
             </div>
         `;
@@ -120,7 +120,7 @@ export class ProfilerSettingsUI {
 
     setUpEventListeners() {
         // Toggle menu minimization when clicking on the header, but only if not dragging
-        this.root.querySelector('.profiler-settings-header').addEventListener('mousedown', event => {
+        this.root.querySelector('.hpa-settings-header').addEventListener('mousedown', event => {
             event.stopPropagation();
             let mouseDownX = event.clientX;
             let mouseDownY = event.clientY;
@@ -130,9 +130,9 @@ export class ProfilerSettingsUI {
                 if (mouseDownX === mouseUpX && mouseDownY === mouseUpY) {
                     this.toggleMinimized();
                 }
-                this.root.querySelector('.profiler-settings-header').removeEventListener('mouseup', mouseUpListener);
+                this.root.querySelector('.hpa-settings-header').removeEventListener('mouseup', mouseUpListener);
             };
-            this.root.querySelector('.profiler-settings-header').addEventListener('mouseup', mouseUpListener);
+            this.root.querySelector('.hpa-settings-header').addEventListener('mouseup', mouseUpListener);
         });
 
         this.root.querySelector('#profiler-settings-enable-metrics').addEventListener('change', (event) => {
@@ -140,7 +140,7 @@ export class ProfilerSettingsUI {
         });
 
         // Add listeners to aid with clicking checkboxes
-        this.root.querySelectorAll('.profiler-settings-section-row-checkbox').forEach((checkbox) => {
+        this.root.querySelectorAll('.hpa-settings-section-row-checkbox').forEach((checkbox) => {
             const checkboxContainer = checkbox.parentElement;
             checkboxContainer.addEventListener('click', () => {
                 checkbox.checked = !checkbox.checked;
@@ -152,7 +152,7 @@ export class ProfilerSettingsUI {
         });
 
         // Add click listeners to selects to stop propagation to rest of app
-        this.root.querySelectorAll('.profiler-settings-section-row-select').forEach((select) => {
+        this.root.querySelectorAll('.hpa-settings-section-row-select').forEach((select) => {
             select.addEventListener('click', (event) => {
                 event.stopPropagation();
             });
@@ -165,7 +165,7 @@ export class ProfilerSettingsUI {
         let dragStartLeft = 0;
         let dragStartTop = 0;
 
-        this.root.querySelector('.profiler-settings-header').addEventListener('mousedown', (event) => {
+        this.root.querySelector('.hpa-settings-header').addEventListener('mousedown', (event) => {
             event.stopPropagation();
             dragStartX = event.clientX;
             dragStartY = event.clientY;
@@ -203,8 +203,8 @@ export class ProfilerSettingsUI {
             this.root.style.left = `${window.innerWidth - this.root.offsetWidth}px`;
         }
         // Keep the header visible on the screen off the bottom
-        if (this.root.offsetTop + this.root.querySelector('.profiler-settings-header').offsetHeight > window.innerHeight) {
-            this.root.style.top = `${window.innerHeight - this.root.querySelector('.profiler-settings-header').offsetHeight}px`;
+        if (this.root.offsetTop + this.root.querySelector('.hpa-settings-header').offsetHeight > window.innerHeight) {
+            this.root.style.top = `${window.innerHeight - this.root.querySelector('.hpa-settings-header').offsetHeight}px`;
         }
     }
 
@@ -232,21 +232,21 @@ export class ProfilerSettingsUI {
             return;
         }
         const previousWidth = this.root.offsetWidth;
-        this.root.classList.add('profiler-settings-minimized');
+        this.root.classList.add('hpa-settings-minimized');
         this.root.style.width = `${previousWidth}px`;
-        this.root.querySelector('.profiler-settings-header-icon').innerText = '+';
+        this.root.querySelector('.hpa-settings-header-icon').innerText = '+';
     }
 
     maximize() {
         if (this.root.classList.contains('hidden')) {
             return;
         }
-        this.root.classList.remove('profiler-settings-minimized');
-        this.root.querySelector('.profiler-settings-header-icon').innerText = '_';
+        this.root.classList.remove('hpa-settings-minimized');
+        this.root.querySelector('.hpa-settings-header-icon').innerText = '_';
     }
 
     toggleMinimized() {
-        if (this.root.classList.contains('profiler-settings-minimized')) {
+        if (this.root.classList.contains('hpa-settings-minimized')) {
             this.maximize();
         } else {
             this.minimize();

@@ -14,21 +14,26 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
 
     function initService() {
         realityEditor.network.addPostMessageHandler('profilerStartTimeProcess', (msgContent, _fullMessage) => {
-            startTimeProcess(msgContent.name, { numStopsRequired: msgContent.numStopsRequired || null });
+            startTimeProcess(msgContent.name, { numStopsRequired: msgContent.numStopsRequired });
         });
 
         realityEditor.network.addPostMessageHandler('profilerStopTimeProcess', (msgContent, _fullMessage) => {
-            let showMessage = typeof msgContent.showMessage === 'boolean' ? msgContent.showMessage : false;
-            let showAggregate = typeof msgContent.showAggregate === 'boolean' ? msgContent.showAggregate : true;
-            let displayTimeout = msgContent.displayTimeout || 3000;
-            let includeCount = typeof msgContent.includeCount === 'boolean' ? msgContent.includeCount : true;
-            stopTimeProcess(msgContent.name, msgContent.category, { showMessage, showAggregate, displayTimeout, includeCount });
+            let options = {
+                showMessage: msgContent.showMessage,
+                showAggregate: msgContent.showAggregate,
+                displayTimeout: msgContent.displayTimeout,
+                includeCount: msgContent.includeCount
+            };
+            stopTimeProcess(msgContent.name, msgContent.category, options);
         });
 
         realityEditor.network.addPostMessageHandler('profilerLogMessage', (msgContent, _fullMessage) => {
             let formattedTime = formatLogTime();
-            let displayText = `${msgContent.message} <span style='color:grey'>${formattedTime}</span>`
-            logIndividualProcess(displayText, { displayTimeout: msgContent.displayTimeout || 3000 });
+            let displayText = `${msgContent.message} <span style='color:grey'>${formattedTime}</span>`;
+            let options = {
+                displayTimeout: msgContent.displayTimeout
+            }
+            logIndividualProcess(displayText, options);
         });
 
         realityEditor.network.addPostMessageHandler('profilerCountMessage', (msgContent, _fullMessage) => {
@@ -71,7 +76,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         }
     }
 
-    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: false, displayTimeout: 3000, includeCount: true }) {
+    function stopTimeProcess(processTitle, category, options = { showMessage: false, showAggregate: true, displayTimeout: 3000, includeCount: true }) {
         if (!isShown) return;
         if (!isActivated) return;
         if (!profilerSettingsUI) return;
