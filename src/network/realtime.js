@@ -73,7 +73,7 @@ createNameSpace("realityEditor.network.realtime");
             desktopSocket = io.connect();
         } else {
             if (location.hostname === 'localhost') {
-                desktopSocket = window._oldIo.connect('localhost:8081');
+                desktopSocket = window._oldIo.connect('localhost:8080');
             } else {
                 desktopSocket = window._oldIo.connect();
             }
@@ -669,7 +669,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function createSocketInSet(setName, socketIP, onConnect) {
         let ioObject;
-        if (socketIP.includes(':8081')) {
+        if (socketIP.includes(':8080')) {
             ioObject = window._oldIo.connect(socketIP);
         } else {
             ioObject = io.connect(socketIP);

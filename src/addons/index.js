@@ -18,7 +18,7 @@ createNameSpace("realityEditor.addons");
     }
 
     // Fetch the list of all add-ons to inject
-    let allScriptsLoaded = fetch('/addons/sources').then((res) => {
+    let allScriptsLoaded = fetch('/userinterface/addons/sources').then((res) => {
         return res.json();
     }).then((addonSources) => {
         // Inject all scripts, counting on them to load asynchronously and add
