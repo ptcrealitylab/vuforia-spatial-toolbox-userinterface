@@ -10,7 +10,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     let processTimes = {};
     let processCategories = {};
     let lastUpdateTimes = {};
-    let displayCooldowns = {};
+    const IDLE_TIMEOUT = 5000; // if 5s pass with no new start/stop processes, reset the average/min/max
 
     function initService() {
         realityEditor.network.addPostMessageHandler('profilerStartTimeProcess', (msgContent, _fullMessage) => {
@@ -52,16 +52,6 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         return `[${hours}:${minutes}:${seconds}.${milliseconds}]`;
     }
 
-    // computes the FNV-1a hash of a string - useful as a UUID for a stringified matrix
-    function getShortHashForString(str) {
-        let hash = 2166136261n; // Initialize to an offset_basis for FNV-1a 32bit
-        for(let i = 0; i < str.length; i++) {
-            hash ^= BigInt(str.charCodeAt(i));
-            hash *= 16777619n;
-        }
-        return (hash & 0xFFFFFFFFn).toString(16).padStart(8, '0');
-    }
-
     function startTimeProcess(processTitle, options = { numStopsRequired: null }) {
         if (!isShown) return;
         if (!isActivated) return;
@@ -96,7 +86,6 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         process.end = performance.now();
 
         let timeBetweenCategoryUpdates = process.end - (lastUpdateTimes[category] || 0);
-        // console.log('time between updates', timeBetweenCategoryUpdates);
         lastUpdateTimes[processTitle] = performance.now();
 
         if (category) {
@@ -123,20 +112,10 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
 
         let info = updateCategory(category, time, timeBetweenCategoryUpdates);
         if (info) {
-            // let count = info.processCategories[category].count;
-            // let numResets = info.processCategories[category].numDisplayResets;
             let meanT = info.mean.toFixed(2);
             let minT = info.fastest.toFixed(2);
             let maxT = info.slowest.toFixed(2);
-
-            // if (typeof displayCooldowns[category] !== 'undefined' && displayCooldowns[category] > 0) {
-            //     displayCooldowns[category]--;
-            //     return;
-            // } // don't slow down process by rendering too often
-            // displayCooldowns[category] = 5;
-            
             let countString = options.includeCount ? ` (${info.count})` : '';
-
             let meanLabelText = `${category}${countString} –– mean: ${yellow(meanT)} –– min: ${yellow(minT)} –– max: ${yellow(maxT)}`;
             profilerSettingsUI.addOrUpdateLabel(`mean_${category}`, meanLabelText, { pinToTop: true });
         } else {
@@ -164,7 +143,6 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         if (!profilerSettingsUI) return;
 
         let categoryName = `${processTitle}_count`;
-        // let info = updateCategory(processTitle, time, timeBetweenCategoryUpdates);
         if (typeof processCategories[categoryName] === 'undefined') {
             processCategories[categoryName] = {
                 count: 1
@@ -181,13 +159,13 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     function updateCategory(category, time, timeBetweenCategoryUpdates) {
         if (typeof processCategories[category] === 'undefined') {
             processCategories[category] = {
-                fastest: time, // ignore the first datapoint so we don't throw off the average
+                fastest: time,
                 slowest: time,
                 mean: time,
                 count: 1,
                 numDisplayResets: 0
             };
-        } else if (timeBetweenCategoryUpdates > 5000) {
+        } else if (timeBetweenCategoryUpdates > IDLE_TIMEOUT) {
             let numDisplayResets = processCategories[category].numDisplayResets + 1;
             processCategories[category] = {
                 fastest: time,
@@ -210,7 +188,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     }
 
     function yellow(text) {
-        return `<span class='debugTime'>${text}</span>`;
+        return `<span style='color: yellow'>${text}</span>`;
     }
 
     function show() {
@@ -241,6 +219,32 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
         return isShown && isActivated;
     }
 
+    // Helper functions useful for users of startTimeProcess/stopTimeProcess
+    
+    // computes the FNV-1a hash of a string - useful as a UUID for a stringified matrix
+    function getShortHashForString(str) {
+        let hash = 2166136261n; // Initialize to an offset_basis for FNV-1a 32bit
+        for(let i = 0; i < str.length; i++) {
+            hash ^= BigInt(str.charCodeAt(i));
+            hash *= 16777619n;
+        }
+        return (hash & 0xFFFFFFFFn).toString(16).padStart(8, '0');
+    }
+
+    // helper function to count the number of frames on all objects which are subscribed to matrices
+    function countSubscribedFrames() {
+        return Object.values(objects).reduce((totalCount, obj) => {
+            const thisObjectCount = Object.keys(obj.frames).reduce((frameCount, frameKey) => {
+                let frame = obj.frames[frameKey];
+                let sendsMatrix = frame.sendMatrix || (frame.sendMatrices && (frame.sendMatrices.devicePose ||
+                    frame.sendMatrices.groundPlane || frame.sendMatrices.anchoredModelView ||
+                    frame.sendMatrices.allObjects || frame.sendMatrices.model || frame.sendMatrices.view));
+                return frameCount + (sendsMatrix ? 1 : 0);
+            }, 0);
+            return totalCount + thisObjectCount;
+        }, 0);
+    }
+
     exports.initService = initService;
     exports.show = show;
     exports.hide = hide;
@@ -254,15 +258,7 @@ import { ProfilerSettingsUI } from "../gui/ProfilerSettingsUI.js";
     exports.logProcessCount = logProcessCount;
     // helper function
     exports.getShortHashForString = getShortHashForString;
+    exports.countSubscribedFrames = countSubscribedFrames;
 }(realityEditor.device.profiling));
-
-window.postIntoIframe = (contentWindow, message, targetOrigin = '*') => {
-    // console.log('postIntoIframe');
-    // realityEditor.device.profiling.startTimeProcess('postIntoIframe');
-    contentWindow.postMessage(message, targetOrigin);
-    // realityEditor.device.profiling.stopTimeProcess('postIntoIframe', 'postIntoIframe', { showAggregate: true });
-
-    realityEditor.device.profiling.logProcessCount('postIntoIframe');
-};
 
 export const initService = realityEditor.device.profiling.initService;

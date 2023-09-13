@@ -153,23 +153,14 @@ createNameSpace("realityEditor.sceneGraph");
         }
     }
 
-    // helper function to count the number of frames on all objects which are subscribed to matrices
-    function countSubscribedFrames() {
-        return Object.values(objects).reduce((totalCount, obj) => {
-            const thisObjectCount = Object.keys(obj.frames).reduce((frameCount, frameKey) => {
-                return frameCount + (obj.frames[frameKey].sendMatrices ? 1 : 0);
-            }, 0);
-            return totalCount + thisObjectCount;
-        }, 0);
-    }
-
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
 
         if (realityEditor.device.profiling.isEnabled()) {
-            let hash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
-            let numStopsRequired = countSubscribedFrames(); // stopTimeProcess will need to be called this many times
-            realityEditor.device.profiling.startTimeProcess(`cameraUpdated_${hash}`, { numStopsRequired });
+            let numStopsRequired = realityEditor.device.profiling.countSubscribedFrames(); // stopTimeProcess will need to be called this many times
+            let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
+            let processName = `cameraUpdate_${matrixHash}`;
+            realityEditor.device.profiling.startTimeProcess(processName, { numStopsRequired });
         }
 
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
