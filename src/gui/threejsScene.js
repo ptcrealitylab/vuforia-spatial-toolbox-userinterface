@@ -611,7 +611,6 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         return groundPlaneCollider;
     }
 
-    // TODO: implement this without relying on worldOcclusionObject, so that it can be used as a backup method
     function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
         let frame = realityEditor.getFrame(objectKey, frameKey);
         let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
@@ -649,9 +648,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         // add object layer to raycast layer mask
         raycaster.layers.mask = raycaster.layers.mask | collisionObject.layers.mask;
 
-        // Find intersections
         const intersects = raycaster.intersectObject(collisionObject);
-
         if (intersects.length > 0) {
             const shadowPosition = intersects[0].point;
             let shadowMatrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.worldMatrix);
