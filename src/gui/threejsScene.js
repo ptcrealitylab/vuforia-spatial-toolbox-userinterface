@@ -138,6 +138,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
         setMatrixFromArray(camera.matrix, matrix);
+        camera.updateMatrixWorld(true);
         if (customMaterials) {
             let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
             customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
@@ -449,10 +450,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
                 allMeshes.forEach(child => {
                     if (typeof maxHeight !== 'undefined') {
+                        // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
+                        //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        if (!realityEditor.device.environment.isDesktop()) {
+                        // if (!realityEditor.device.environment.isDesktop()) {
                             child.originalMaterial = child.material.clone();
-                        }
+                        // }
                         child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
                             maxHeight: maxHeight,
                             center: center,
@@ -606,6 +609,88 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
     function getGroundPlaneCollider() {
         return groundPlaneCollider;
+    }
+
+    // TODO: implement this without relying on worldOcclusionObject, so that it can be used as a backup method
+    function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+        if (!frame || !sceneNode) return [];
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let shadowMatrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.worldMatrix);
+        shadowMatrix[13] = groundPlaneNode.worldMatrix[13];
+        return realignUpVector(shadowMatrix);
+    }
+
+    function getToolSurfaceShadowMatrix(objectKey, frameKey) {
+        let worldId = realityEditor.sceneGraph.getWorldId();
+        let worldOcclusionObject = getObjectForWorldRaycasts(worldId);
+        return getMatrixProjectedOntoObject(objectKey, frameKey, worldOcclusionObject);
+    }
+
+    function getMatrixProjectedOntoObject(objectKey, frameKey, collisionObject) {
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        let sceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+        if (!frame || !sceneNode) return [];
+
+        if (!collisionObject) return sceneNode.worldMatrix;
+
+        // let toolPosition = realityEditor.sceneGraph.getWorldPosition(frameKey);
+        let toolMatrixGP = sceneNode.getMatrixRelativeTo(realityEditor.sceneGraph.getGroundPlaneNode());
+        let toolPosition = new THREE.Vector3(toolMatrixGP[12], toolMatrixGP[13], toolMatrixGP[14]);
+
+        const raycaster = new THREE.Raycaster();
+        const direction = new THREE.Vector3(0, -1, 0); // Pointing downwards along Y-axis
+
+        // Set raycaster
+        raycaster.set(toolPosition, direction);
+        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
+
+        // add object layer to raycast layer mask
+        raycaster.layers.mask = raycaster.layers.mask | collisionObject.layers.mask;
+
+        // Find intersections
+        const intersects = raycaster.intersectObject(collisionObject);
+
+        if (intersects.length > 0) {
+            const shadowPosition = intersects[0].point;
+            let shadowMatrix = realityEditor.gui.ar.utilities.copyMatrix(sceneNode.worldMatrix);
+            shadowMatrix[12] = shadowPosition.x;
+            shadowMatrix[13] = shadowPosition.y;
+            shadowMatrix[14] = shadowPosition.z;
+
+            return realignUpVector(shadowMatrix);
+        }
+
+        return sceneNode.worldMatrix;
+    }
+
+    // removes rotation except along the Y axis, so it stays "flat" on the ground plane
+    function realignUpVector(originalMatrix) {
+        let matrix = new THREE.Matrix4();
+        setMatrixFromArray(matrix, originalMatrix);
+
+        // Decompose the matrix into position, rotation, and scale
+        const position = new THREE.Vector3();
+        const rotation = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
+
+        matrix.decompose(position, rotation, scale);
+
+        // Convert Quaternion to Euler to easily zero out X and Z rotations
+        const euler = new THREE.Euler().setFromQuaternion(rotation, 'XYZ');
+
+        // Zero out X and Z rotations
+        euler.x = 0;
+        euler.z = 0;
+
+        // Convert back to Quaternion from Euler
+        rotation.setFromEuler(euler);
+
+        // Recompose the matrix
+        matrix.compose(position, rotation, scale);
+
+        return matrix.elements;
     }
 
     /**
@@ -966,6 +1051,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
+    exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;
+    exports.getToolSurfaceShadowMatrix = getToolSurfaceShadowMatrix;
     exports.addTransformControlsTo = addTransformControlsTo;
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
     exports.updateMaterialCullingFrustum = updateMaterialCullingFrustum;
