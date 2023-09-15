@@ -294,6 +294,7 @@ createNameSpace("realityEditor.network.availableFrames");
     function getServerIPForObjectFrames(objectKey) {
         var serverIP = realityEditor.getObject(objectKey).ip;
         if (typeof framesPerServer[serverIP] === 'undefined') {
+            // console.log('this object server doesnt have its own frames; load from localhost instead');
             serverIP = 'localhost';
         }
         return serverIP;

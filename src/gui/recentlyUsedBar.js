@@ -14,7 +14,7 @@ class RecentlyUsedBar {
         this.ctx = this.canvas.getContext('2d');
 
         this.iconElts = [];
-        this.capacity = 3;
+        this.capacity = 5;
         this.hoveredFrameId = null;
         this.hoverAnimationPercent = 0;
         this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line

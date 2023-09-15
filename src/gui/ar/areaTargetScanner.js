@@ -417,6 +417,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }).then((response) => {
             return response.json();
         }).then((object) => {
+            console.log('success', object);
             if (serverIp !== '127.0.0.1' && serverIp !== 'localhost') {
                 return;
             }
