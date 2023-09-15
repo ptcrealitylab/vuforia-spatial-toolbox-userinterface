@@ -320,6 +320,7 @@ realityEditor.device.onload = async function () {
         realityEditor.device.touchInputs.initService();
         realityEditor.device.videoRecording.initService();
         realityEditor.device.tracking.initService();
+        realityEditor.device.profiling.initService();
         realityEditor.gui.ar.frameHistoryRenderer.initService();
         realityEditor.gui.ar.grouping.initService();
         realityEditor.gui.ar.anchors.initService();

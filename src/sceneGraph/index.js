@@ -155,6 +155,14 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
+
+        if (realityEditor.device.profiling.isEnabled()) {
+            let numStopsRequired = realityEditor.device.profiling.countSubscribedFrames(); // stopTimeProcess will need to be called this many times
+            let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
+            let processName = `cameraUpdate_${matrixHash}`;
+            realityEditor.device.profiling.startTimeProcess(processName, { numStopsRequired });
+        }
+
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);

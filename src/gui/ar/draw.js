@@ -1381,6 +1381,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     if (typeof activeVehicle.sendObjectPositions !== 'undefined') {
                         thisMsg.objectPositions = realityEditor.gui.ar.positioning.getObjectPositionsOfTypes(activeVehicle.sendObjectPositions, true);
                     }
+
+                    if (realityEditor.device.profiling.isEnabled()) {
+                        let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(realityEditor.sceneGraph.getCameraNode().worldMatrix));
+                        let processName = `cameraUpdate_${matrixHash}`;
+                        realityEditor.device.profiling.stopTimeProcess(processName, 'cameraUpdates');
+                    }
                     
                     if (activeType === 'ui') {
                         globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
