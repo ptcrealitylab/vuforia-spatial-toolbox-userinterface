@@ -37,6 +37,10 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.lastTargettedBinds = {};
             this.lastTextureBinds = {};
             this.lastCapabilities = {};
+            this.lastBindVertexArray = {
+                name: 'bindVertexArray',
+                args: [null],
+            };
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -103,6 +107,10 @@ createNameSpace("realityEditor.gui.glRenderer");
 
             if (message.name === 'activeTexture') {
                 this.lastActiveTexture = message;
+            }
+
+            if (message.name === 'bindVertexArray') {
+                this.lastBindVertexArray = message;
             }
 
             const targettedBinds = {
@@ -201,6 +209,9 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.buffering = false;
 
             let setup = [];
+            if (this.lastBindVertexArray) {
+                setup.push(this.lastBindVertexArray);
+            }
             if (this.lastUseProgram) {
                 setup.push(this.lastUseProgram);
             }
