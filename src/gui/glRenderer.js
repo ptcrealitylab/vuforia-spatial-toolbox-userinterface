@@ -146,11 +146,15 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
             }
             if (message.name === 'bindTexture') {
-                let activeTexture = this.lastActiveTexture.args[0];
-                if (!this.lastTextureBinds[activeTexture]) {
-                    this.lastTextureBinds[activeTexture] = {};
+                if (message.args[1]) {
+                    let activeTexture = this.lastActiveTexture.args[0];
+                    if (!this.lastTextureBinds[activeTexture]) {
+                        this.lastTextureBinds[activeTexture] = {};
+                    }
+                    this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
+                } else {
+                    console.warn('bindTexture target undefined', message);
                 }
-                this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
             }
 
             let res;
