@@ -451,6 +451,7 @@ createNameSpace("realityEditor.sceneGraph");
         if (gpRX) {
             return gpRX.getMatrixRelativeTo(cameraNode);
         }
+        relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode); // update the stored matrix immediately
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
 
@@ -771,7 +772,11 @@ createNameSpace("realityEditor.sceneGraph");
         // processed by one of the recursive calls above because .needsRecompute gets reset
         for (let elementId in visualElements) {
             let visualElementNode = visualElements[elementId];
-            visualElementNode.updateWorldMatrix();
+            if (visualElementNode.parent) {
+                visualElementNode.updateWorldMatrix(visualElementNode.parent.worldMatrix);
+            } else {
+                visualElementNode.updateWorldMatrix();
+            }
         }
     }
 
