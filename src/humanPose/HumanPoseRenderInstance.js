@@ -4,6 +4,9 @@ import {
     BONE_TO_INDEX,
     SCALE,
     RENDER_CONFIDENCE_COLOR,
+    HIDDEN_JOINTS,
+    HIDDEN_BONES,
+    DISPLAY_HIDDEN_ELEMENTS
 } from './constants.js';
 import {AnalyticsColors} from "./AnalyticsColors.js";
 
@@ -57,17 +60,28 @@ export class HumanPoseRenderInstance {
      * Sets the position of a joint
      * @param {string} jointId - ID of joint to set position of
      * @param {Vector3} position - Position to set joint to
+     * @param {boolean} visible - whether the joint is displayed
      */
-    setJointPosition(jointId, position) {
+    setJointPosition(jointId, position, visible = true) {
         const index = JOINT_TO_INDEX[jointId];
-        this.renderer.setJointMatrixAt(
-            this.slot,
-            index,
-            new THREE.Matrix4().makeTranslation(
+        let matrix = new THREE.Matrix4().set(
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 1,
+        );
+        if (visible) {
+            matrix.makeTranslation(
                 position.x,
                 position.y,
                 position.z,
-            ),
+            );
+        }
+
+        this.renderer.setJointMatrixAt(
+            this.slot,
+            index,
+            matrix
         );
     }
 
@@ -79,29 +93,40 @@ export class HumanPoseRenderInstance {
             return;
         }
         this.pose.forEachJoint(joint => {
-            this.setJointPosition(joint.name, joint.position);
+            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_JOINTS.includes(joint.name);
+            this.setJointPosition(joint.name, joint.position, visible);
         });
     }
 
     /**
      * Updates bone (stick between joints) position based on this.joints' positions.
      * @param {Object} bone - bone from this.pose
+     * @param {boolean} visible - whether the bone is displayed
      */
-    updateBonePosition(bone) {
+    updateBonePosition(bone, visible = true) {
         const boneIndex = BONE_TO_INDEX[bone.name];
-        const jointAPos = bone.joint0.position;
-        const jointBPos = bone.joint1.position;
+        let matrix = new THREE.Matrix4().set(
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 1,
+        );
 
-        const pos = jointAPos.clone().add(jointBPos).divideScalar(2);
+        if (visible) {
+            const jointAPos = bone.joint0.position;
+            const jointBPos = bone.joint1.position;
 
-        const scale = jointBPos.clone().sub(jointAPos).length();
-        const scaleVector = new THREE.Vector3(1, scale / SCALE, 1);
+            const pos = jointAPos.clone().add(jointBPos).divideScalar(2);
 
-        const direction = jointBPos.clone().sub(jointAPos).normalize();
-        const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+            const scale = jointBPos.clone().sub(jointAPos).length();
+            const scaleVector = new THREE.Vector3(1, scale / SCALE, 1);
 
-        const mat = new THREE.Matrix4().compose(pos, rot, scaleVector);
-        this.renderer.setBoneMatrixAt(this.slot, boneIndex, mat);
+            const direction = jointBPos.clone().sub(jointAPos).normalize();
+            const rot = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+
+            matrix.compose(pos, rot, scaleVector);
+        }
+        this.renderer.setBoneMatrixAt(this.slot, boneIndex, matrix);
     }
 
     /**
@@ -113,7 +138,9 @@ export class HumanPoseRenderInstance {
         }
 
         this.pose.forEachBone(bone => {
-            this.updateBonePosition(bone);
+            // hides hands in general at the moment. But one could use this also for hiding joints based on their low confidence.
+            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_BONES.includes(bone.name);
+            this.updateBonePosition(bone, visible);
         });
     }
 

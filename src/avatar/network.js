@@ -16,6 +16,10 @@ createNameSpace("realityEditor.avatar.network");
     let lastWriteSpatialCursorTimestamp = Date.now();
     let pendingAvatarInitializations = {};
 
+    let callbacks = {
+        onLoadOcclusionObject: [],
+    };
+
     // Tell the server (corresponding to this world object) to create a new avatar object with the specified ID
     function addAvatarObject(worldId, clientId, onSuccess, onError) {
         let worldObject = realityEditor.getObject(worldId);
@@ -62,6 +66,17 @@ createNameSpace("realityEditor.avatar.network");
 
     // polls the three.js scene every 1 second to see if the gltf for the world object has finished loading
     function onLoadOcclusionObject(callback) {
+        // if cachedWorld and occlusionDownloadInterval, call callback asap
+        if (cachedWorldObject && cachedOcclusionObject) {
+            callback(cachedWorldObject, cachedOcclusionObject);
+            return;
+        }
+        //if !cachedWorld and occlusionDownloadInterval then add callback to list of callback to be called
+        callbacks.onLoadOcclusionObject.push(callback);
+        if (occlusionDownloadInterval) {
+            return;
+        }
+        //if !cached world and !occlusionDownloadInterval, instantiate occlusionDownloadInterval
         occlusionDownloadInterval = setInterval(() => {
             if (!cachedWorldObject) {
                 cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -76,7 +91,7 @@ createNameSpace("realityEditor.avatar.network");
                 cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(cachedWorldObject.objectId);
                 if (cachedOcclusionObject) {
                     // trigger the callback and clear the interval
-                    callback(cachedWorldObject, cachedOcclusionObject);
+                    callbacks.onLoadOcclusionObject.forEach(cb => cb(cachedWorldObject, cachedOcclusionObject));
                     clearInterval(occlusionDownloadInterval);
                     occlusionDownloadInterval = null;
                 }

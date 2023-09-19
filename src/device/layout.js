@@ -187,9 +187,8 @@ createNameSpace('realityEditor.device.layout');
      */
     function adjustRightEdgeIfNeeded() {
         rightEdgeOffset = calculateRightEdgeOffset();
-        if (rightEdgeOffset > 0) {
-            console.log('adjust right edge of interface for iPhone X');
-        }
+
+        // adjust right edge of interface for iPhone X
 
         let scaleFactor = (window.innerWidth - rightEdgeOffset) / window.innerWidth;
 
@@ -290,8 +289,6 @@ createNameSpace('realityEditor.device.layout');
      * @todo - on portrait mode detected, make big changes to pocket, menus, button rotations, crafting, etc
      */
     function onOrientationChanged(orientationString) {
-        console.log('device orientation changed to ' + orientationString);
-
         if (orientationString === 'landscapeRight') { // default
             globalStates.deviceOrientationRight = true;
             realityEditor.gui.ar.updateProjectionMatrix(false);

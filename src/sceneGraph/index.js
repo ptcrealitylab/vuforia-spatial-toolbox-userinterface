@@ -155,7 +155,15 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
-        cameraNode.setLocalMatrix(cameraMatrix);
+
+        if (realityEditor.device.profiling.isEnabled()) {
+            let numStopsRequired = realityEditor.device.profiling.countSubscribedFrames(); // stopTimeProcess will need to be called this many times
+            let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
+            let processName = `cameraUpdate_${matrixHash}`;
+            realityEditor.device.profiling.startTimeProcess(processName, { numStopsRequired });
+        }
+
+        cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);
         }
@@ -735,7 +743,7 @@ createNameSpace("realityEditor.sceneGraph");
 
         // image target objects require one coordinate system rotation. ground plane requires another.
         if (groundPlaneVariation) {
-            sceneNodeRotateX.setLocalMatrix(makeGroundPlaneRotationX(-(Math.PI/2)));
+            sceneNodeRotateX.setLocalMatrix(realityEditor.gui.ar.utilities.makeGroundPlaneRotationX(-(Math.PI/2)));
         } else {
             sceneNodeRotateX.setLocalMatrix([ // transform coordinate system by rotateX
                 1, 0, 0, 0,
@@ -752,14 +760,6 @@ createNameSpace("realityEditor.sceneGraph");
             return getSceneNodeById(childRotateXId);
         }
         return sceneNode;
-    }
-
-    function makeGroundPlaneRotationX(theta) {
-        var c = Math.cos(theta), s = Math.sin(theta);
-        return [  1, 0, 0, 0,
-            0, c, -s, 0,
-            0, s, c, 0,
-            0, 0, 0, 1];
     }
 
     function recomputeScene() {

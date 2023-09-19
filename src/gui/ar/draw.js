@@ -233,11 +233,9 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
         if (this.visibleObjectsStatus[objectKey] === 'EXTENDED_TRACKED') {
             if (!globalStates.freezeButtonState) {
                 if (this.visibleObjectsStatusTimes[objectKey] > 60) {
-                    console.log('too long extended tracked');
                     delete visibleObjects[objectKey];
                 } else {
                     this.visibleObjectsStatusTimes[objectKey] += 1;
-                    console.log(this.visibleObjectsStatusTimes[objectKey]);
                 }
             }
         } else { // status === 'TRACKED'
@@ -824,9 +822,7 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
     var newObjectIP = realityEditor.getObject(newObjectKey).ip;
     realityEditor.network.postNewFrame(newObjectIP, newObjectKey, frame, function(err) {
         
-        if (!err) {
-            console.log('successfully created frame on new object');
-        } else {
+        if (err) {
             console.warn('server returned error when moving frame to new object');
         }
 
@@ -872,8 +868,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
         
         // update the publicData on the server to point to the new path
         if (publicDataCache.hasOwnProperty(oldFrameKey)) {
-            console.log('moving public data from ' + oldFrameKey);
-
             // update locally
             publicDataCache[newFrameKey] = publicDataCache[oldFrameKey];
             delete publicDataCache[oldFrameKey];
@@ -881,8 +875,6 @@ realityEditor.gui.ar.draw.moveFrameToNewObject = function(oldObjectKey, oldFrame
             // update on the server
             realityEditor.network.deletePublicData(oldObject.ip, oldObjectKey, oldFrameKey);
             realityEditor.network.postPublicData(newObject.ip, newObjectKey, newFrameKey, publicDataCache[newFrameKey]);
-
-            console.log('to ' + newFrameKey);
         }
 
         // remove the frame from the old object
@@ -957,8 +949,6 @@ realityEditor.gui.ar.draw.moveTransitionFrameToObject = function(oldObjectKey, o
  * @param _cout - reference to debug logging function (unused)
  */
 realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, activeType, activeVehicle, notLoading, globalDOMCache, globalStates, globalCanvas, activeObjectMatrix, matrix, finalMatrix, utilities, _cout) {
-    //console.log(JSON.stringify(activeObjectMatrix));
-
     // it's ok if the frame isn't visible anymore if we're in the node view - render it anyways
     var shouldRenderFramesInNodeView = (globalStates.guiState === 'node' && activeType === 'ui'); // && globalStates.renderFrameGhostsInNodeViewEnabled;
 
@@ -1126,7 +1116,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 // show the svg overlay if needed (doesn't always get added correctly in the beginning so this is the safest way to ensure it appears)
                 var svg = globalDOMCache["svg" + activeKey];
                 if (svg.children.length === 0) {
-                    console.log('retroactively creating the svg overlay');
                     let iFrame = globalDOMCache["iframe" + activeKey];
                     svg.style.width = iFrame.style.width;
                     svg.style.height = iFrame.style.height;
@@ -1392,6 +1381,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     if (typeof activeVehicle.sendObjectPositions !== 'undefined') {
                         thisMsg.objectPositions = realityEditor.gui.ar.positioning.getObjectPositionsOfTypes(activeVehicle.sendObjectPositions, true);
                     }
+
+                    if (realityEditor.device.profiling.isEnabled()) {
+                        let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(realityEditor.sceneGraph.getCameraNode().worldMatrix));
+                        let processName = `cameraUpdate_${matrixHash}`;
+                        realityEditor.device.profiling.stopTimeProcess(processName, 'cameraUpdates');
+                    }
                     
                     if (activeType === 'ui') {
                         globalDOMCache["iframe" + activeKey].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
@@ -1474,14 +1469,12 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 globalDOMCache['object' + activeKey].classList.add('ignoreAllTouches');
                 globalDOMCache['iframe' + activeKey].classList.add('ignoreAllTouches');
                 globalDOMCache[activeKey].classList.add('ignoreAllTouches');
-                console.log('ignore all touches for ' + activeKey);
             }
         } else {
             if ( globalDOMCache['object' + activeKey].classList.contains('ignoreAllTouches') ) {
                 globalDOMCache['object' + activeKey].classList.remove('ignoreAllTouches');
                 globalDOMCache['iframe' + activeKey].classList.remove('ignoreAllTouches');
                 globalDOMCache[activeKey].classList.remove('ignoreAllTouches');
-                console.log('STOP ignoring all touches for ' + activeKey);
             }
         }
     }
@@ -1554,14 +1547,10 @@ realityEditor.gui.ar.draw.snapFrameMatrixIfNecessary = function(activeVehicle, a
     globalDOMCache["iframe" + activeKey].classList.remove('snappableFrame');
 
     if ( !realityEditor.device.isEditingUnconstrained(activeVehicle) && snapX && snapY) {
-        
         // actually update the frame's matrix if meets the conditions
         snappedMatrix = computeSnappedMatrix(this.ar.utilities.copyMatrix(positionData.matrix));
         realityEditor.gui.ar.positioning.setPositionDataMatrix(activeVehicle, snappedMatrix);
-        console.log('snapped');
-        
     } else if (snapX && snapY) {
-        
         // otherwise if it is close but you are still moving it, show some visual feedback to warn you it will snap
         globalDOMCache["iframe" + activeKey].classList.add('snappableFrame');
     }
@@ -1883,9 +1872,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
     var isFrameElement = activeKey === frameKey;
     
     if (this.notLoading !== true && this.notLoading !== activeKey && activeVehicle.loaded !== true) {
-        
-        console.log("loading " + objectKey + "/" + frameKey + "/" + (nodeKey||"null"));
-
         this.notLoading = activeKey;
         
         // assign the element some default properties if they don't exist
@@ -1915,7 +1901,6 @@ realityEditor.gui.ar.draw.addElement = function(thisUrl, objectKey, frameKey, no
         if (isFrameElement && activeVehicle.location === 'global') {
             // loads frames from server of the object it is being added to
             thisUrl = realityEditor.network.availableFrames.getFrameSrc(objectKey, activeVehicle.src);
-            console.log('addElement with url = ' + thisUrl);
         }
         
         // Create DOM elements for everything associated with this frame/node
@@ -2104,12 +2089,11 @@ realityEditor.gui.ar.draw.createLogicElement = function(activeVehicle, activeKey
         svgElement[i].addEventListener('pointerenter', function () {
             globalProgram.logicSelector = this.number;
 
-            if (globalProgram.nodeA === activeKey)
+            if (globalProgram.nodeA === activeKey) {
                 globalProgram.logicA = this.number;
-            else
+            } else {
                 globalProgram.logicB = this.number;
-
-            console.log(globalProgram.logicSelector);
+            }
         });
         addLogic.appendChild(svgContainer);
     }
@@ -2290,7 +2274,7 @@ realityEditor.gui.ar.draw.killObjects = function (activeKey, activeVehicle, glob
     }
     if (realityEditor.getObject(activeVehicle.objectId)) {
         if (realityEditor.getObject(activeVehicle.objectId).containsStickyFrame) {
-            console.log('dont kill object with sticky frame');
+            // Don't kill object with sticky frame
             return;
         }
     }

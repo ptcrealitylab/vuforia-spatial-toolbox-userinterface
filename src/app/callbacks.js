@@ -84,9 +84,7 @@ createNameSpace('realityEditor.app.callbacks');
             let descriptionText = `Please enable camera and microphone access in your device's Settings app, and try again.`;
 
             let notification = realityEditor.gui.modal.showSimpleNotification(
-                headerText, descriptionText, function () {
-                    console.log('closed...');
-                }, realityEditor.device.environment.variables.layoutUIForPortrait);
+                headerText, descriptionText, function () {}, realityEditor.device.environment.variables.layoutUIForPortrait);
             notification.domElements.fade.style.backgroundColor = 'rgba(0,0,0,0.5)';
             notification.domElements.container.classList.add('loaderContainerPortraitTall');
             return;
@@ -126,7 +124,6 @@ createNameSpace('realityEditor.app.callbacks');
         if (hasActiveGroundPlaneStream) { return; } // don't do this unnecessarily because it takes a lot of resources
         if (!globalStates.useGroundPlane) { return; }
 
-        console.log('getGroundPlaneMatrixStream');
         realityEditor.app.getGroundPlaneMatrixStream('realityEditor.app.callbacks.receiveGroundPlaneMatricesFromAR');
         hasActiveGroundPlaneStream = true;
         
@@ -146,7 +143,6 @@ createNameSpace('realityEditor.app.callbacks');
      * @param {Array.<number>} matrix
      */
     function receivedProjectionMatrix(matrix) {
-        // console.log('got projection matrix!', matrix);
         if (realityEditor.device.modeTransition.isARMode()) {
             realityEditor.gui.ar.setProjectionMatrix(matrix);
         }
@@ -218,17 +214,10 @@ createNameSpace('realityEditor.app.callbacks');
             });
         }
 
-        realityEditor.gui.poses.drawPoses(pose, frameData.imageSize);
+        realityEditor.humanPose.draw.draw2DPoses(pose, frameData.imageSize);
 
-        const USE_DEBUG_POSE = false;
-
-        if (USE_DEBUG_POSE) {
-            subscriptions.onPoseReceived.forEach(cb => cb(realityEditor.humanPose.utils.getMockPoseStandingFarAway()));
-        } else {
-            // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
-            subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
-            
-        }
+        // NOTE: if no pose detected, still send empty pose with a timestamp to notify other servers/clients that body tracking is 'lost'.
+        subscriptions.onPoseReceived.forEach(cb => cb(poseInWorld, frameData));
     }
 
     /**
@@ -435,7 +424,6 @@ createNameSpace('realityEditor.app.callbacks');
             let cameraMatrix = cameraInfo.matrix;
             let trackingStatus = cameraInfo.status;
             let trackingStatusInfo = cameraInfo.statusInfo;
-            // console.log('camera : ' + trackingStatus + ' : ' + trackingStatusInfo);
 
             listeners.onDeviceTrackingStatus.forEach(function(callback) {
                 callback(trackingStatus, trackingStatusInfo);

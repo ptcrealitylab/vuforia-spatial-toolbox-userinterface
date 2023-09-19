@@ -3,7 +3,7 @@
  * It keeps track of the positions of each joint in the pose.
  * It also keeps track of the timestamp of when the pose was recorded.
  */
-import {JOINT_CONNECTIONS} from "./utils.js";
+import {JOINT_CONNECTIONS} from "./constants.js";
 
 export class Pose {
     /**

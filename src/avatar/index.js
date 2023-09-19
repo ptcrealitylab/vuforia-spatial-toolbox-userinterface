@@ -168,7 +168,8 @@ createNameSpace("realityEditor.avatar");
             }
         });
 
-        network.onLoadOcclusionObject((worldObject, occlusionObject) => {
+        //full path is used here as network variable may not be initialised before this function runs
+        realityEditor.avatar.network.onLoadOcclusionObject((worldObject, occlusionObject) => {
             cachedWorldObject = worldObject;
             cachedOcclusionObject = occlusionObject;
 
@@ -272,12 +273,10 @@ createNameSpace("realityEditor.avatar");
         if (!worldObject) return;
 
         connectionStatus.isConnectionAttemptInProgress = true;
-        console.log('attempt to create new avatar on server');
 
         // cachedWorldObject = worldObject;
         realityEditor.network.utilities.verifyObjectNameNotOnWorldServer(worldObject, thisAvatarName, () => {
             network.addAvatarObject(worldObjectKey, thisAvatarName, (data) => {
-                console.log('added new avatar object', data);
                 myAvatarId = data.id;
                 connectionStatus.isMyAvatarCreated = true;
                 connectionStatus.isConnectionAttemptInProgress = false;

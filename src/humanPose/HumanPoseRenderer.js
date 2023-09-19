@@ -2,8 +2,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {
     COLOR_BASE,
     SCALE,
+    JOINT_RADIUS,
+    BONE_RADIUS,
     JOINTS_PER_POSE,
     BONES_PER_POSE,
+    SMALL_JOINT_FLAGS,
+    SMALL_JOINT_SCALE_VEC
 } from './constants.js';
 
 /**
@@ -74,7 +78,7 @@ export class HumanPoseRenderer {
      * @param {THREE.Material} material - Material for all instanced meshes
      */
     createMeshes(material) {
-        const geo = new THREE.SphereGeometry(0.03 * SCALE, 12, 12);
+        const geo = new THREE.SphereGeometry(JOINT_RADIUS * SCALE, 12, 12);
 
         this.jointsMesh = new THREE.InstancedMesh(
             geo,
@@ -89,7 +93,7 @@ export class HumanPoseRenderer {
 
         this.container.add(this.jointsMesh);
 
-        const geoCyl = new THREE.CylinderGeometry(0.01 * SCALE, 0.01 * SCALE, SCALE, 3);
+        const geoCyl = new THREE.CylinderGeometry(BONE_RADIUS * SCALE, BONE_RADIUS * SCALE, SCALE, 3);
         this.bonesMesh = new THREE.InstancedMesh(
             geoCyl,
             material,
@@ -201,6 +205,10 @@ export class HumanPoseRenderer {
      * @param {THREE.Vector3} position
      */
     setJointMatrixAt(slot, index, matrix) {
+
+        if(SMALL_JOINT_FLAGS[index]) { // scale down geometry if it is a small joint
+            matrix.scale(SMALL_JOINT_SCALE_VEC);
+        }
         const offset = slot * JOINTS_PER_POSE + index;
         this.jointsMesh.setMatrixAt(
             offset,

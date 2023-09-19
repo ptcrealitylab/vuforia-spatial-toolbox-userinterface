@@ -35,7 +35,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function initService() {
         if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
-            console.log('This device doesn\'t support area target capture');
+            // This device doesn't support area target capture
             return;
         }
 
@@ -43,7 +43,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             if (supportsCapture) {
                 initServiceInternal();
             } else {
-                console.log('No depth sensor - cant support area target capture');
+                // No depth sensor - cant support area target capture
                 realityEditor.device.environment.variables.supportsAreaTargetCapture = false;
             }
         });
@@ -63,8 +63,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             // if (objectKey === realityEditor.worldObjects.getLocalWorldId()) {
             //     return; // ignore local world
             // }
-            console.log('areaTarget objectDiscoveredCallback', pendingAddedObjectName, object);
-
             if (pendingAddedObjectName) {
                 if (object.name === pendingAddedObjectName) {
                     pendingObjectAdded(objectKey, object.ip, realityEditor.network.getPort(object));
@@ -76,9 +74,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 (object.isWorldObject || object.type === 'world') &&
                 (objectKey !== realityEditor.worldObjects.getLocalWorldId())) {
                 foundAnyWorldObjects = true;
-                console.log("world obj detected");
-            } else {
-                console.log("obj detected");
             }
 
             // wait after detecting an object to check the next step
@@ -118,19 +113,19 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function showNotificationIfNeeded() {
         if (hasUserBeenNotified) {
-            console.log("Already notified user. Ignore this time.");
+            // Already notified user. Ignore this time.
             return;
         }
 
         if (foundAnyWorldObjects) {
-            console.log("Found an existing world object... no need to scan a new one. Ignore this time.");
+            // Found an existing world object... no need to scan a new one. Ignore this time.
             return;
         }
 
         let cameraNode = realityEditor.sceneGraph.getCameraNode();
         let hasCameraBeenLocalized = (cameraNode && !realityEditor.gui.ar.utilities.isIdentityMatrix(cameraNode.localMatrix));
         if (!hasCameraBeenLocalized) {
-            console.log("AR Tracking hasn't finished initializing yet... try again...");
+            // AR Tracking hasn't finished initializing yet... try again...
             setTimeout(function() {
                 showNotificationIfNeeded(); // repeat until ready
             }, 1000);
@@ -154,7 +149,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
         descriptionText += '</select>';
         realityEditor.gui.modal.openClassicModal(headerText, descriptionText, 'Ignore', 'Begin Scan', function() {
-            console.log('Ignore scan modal');
+            // console.log('Ignore scan modal');
         }, function() {
             let serverIp = randomServerIP;
             let elt = document.getElementById('modalServerIp');
@@ -162,7 +157,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 serverIp = elt.value;
             }
 
-            console.log('Begin scan');
             // startScanning();
             createPendingWorldObject(serverIp);
         }, true);
@@ -172,7 +166,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function programmaticallyStartScan(serverIp) {
         if (!realityEditor.device.environment.variables.supportsAreaTargetCapture) {
-            console.log("Dont start scanning because device has no depth (LiDAR) sensor");
+            // Don't start scanning because device has no depth (LiDAR) sensor
             return;
         }
 
@@ -190,7 +184,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function startScanning() {
         if (isScanning) {
-            console.log('already scanning.. ignore.');
+            // already scanning.. ignore.
             return;
         }
         isScanning = true;
@@ -343,7 +337,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function stopScanning() {
         if (!isScanning) {
-            console.log('not scanning.. ignore.');
+            // not scanning.. ignore.
         }
 
         realityEditor.app.areaTargetCaptureStop('realityEditor.gui.ar.areaTargetScanner.captureSuccessOrError');
@@ -364,8 +358,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         }
 
         if (globalStates.debugSpeechConsole) {
-            let console = document.getElementById('speechConsole');
-            if (console) { console.innerHTML = ''; }
+            let speechConsole = document.getElementById('speechConsole');
+            if (speechConsole) { speechConsole.innerHTML = ''; }
         }
 
         // show loading animation. hide when successOrError finishes.
@@ -421,11 +415,8 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             method: 'POST',
             body: params
         }).then((response) => {
-            console.log('added new object');
-            console.log(response);
             return response.json();
         }).then((object) => {
-            console.log('success', object);
             if (serverIp !== '127.0.0.1' && serverIp !== 'localhost') {
                 return;
             }
@@ -452,9 +443,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function captureStatusHandler(status, statusInfo) {
-        console.log('capture status: ' + status);
-        console.log('capture statusInfo: ' + statusInfo);
-
         if (status === 'PREPARING') {
             getStopButton().classList.add('captureButtonInactive');
         } else {
@@ -493,7 +481,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function onAreaTargetGenerateProgress(percentGenerated) {
-        console.log('Generated: ' + percentGenerated);
         let progressBarContainer = getProgressBar();
         progressBarContainer.style.display = '';
         let bar = progressBarContainer.querySelector('#scanGenerateProgressBar');
@@ -515,11 +502,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function captureSuccessOrError(success, errorMessage) {
-        console.log("_____");
-        console.log("Capture Done. Success?: " + success);
-        console.log("Error?: " + errorMessage);
-        console.log("_____");
-
         loadingDialog.dismiss();
         loadingDialog = null;
 
@@ -533,8 +515,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 let alreadyProcessed = false;
                 realityEditor.app.targetDownloader.addTargetStateCallback(sessionObjectId, (targetDownloadState) => {
                     if (alreadyProcessed) { return; }
-                    
-                    console.log('new targetDownloadState for pending world object', targetDownloadState)
                     
                     let SUCCEEDED = realityEditor.app.targetDownloader.DownloadState.SUCCEEDED;
                     if (targetDownloadState.XML === SUCCEEDED && targetDownloadState.DAT === SUCCEEDED) {
@@ -561,14 +541,13 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
     function onScreenshotReceived(base64String) {
         if (base64String === "") {
-            console.log("got empty screenshot... try again later");
+            // got empty screenshot... try again later
             setTimeout(function() {
                 realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
             }, 3000);
             return;
         }
         var blob = realityEditor.device.utilities.b64toBlob(base64String, 'image/jpeg');
-        console.log('converted screenshot to blob', blob);
         uploadScreenshot(blob);
     }
 
@@ -576,9 +555,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (!targetUploadURL || !blob) {
             return;
         }
-
-        console.log('upload screenshot...');
-
+        
         const formData = new FormData();
         formData.append('file', blob, 'screenshot-target.jpg');
 
@@ -646,7 +623,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         loadingDialog = realityEditor.gui.modal.showSimpleNotification(
             headerText, descriptionText, function () {
-                console.log('closed...');
+                // console.log('closed...');
             }, realityEditor.device.environment.variables.layoutUIForPortrait);
     }
 
@@ -661,9 +638,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         let gigabytesUsed = bytesUsed ? bytesUsed / (1024 * 1024 * 1024) : 0;
 
         if (globalStates.debugSpeechConsole) {
-            let console = document.getElementById('speechConsole');
-            if (!console) { return; }
-            console.innerHTML = eventName + ': using ' + gigabytesUsed.toFixed(3) + ' GB ... (' + (percentOfDeviceUsedByApp * 100).toFixed(2) + '%)';
+            let speechConsole = document.getElementById('speechConsole');
+            if (!speechConsole) { return; }
+            speechConsole.innerHTML = eventName + ': using ' + gigabytesUsed.toFixed(3) + ' GB ... (' + (percentOfDeviceUsedByApp * 100).toFixed(2) + '%)';
         }
 
         if (!isScanning) { return; }
@@ -672,7 +649,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (eventName === 'UIApplicationDidReceiveMemoryWarningNotification' ||
             (limitScanRAM && percentOfDeviceUsedByApp > maximumPercentRAM)) {
             stopScanning();
-            console.log("stopping scan due to memory usage");
+            console.warn("stopping scan due to memory usage");
         }
     }
 
