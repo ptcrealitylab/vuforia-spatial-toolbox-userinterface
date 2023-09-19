@@ -49,12 +49,12 @@ window.onload = () => {
             body: new URLSearchParams(data)
         }).then(response => {
             return response.json();
-        }).then(data => {
-            if (data.error) {
-                handleError(data.error, state.toolboxUrl);
+        }).then(responseData => {
+            if (responseData.error) {
+                handleError(responseData.error, state.toolboxUrl);
                 return;
             }
-            saveToken(data, state.frameName);
+            saveToken(responseData, state.frameName);
             window.location = state.toolboxUrl;
         }).catch(error => {
             console.error(error);
