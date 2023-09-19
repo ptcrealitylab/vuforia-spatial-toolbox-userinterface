@@ -5,7 +5,7 @@ import { loadToken } from './tokens.js';
 (function(exports) {
     function getToolboxEdgeBasePath() {
         const windowPath = window.location.pathname;
-        return windowPath.split('/').slice(0,6).join('/'); // => /stable/n/networkId/s/networkSecret
+        return windowPath.split('/').slice(1,6).join('/'); // => (/stable dropped when connecting to edge-server rather than ui) /n/networkId/s/networkSecret
     }
     
     function initService() {
