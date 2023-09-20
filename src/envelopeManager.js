@@ -771,6 +771,14 @@ createNameSpace("realityEditor.envelopeManager");
             updateExitButton();
         }
 
+        // hide all other frames and icons while the full2D frame is open
+        let otherFrames = Array.from(document.querySelectorAll('.visibleFrameContainer')).filter(element => {
+            return !element.id.includes(focusedFrameId);
+        });
+        otherFrames.forEach(frame => {
+            frame.classList.add('hiddenFrameContainerByFull2D');
+        });
+
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
             isFull2D: true
@@ -792,6 +800,11 @@ createNameSpace("realityEditor.envelopeManager");
             knownEnvelopes[focusedFrameId].isFull2D = false;
             updateExitButton();
         }
+
+        // show all frames and icons that were hidden when the full2D frame opened
+        Array.from(document.querySelectorAll('.visibleFrameContainer')).forEach(frame => {
+            frame.classList.remove('hiddenFrameContainerByFull2D');
+        });
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
