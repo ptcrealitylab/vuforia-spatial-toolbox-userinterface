@@ -131,7 +131,7 @@ realityEditor.network.getURL = function(server, identifier, route){
 
     if (parseInt(Number(identifier))) {
         protocol = "http"
-        if (location.hostname === 'localhost') {
+        if (location.hostname === 'localhost' && url === '127.0.0.1') {
             url = 'localhost';
         } else {
             url = server;
