@@ -802,7 +802,7 @@ createNameSpace("realityEditor.envelopeManager");
         }
 
         // show all frames and icons that were hidden when the full2D frame opened
-        Array.from(document.querySelectorAll('.visibleFrameContainer')).forEach(frame => {
+        Array.from(document.querySelectorAll('.hiddenFrameContainerByFull2D')).forEach(frame => {
             frame.classList.remove('hiddenFrameContainerByFull2D');
         });
 
