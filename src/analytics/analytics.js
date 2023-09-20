@@ -369,7 +369,7 @@ export class Analytics {
 
     getStepColor() {
         let hue = (this.nextStepNumber * 17) % 360;
-        return `hsl(${hue} 100% 50%)`;
+        return `hsl(${hue} 100% 70%)`;
     }
 
     updateStepLabel() {
