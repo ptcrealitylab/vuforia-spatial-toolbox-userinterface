@@ -840,6 +840,11 @@ body {
     pointer-events: none;
 }
 
+.hiddenFrameContainerByFull2D {
+    display: none;
+    pointer-events: none;
+}
+
 .visibleFrame {
     visibility: visible;
     /*opacity: 1.0;*/
