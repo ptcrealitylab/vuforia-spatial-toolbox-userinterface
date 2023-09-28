@@ -808,7 +808,7 @@ createNameSpace("realityEditor.envelopeManager");
             updateExitButton();
         }
 
-        // show all frames and icons that were hidden when the full2D frame opened, and the 
+        // show all frames and icons that were hidden when the full2D frame opened, and the webgl canvas
         Array.from(document.querySelectorAll('.hiddenByFull2DBlurredBackground')).forEach(element => {
             element.classList.remove('hiddenByFull2DBlurredBackground');
         });
