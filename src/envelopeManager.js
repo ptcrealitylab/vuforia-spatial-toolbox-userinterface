@@ -772,12 +772,19 @@ createNameSpace("realityEditor.envelopeManager");
         }
 
         // hide all other frames and icons while the full2D frame is open
-        let otherFrames = Array.from(document.querySelectorAll('.visibleFrameContainer')).filter(element => {
+        let otherFrames = Array.from(document.querySelectorAll('.visibleFrameContainer, .visibleFrame')).filter(element => {
             return !element.id.includes(focusedFrameId);
         });
         otherFrames.forEach(frame => {
-            frame.classList.add('hiddenFrameContainerByFull2D');
+            frame.classList.add('hiddenByFull2DBlurredBackground');
         });
+
+        // just hiding the iframes still leaves their proxied gl content on the screen. hide the canvas.
+        // this should be safe to do because the focused full2D tool is 2D by nature and shouldn't be using the 3D canvas
+        let webGlCanvas = document.getElementById('glcanvas');
+        if (webGlCanvas) {
+            webGlCanvas.classList.add('hiddenByFull2DBlurredBackground');
+        }
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
@@ -801,9 +808,9 @@ createNameSpace("realityEditor.envelopeManager");
             updateExitButton();
         }
 
-        // show all frames and icons that were hidden when the full2D frame opened
-        Array.from(document.querySelectorAll('.hiddenFrameContainerByFull2D')).forEach(frame => {
-            frame.classList.remove('hiddenFrameContainerByFull2D');
+        // show all frames and icons that were hidden when the full2D frame opened, and the webgl canvas
+        Array.from(document.querySelectorAll('.hiddenByFull2DBlurredBackground')).forEach(element => {
+            element.classList.remove('hiddenByFull2DBlurredBackground');
         });
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
