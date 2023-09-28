@@ -840,11 +840,6 @@ body {
     pointer-events: none;
 }
 
-.hiddenFrameContainerByFull2D {
-    display: none;
-    pointer-events: none;
-}
-
 .visibleFrame {
     visibility: visible;
     /*opacity: 1.0;*/
@@ -854,6 +849,12 @@ body {
     visibility: visible;
     opacity: 0.4;
     pointer-events: none;
+}
+
+.hiddenFrameContainerByFull2D {
+    /*display: none;*/
+    pointer-events: none;
+    visibility: hidden;
 }
 
 .webGlFrame {

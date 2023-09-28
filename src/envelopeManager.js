@@ -772,12 +772,17 @@ createNameSpace("realityEditor.envelopeManager");
         }
 
         // hide all other frames and icons while the full2D frame is open
-        let otherFrames = Array.from(document.querySelectorAll('.visibleFrameContainer')).filter(element => {
+        let otherFrames = Array.from(document.querySelectorAll('.visibleFrameContainer, .visibleFrame')).filter(element => {
             return !element.id.includes(focusedFrameId);
         });
         otherFrames.forEach(frame => {
             frame.classList.add('hiddenFrameContainerByFull2D');
         });
+        
+        let webGlCanvas = document.getElementById('glcanvas');
+        if (webGlCanvas) {
+            webGlCanvas.style.visibility = 'hidden';
+        }
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
@@ -805,6 +810,11 @@ createNameSpace("realityEditor.envelopeManager");
         Array.from(document.querySelectorAll('.hiddenFrameContainerByFull2D')).forEach(frame => {
             frame.classList.remove('hiddenFrameContainerByFull2D');
         });
+
+        let webGlCanvas = document.getElementById('glcanvas');
+        if (webGlCanvas) {
+            webGlCanvas.style.visibility = '';
+        }
 
         callbacks.onFullscreenFull2DToggled.forEach(cb => cb({
             frameId: focusedFrameId,
