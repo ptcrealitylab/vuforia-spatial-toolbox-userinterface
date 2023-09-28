@@ -852,7 +852,7 @@ body {
 }
 
 .hiddenFrameContainerByFull2D {
-    /*display: none;*/
+    /* use visibility instead of display:none to prevent iframe from stopping its computations */
     pointer-events: none;
     visibility: hidden;
 }

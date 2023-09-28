@@ -779,6 +779,8 @@ createNameSpace("realityEditor.envelopeManager");
             frame.classList.add('hiddenFrameContainerByFull2D');
         });
         
+        // just hiding the iframes still leaves their proxied gl content on the screen. hide the canvas.
+        // this should be safe to do because the focused full2D tool is 2D by nature and shouldn't be using the 3D canvas
         let webGlCanvas = document.getElementById('glcanvas');
         if (webGlCanvas) {
             webGlCanvas.style.visibility = 'hidden';
