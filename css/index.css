@@ -851,7 +851,7 @@ body {
     pointer-events: none;
 }
 
-.hiddenFrameContainerByFull2D {
+.hiddenByFull2DBlurredBackground {
     /* use visibility instead of display:none to prevent iframe from stopping its computations */
     pointer-events: none;
     visibility: hidden;
