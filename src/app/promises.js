@@ -29,6 +29,9 @@ createNameSpace("realityEditor.app.promises");
 
     // resolves to providerId: string
     exports.getProviderId = makeAPI(app.getProviderId.bind(app));
+    
+    // resolves to {texture: string, textureDepth: string}
+    exports.getTextureAndTextureDepth = makeAPI(app.getTextureAndTextureDepth.bind(app), ['texture', 'textureDepth']);
 
     // adapted from: https://stackoverflow.com/a/34637436
     class Deferred {

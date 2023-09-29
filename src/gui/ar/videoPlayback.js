@@ -18,6 +18,7 @@ createNameSpace("realityEditor.gui.ar.videoPlayback");
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import RVLParser from '../../../thirdPartyCode/rvl/RVLParser.js';
 import {Followable} from './Followable.js';
+import {CameraVisPatch} from './CameraVisPatch.js';
 
 const videoPlayers = [];
 
@@ -28,7 +29,19 @@ const callbacks = {
     onVideoPaused: [],
 }
 
+let mobileCameraVisCoordinator = null;
 realityEditor.gui.ar.videoPlayback.initService = function() {
+
+    realityEditor.worldObjects.onLocalizedWithinWorld((_objectKey) => {
+        if (realityEditor.device.environment.isWithinToolboxApp()) {
+            setTimeout(() => {
+                console.log('create mobileCameraVisCoordinator');
+                mobileCameraVisCoordinator = new realityEditor.device.cameraVis.CameraVisCoordinator(realityEditor.gui.ar.areaCreator.calculateFloorOffset());
+                console.log(mobileCameraVisCoordinator);
+            }, 1000);
+        }
+    });
+    
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
         const videoPlayer = new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey);
         videoPlayers.push(videoPlayer);
@@ -53,6 +66,33 @@ realityEditor.gui.ar.videoPlayback.initService = function() {
         videoPlayer.pause();
         callbacks.onVideoPlayed.forEach(cb => { cb(videoPlayer); });
     });
+    realityEditor.network.addPostMessageHandler('captureSpatialSnapshot', (_msgData) => {
+        // this.clonePatches(ShaderMode.SOLID);
+        realityEditor.app.promises.getTextureAndTextureDepth().then(({texture, textureDepth}) => {
+            let previewRGB = `${texture.substring(0, 16)} ... ${texture.slice(-16)}`;
+            let previewDepth = `${textureDepth.substring(0, 16)} ... ${textureDepth.slice(-16)}`;
+            console.log('got spatial snapshot textures', `RGB: ${previewRGB}`, `Depth: ${previewDepth}`);
+
+            if (texture && textureDepth) {
+                console.log('todo: create spatialPatch');
+                let container = new THREE.Group();
+                container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+                container.rotation.x = Math.PI / 2;
+                container.updateMatrix();
+                container.updateMatrixWorld(true);
+                
+                let phone = new THREE.Group();
+                phone.matrixAutoUpdate = false;
+                let cameraMatrix = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+                setMatrixFromArray(phone.matrix, cameraMatrix);
+                phone.updateMatrixWorld(true);
+                const {key, patch} = clonePatch(ShaderMode.SOLID, container, phone, texture, textureDepth);
+                if (mobileCameraVisCoordinator) {
+                    mobileCameraVisCoordinator.addMobilePatch(key, patch);
+                }
+            }
+        });
+    });
 }.bind(realityEditor.gui.ar.videoPlayback);
 
 realityEditor.gui.ar.videoPlayback.onVideoCreated = (cb) => {
@@ -67,6 +107,56 @@ realityEditor.gui.ar.videoPlayback.onVideoPlayed = (cb) => {
 realityEditor.gui.ar.videoPlayback.onVideoPaused = (cb) => {
     callbacks.onVideoPaused.push(cb);
 };
+
+function setMatrixFromArray(matrix, array) {
+    matrix.set(
+        array[0], array[4], array[8], array[12],
+        array[1], array[5], array[9], array[13],
+        array[2], array[6], array[10], array[14],
+        array[3], array[7], array[11], array[15]
+    );
+}
+
+function toDataURL(base64Image, mimeType = 'image/png') {
+    return `data:${mimeType};base64,${base64Image}`;
+}
+
+/**
+ * Clone the current state of the mesh rendering part of this CameraVis
+ * @param {ShaderMode} shaderMode - initial shader mode to set on the patches
+ * @param {THREE.Group} container
+ * @param {THREE.Group} phone
+ * @param {string} textureBase64
+ * @param {string} textureDepthBase64
+ * @return {{key: string, patch: CameraVisPatch}} unique key for patch and object containing all relevant meshes
+ */
+function clonePatch(shaderMode, container, phone, textureBase64, textureDepthBase64) {
+    let now = Date.now();
+    let serialization = {
+        key: '',
+        id: realityEditor.device.utilities.uuidTime(), //this.id,
+        container: Array.from(container.matrix.elements),
+        phone: Array.from(phone.matrix.elements),
+        texture: toDataURL(textureBase64, 'image/jpeg'), //texture.toDataURL('image/jpeg', 0.7),
+        textureDepth: toDataURL(textureDepthBase64), //textureDepth.toDataURL(),
+        creationTime: now,
+    };
+    const frameKey = CameraVisPatch.createToolForPatchSerialization(serialization, shaderMode);
+
+    return {
+        key: frameKey,
+        patch: CameraVisPatch.createPatch(
+            container.matrix,
+            phone.matrix,
+            //this.texture.image,
+            toDataURL(textureBase64, 'image/jpeg'),
+            //this.textureDepth.image,
+            toDataURL(textureDepthBase64),
+            now,
+            shaderMode
+        ),
+    };
+}
 
 const POINT_CLOUD_VERTEX_SHADER = `
 uniform sampler2D map;

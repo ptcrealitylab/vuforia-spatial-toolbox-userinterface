@@ -197,6 +197,14 @@ realityEditor.app.getScreenshotAsJpg = function(callback) {
 };
 
 /**
+ * Gets the background RGB texture, and the depth texture if available
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getTextureAndTextureDepth = function(callBack) {
+    this.appFunctionCall('getTextureAndTextureDepth', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+}
+
+/**
  * Pauses the tracker (freezes the background)
  */
 realityEditor.app.setPause = function() {
