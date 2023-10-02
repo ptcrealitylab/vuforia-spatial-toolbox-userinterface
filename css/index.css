@@ -851,6 +851,12 @@ body {
     pointer-events: none;
 }
 
+.hiddenByFull2DBlurredBackground {
+    /* use visibility instead of display:none to prevent iframe from stopping its computations */
+    pointer-events: none;
+    visibility: hidden;
+}
+
 .webGlFrame {
     opacity: 1 !important;
 }
