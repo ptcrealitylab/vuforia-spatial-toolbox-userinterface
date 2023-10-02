@@ -35,10 +35,11 @@ window.onload = () => {
     }
     clearLocalStorage();
     if (code) {
+        const path = window.location.hostname.includes('toolboxedge') ? '/stable/oauth/redirect' : '/src/oauth/redirect.html';
         const data = {
             'code': code,
             'frameName': state.frameName,
-            'redirect_uri': window.location.origin + window.location.pathname,
+            'redirect_uri': window.location.origin + path,
         }
         const serverUrl = `${state.edgeServer}/oauthAcquire`;
         fetch(serverUrl, {
