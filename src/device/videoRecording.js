@@ -323,7 +323,7 @@ createNameSpace("realityEditor.device.videoRecording");
             const networkSecret = /\/s\/([^/]+)/.exec(window.location.pathname)[1];
             onSettings(networkId, networkSecret);
         } else {
-            fetch(`http://${localSettingsHost}/userinterface/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
+            fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
                 onSettings(settings.networkUUID, settings.networkSecret);
             });
         }
