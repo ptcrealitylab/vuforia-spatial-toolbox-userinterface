@@ -37,9 +37,6 @@ export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
         // Returns a dummy promise since we will be navigating away from the page
         return Promise.reject();
     } else {
-        if (token.expires_time > Date.now()) {
-            return Promise.resolve(token.access_token);
-        }
         return new Promise((resolve, reject) => {
             const data = {
                 'frameName': frameName,
