@@ -149,6 +149,12 @@ window.realityEditor = {
             vertexShader: {},
         }
     },
+    spatialCapture: {
+        CameraVisPatch: {},
+        Shaders: {},
+        SpatialPatchCoordinator: {},
+        VisualDiff: {}
+    },
     avatar: {
         network: {},
         draw: {},

@@ -1,4 +1,4 @@
-import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {createPointCloud, ShaderMode} from './Shaders.js';
 import {VisualDiff} from './VisualDiff.js';
 

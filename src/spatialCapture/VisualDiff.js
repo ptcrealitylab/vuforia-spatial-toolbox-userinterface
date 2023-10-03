@@ -1,4 +1,4 @@
-import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {ShaderMode} from './Shaders.js';
 
 const DEBUG = false;

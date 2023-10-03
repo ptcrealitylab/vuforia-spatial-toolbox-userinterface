@@ -1,4 +1,4 @@
-import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 export const DEPTH_WIDTH = 256;
 export const DEPTH_HEIGHT = 144;
