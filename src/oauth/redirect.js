@@ -1,5 +1,15 @@
 import { saveToken } from "./tokens.js";
 
+const isCloud = location => {
+    try {
+        location = new URL(location);
+    } catch (e) {
+        console.error(`Passed a non-fully-formed URL to isCloud: ${location}`);
+        return false;
+    }
+    return !location.port || location.port === "443";
+}
+
 function handleError(error, toolboxUrl) {
     console.error(error);
     document.querySelector('h1').classList.add('error');
@@ -35,7 +45,7 @@ window.onload = () => {
     }
     clearLocalStorage();
     if (code) {
-        const path = window.location.hostname.includes('toolboxedge') ? '/stable/oauth/redirect' : '/src/oauth/redirect.html';
+        const path = isCloud(window.location) ? '/stable/oauth/redirect' : '/src/oauth/redirect.html';
         const data = {
             'code': code,
             'frameName': state.frameName,

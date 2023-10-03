@@ -1,3 +1,13 @@
+const isCloud = location => {
+    try {
+        location = new URL(location);
+    } catch (e) {
+        console.error(`Passed a non-fully-formed URL to isCloud: ${location}`);
+        return false;
+    }
+    return !location.port || location.port === "443";
+}
+
 function storeNetworkIdAndSecret() {
     const windowPath = window.location.pathname;
     const pathFragments = windowPath.split('/'); // => '', 'stable', 'n', 'networkId', 's', 'networkSecret', ''
@@ -26,9 +36,9 @@ export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
         if (window.location.hostname === '127.0.0.1' || window.location.hostname === '::1') {
             redirectUri = `${window.location.protocol}//localhost:${window.location.port}`;
         }
-        let path = redirectUri.includes('toolboxedge') ? '/stable/oauth/redirect' : '/src/oauth/redirect.html'
+        let path = isCloud(redirectUri) ? '/stable/oauth/redirect' : '/src/oauth/redirect.html'
         
-        if (redirectUri.includes('toolboxedge')) {
+        if (isCloud(redirectUri)) {
             storeNetworkIdAndSecret(); // Needed in order for /stable/oauth/redirect to return us to the right metaverse
         }
 
