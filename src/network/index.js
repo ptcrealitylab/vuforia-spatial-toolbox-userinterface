@@ -131,11 +131,11 @@ realityEditor.network.getURL = function(server, identifier, route){
 
     if (parseInt(Number(identifier))) {
         protocol = "http"
-        if (location.hostname === 'localhost' && url === '127.0.0.1') {
-            url = 'localhost';
-        } else {
+        //if (location.hostname === 'localhost' && url === '127.0.0.1') {
+        //    url = 'localhost';
+        //} else {
             url = server;
-        }
+        //}
         port = identifier;
     } else {
         let s = realityEditor.network.state;

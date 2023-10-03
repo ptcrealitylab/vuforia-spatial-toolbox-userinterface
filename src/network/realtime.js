@@ -9,7 +9,7 @@ createNameSpace("realityEditor.network.realtime");
  */
 
 (function(exports) {
-    const DEBUG = false;
+    const DEBUG = true;
     const PROXY = /(\w+\.)?toolboxedge.net/.test(window.location.host);
 
     const BATCHED_UPDATE_FRAMERATE = updateFramerate;
@@ -614,9 +614,9 @@ createNameSpace("realityEditor.network.realtime");
         if (typeof objectSocketCache[objectKey] === 'undefined') {
             var object = realityEditor.getObject(objectKey);
             var serverIP = object.ip;
-            if (location.hostname === 'localhost') {
-                serverIP = 'localhost';
-            }
+            //if (location.hostname === 'localhost') {
+            //    serverIP = 'localhost';
+            //}
             // if (serverIP.indexOf('127.0.0.1') > -1) { // don't broadcast realtime updates to localhost... there can only be one client
             //     return null;
             // }
@@ -665,7 +665,7 @@ createNameSpace("realityEditor.network.realtime");
      */
     function createSocketInSet(setName, socketIP, onConnect) {
         let ioObject;
-        if (socketIP.includes(':8080')) {
+        if (socketIP.includes(':8081')) {
             ioObject = window._oldIo.connect(socketIP);
         } else {
             ioObject = io.connect(socketIP);
