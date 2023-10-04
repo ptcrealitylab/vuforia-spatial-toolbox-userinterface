@@ -27,10 +27,25 @@ class SpatialPatchCoordinator {
                 if (texture && textureDepth) {
                     console.log('todo: create spatialPatch');
                     let container = new THREE.Group();
+                    container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+                    container.rotation.x = Math.PI / 2;
+                    // let containerDebugCube = createDebugCubes({color:0xff0000});
+                    // container.add(containerDebugCube);
+
+                    /*
+                    container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+                    // container.rotation.x = Math.PI / 2;
+                    container.rotation.x = Math.PI;
+                    container.rotation.y = -Math.PI/2;
+                    container.scale.x = 0.1;
+                    container.scale.y = 0.1;
+                    container.scale.z = 0.1;
                     // container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
                     // container.rotation.x = Math.PI / 2;
-                    // container.updateMatrix();
-                    // container.updateMatrixWorld(true);
+                    */
+
+                    container.updateMatrix();
+                    container.updateMatrixWorld(true);
 
                     let phone = new THREE.Group();
                     phone.matrixAutoUpdate = false;
@@ -162,13 +177,27 @@ class SpatialPatchCoordinator {
 
     restorePatch(serialization) {
         let THREE = realityEditor.gui.threejsScene.THREE;
-
-        const containerMatrix = new THREE.Matrix4().fromArray(serialization.container);
+        let containerMatrix = new THREE.Matrix4().fromArray(serialization.container);
         const phoneMatrix = new THREE.Matrix4().fromArray(serialization.phone);
         const textureImage = document.createElement('img');
         textureImage.src = serialization.texture;
         const textureDepthImage = document.createElement('img');
         textureDepthImage.src = serialization.textureDepth;
+        
+        // window.DEBUG_CHANGE_CONTAINER_MATRIX = true;
+        // if (window.DEBUG_CHANGE_CONTAINER_MATRIX) {
+        //     let container = new THREE.Group();
+        //     container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+        //     // container.rotation.x = Math.PI / 2;
+        //     container.rotation.x = Math.PI;
+        //     container.rotation.y = -Math.PI/2;
+        //     container.scale.x = 0.1;
+        //     container.scale.y = 0.1;
+        //     container.scale.z = 0.1;
+        //     container.updateMatrix();
+        //     container.updateMatrixWorld(true);
+        //     containerMatrix = container.matrix;
+        // }
 
         const patch = CameraVisPatch.createPatch(
             containerMatrix,
