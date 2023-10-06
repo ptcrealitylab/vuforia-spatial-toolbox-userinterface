@@ -2,21 +2,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {createPointCloud, ShaderMode} from './Shaders.js';
 import {VisualDiff} from './VisualDiff.js';
 
-function createDebugCubes(color = {color:0xff0000}) {
-    const originBox = new THREE.Mesh(new THREE.BoxGeometry(10,10,10),new THREE.MeshNormalMaterial());
-    const xBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial(color || {color:0xff0000}));
-    const yBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial(color || {color:0x00ff00}));
-    const zBox = new THREE.Mesh(new THREE.BoxGeometry(5,5,5),new THREE.MeshBasicMaterial(color || {color:0x0000ff}));
-    xBox.position.x = 15;
-    yBox.position.y = 15;
-    zBox.position.z = 15;
-    originBox.scale.set(10,10,10);
-    originBox.add(xBox);
-    originBox.add(yBox);
-    originBox.add(zBox);
-    return originBox;
-}
-
 /**
  * All data serialized to store a CameraVis patch (3d picture)
  * - `key`: frame (tool) key, globally unique
@@ -198,19 +183,16 @@ export class CameraVisPatch {
     static createPatch(containerMatrix, phoneMatrix, textureImage, textureDepthImage, creationTime, shaderMode) {
         
         let patch = new THREE.Group();
+        patch.name = `CameraVisPatch_${creationTime}`
         patch.matrix.copy(containerMatrix);
         patch.matrixAutoUpdate = false;
         patch.matrixWorldNeedsUpdate = true;
-        let patchDebugCube = createDebugCubes({color:0xff0000});
-        patch.add(patchDebugCube);
 
         let phone = new THREE.Group();
         phone.matrix.copy(phoneMatrix);
         phone.matrixAutoUpdate = false;
         phone.matrixWorldNeedsUpdate = true;
         phone.frustumCulled = false;
-        let phoneDebugCube = createDebugCubes({color:0x00ff00});
-        phone.add(phoneDebugCube);
 
         let texture = new THREE.Texture();
         // texture.minFilter = THREE.NearestFilter;
