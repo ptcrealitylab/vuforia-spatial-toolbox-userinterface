@@ -1,22 +1,32 @@
-export function loadToken(frame, urls, clientId, clientSecret) {
-    const key = `token-${frame}-${urls.authorizationUrl}`
+const isCloud = location => {
+    try {
+        location = new URL(location);
+    } catch (e) {
+        console.error(`Passed a non-fully-formed URL to isCloud: ${location}`);
+        return false;
+    }
+    return !location.port || location.port === "443";
+}
+
+function storeNetworkIdAndSecret() {
+    const windowPath = window.location.pathname;
+    const pathFragments = windowPath.split('/'); // => '', 'stable', 'n', 'networkId', 's', 'networkSecret', ''
+    const networkId = pathFragments[3];
+    const networkSecret = pathFragments[5];
+    localStorage.setItem('networkId', networkId);
+    localStorage.setItem('networkSecret', networkSecret);
+}
+
+export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
+    const key = `token-${frameName}`
     const token = JSON.parse(localStorage.getItem(key));
-    const object = Object.values(realityEditor.objects).find(obj => {
-        return Object.keys(obj.frames).includes(frame);
-    });
-    // The edge server that will handle the processing of the auth code to receive an auth token
-    const edgeServer = `http://${object.ip}:${object.port}`; // TODO: more resilient way to do this, not sure if toolbox edge allows connecting via ip:port
 
     if (!token) {
         const nonce = generateNonce();
         let state = JSON.stringify({
-            edgeServer: edgeServer,
-            authorizationUrl: urls.authorizationUrl,
-            accessTokenUrl: urls.accessTokenUrl,
-            clientId: clientId,
-            clientSecret: clientSecret,
-            toolboxUrl: window.location.href,
-            frame: frame
+            edgeServer: edgeServer, // For knowing which server to use for OAuth requests
+            toolboxUrl: window.location.href, // For redirecting back to toolbox after server gets token
+            frameName: frameName // For associating received token with tool
         });
         // OAuth state parameter is specifically for nonces, NOT application state
         localStorage.setItem('activeOAuthNonce', nonce);
@@ -26,23 +36,24 @@ export function loadToken(frame, urls, clientId, clientSecret) {
         if (window.location.hostname === '127.0.0.1' || window.location.hostname === '::1') {
             redirectUri = `${window.location.protocol}//localhost:${window.location.port}`;
         }
+        let path = isCloud(redirectUri) ? '/stable/oauth/redirect' : '/src/oauth/redirect.html'
+        
+        if (isCloud(redirectUri)) {
+            storeNetworkIdAndSecret(); // Needed in order for /stable/oauth/redirect to return us to the right metaverse
+        }
 
         // Redirect URI has to be the same origin to share localStorage state
-        window.location = `${urls.authorizationUrl}?response_type=code&redirect_uri=${redirectUri}/src/oauth/redirect.html&client_id=${encodeURIComponent(clientId)}&state=${nonce}`
+        window.location = `${authorizationUrl}?response_type=code&redirect_uri=${redirectUri}${path}&client_id=${encodeURIComponent(clientId)}&state=${nonce}`
         // Returns a dummy promise since we will be navigating away from the page
         return Promise.reject();
     } else {
-        if (token.expires_time > Date.now()) {
-            return Promise.resolve(token.access_token);
-        }
         return new Promise((resolve, reject) => {
             const data = {
+                'frameName': frameName,
                 'refresh_token': token.refresh_token,
-                'client_id': clientId,
-                'client_secret': clientSecret
             }
             const serverUrl = `${edgeServer}/oauthRefresh`;
-            fetch(`${serverUrl}/${urls.accessTokenUrl}`, {
+            fetch(serverUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -55,7 +66,7 @@ export function loadToken(frame, urls, clientId, clientSecret) {
                     reject(data);
                     return;
                 }
-                saveToken(data, frame, urls.authorizationUrl);
+                saveToken(data, frameName, authorizationUrl);
                 resolve(data.access_token);
             }).catch(error => {
                 reject(error);
@@ -64,9 +75,9 @@ export function loadToken(frame, urls, clientId, clientSecret) {
     }
 }
 
-export function saveToken(data, frame, authorizationUrl) {
+export function saveToken(data, frameName) {
     const { access_token, refresh_token, expires_in } = data;
-    const key = `token-${frame}-${authorizationUrl}`;
+    const key = `token-${frameName}`;
     localStorage.setItem(key, JSON.stringify({
         access_token: access_token,
         refresh_token: refresh_token,
