@@ -232,7 +232,7 @@ export class CameraVisPatch {
         texture.needsUpdate = true;
         textureDepth.needsUpdate = true;
 
-        let mesh = createPointCloud(texture, textureDepth, ShaderMode.FIRST_PERSON);
+        let mesh = createPointCloud(texture, textureDepth, ShaderMode.SOLID);
         mesh.material.uniforms.patchLoading.value = 0;
 
         phone.add(mesh);

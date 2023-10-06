@@ -1,13 +1,17 @@
 import {CameraVisPatch} from './CameraVisPatch.js';
-import {createPointCloud, ShaderMode} from './Shaders.js';
+import {createPointCloud, ShaderMode, DEPTH_WIDTH, DEPTH_HEIGHT} from './Shaders.js';
 import {VisualDiff} from './VisualDiff.js';
 // import * as THREE from "../../thirdPartyCode/three/three.module";
+import {rvl} from '../../thirdPartyCode/rvl/index.js';
+import RVLParser from '../../thirdPartyCode/rvl/RVLParser.js';
 
 class SpatialPatchCoordinator {
     constructor() {
         this.patches = [];
         this.addPostMessageHandlers();
         this.addPatchToolLifecycleHandlers();
+        this.depthCanvasCache = {};
+        // this.maxDepthMeters = 5;
     }
     addPostMessageHandlers() {
         // // add handler for tools to programmatically take spatial snapshots
@@ -19,12 +23,36 @@ class SpatialPatchCoordinator {
 
         realityEditor.network.addPostMessageHandler('captureSpatialSnapshot', (_msgData) => {
             // this.clonePatches(ShaderMode.SOLID);
-            realityEditor.app.promises.getTextureAndTextureDepth().then(({texture, textureDepth}) => {
+            realityEditor.app.promises.getTextureAndTextureDepth().then( async ({texture, textureDepth}) => {
                 let previewRGB = `${texture.substring(0, 16)} ... ${texture.slice(-16)}`;
                 let previewDepth = `${textureDepth.substring(0, 16)} ... ${textureDepth.slice(-16)}`;
                 console.log('got spatial snapshot textures', `RGB: ${previewRGB}`, `Depth: ${previewDepth}`);
 
-                if (texture && textureDepth) {
+                let rawDepth = null;
+                try {
+                    let depthArray = JSON.parse(textureDepth);
+                    console.log('depthArray', depthArray);
+
+                    let bytes = new Uint8Array(depthArray);
+                    console.log('bytes', bytes);
+
+                    // const parser = new RVLParser(await msg.data.slice(1, msg.data.size).arrayBuffer());
+                    const parser = new RVLParser(bytes.buffer);
+                    rawDepth = rvl.decompress(parser.currentFrame.rvlBuf);
+                    console.log('rawDepth', rawDepth);
+                } catch (err) {
+                    console.warn('error parsing rvl depth buffer', err);
+                }
+                
+                let decodedDepthImageBase64 = null;
+                if (rawDepth) {
+                    // TODO: need to convert raw depth into an image src (perhaps base64-encoded
+                    // this.cameraVisCoordinator.renderPointCloudRawDepth(id, rawDepth);
+                    let uuid = realityEditor.device.utilities.uuidTime();
+                    decodedDepthImageBase64 = this.renderPointCloudRawDepth(uuid, rawDepth);
+                }
+                
+                if (texture && textureDepth && rawDepth && decodedDepthImageBase64) {
                     console.log('todo: create spatialPatch');
                     let container = new THREE.Group();
 
@@ -48,7 +76,7 @@ class SpatialPatchCoordinator {
                     cameraMatrix[10] *= -1;
                     this.setMatrixFromArray(phone.matrix, cameraMatrix);
                     phone.updateMatrixWorld(true);
-                    const {key, patch} = this.clonePatch(ShaderMode.SOLID, container, phone, texture, textureDepth);
+                    const {key, patch} = this.clonePatch(ShaderMode.SOLID, container, phone, texture, decodedDepthImageBase64);
                     // const {key, patch} = camera.clonePatch(shaderMode);
                     patch.add();
                     this.patches[key] = patch;
@@ -110,10 +138,10 @@ class SpatialPatchCoordinator {
      * @param {THREE.Group} container
      * @param {THREE.Group} phone
      * @param {string} textureBase64
-     * @param {string} textureDepthBase64
+     * @param {string} textureDepthDataURL
      * @return {{key: string, patch: CameraVisPatch}} unique key for patch and object containing all relevant meshes
      */
-    clonePatch(shaderMode, container, phone, textureBase64, textureDepthBase64) {
+    clonePatch(shaderMode, container, phone, textureBase64, textureDepthDataURL) {
         let now = Date.now();
         let serialization = {
             key: '',
@@ -121,7 +149,7 @@ class SpatialPatchCoordinator {
             container: Array.from(container.matrix.elements),
             phone: Array.from(phone.matrix.elements),
             texture: this.toDataURL(textureBase64, 'image/jpeg'), //texture.toDataURL('image/jpeg', 0.7),
-            textureDepth: this.toDataURL(textureDepthBase64), //textureDepth.toDataURL(),
+            textureDepth: textureDepthDataURL, //textureDepth.toDataURL(),
             creationTime: now,
         };
         const frameKey = CameraVisPatch.createToolForPatchSerialization(serialization, shaderMode);
@@ -134,7 +162,7 @@ class SpatialPatchCoordinator {
                 //this.texture.image,
                 this.toDataURL(textureBase64, 'image/jpeg'),
                 //this.textureDepth.image,
-                this.toDataURL(textureDepthBase64),
+                textureDepthDataURL,
                 now,
                 shaderMode
             ),
@@ -194,10 +222,89 @@ class SpatialPatchCoordinator {
             textureImage,
             textureDepthImage,
             serialization.creationTime,
-            ShaderMode.FIRST_PERSON
+            // ShaderMode.FIRST_PERSON
         );
         patch.add();
         this.patches[serialization.key] = patch;
+    }
+
+    renderPointCloudRawDepth(id, rawDepth) {
+        // const textureKey = 'textureDepth';
+
+        // if (!this.cameras[id]) {
+        //     this.createCameraVis(id);
+        // }
+        // if (this.cameras[id].loading[textureKey]) {
+        //     return;
+        // }
+        // this.cameras[id].loading[textureKey] = true;
+        // const tex = this.cameras[id][textureKey];
+        // tex.dispose();
+
+        // const tex = new THREE.Texture();
+        // tex.minFilter = THREE.LinearFilter;
+        // tex.magFilter = THREE.LinearFilter;
+        // tex.generateMipmaps = false;
+        // tex.isVideoTexture = true;
+        // tex.update = function() {
+        // };
+        // tex.dispose();
+        
+        if (!this.depthCanvasCache.hasOwnProperty(id)) {
+            let canvas = document.createElement('canvas');
+            let context = canvas.getContext('2d');
+            let imageData = context.createImageData(DEPTH_WIDTH, DEPTH_HEIGHT);
+            this.depthCanvasCache[id] = {
+                canvas,
+                context,
+                imageData,
+            };
+        }
+
+        let {canvas, context, imageData} = this.depthCanvasCache[id];
+        canvas.width = DEPTH_WIDTH;
+        canvas.height = DEPTH_HEIGHT;
+        let maxDepth14bits = 0;
+        for (let i = 0; i < DEPTH_WIDTH * DEPTH_HEIGHT; i++) {
+            if (rawDepth[i] > maxDepth14bits) {
+                maxDepth14bits = rawDepth[i];
+            }
+            // We get 14 bits of depth information from the RVL-encoded
+            // depth buffer. Note that this means the blue channel is
+            // always zero
+            let depth24Bits = rawDepth[i] << (24 - 14); // * 5 / (1 << 14);
+            if (depth24Bits > 0xffffff) {
+                depth24Bits = 0xffffff;
+            }
+            let b = depth24Bits & 0xff;
+            let g = (depth24Bits >> 8) & 0xff;
+            let r = (depth24Bits >> 16) & 0xff;
+            imageData.data[4 * i + 0] = r;
+            imageData.data[4 * i + 1] = g;
+            imageData.data[4 * i + 2] = b;
+            imageData.data[4 * i + 3] = 255;
+        }
+        // this.cameras[id].maxDepthMeters = 5 * (maxDepth14bits / (1 << 14));
+        // this.maxDepthMeters = 5 * (maxDepth14bits / (1 << 14));
+
+        context.putImageData(imageData, 0, 0);
+        // this.finishRenderPointCloudCanvas(id, textureKey, -1);
+
+        // let {canvas} = this.depthCanvasCache[id];
+        // tex.image = canvas;
+
+        // Convert canvas to a base64 encoded PNG image
+        return canvas.toDataURL('image/png');
+
+        // if (this.voxelizer) {
+        //     this.voxelizer.raycastDepth(
+        //         this.cameras[id].phone, {
+        //             width: DEPTH_WIDTH,
+        //             height: DEPTH_HEIGHT,
+        //         },
+        //         rawDepth
+        //     );
+        // }
     }
 }
 
