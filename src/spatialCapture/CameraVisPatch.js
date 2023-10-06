@@ -197,18 +197,6 @@ export class CameraVisPatch {
      */
     static createPatch(containerMatrix, phoneMatrix, textureImage, textureDepthImage, creationTime, shaderMode) {
         
-        // container matrix is the root zero zero zero in scene coordinates, but it will be added to the groundPlane container object
-        // so we should update it so that when added to the ground plane container obj it will still be at (0,0,0)
-
-        // let gpNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        // let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-        // // let groundPlaneWorldOffset = gpNode.getMatrixRelativeTo(worldNode);
-        // let groundPlaneWorldOffset = worldNode.getMatrixRelativeTo(gpNode);
-        // console.log('test groundPlaneWorldOffset', groundPlaneWorldOffset);
-        // let gpWorldOffsetMatrix = new THREE.Matrix4();
-        // realityEditor.gui.threejsScene.setMatrixFromArray(gpWorldOffsetMatrix, groundPlaneWorldOffset);
-        // containerMatrix.multiply(gpWorldOffsetMatrix);
-        
         let patch = new THREE.Group();
         patch.matrix.copy(containerMatrix);
         patch.matrixAutoUpdate = false;
@@ -244,7 +232,7 @@ export class CameraVisPatch {
         texture.needsUpdate = true;
         textureDepth.needsUpdate = true;
 
-        let mesh = createPointCloud(texture, textureDepth, ShaderMode.SOLID);
+        let mesh = createPointCloud(texture, textureDepth, ShaderMode.FIRST_PERSON);
         mesh.material.uniforms.patchLoading.value = 0;
 
         phone.add(mesh);

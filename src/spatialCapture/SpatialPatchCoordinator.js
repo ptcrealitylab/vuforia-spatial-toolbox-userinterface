@@ -27,37 +27,41 @@ class SpatialPatchCoordinator {
                 if (texture && textureDepth) {
                     console.log('todo: create spatialPatch');
                     let container = new THREE.Group();
-                    container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-                    container.rotation.x = Math.PI / 2;
-                    // let containerDebugCube = createDebugCubes({color:0xff0000});
-                    // container.add(containerDebugCube);
-
-                    /*
-                    container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-                    // container.rotation.x = Math.PI / 2;
-                    container.rotation.x = Math.PI;
-                    container.rotation.y = -Math.PI/2;
-                    container.scale.x = 0.1;
-                    container.scale.y = 0.1;
-                    container.scale.z = 0.1;
-                    // container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-                    // container.rotation.x = Math.PI / 2;
-                    */
-
-                    container.updateMatrix();
-                    container.updateMatrixWorld(true);
 
                     let phone = new THREE.Group();
                     phone.matrixAutoUpdate = false;
-                    // let cameraMatrix = realityEditor.sceneGraph.getCameraNode().worldMatrix;
                     let cameraMatrix = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()))
+                    // let transformation = [
+                    //     -1, 0, 0, 0,
+                    //     0, 1, 0, 0,
+                    //     0, 0, -1, 0,
+                    //     0, 0, 0, 1
+                    // ];
+                    // let rotatedCameraMatrix = [];
+                    // realityEditor.gui.ar.utilities.multiplyMatrix()
+                    // for some reason, each element in the camera's first and third rows are negative
+                    cameraMatrix[0] *= -1;
+                    cameraMatrix[1] *= -1;
+                    cameraMatrix[2] *= -1;
+                    cameraMatrix[8] *= -1;
+                    cameraMatrix[9] *= -1;
+                    cameraMatrix[10] *= -1;
                     this.setMatrixFromArray(phone.matrix, cameraMatrix);
                     phone.updateMatrixWorld(true);
                     const {key, patch} = this.clonePatch(ShaderMode.SOLID, container, phone, texture, textureDepth);
+                    // const {key, patch} = camera.clonePatch(shaderMode);
+                    patch.add();
+                    this.patches[key] = patch;
+                    // clonedPatches[key] = patch;
                     
-                    // if (mobileCameraVisCoordinator) {
-                    //     mobileCameraVisCoordinator.addMobilePatch(key, patch);
-                    // }
+                    // // Hide for a bit to show the patch in space
+                    // camera.mesh.visible = false;
+                    // camera.mesh.__hidden = true;
+                    //
+                    // setTimeout(() => {
+                    //     camera.mesh.visible = this.visible;
+                    //     camera.mesh.__hidden = !this.visible;
+                    // }, 300);
                 }
             });
         });
@@ -183,21 +187,6 @@ class SpatialPatchCoordinator {
         textureImage.src = serialization.texture;
         const textureDepthImage = document.createElement('img');
         textureDepthImage.src = serialization.textureDepth;
-        
-        // window.DEBUG_CHANGE_CONTAINER_MATRIX = true;
-        // if (window.DEBUG_CHANGE_CONTAINER_MATRIX) {
-        //     let container = new THREE.Group();
-        //     container.position.y = -1 * realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-        //     // container.rotation.x = Math.PI / 2;
-        //     container.rotation.x = Math.PI;
-        //     container.rotation.y = -Math.PI/2;
-        //     container.scale.x = 0.1;
-        //     container.scale.y = 0.1;
-        //     container.scale.z = 0.1;
-        //     container.updateMatrix();
-        //     container.updateMatrixWorld(true);
-        //     containerMatrix = container.matrix;
-        // }
 
         const patch = CameraVisPatch.createPatch(
             containerMatrix,
@@ -205,6 +194,7 @@ class SpatialPatchCoordinator {
             textureImage,
             textureDepthImage,
             serialization.creationTime,
+            ShaderMode.FIRST_PERSON
         );
         patch.add();
         this.patches[serialization.key] = patch;
