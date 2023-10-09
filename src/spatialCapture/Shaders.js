@@ -138,6 +138,8 @@ export const solidFragmentShader = `
 uniform sampler2D map;
 uniform vec3 borderColor;
 uniform float borderEnabled;
+uniform float viewAngleSimilarity;
+uniform float viewPositionSimilarity;
 
 // uv (0.0-1.0) texture coordinates
 varying vec2 vUv;
@@ -165,8 +167,17 @@ vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
 // Roughly calculated curve such that fading starts at 45 degrees and is done
 // by ~78
 float alphaNorm = clamp(1.75 * abs(dot(normalize(pos.xyz), normal)) - 0.2, 0.0, 1.0);
+
+// don't fade at all if viewAngleSimilarity is close to 1. fade more if viewAngleSimilarity is close to 0
+float viewAngleFadeFactor = pow(viewAngleSimilarity, 20.0); // drop off very quickly if not viewing straight-on
+float viewPositionFadeFactor = pow(viewPositionSimilarity, 2.0);
+float viewFadeFactor = viewAngleFadeFactor * viewPositionFadeFactor;
+
+alphaNorm = (1.0 - viewFadeFactor) * alphaNorm + viewFadeFactor * 1.0;
+
 // alphaDepth is thrown in here to incorporate the depth-based fade
 float alpha = alphaNorm * alphaDepth;
+// alpha = (1.0 - viewFadeFactor) * alpha + viewFadeFactor * 1.0;
 
 alpha = alpha * (1.0 - step(depthMax, depth)) * step(depthMin, depth);
 
@@ -193,7 +204,6 @@ gl_FragColor = (1.0 - border) * vec4(color.rgb, alpha) + border * vec4(borderCol
 
 // gl_FragColor = vec4(alphaNorm, alphaNorm, alphaDepth, 1.0);
 }`;
-
 
 export const firstPersonFragmentShader = `
 // color texture
@@ -293,6 +303,9 @@ export function createPointCloudMaterial(texture, textureDepth, shaderMode, bord
             focalLength: { value: new THREE.Vector2(1393.48523 / 1920 * width, 1393.48523 / 1080 * height) },
             // convert principal point from image Y-axis bottom-to-top in Vuforia to top-to-bottom in OpenGL
             principalPoint: { value: new THREE.Vector2(959.169433 / 1920 * width, (1080 - 539.411926) / 1080 * height) },
+            // can be used to lerp between shader properties based on if you're observing from same angle as recorded
+            viewAngleSimilarity: { value: 0.0 },
+            viewPositionSimilarity: { value: 0.0 }
         },
         vertexShader,
         fragmentShader,

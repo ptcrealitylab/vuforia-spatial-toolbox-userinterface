@@ -5,10 +5,21 @@ import RVLParser from '../../thirdPartyCode/rvl/RVLParser.js';
 
 class SpatialPatchCoordinator {
     constructor() {
-        this.patches = [];
+        this.patches = {};
         this.addPostMessageHandlers();
         this.addPatchToolLifecycleHandlers();
         this.depthCanvasCache = {};
+        this.update();
+    }
+    update() {
+        try {
+            // todo:
+            this.updatePatchMaterialUniforms();
+        } catch (e) {
+            console.warn('error updating spatialPatchCoordinator');
+        }
+        
+        requestAnimationFrame(this.update.bind(this));
     }
     addPostMessageHandlers() {
         // add handler for tools to programmatically take spatial snapshots
@@ -36,10 +47,10 @@ class SpatialPatchCoordinator {
                 } catch (err) {
                     console.warn('error parsing rvl depth buffer', err);
                 }
-                
+
+                // convert raw depth into an image src (base64-encoded)
                 let decodedDepthDataURL = null;
                 if (rawDepth) {
-                    //  convert raw depth into an image src (base64-encoded)
                     let uuid = realityEditor.device.utilities.uuidTime();
                     decodedDepthDataURL = this.getImageDataFromRawDepth(uuid, rawDepth);
                 }
@@ -52,6 +63,7 @@ class SpatialPatchCoordinator {
                     let cameraMatrix = realityEditor.sceneGraph.getCameraNode().getMatrixRelativeTo(realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()))
                     
                     // for some reason, each element in the camera's first and third rows are negative
+                    // perhaps because the pointcloud does: mesh.scale.set(-1, 1, -1);
                     cameraMatrix[0] *= -1;
                     cameraMatrix[1] *= -1;
                     cameraMatrix[2] *= -1;
@@ -61,15 +73,31 @@ class SpatialPatchCoordinator {
                     this.setMatrixFromArray(phone.matrix, cameraMatrix);
                     phone.updateMatrixWorld(true);
                     let textureDataURL = this.toDataURL(texture, 'image/jpeg');
-                    const {key, patch} = this.clonePatch(ShaderMode.SOLID, container, phone, textureDataURL, decodedDepthDataURL);
-                    patch.add();
-                    this.patches[key] = patch;
+
+                    // We add the patch using the restorePatch function, as that leads to most consistent results
+                    let serialization = {
+                        key: fullMessageData.frame,
+                        id: realityEditor.device.utilities.uuidTime(), //this.id,
+                        container: Array.from(container.matrix.elements),
+                        phone: Array.from(phone.matrix.elements),
+                        texture: textureDataURL, // this.toDataURL(textureBase64, 'image/jpeg'),
+                        textureDepth: decodedDepthDataURL, // already in DataURL format
+                        creationTime: Date.now(),
+                    };
+                    this.clonePatch(serialization, ShaderMode.SOLID);
                     
                     // send texture and depth texture to the frame that requested the capture
                     realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
                         spatialSnapshotData: {
                             textureDataURL: textureDataURL,
                             textureDepthDataURL: decodedDepthDataURL,
+                        }
+                    });
+                } else {
+                    // send texture and depth texture to the frame that requested the capture
+                    realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
+                        spatialSnapshotError: {
+                            reason: 'Error getting RGB texture and/or depth texture'
                         }
                     });
                 }
@@ -114,39 +142,9 @@ class SpatialPatchCoordinator {
         return `data:${mimeType};base64,${base64Image}`;
     }
 
-    /**
-     * Clone the current state of the mesh rendering part of this CameraVis
-     * @param {ShaderMode} shaderMode - initial shader mode to set on the patches
-     * @param {THREE.Group} container
-     * @param {THREE.Group} phone
-     * @param {string} textureDataURL
-     * @param {string} textureDepthDataURL
-     * @return {{key: string, patch: CameraVisPatch}} unique key for patch and object containing all relevant meshes
-     */
-    clonePatch(shaderMode, container, phone, textureDataURL, textureDepthDataURL) {
-        let now = Date.now();
-        let serialization = {
-            key: '',
-            id: realityEditor.device.utilities.uuidTime(), //this.id,
-            container: Array.from(container.matrix.elements),
-            phone: Array.from(phone.matrix.elements),
-            texture: textureDataURL, // this.toDataURL(textureBase64, 'image/jpeg'),
-            textureDepth: textureDepthDataURL, // already in DataURL format
-            creationTime: now,
-        };
-        const frameKey = CameraVisPatch.createToolForPatchSerialization(serialization, shaderMode);
-    
-        return {
-            key: frameKey,
-            patch: CameraVisPatch.createPatch(
-                container.matrix,
-                phone.matrix,
-                textureDataURL, //this.toDataURL(textureBase64, 'image/jpeg'),
-                textureDepthDataURL,
-                now,
-                shaderMode
-            ),
-        };
+    clonePatch(serialization, shaderMode = ShaderMode.SOLID) {
+        const _frameKey = CameraVisPatch.createToolForPatchSerialization(serialization, shaderMode);
+        this.restorePatch(serialization);
     }
 
     /**
@@ -206,6 +204,34 @@ class SpatialPatchCoordinator {
         );
         patch.add();
         this.patches[serialization.key] = patch;
+    }
+    
+    updatePatchMaterialUniforms() {
+        for (const [key, patch] of Object.entries(this.patches)) {
+            if (!patch.material || !patch.material.uniforms) continue;
+            
+            if (typeof patch.material.uniforms.viewAngleSimilarity !== 'undefined' && typeof patch.material.uniforms.viewPositionSimilarity !== 'undefined') {
+
+                let viewingCameraForwardVector = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
+                let viewAngleSimilarity = 0;
+                let MIN_DISTANCE_THRESHOLD = 2000;
+                let MAX_DISTANCE_THRESHOLD = 6000;
+                let viewDistance = MAX_DISTANCE_THRESHOLD;
+                if (realityEditor.sceneGraph.getSceneNodeById(key)) {
+                    let snapshotForwardVector = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getSceneNodeById(key).worldMatrix);
+                    viewAngleSimilarity = -1 * realityEditor.gui.ar.utilities.dotProduct(snapshotForwardVector, viewingCameraForwardVector);
+                    viewAngleSimilarity = Math.max(0, viewAngleSimilarity); // limit it to 0 instead of going to -1 if viewing from anti-parallel direction
+
+                    viewDistance = realityEditor.sceneGraph.getDistanceToCamera(key);
+                }
+
+                let viewPositionSimilarity = Math.min(1, Math.max(0, 1.0 - (viewDistance - MIN_DISTANCE_THRESHOLD) / (MAX_DISTANCE_THRESHOLD - MIN_DISTANCE_THRESHOLD)));
+
+                patch.material.uniforms.viewAngleSimilarity.value = viewAngleSimilarity;
+                patch.material.uniforms.viewPositionSimilarity.value = viewPositionSimilarity;
+                patch.material.needsUpdate = true;
+            }
+        }
     }
 
     // This is a slightly modified version of CameraVisCoordinator's renderPointCloudRawDepth

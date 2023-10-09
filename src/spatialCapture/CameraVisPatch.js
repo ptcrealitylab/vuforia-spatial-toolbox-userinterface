@@ -183,12 +183,13 @@ export class CameraVisPatch {
     static createPatch(containerMatrix, phoneMatrix, textureImage, textureDepthImage, creationTime, shaderMode) {
         
         let patch = new THREE.Group();
-        patch.name = `CameraVisPatch_${creationTime}`
+        patch.name = `CameraVisPatch_${creationTime}_patchContainer`;
         patch.matrix.copy(containerMatrix);
         patch.matrixAutoUpdate = false;
         patch.matrixWorldNeedsUpdate = true;
 
         let phone = new THREE.Group();
+        patch.name = `CameraVisPatch_${creationTime}_phone`;
         phone.matrix.copy(phoneMatrix);
         phone.matrixAutoUpdate = false;
         phone.matrixWorldNeedsUpdate = true;
@@ -214,7 +215,8 @@ export class CameraVisPatch {
         texture.needsUpdate = true;
         textureDepth.needsUpdate = true;
 
-        let mesh = createPointCloud(texture, textureDepth, ShaderMode.SOLID);
+        let mesh = createPointCloud(texture, textureDepth, shaderMode);
+        mesh.name = `CameraVisPatch_${creationTime}_pointCloudMesh`;
         mesh.material.uniforms.patchLoading.value = 0;
 
         phone.add(mesh);
