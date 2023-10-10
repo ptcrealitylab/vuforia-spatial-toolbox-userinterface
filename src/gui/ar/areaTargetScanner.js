@@ -156,9 +156,6 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
             if (elt) {
                 serverIp = elt.value;
             }
-            if (serverIp === "0") {
-                serverIp = "localhost"
-            }
 
             // startScanning();
             createPendingWorldObject(serverIp);
