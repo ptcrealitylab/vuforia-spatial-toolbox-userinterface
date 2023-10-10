@@ -138,7 +138,10 @@ export const solidFragmentShader = `
 uniform sampler2D map;
 uniform vec3 borderColor;
 uniform float borderEnabled;
+
+// default to 0 if you don't want to use angle-dependent rendering
 uniform float viewAngleSimilarity;
+// default to 0 if you don't want to use position-dependent rendering
 uniform float viewPositionSimilarity;
 
 // uv (0.0-1.0) texture coordinates
@@ -168,16 +171,17 @@ vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
 // by ~78
 float alphaNorm = clamp(1.75 * abs(dot(normalize(pos.xyz), normal)) - 0.2, 0.0, 1.0);
 
-// don't fade at all if viewAngleSimilarity is close to 1. fade more if viewAngleSimilarity is close to 0
+// we check how the current viewing angle and position compares to the 
+// position and angle that the point cloud was captured at.
+// we don't use the alphaNorm if viewing from similar angle/position
+// this gives a "flatter"/fuller picture when viewing straight-on
 float viewAngleFadeFactor = pow(viewAngleSimilarity, 20.0); // drop off very quickly if not viewing straight-on
 float viewPositionFadeFactor = pow(viewPositionSimilarity, 2.0);
 float viewFadeFactor = viewAngleFadeFactor * viewPositionFadeFactor;
-
 alphaNorm = (1.0 - viewFadeFactor) * alphaNorm + viewFadeFactor * 1.0;
 
 // alphaDepth is thrown in here to incorporate the depth-based fade
 float alpha = alphaNorm * alphaDepth;
-// alpha = (1.0 - viewFadeFactor) * alpha + viewFadeFactor * 1.0;
 
 alpha = alpha * (1.0 - step(depthMax, depth)) * step(depthMin, depth);
 

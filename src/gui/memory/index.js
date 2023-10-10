@@ -506,8 +506,8 @@ function createMemory() {
 
     console.log('create memory');
     
-    realityEditor.app.getScreenshot("L", "realityEditor.gui.memory.receiveScreenshot");
-    realityEditor.app.getScreenshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
+    realityEditor.app.getSnapshot("L", "realityEditor.gui.memory.receiveScreenshot");
+    realityEditor.app.getSnapshot("S", "realityEditor.gui.memory.receiveScreenshotThumbnail");
     
     currentMemory.id = realityEditor.gui.ar.getClosestObject()[0];
     let sceneNode = realityEditor.sceneGraph.getSceneNodeById(currentMemory.id);

@@ -28,7 +28,6 @@ const callbacks = {
     onVideoPaused: [],
 }
 
-// let mobileCameraVisCoordinator = null;
 realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
         const videoPlayer = new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey);
