@@ -261,8 +261,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     let constraints = [];
     let lineGeo;
-    const lineMatWhite = new THREE.LineBasicMaterial({color: 0xffff00});
-    const lineMatGreen = new THREE.LineBasicMaterial({color: 0xffff00});
+    const lineMatYellow = new THREE.LineBasicMaterial({color: 0xffff00});
 
     function makeConstraints(isVisualize = false) {
         constraints = [];
@@ -278,9 +277,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -291,7 +290,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
             }
         }
         for (let x = 1; x < xSegs; x++) {
@@ -301,7 +300,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
             }
         }
         // front face constraints, z === zSegs, iterate 10 x 10 times
@@ -315,9 +314,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -332,9 +331,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -349,9 +348,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -366,9 +365,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -383,9 +382,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle3.original]);
-                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                    realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
                 }
             }
         }
@@ -396,7 +395,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
             }
         }
         for (let x = 0; x < xSegs; x++) {
@@ -406,7 +405,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
-                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatWhite), {layers: 1});
+                realityEditor.gui.threejsScene.addToScene(new THREE.Line(lineGeo, lineMatYellow), {layers: 1});
             }
         }
         return constraints;
