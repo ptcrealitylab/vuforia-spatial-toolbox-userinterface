@@ -1,4 +1,4 @@
-#hpa-settings {
+#hpa-settings, #profiler-settings {
     position: fixed;
     top: 0;
     left: 0;
@@ -119,4 +119,17 @@
     width: 200px;
     font-size: 14px;
     cursor: pointer;
+}
+
+.profiler-settings-section-row-tall {
+    display: flex;
+    align-items: center;
+    margin-bottom: 50px;
+}
+
+.profiler-log-container {
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid white;
+    height: 200px;
+    overflow-y: scroll;
 }

@@ -8,6 +8,8 @@ createNameSpace("realityEditor.network.frameContentAPI");
 
 (function(exports) {
     
+    let lastSentMatrices = {};
+
     /**
      * Public init method sets up module by registering callbacks when important events happen in other modules
      */
@@ -23,6 +25,93 @@ createNameSpace("realityEditor.network.frameContentAPI");
         realityEditor.gui.ar.draw.registerCallback('fullScreenEjected', onFullScreenEjected);
 
         realityEditor.sceneGraph.network.onObjectLocalized(worldIdUpdated);
+
+        setupInternalPostMessageListeners();
+    }
+
+    function setupInternalPostMessageListeners() {
+        realityEditor.network.addPostMessageHandler('sendCoordinateSystems', (msgContent, fullMessage) => {
+            let frame = realityEditor.getFrame(fullMessage.object, fullMessage.frame);
+            if (!frame) return;
+            frame.sendCoordinateSystems = msgContent;
+            console.log('frame was told to send coordinate systems', frame.sendCoordinateSystems);
+        });
+    }
+
+    function sendCoordinateSystemsToIFrame(objectKey, frameKey) {
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        if (!frame) return;
+        if (!frame.sendCoordinateSystems) return;
+
+        if (typeof lastSentMatrices[frameKey] === 'undefined') {
+            lastSentMatrices[frameKey] = {};
+        }
+
+        let coordinateSystems = {};
+
+        if (frame.sendCoordinateSystems.camera) {
+            coordinateSystems.camera = realityEditor.sceneGraph.getCameraNode().worldMatrix;
+        }
+        if (frame.sendCoordinateSystems.projectionMatrix) {
+            coordinateSystems.projectionMatrix = globalStates.realProjectionMatrix;
+        }
+        if (frame.sendCoordinateSystems.toolOrigin) {
+            coordinateSystems.toolOrigin = realityEditor.sceneGraph.getSceneNodeById(frameKey).worldMatrix;
+        }
+        if (frame.sendCoordinateSystems.groundPlaneOrigin) {
+            coordinateSystems.groundPlaneOrigin = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        }
+        if (frame.sendCoordinateSystems.worldOrigin) {
+            coordinateSystems.worldOrigin = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
+        }
+
+        // only calculate the more complex ones if the tool origin has also changed, otherwise skip the computation
+        // because they can't have changed without the tool origin also changing
+        if (frame.sendCoordinateSystems.toolGroundPlaneShadow || frame.sendCoordinateSystems.toolSurfaceShadow) {
+            let toolOriginChecksum = matrixChecksum(realityEditor.sceneGraph.getSceneNodeById(frameKey).worldMatrix);
+            if (!lastSentMatrices[frameKey].toolOrigin || lastSentMatrices[frameKey].toolOrigin !== toolOriginChecksum) {
+                if (frame.sendCoordinateSystems.toolGroundPlaneShadow) {
+                    coordinateSystems.toolGroundPlaneShadow = realityEditor.gui.threejsScene.getToolGroundPlaneShadowMatrix(objectKey, frameKey);
+                }
+                if (frame.sendCoordinateSystems.toolSurfaceShadow) {
+                    coordinateSystems.toolSurfaceShadow = realityEditor.gui.threejsScene.getToolSurfaceShadowMatrix(objectKey, frameKey);
+                }
+            }
+        }
+
+        let keysThatDidntChange = [];
+        Object.keys(coordinateSystems).forEach(coordSystem => {
+            let checksum = matrixChecksum(coordinateSystems[coordSystem]);
+            if (lastSentMatrices[frameKey][coordSystem] && lastSentMatrices[frameKey][coordSystem] === checksum) {
+                keysThatDidntChange.push(coordSystem);
+            }
+        });
+
+        keysThatDidntChange.forEach(key => {
+            delete coordinateSystems[key];
+        });
+
+        if (Object.keys(coordinateSystems).length === 0) return;
+
+        globalDOMCache["iframe" + frameKey].contentWindow.postMessage(JSON.stringify({
+            coordinateSystems: coordinateSystems
+        }), '*');
+
+        Object.keys(coordinateSystems).forEach(coordSystem => {
+            lastSentMatrices[frameKey][coordSystem] = matrixChecksum(coordinateSystems[coordSystem]);
+        });
+
+        // if using toolGroundPlaneShadow or toolSurfaceShadow, but not toolOrigin, store the tool origin checksum to help with the above shortcut
+        if ((frame.sendCoordinateSystems.toolSurfaceShadow || frame.sendCoordinateSystems.toolGroundPlaneShadow) && !frame.sendCoordinateSystems.toolOrigin) {
+            lastSentMatrices[frameKey].toolOrigin = matrixChecksum(realityEditor.sceneGraph.getSceneNodeById(frameKey).worldMatrix);
+        }
+    }
+
+    // Quick and dirty checksum should efficiently and correctly identify changes *almost* all of the time
+    // There is a chance that the sum of a matrix elements could stay the same when the matrix changes,
+    // but in practice this is unlikely to happen due to the many digits of precision we're working with.
+    function matrixChecksum(matrix) {
+        return matrix.reduce((acc, val) => acc + val, 0);
     }
 
     /**
@@ -149,5 +238,6 @@ createNameSpace("realityEditor.network.frameContentAPI");
 
     exports.initService = initService;
     exports.getMutablePointerEventCopy = getMutablePointerEventCopy;
+    exports.sendCoordinateSystemsToIFrame = sendCoordinateSystemsToIFrame;
 
 })(realityEditor.network.frameContentAPI);

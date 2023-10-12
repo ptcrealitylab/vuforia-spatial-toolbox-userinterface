@@ -237,8 +237,8 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   // We're looking for walkable space, so any faces in this range are obstacles
   const lowIgnoreHeight = 0.5; // 50cm ~= Knee height for tall people (like me)
   const highIgnoreHeight = 2; // 2m ~= slightly under door height
-    // const lowIgnoreHeight = -20; // 50cm ~= Knee height for tall people (like me)
-    // const highIgnoreHeight = 20; // 2m ~= slightly under door height
+    // const lowIgnoreHeight = -20; // very low dummy value, for maps which we want all the terrains to be walkable
+    // const highIgnoreHeight = 20; // very high dummy value, for maps which we want all the terrains to be walkable
   
   // The floor offset will be set by looking down from the origin first, and if nothing is found, looking up
   let floorOffsetDown = 1; // Junk positive offset that will get replaced if there is a floor beneath the origin point
@@ -310,7 +310,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     addTriangle(faceData, vertexVector1, vertexVector2, vertexVector3, weight, ignoreWeight, faceY, steepness);
   }
   
-  const floorOffset = floorOffsetDown < 0 ? floorOffsetDown : minY;
+  const floorOffset = minY; // set the floorOffset to the lowest part of the scanned mesh
 
     const makeArray = (a, b, cb) => {
         var arr = [];
@@ -332,22 +332,13 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
         }
     }
     
-    // console.log(steepnessMap);
-    
-    
     let heightMap = makeArray(faceData.length, faceData[0].length, (i, j) => {
         return faceData[i][j][1] === 0 ? 0 : faceData[i][j][3] / faceData[i][j][1];
     })
-
-    // console.log(heightMap);
     
-    
-    // double check how the count values to see how it works
     let countMap = makeArray(faceData.length, faceData[0].length, (i, j) => {
         return faceData[i][j][1];
     });
-
-    // console.log(countMap);
   
   // Calculate average weight of faces within pixels
   mapGrid(faceData, value => [value[1] === 0 ? 0 : value[0] / value[1], value[2], 0]); // total weight / count
@@ -502,7 +493,6 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   
   // Share bounding box positions so we can scale real-world positions to grid properly
   return {
-    // map: regionMap,
     map: regionMap,
       countMap: countMap,
       steepnessMap: steepnessMap,

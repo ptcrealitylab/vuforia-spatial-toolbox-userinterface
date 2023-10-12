@@ -155,6 +155,14 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
+
+        if (realityEditor.device.profiling.isEnabled()) {
+            let numStopsRequired = realityEditor.device.profiling.countSubscribedFrames(); // stopTimeProcess will need to be called this many times
+            let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(cameraMatrix));
+            let processName = `cameraUpdate_${matrixHash}`;
+            realityEditor.device.profiling.startTimeProcess(processName, { numStopsRequired });
+        }
+
         cameraNode.setLocalMatrix(cameraMatrix, { recomputeImmediately: true });
         if (realityEditor.gui.threejsScene.setCameraPosition) {
             realityEditor.gui.threejsScene.setCameraPosition(cameraMatrix);
@@ -443,6 +451,7 @@ createNameSpace("realityEditor.sceneGraph");
         if (gpRX) {
             return gpRX.getMatrixRelativeTo(cameraNode);
         }
+        relativeToCamera[NAMES.GROUNDPLANE] = groundPlaneNode.getMatrixRelativeTo(cameraNode); // update the stored matrix immediately
         return relativeToCamera[NAMES.GROUNDPLANE];
     }
 
@@ -763,7 +772,11 @@ createNameSpace("realityEditor.sceneGraph");
         // processed by one of the recursive calls above because .needsRecompute gets reset
         for (let elementId in visualElements) {
             let visualElementNode = visualElements[elementId];
-            visualElementNode.updateWorldMatrix();
+            if (visualElementNode.parent) {
+                visualElementNode.updateWorldMatrix(visualElementNode.parent.worldMatrix);
+            } else {
+                visualElementNode.updateWorldMatrix();
+            }
         }
     }
 

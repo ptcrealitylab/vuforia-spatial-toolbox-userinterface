@@ -37,6 +37,10 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.lastTargettedBinds = {};
             this.lastTextureBinds = {};
             this.lastCapabilities = {};
+            this.lastBindVertexArray = {
+                name: 'bindVertexArray',
+                args: [null],
+            };
             this.buffering = false;
 
             this.onMessage = this.onMessage.bind(this);
@@ -105,6 +109,10 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastActiveTexture = message;
             }
 
+            if (message.name === 'bindVertexArray') {
+                this.lastBindVertexArray = message;
+            }
+
             const targettedBinds = {
                 // Note that all targetted binds should be stored using a VAO
 
@@ -138,11 +146,15 @@ createNameSpace("realityEditor.gui.glRenderer");
                 this.lastTargettedBinds[message.name + '-' + message.args[0]] = message;
             }
             if (message.name === 'bindTexture') {
-                let activeTexture = this.lastActiveTexture.args[0];
-                if (!this.lastTextureBinds[activeTexture]) {
-                    this.lastTextureBinds[activeTexture] = {};
+                if (message.args[1]) {
+                    let activeTexture = this.lastActiveTexture.args[0];
+                    if (!this.lastTextureBinds[activeTexture]) {
+                        this.lastTextureBinds[activeTexture] = {};
+                    }
+                    this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
+                } else {
+                    console.warn('bindTexture target undefined', message);
                 }
-                this.lastTextureBinds[activeTexture][message.name + '-' + message.args[0]] = message;
             }
 
             let res;
@@ -201,6 +213,9 @@ createNameSpace("realityEditor.gui.glRenderer");
             this.buffering = false;
 
             let setup = [];
+            if (this.lastBindVertexArray) {
+                setup.push(this.lastBindVertexArray);
+            }
             if (this.lastUseProgram) {
                 setup.push(this.lastUseProgram);
             }

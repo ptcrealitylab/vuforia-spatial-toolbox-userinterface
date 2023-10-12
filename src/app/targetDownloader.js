@@ -699,7 +699,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;
             const object = realityEditor.getObject(objectKey);
-            if (object.ip === ip && object.name === objectName) {
+            const ipMatches = object.ip === ip || object.ip === 'localhost' || ip === 'localhost';
+            if (ipMatches && object.name === objectName) {
                 return objectKey;
             }
         }

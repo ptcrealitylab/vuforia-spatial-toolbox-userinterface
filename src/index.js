@@ -70,6 +70,7 @@ window.realityEditor = {
         layout: {},
         modeTransition: {},
         onLoad: {},
+        profiling: {},
         touchInputs: {},
         touchPropagation: {},
         tracking: {},
