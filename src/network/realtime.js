@@ -665,7 +665,8 @@ createNameSpace("realityEditor.network.realtime");
         if (socketIP.includes(':8081')) {
             ioObject = window._oldIo.connect(socketIP);
         } else {
-            ioObject = io.connect(socketIP);
+            let tsIo = new ToolSocket.Io();
+            ioObject = tsIo.connect(socketIP);
         }
         if (DEBUG) {
             console.log('createSocketInSet', setName, socketIP, ioObject);
