@@ -251,16 +251,13 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     const abs = (a) => {return Math.abs(a)};
     const dot = (a, b) => {return a.clone().dot(b)};
     const normalize = (a) => {return a.normalize()};
-    const radians = (a) => {return a * Math.PI / 180};
     const degrees = (a) => {return a * 180 / Math.PI};
     const acos = (a) => {return Math.acos(a)};
-    const cos = (a) => {return Math.cos(a)};
     const upVector = new Vector3(0, 1, 0);
 
     const normalToSteepness = (v) => {
         let steepness = abs(dot(normalize(v), upVector)); // Range [0., 1.]. 0. ~ very steep; 1. ~ very flat
         let angle = degrees(acos(steepness));
-        // console.log(angle);
         return angle;
     }
   

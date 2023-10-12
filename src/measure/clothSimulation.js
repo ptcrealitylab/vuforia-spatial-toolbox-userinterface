@@ -39,14 +39,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     }
 
     function setupEventListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'v' || e.key === 'V') {
-                step();
-            } else if (e.key === 'i' || e.key === 'I') { // show everything and start simulation
-                canSimulate = !canSimulate;
-            }
-        })
-
         realityEditor.network.addPostMessageHandler('measureAppSetClothPos', (msgData, fullMessageData) => {
             // todo Steve: besides bounding box info, we also need the volume object's uuid (b/c when finish calculating the cloth volume, we need to send & add the cloth & text under the corresponding bigParentObj
             //  we also need to have the original text label position, b/c we need to place the accurate cloth text label close by the original box volume label
@@ -70,9 +62,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             update();
         }, CLOTH_INTERVAL_MULTIPLIER * CLOTH_COUNT);
     }
-    
-    const isAutoSimulation = true;
-    let canSimulate = true;
 
     const MASS = 0.1;
     const DAMPING = 0.03;
@@ -112,7 +101,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
         addForce(force) {
             this.a.add(this.tmp2.copy(force).multiplyScalar(this.invMass));
-        };
+        }
 
         integrate(timesq) {
             if (this.hasCollided) return; // todo Steve: completely immobilize the collided particle. Attempt to make the system stable
@@ -125,19 +114,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             this.position = newPos;
 
             this.a.set(0, 0, 0);
-        };
+        }
 
         collide(pos) { // particle collide with mesh, cannot move further. Should later change this to include bounding off force
-            // if (pos.clone().sub(this.position).length() > restDistance * 2) { // todo Steve: make sure for every step of collision, the particle can only move as far as rest distance, to make whole system stable
-            //     this.collided = false;
-            //    
-            //     let offset = this.tmp3.subVectors(pos, this.position).normalize().multiplyScalar(restDistance);
-            //     this.previous.copy(offset);
-            //     this.position.copy(offset);
-            //     this.a.set(0, 0, 0);
-            //     return;
-            // }
-            
             this.hasCollided = true;
             this.collided = true;
 
@@ -274,8 +253,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         return particles;
     }
     
-    function addSphere(pos, color = 0xffffff) {
-        let sphere = new THREE.Mesh(collisionHelperGeo, collisionHelperMatYellow);
+    function addSphere(pos) {
+        let sphere = new THREE.Mesh(sphereGeo, sphereMatRed);
         sphere.position.copy(pos);
         realityEditor.gui.threejsScene.addToScene(sphere, {layers: 1});
     }
@@ -439,7 +418,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         pins = [];
         function _makePin(x, y, z) {
             let pinParticle = particles.get(x, y, z);
-            if (isVisualize) addSphere(pinParticle.original, 0xff0000);
+            if (isVisualize) addSphere(pinParticle.original);
             pins.push(pinParticle)
         }
 
@@ -564,23 +543,11 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     let clothGeometry = null, clothMesh = null;
     let normalAttri = null;
-    const WHITE = new THREE.Color(0xffffff);
-    const CYAN = new THREE.Color(0x00ffff);
     const RED = new THREE.Color(0xff0000);
-    const GREEN = new THREE.Color(0x00ff00);
-    const Yellow = new THREE.Color(0xffff00);
 
     // helper sphere
-    const collisionHelperGeo = new THREE.SphereGeometry(5, 8, 4);
-    const collisionHelperGeoSmall = new THREE.SphereGeometry(2, 8, 4);
-    const collisionHelperGeoBig = new THREE.SphereGeometry(10, 8, 4);
-    const collisionHelperMatWhite = new THREE.MeshBasicMaterial({color: WHITE});
-    const collisionHelperMatCyan = new THREE.MeshBasicMaterial({color: CYAN});
-    const collisionHelperMatYellow = new THREE.MeshBasicMaterial({color: CYAN});
-    const collisionHelperMatRed = new THREE.MeshBasicMaterial({color: RED});
-    const collisionHelperMatGreen = new THREE.MeshBasicMaterial({color: GREEN});
-    
-    const sphereHelperArray = []; // todo Steve: for raycasting on the sphereHelper, to find the corresponding particle & draw the collisionArrowHelper
+    const sphereGeo = new THREE.SphereGeometry(5, 8, 4);
+    const sphereMatRed = new THREE.MeshBasicMaterial({color: RED});
 
     function makeBufferGeometry() {
         clothGeometry = new THREE.BufferGeometry();
@@ -597,24 +564,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         normalAttri = clothGeometry.attributes.normal;
         particles.map.forEach((particle) => {
             particle.normal.fromBufferAttribute(normalAttri, particle.getIndex()).negate();
-
-            particle.sphereHelper = new THREE.Mesh(collisionHelperGeoSmall, collisionHelperMatWhite);
-            particle.sphereHelper.correspondingParticle = particle;
-            particle.sphereHelper.position.copy(particle.original);
-            particle.sphereHelper.visible = false;
-            realityEditor.gui.threejsScene.addToScene(particle.sphereHelper, {layers: 1});
-            sphereHelperArray.push(particle.sphereHelper);
-
-            // particle.directionHelper = new THREE.ArrowHelper(particle.normal.clone(), particle.position, 50, 0x00ff00);
-            // realityEditor.gui.threejsScene.addToScene(particle.directionHelper, {layers: 1});
-
-            // particle.collisionHelper = new THREE.Mesh(collisionHelperGeo, collisionHelperMatGreen);
-            // particle.collisionHelper.visible = false;
-            // realityEditor.gui.threejsScene.addToScene(particle.collisionHelper, {layers: 1});
-            
-            // particle.collisionArrowHelper = new THREE.Line(new THREE.BufferGeometry().setFromPoints([particle.position, particle.position]), lineMatGreen);
-            // particle.collisionArrowHelper.visible = false;
-            // realityEditor.gui.threejsScene.addToScene(particle.collisionArrowHelper, {layers: 1});
         })
 
         let material = new THREE.MeshStandardMaterial({
@@ -730,7 +679,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     function simulateCloth(particles, constraints, pins, winds) {
         if (cachedOcclusionObject === null || inverseGroundPlaneMatrix === null) {
-            // console.error('Cannot find an Area Target mesh to compute volume. Or don't have inverseGroundPlaneMatrix. Cannot simulate for now');
             return;
         }
         
@@ -746,7 +694,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 if (particle.hasCollided) return;
                 
                 distance = tmp.subVectors(particle.position, wind.position).length();
-                // distance = Math.pow(distance, 2);
                 particle.addForce(wind.force.clone().divideScalar(distance).multiplyScalar(1000));
             })
         })
@@ -759,64 +706,17 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             tmpPos.copy(particlePos);
             tmpPos.y -= raycastPosOffset;
             raycaster.set(tmpPos, particleDir);
-            raycaster.firstHitOnly = true; // todo Steve: temporarily disable mesh bvh to check if it messes with the collision issues
-            result = raycaster.intersectObjects([cachedOcclusionObject], true); // todo Steve: world coordinates intersection result
-            // result = raycaster.intersectObjects(realityEditor.gui.threejsScene.getSceneChildren(), true);
-
-            // if (result.length !== 0) {
-            //     console.log(result[0].distance);
-            // }
+            raycaster.firstHitOnly = true;
+            result = raycaster.intersectObjects([cachedOcclusionObject], true);
 
             if (result.length !== 0) {
-                result[0].point.applyMatrix4(inverseGroundPlaneMatrix); // todo Steve: converting coords to threejsContainer here will make collisionArrowHelper display incorrectly, and will also mess up with the collide distance check statement below
+                result[0].point.applyMatrix4(inverseGroundPlaneMatrix);
             }
-
-            // todo Steve: turns out result[0].distance doesn't seem to be accurate / unable to properly decide which particles are collided with the mesh anymore. 
-            //  B/c some particles with result[0].distance < COLLIDE_THRESHOLD appears visually very far away AreaTarget mesh
-            //  therefore, fall back to use result[0].point.clone().sub(particle.position).length() as a metric to decide which particles collide with mesh
             
-            // todo Steve: nah I think the ultimate problem is that all the left/right/front/back side particles collide with the wrong point on AreaTarget mesh for some reason. Ask Ben if I did something wrong. Also ask Ben why result[0].distance can be so far away and still count as a collision.
-            // if (result.length === 0 || result[0].distance > COLLIDE_THRESHOLD || result[0].point.clone().sub(particle.position).length() > Math.min(restDistance * 2, 80 * 2)) { // not collided
             if (result.length === 0 || result[0].distance > COLLIDE_THRESHOLD) { // not collided
-
                 particle.collided = false;
-
-                if (particle.collisionHelper) {
-                    particle.collisionHelper.visible = false;
-
-                    if (result.length !== 0) {
-                        // particle.collisionHelper.visible = true;
-                        // particle.collisionHelper.geometry = collisionHelperGeo;
-                        // particle.collisionHelper.material = collisionHelperMatGreen;
-                        // particle.collisionHelper.position.copy(result[0].point);
-                        
-                        if (particle.collisionArrowHelper) {
-                            particle.collisionArrowHelper.geometry.setFromPoints([particle.position, result[0].point]); // todo Steve: somehow the ray-casting direction works? But the side-raycasts don't hit the AreaTarget mesh at all. Plus all the intersection points are at wrong positions
-                            particle.collisionArrowHelper.visible = true;
-                        }
-                    }
-                }
                 return;
             }
-
-            // console.log(result[0].distance, result[0].point.clone().sub(particle.position).length());
-            // let indices = particle._getIndices();
-            // console.log(`Particle ${xyzIndexToParticleKey(indices.x, indices.y, indices.z)} collided with the AreaTarget mesh`);
-
-            // result[0].point.applyMatrix4(inverseGroundPlaneMatrix);
-
-            if (particle.collisionHelper) {
-                particle.collisionHelper.visible = true;
-                // particle.collisionHelper.geometry = collisionHelperGeoBig;
-                particle.collisionHelper.material = collisionHelperMatRed;
-                particle.collisionHelper.position.copy(result[0].point);
-            }
-            
-            // particle.position.copy(result[0].point.sub(particleDir.multiplyScalar(result[0].distance)));
-
-            // particle.collide(particle.position);
-            
-            // particle.collide(result[0].point);
             
             let diff = result[0].point.clone().sub(particle.position).length();
             particle.collide(result[0].point.sub(particleDir.clone().multiplyScalar(diff)));
@@ -846,7 +746,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     function renderCloth(particles, clothMesh) {
         if (cachedOcclusionObject === null || inverseGroundPlaneMatrix === null) {
-            // console.error('Cannot find an Area Target mesh to compute volume. Or don't have inverseGroundPlaneMatrix. Cannot render for now');
             return;
         }
         clothGeometry = clothMesh.geometry;
@@ -863,15 +762,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         clothGeometry.computeVertexNormals();
         particles.map.forEach((particle) => {
             particle.normal.fromBufferAttribute(normalAttri, particle.getIndex()).negate();
-
-            if (particle.sphereHelper) {
-                particle.sphereHelper.position.copy(particle.position);
-            }
-
-            if (particle.directionHelper) {
-                particle.directionHelper.position.copy(particle.position);
-                particle.directionHelper.setDirection(particle.normal.clone());
-            }
         })
     }
     
@@ -928,36 +818,34 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     }
     
     function update() {
-        if (!canSimulate) return;
-        if (isAutoSimulation) {
-            for (const key of Object.keys(CLOTH_INFO)) {
-                const value = CLOTH_INFO[`${key}`];
-                simulateCloth(value.particles, value.constraints, value.pins, value.winds);
-                renderCloth(value.particles, value.clothMesh);
-                
-                let new_volume = getVolume(key, value.clothMesh.geometry, value.tmpTextLabelObj, value.tmpTextLabelPos);
-                if (value.volume === 0) { // when first started, the volume is set to 0
-                    value.volume = new_volume;
-                    return;
-                }
-                
-                if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.0005) || Date.now() - value.startTime > 20000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 10%; (3) after running 20 seconds, then count as finished
-                    console.log(`The final computed volume is ${new_volume}`);
-                    console.log(Math.abs((value.volume - new_volume) / value.volume));
-                    delete CLOTH_INFO[`${key}`];
-                    CLOTH_COUNT--;
-                    balanceLoad();
-                    // todo Steve: delete the cloth & volume text labels, and send corresponding info back to the tools
-                    sendClothInfoToMeasureTool(value.objectKey, value.frameKey, value.uuid, value.clothMesh, value.volume, value.tmpTextLabelPos);
-                    // todo Steve: delete the cloth & volume text labels
-                    //  also, add a listener in setupEventListeners, s.t. if heard a tool delete corresponding volume for that uuid, stop the corresponding simulation & delete the cloth mesh
-                    value.clothMesh.geometry.dispose();
-                    value.clothMesh.material.dispose();
-                    value.clothMesh.parent.remove(value.clothMesh);
-                    value.tmpTextLabelObj.parent.remove(value.tmpTextLabelObj);
-                } else {
-                    value.volume = new_volume;
-                }
+        if (Object.keys(CLOTH_INFO).length === 0) return;
+        for (const key of Object.keys(CLOTH_INFO)) {
+            const value = CLOTH_INFO[`${key}`];
+            simulateCloth(value.particles, value.constraints, value.pins, value.winds);
+            renderCloth(value.particles, value.clothMesh);
+            
+            let new_volume = getVolume(key, value.clothMesh.geometry, value.tmpTextLabelObj, value.tmpTextLabelPos);
+            if (value.volume === 0) { // when first started, the volume is set to 0
+                value.volume = new_volume;
+                return;
+            }
+            
+            if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.0005) || Date.now() - value.startTime > 20000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 10%; (3) after running 20 seconds, then count as finished
+                console.log(`The final computed volume is ${new_volume}`);
+                console.log(Math.abs((value.volume - new_volume) / value.volume));
+                delete CLOTH_INFO[`${key}`];
+                CLOTH_COUNT--;
+                balanceLoad();
+                // todo Steve: delete the cloth & volume text labels, and send corresponding info back to the tools
+                sendClothInfoToMeasureTool(value.objectKey, value.frameKey, value.uuid, value.clothMesh, value.volume, value.tmpTextLabelPos);
+                // todo Steve: delete the cloth & volume text labels
+                //  also, add a listener in setupEventListeners, s.t. if heard a tool delete corresponding volume for that uuid, stop the corresponding simulation & delete the cloth mesh
+                value.clothMesh.geometry.dispose();
+                value.clothMesh.material.dispose();
+                value.clothMesh.parent.remove(value.clothMesh);
+                value.tmpTextLabelObj.parent.remove(value.tmpTextLabelObj);
+            } else {
+                value.volume = new_volume;
             }
         }
     }
@@ -974,25 +862,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         }), '*');
     }
     
-    function step() {
-        if (cachedOcclusionObject !== null) {
-            // console.log(cachedOcclusionObject);
-            // cachedOcclusionObject.traverse(obj => {
-            //     obj.visible = false;
-            // })
-        }
-        if (!isAutoSimulation) {
-            simulateCloth();
-            renderCloth();
-            // getVolume();
-        }
-    }
-    
     exports.initService = initService;
-    exports.initCloth = initCloth;
-    exports.simulateCloth = simulateCloth;
-    exports.renderCloth = renderCloth;
-    exports.getVolume = getVolume;
-    exports.update = update;
 
 }(realityEditor.measure.clothSimulation));

@@ -166,7 +166,7 @@ export class MapShaderSettingsUI {
             realityEditor.gui.threejsScene.changeMeasureMapType(event.target.value);
         });
         
-        realityEditor.network.addPostMessageHandler('measureAppBackToColorMap', (evt) => {
+        realityEditor.network.addPostMessageHandler('measureAppBackToColorMap', () => {
             this.root.querySelector('#map-settings-select-map').value = 'color';
             realityEditor.gui.threejsScene.changeMeasureMapType('color');
         })

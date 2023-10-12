@@ -55,8 +55,6 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         }
     `;
 
-    const RED = new THREE.Vector3(1, 0, 0);
-    const GREEN = new THREE.Vector3(0, 1, 0);
     const CYAN = new THREE.Vector3(0, 1, 1); // map START quad color
     const ORANGE = new THREE.Vector3(1, 0.5, 0); // map END quad color
     const BLACK = new THREE.Vector3(0, 0, 0);
@@ -75,7 +73,7 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         return (i + j * mapData[0].length) * 4;
     }
 
-    function indexToIJ(index) {
+    function _indexToIJ(index) {
         index = Math.floor(index / 4);
         let j = Math.floor(index / mapData[0].length);
         let i = index - j * mapData[0].length;
@@ -220,7 +218,7 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         colAttri.needsUpdate = true;
     }
     
-    function ijToThreejsContainerObjPosition(i, j) {
+    function _ijToThreejsContainerObjPosition(i, j) {
         let pos = new THREE.Vector3(j * size, 0, i * size);
         pos.multiplyScalar(1000);
         let gltfBoundingBox = realityEditor.gui.threejsScene.getGltfBoundingBox();
@@ -327,39 +325,18 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         console.log('%c Found a path!', 'color: green');
         pathNodeArr = [];
         pathPosArr = [];
-        path = '';
-        path += `end: (${current.i}, ${current.j}) ---> `;
         addNodeToPath(current);
-        path += 'open';
-        // console.log(path);
-        
-        // todo Steve: debug for 9/18 demo
-        // pathNodeArr.forEach((node) => {
-        //     console.log(`(${node.j}, ${node.i}): ${steepnessMapData[node.j][node.i]}`);
-        // })
         
         computePathLength();
         // addPathMeshToScene();
         sendPathToMeasureTool();
     }
     
-    let path = '';
     let pathNodeArr = [];
     let pathPosArr = [];
     let pathLength = null;
     function addNodeToPath(n) {
-        // console.log(n);
-
-        // let path = `end(${n.i}, ${n.j}) ---> `;
-        // while (n.parent !== undefined) {
-        //     path += `(${n.parent.i}, ${n.parent.j}) ---> `;
-        //     printPath(n.parent);
-        // }
-        // path += 'open';
-        // console.log(path);
-
         if (n.parent !== undefined) {
-            path += `(${n.parent.i}, ${n.parent.j}) ---> `;
             pathNodeArr.push(n.parent);
             // pathPosArr.push(ijToThreejsContainerObjPosition(n.parent.i, n.parent.j));
             // changeMeshColorFromIndex(ijToIndex(n.parent.i, n.parent.j), GREEN);
@@ -367,7 +344,7 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         }
     }
     
-    function addPathMeshToScene() {
+    function _addPathMeshToScene() {
         const line = new MeshLine();
         line.setPoints(pathPosArr);
         const material = new MeshLineMaterial({color: new THREE.Color(0xffff00),lineWidth: 15});
