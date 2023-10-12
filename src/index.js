@@ -60,7 +60,8 @@ window.realityEditor = {
     app: {
         callbacks: {},
         promises: {},
-        targetDownloader: {}
+        targetDownloader: {},
+        pathfinding: {}
     },
     device: {
         distanceScaling: {},
@@ -126,6 +127,9 @@ window.realityEditor = {
         spatialIndicator: {},
         spatialArrow: {},
         utilities: {}
+    },
+    measure: {
+        clothSimulation: {},
     },
     network: {
         discovery: {},

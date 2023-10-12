@@ -37,6 +37,9 @@ export class MapShaderSettingsUI {
                             <input type="range" min="0" max="90" step="1" id="sliderMaxRange" value="25">
                             <input type="number" min="0" max="90" step="1" id="sliderMaxNumber" value="25">
                         </div>
+<!--                        <div class="hpa-settings-section-row">-->
+<!--                            <div class="hpa-settings-section-row-button" id="hpa-settings-reset-history">Update Paths</div>-->
+<!--                        </div>-->
                     </div>
                 </div>
             </div>
@@ -87,6 +90,7 @@ export class MapShaderSettingsUI {
             sliderMinNumber.value = val;
             minAngle = val;
             realityEditor.gui.threejsScene.updateGradientMapThreshold(minAngle, maxAngle);
+            realityEditor.app.pathfinding.updateSteepnessRange(minAngle, maxAngle);
         });
 
         sliderMinNumber.addEventListener('input', function() {
@@ -99,6 +103,7 @@ export class MapShaderSettingsUI {
             sliderMinRange.value = val;
             minAngle = val;
             realityEditor.gui.threejsScene.updateGradientMapThreshold(minAngle, maxAngle);
+            realityEditor.app.pathfinding.updateSteepnessRange(minAngle, maxAngle);
         });
 
         sliderMaxRange.addEventListener('input', function() {
@@ -111,6 +116,7 @@ export class MapShaderSettingsUI {
             sliderMaxNumber.value = val;
             maxAngle = val;
             realityEditor.gui.threejsScene.updateGradientMapThreshold(minAngle, maxAngle);
+            realityEditor.app.pathfinding.updateSteepnessRange(minAngle, maxAngle);
         });
 
         sliderMaxNumber.addEventListener('input', function() {
@@ -123,6 +129,7 @@ export class MapShaderSettingsUI {
             sliderMaxRange.value = val;
             maxAngle = val;
             realityEditor.gui.threejsScene.updateGradientMapThreshold(minAngle, maxAngle);
+            realityEditor.app.pathfinding.updateSteepnessRange(minAngle, maxAngle);
         });
     }
 
@@ -158,6 +165,11 @@ export class MapShaderSettingsUI {
         this.root.querySelector('#map-settings-select-map').addEventListener('change', (event) => {
             realityEditor.gui.threejsScene.changeMeasureMapType(event.target.value);
         });
+        
+        realityEditor.network.addPostMessageHandler('measureAppBackToColorMap', (evt) => {
+            this.root.querySelector('#map-settings-select-map').value = 'color';
+            realityEditor.gui.threejsScene.changeMeasureMapType('color');
+        })
 
         this.root.querySelector('#map-settings-highlight-walkable-area').addEventListener('change', (event) => {
             realityEditor.gui.threejsScene.highlightWalkableArea(event.target.checked);

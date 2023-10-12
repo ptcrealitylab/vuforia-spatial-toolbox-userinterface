@@ -51,7 +51,7 @@ onmessage = function(evt) {
   const fileName = evt.data.fileName;
   const objectID = evt.data.objectID;
   createNavmeshFromFile(fileName).then(navmesh => {
-    postMessage({navmesh,objectID,fileName});
+      postMessage({navmesh, objectID, fileName, heatmapResolution});
   }).catch(error => {
     console.error(error);
   });
@@ -63,6 +63,7 @@ const createNavmeshFromFile = (fileName) => {
         const geometries = [];
         gltf.scene.traverse(obj => {
             if (obj.geometry) {
+                obj.geometry.computeVertexNormals(); // todo Steve: figure out why compute vertex normals here?
                 obj.geometry.deleteAttribute('uv'); // Messes with merge if present in some geometries but not others
                 obj.geometry.deleteAttribute('uv2'); // Messes with merge if present in some geometries but not others
                 geometries.push(obj.geometry);
@@ -79,7 +80,7 @@ const createNavmeshFromFile = (fileName) => {
 }
 
 // Rasterization algorithm from http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
-const addLine = (array, startX, endX, z, value, ignoreValue) => {
+const addLine = (array, startX, endX, z, value, ignoreValue, faceY, steepness) => {
   for (let x = Math.floor(startX); x <= Math.ceil(endX); x++) {
     if (array[x] === undefined) {
       continue;
@@ -90,15 +91,17 @@ const addLine = (array, startX, endX, z, value, ignoreValue) => {
     if (ignoreValue) {
       array[x][z][2] = 1;
     } else {
-      array[x][z][0] += value;
-      array[x][z][1] += 1;
-      array[x][z][2] = 1;
+      array[x][z][0] += value; // todo Steve: value -- 0/1, but can be changed to store other data, eg: [0, 1]
+      array[x][z][1] += 1; // # of times faces have been added to the. Later can do a weighted sum
+      array[x][z][2] = 1; // whether or not this pixel is within the mesh
+        array[x][z][3] += faceY;
+        array[x][z][4] += steepness;
     }
   }
 }
 
 // v1 must be smallest z vertex, v3 must be the largest
-const addBottomFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
+const addBottomFlatTriangle = (array, v1, v2, v3, value, ignoreValue, faceY, steepness) => {
   const invslope1 = (v2.z-v1.z) === 0 ? 0 : (v2.x - v1.x) / (v2.z - v1.z);
   const invslope2 = (v3.z-v1.z) === 0 ? 0 : (v3.x - v1.x) / (v3.z - v1.z);
   
@@ -106,14 +109,14 @@ const addBottomFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
   let endX = v1.x;
   
   for (let scanlineZ = Math.floor(v1.z); scanlineZ <= Math.ceil(v2.z); scanlineZ++) {
-    addLine(array, startX, endX, scanlineZ, value, ignoreValue);
+    addLine(array, startX, endX, scanlineZ, value, ignoreValue, faceY, steepness);
     startX += invslope1;
     endX += invslope2;
   }
 }
 
 // v1 must be smallest z vertex, v3 must be the largest
-const addTopFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
+const addTopFlatTriangle = (array, v1, v2, v3, value, ignoreValue, faceY, steepness) => {
   const invslope1 = (v3.z-v1.z) === 0 ? 0 : (v3.x - v1.x) / (v3.z - v1.z);
   const invslope2 = (v3.z-v2.z) === 0 ? 0 : (v3.x - v2.x) / (v3.z - v2.z);
   
@@ -121,26 +124,26 @@ const addTopFlatTriangle = (array, v1, v2, v3, value, ignoreValue) => {
   let endX = v3.x;
   
   for (let scanlineZ = Math.ceil(v3.z); scanlineZ >= Math.floor(v1.z); scanlineZ--) {
-    addLine(array, startX, endX, scanlineZ, value, ignoreValue);
+    addLine(array, startX, endX, scanlineZ, value, ignoreValue, faceY, steepness);
     startX -= invslope1;
     endX -= invslope2;
   }
 }
 
 const splitVertex = new Vector3();
-const addTriangle = (array, v1, v2, v3, value, ignoreValue) => {
+const addTriangle = (array, v1, v2, v3, value, ignoreValue, faceY, steepness) => {
   const minZVertex = [v2,v3].reduce((min, current) => current.z < min.z ? current : min, v1);
   const maxZVertex = [v1,v2,v3].filter(vertex => vertex != minZVertex).reduce((max, current) => current.z > max.z ? current : max, [v1,v2,v3].filter(vertex => vertex != minZVertex)[0]);
   const midZVertex = [v1,v2,v3].filter(vertex => vertex != minZVertex && vertex != maxZVertex)[0];
   if (midZVertex.z === maxZVertex.z) {
-    addBottomFlatTriangle(array, minZVertex, midZVertex, maxZVertex, value, ignoreValue);
+    addBottomFlatTriangle(array, minZVertex, midZVertex, maxZVertex, value, ignoreValue, faceY, steepness);
   } else if (midZVertex.z === minZVertex.z) {
-    addTopFlatTriangle(array, minZVertex, midZVertex, maxZVertex, value, ignoreValue);
+    addTopFlatTriangle(array, minZVertex, midZVertex, maxZVertex, value, ignoreValue, faceY, steepness);
   } else {
     splitVertex.x = minZVertex.x + (midZVertex.z - minZVertex.z) / (maxZVertex.z - minZVertex.z) * (maxZVertex.x - minZVertex.x);
     splitVertex.z = midZVertex.z;
-    addBottomFlatTriangle(array, minZVertex, midZVertex, splitVertex, value, ignoreValue);
-    addTopFlatTriangle(array, midZVertex, splitVertex, maxZVertex, value, ignoreValue);
+    addBottomFlatTriangle(array, minZVertex, midZVertex, splitVertex, value, ignoreValue, faceY, steepness);
+    addTopFlatTriangle(array, midZVertex, splitVertex, maxZVertex, value, ignoreValue, faceY, steepness);
   }
 }
 
@@ -154,7 +157,7 @@ const mapGrid = (grid, mapping) => {
 }
 
 const createNavmesh = (geometry, resolution) => { // resolution = number of pixels per meter
-  geometry.computeVertexNormals();
+  // geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   
   const minX = geometry.boundingBox.min.x;
@@ -176,7 +179,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     const expandedWallZArray = [];
     const regionMapZArray = [];
     for (let z = 0; z < zLength; z++) {
-      faceDataZArray.push([0,0,0]); // [totalWeight, count, withinMesh]
+      faceDataZArray.push([0,0,0,0,0]); // [totalWeight, count, withinMesh, total height, total Angle], todo Steve: at the end, total angle / count ????
       outerHolesZArray.push(0);
       expandedWallZArray.push(0);
       regionMapZArray.push(0);
@@ -189,6 +192,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   
   const indexedFaceAttribute = geometry.index;
   const positionAttribute = geometry.attributes.position;
+  const normalAttribute = geometry.attributes.normal;
   
   // Re-use vector objects for efficiency
   const indexVector = new Vector3();
@@ -196,8 +200,14 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const vertexVector2 = new Vector3();
   const vertexVector3 = new Vector3();
   
+  const vertexNormal1 = new Vector3();
+  const vertexNormal2 = new Vector3();
+  const vertexNormal3 = new Vector3();
+  
+  let vertexAngle1, vertexAngle2, vertexAngle3;
+  
   let vertexIndex = 0;
-  const loadVertices = (v1, v2, v3) => {
+  const loadVertices = (v1, v2, v3, n1, n2, n3) => {
     if (geometry.index) { // Have to handle indexed vertices differently from sequential vertices
       if (vertexIndex >= indexedFaceAttribute.count) {
         return false;
@@ -206,6 +216,9 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
       v1.fromBufferAttribute(positionAttribute, indexVector.x);
       v2.fromBufferAttribute(positionAttribute, indexVector.y);
       v3.fromBufferAttribute(positionAttribute, indexVector.z);
+      n1.fromBufferAttribute(normalAttribute, indexVector.x);
+      n2.fromBufferAttribute(normalAttribute, indexVector.y);
+      n3.fromBufferAttribute(normalAttribute, indexVector.z);
     } else {
       if (vertexIndex >= positionAttribute.count) {
         return false;
@@ -213,6 +226,9 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
       v1.fromBufferAttribute(positionAttribute, vertexIndex);
       v2.fromBufferAttribute(positionAttribute, vertexIndex+1);
       v3.fromBufferAttribute(positionAttribute, vertexIndex+2);
+        n1.fromBufferAttribute(normalAttribute, vertexIndex);
+        n2.fromBufferAttribute(normalAttribute, vertexIndex+1);
+        n3.fromBufferAttribute(normalAttribute, vertexIndex+2);
     }
     vertexIndex += 3;
     return true;
@@ -221,6 +237,8 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   // We're looking for walkable space, so any faces in this range are obstacles
   const lowIgnoreHeight = 0.5; // 50cm ~= Knee height for tall people (like me)
   const highIgnoreHeight = 2; // 2m ~= slightly under door height
+    // const lowIgnoreHeight = -20; // 50cm ~= Knee height for tall people (like me)
+    // const highIgnoreHeight = 20; // 2m ~= slightly under door height
   
   // The floor offset will be set by looking down from the origin first, and if nothing is found, looking up
   let floorOffsetDown = 1; // Junk positive offset that will get replaced if there is a floor beneath the origin point
@@ -229,9 +247,25 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const floorDetectionResultDown = new Vector3();
   const floorDetectionRayUp = new Ray(new Vector3(0,0,0), new Vector3(0,1,0));
   const floorDetectionResultUp = new Vector3();
+
+    const abs = (a) => {return Math.abs(a)};
+    const dot = (a, b) => {return a.clone().dot(b)};
+    const normalize = (a) => {return a.normalize()};
+    const radians = (a) => {return a * Math.PI / 180};
+    const degrees = (a) => {return a * 180 / Math.PI};
+    const acos = (a) => {return Math.acos(a)};
+    const cos = (a) => {return Math.cos(a)};
+    const upVector = new Vector3(0, 1, 0);
+
+    const normalToSteepness = (v) => {
+        let steepness = abs(dot(normalize(v), upVector)); // Range [0., 1.]. 0. ~ very steep; 1. ~ very flat
+        let angle = degrees(acos(steepness));
+        // console.log(angle);
+        return angle;
+    }
   
   // Load the next face into our vertex vectors and evaluate until out of faces
-  while(loadVertices(vertexVector1, vertexVector2, vertexVector3)) {
+  while(loadVertices(vertexVector1, vertexVector2, vertexVector3, vertexNormal1, vertexNormal2, vertexNormal3)) {
     
     // Use the average height of the vertices to determine the height of the face
     const faceY = (vertexVector1.y + vertexVector2.y + vertexVector3.y)/3;
@@ -259,6 +293,14 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     if (vertexVector1.y - minY > highIgnoreHeight && vertexVector2.y - minY > highIgnoreHeight && vertexVector3.y - minY > highIgnoreHeight) {
       ignoreWeight = true;
     }
+
+    // calculate steepness based on v1, v2, v3
+    //   console.log(vertexNormal1, vertexNormal2, vertexNormal3);
+    vertexAngle1 = normalToSteepness(vertexNormal1);
+    vertexAngle2 = normalToSteepness(vertexNormal2);
+    vertexAngle3 = normalToSteepness(vertexNormal3);
+    // console.log(vertexAngle1, vertexAngle2, vertexAngle3);
+      let steepness = (vertexAngle1 + vertexAngle2 + vertexAngle3) / 3;
     
     // Converting positions to navmesh coordinates to allow for rasterization of face
     [vertexVector1, vertexVector2, vertexVector3].forEach(vertex => {
@@ -268,17 +310,59 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     const weight = 1;
     
     // Rasterize face data onto navmesh
-    addTriangle(faceData, vertexVector1, vertexVector2, vertexVector3, weight, ignoreWeight);
+    addTriangle(faceData, vertexVector1, vertexVector2, vertexVector3, weight, ignoreWeight, faceY, steepness);
   }
   
   const floorOffset = floorOffsetDown < 0 ? floorOffsetDown : minY;
+
+    const makeArray = (a, b, cb) => {
+        var arr = [];
+        for(let i = 0; i < a; i++) {
+            arr[i] = [];
+            for(let j = 0; j < b; j++) {
+                arr[i][j] = cb(i, j);
+            }
+        }
+        return arr;
+    }
+    
+    let steepnessMap = makeArray(faceData.length, faceData[0].length, () => {return 0});
+
+  // calculate the average steepness of each grid cell to a 2d array
+    for (let i = 0; i < faceData.length; i++) {
+        for (let j = 0; j < faceData[0].length; j++) {
+            steepnessMap[i][j] = faceData[i][j][1] === 0 ? 0 : faceData[i][j][4] / faceData[i][j][1]; // -1 --- not computed area in the navmesh, un-walkable area
+        }
+    }
+    
+    // console.log(steepnessMap);
+    
+    
+    let heightMap = makeArray(faceData.length, faceData[0].length, (i, j) => {
+        return faceData[i][j][1] === 0 ? 0 : faceData[i][j][3] / faceData[i][j][1];
+    })
+
+    // console.log(heightMap);
+    
+    
+    // double check how the count values to see how it works
+    let countMap = makeArray(faceData.length, faceData[0].length, (i, j) => {
+        return faceData[i][j][1];
+    });
+
+    // console.log(countMap);
   
   // Calculate average weight of faces within pixels
-  mapGrid(faceData, value => [value[1] === 0 ? 0 : value[0] / value[1], value[2], 0]);
+  mapGrid(faceData, value => [value[1] === 0 ? 0 : value[0] / value[1], value[2], 0]); // total weight / count
+    // similar to above, I build the final grid based on steepness value
   
+    // with in / out mesh, whether if the obstacle is within / outside of the mesh
+    // now value -- [average weight, within mesh, 0]
   // Pixels without obstacles but within the mesh are considered walkable, other pixels are not
   const normalCutoff = 0.1;
   mapGrid(faceData, value => value[0] < normalCutoff ? [0, value[1], 0] : [value[0], 0, 0]);
+  
+  // now value -- [0 - not walkable / average weight - walkable, within mesh - not walkable / 0 - walkable, 0]
   
   // Filling outer holes (non-mesh pixels), defined as non-walkable pixels reachable from edge of grid
   const outerHolesStack = [];
@@ -421,7 +505,11 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   
   // Share bounding box positions so we can scale real-world positions to grid properly
   return {
+    // map: regionMap,
     map: regionMap,
+      countMap: countMap,
+      steepnessMap: steepnessMap,
+      heightMap: heightMap,
     minX: minX,
     maxX: maxX,
     minY: minY,

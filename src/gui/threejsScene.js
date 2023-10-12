@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { CSS2DRenderer } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
@@ -31,6 +32,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
+    let isSteepnessMapOn = false;
+    let navmesh = null;
+    let gltfBoundingBox = null;
+    let cssRenderer = null;
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -108,6 +113,24 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
+        
+        document.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'n' || e.key === 'N') {
+                navmesh.visible = !navmesh.visible;
+            }
+        })
+
+        cssRenderer = new CSS2DRenderer();
+        cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        const css3dCanvas = cssRenderer.domElement;
+        css3dCanvas.id = 'three-js-scene-css-3d-renderer';
+        // set the position style and pointer events none to complete the setup
+        css3dCanvas.style.position = 'absolute';
+        css3dCanvas.style.pointerEvents = 'none';
+        css3dCanvas.style.top = '0';
+        css3dCanvas.style.left = '0';
+        document.body.appendChild(css3dCanvas);
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -166,6 +189,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
+        cssRenderer.render(scene, camera);
+        
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
@@ -385,7 +410,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      * @param {{x: number, y: number, z: number}} originOffset - offset of model for ground plane being aligned with y=0
      * @param {{x: number, y: number, z: number}} originRotation - rotation for up to be up
      * @param {number} maxHeight - maximum (ceiling) height of model
-     * @param {number} ceilingY - max and min y value of model mesh
+     * @param {number} ceilingAndFloor - max y (ceiling) and min y (floor) value of model mesh
      * @param {{x: number, y: number, z: number}} center - center of model for loading animation
      * @param {function} callback - Called on load with gltf's threejs object
      *
@@ -395,7 +420,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, ceilingY, center, callback) {
+    function addGltfToScene(pathToGltf, map, steepnessMap, heightMap, originOffset, originRotation, maxHeight, ceilingAndFloor, center, callback) {
         const gltfLoader = new GLTFLoader();
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
@@ -432,7 +457,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 }
                 gltf.scene.geometry.computeVertexNormals();
                 gltf.scene.geometry.computeBoundingBox();
-                gltf.scene.heightMaterial = customMaterials.heightMapMaterial(gltf.scene.material, {ceilingY: ceilingY});
+                gltf.scene.heightMaterial = customMaterials.heightMapMaterial(gltf.scene.material, {ceilingAndFloor: ceilingAndFloor});
                 gltf.scene.gradientMaterial = customMaterials.gradientMapMaterial(gltf.scene.material);
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
@@ -472,7 +497,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                     }
                     
                     child.geometry.computeVertexNormals();
-                    child.heightMaterial = customMaterials.heightMapMaterial(child.material, {ceilingY: ceilingY});
+                    child.heightMaterial = customMaterials.heightMapMaterial(child.material, {ceilingAndFloor: ceilingAndFloor});
                     child.gradientMaterial = customMaterials.gradientMapMaterial(child.material);
 
                     // the attributes must be non-indexed in order to add a barycentric coordinate buffer
@@ -500,6 +525,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 }));
                 mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+                gltfBoundingBox = mergedGeometry.boundingBox;
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
                 allMeshes.map(child => {
@@ -508,6 +534,14 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
+            
+            navmesh = realityEditor.app.pathfinding.initService(map, steepnessMap, heightMap);
+            // add in the navmesh
+            // navmesh.scale.set(1000, 1000, 1000);
+            // navmesh.position.set(gltfBoundingBox.min.x * 1000, 0, gltfBoundingBox.min.z * 1000);
+            // navmesh.layers.set(1);
+            // navmesh.visible = false;
+            // threejsContainerObj.add(navmesh);
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
@@ -554,6 +588,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         switch (mapType) {
             case 'color':
                 isHeightMapOn = false;
+                isSteepnessMapOn = false;
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
@@ -562,6 +597,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 break;
             case 'height':
                 isHeightMapOn = true;
+                isSteepnessMapOn = false;
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
@@ -570,6 +606,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 break;
             case 'steepness':
                 isHeightMapOn = false;
+                isSteepnessMapOn = true;
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
@@ -583,7 +620,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         if (realityEditor.envelopeManager.getFrameTypeFromKey(objectkey, framekey) === 'spatialMeasure') {
             let iframe = document.getElementById('iframe' + framekey);
             iframe.contentWindow.postMessage(JSON.stringify({
-                isHeightMapOn: isHeightMapOn
+                isHeightMapOn: isHeightMapOn,
+                isSteepnessMapOn: isSteepnessMapOn,
             }), '*');
         }
     }
@@ -840,14 +878,14 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 }
             });
         }
-        heightMapMaterial(sourceMaterial, {ceilingY}) {
+        heightMapMaterial(sourceMaterial, {ceilingAndFloor}) {
             let material = sourceMaterial.clone();
 
             material.uniforms = THREE.UniformsUtils.merge([
                 THREE.ShaderLib.physical.uniforms,
                 {
-                    heightMap_maxY: {value: ceilingY.maxY},
-                    heightMap_minY: {value: ceilingY.minY},
+                    heightMap_maxY: {value: ceilingAndFloor.ceiling},
+                    heightMap_minY: {value: ceilingAndFloor.floor},
                     distanceToCamera: {value: 0} // todo Steve; later in the code, need to set gltf.scene.material.uniforms['....'] to desired value
                 }
             ]);
@@ -1058,6 +1096,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         let toolMatrix = realityEditor.sceneGraph.convertToNewCoordSystem(realityEditor.gui.ar.utilities.newIdentityMatrix(), toolSceneNode, groundPlaneNode);
         let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
         return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
+    }
+    
+    exports.getGltfBoundingBox = function() {
+        return gltfBoundingBox;
     }
 
     /**

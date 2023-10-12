@@ -81,6 +81,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         onMarkerAdded: [],
         onTargetState: []
     }
+    
+    let navmeshResolution = null;
 
     /**
      * Worker that generates navmeshes from upload area target meshes
@@ -92,7 +94,8 @@ createNameSpace("realityEditor.app.targetDownloader");
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
-        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+        navmeshResolution = evt.data.heatmapResolution;
+        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh)); // todo Steve: uncomment this line when pushing to Github!
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);
@@ -799,6 +802,10 @@ createNameSpace("realityEditor.app.targetDownloader");
                 listener.callback(targetDownloadStates[objectID]);
             }
         });
+    }
+    
+    exports.getNavmeshResolution = function() {
+        return navmeshResolution;
     }
 
     // These functions are the public API that should be called by other modules

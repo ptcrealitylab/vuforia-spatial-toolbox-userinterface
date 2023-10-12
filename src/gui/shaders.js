@@ -96,7 +96,7 @@ createNameSpace("realityEditor.gui.shaders");
                     float steepness = abs(dot(normalize(vNormal2), vec3(0., 1., 0.))); // Range [0., 1.]. 0. ~ very steep; 1. ~ very flat
                     float angle = degrees(acos(steepness));
                     float a = Remap(angle, gradientMap_minAngle, gradientMap_maxAngle, .1, .8);
-                    col = HSLToRGB(a * 360. - 290., 100., 50.) * 0.5;
+                    col = HSLToRGB(a * 360. + 70., 100., 50.) * 0.5;
                     
                     float mapAlpha = gradientMap_outOfRangeAreaOriginalColor ? (angle < gradientMap_minAngle || angle > gradientMap_maxAngle ? 0. : 1.) : 1.;
                     // col *= mapAlpha;
