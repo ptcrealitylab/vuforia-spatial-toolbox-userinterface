@@ -1,10 +1,9 @@
 .range-slider {
-    position: absolute;
-    left: 30px;
+    position: relative;
     width: 300px;
     margin: auto;
     text-align: center;
-    height: 6em;
+    height: 4em;
 }
 
 .range-slider input {
@@ -25,7 +24,7 @@ input[type=number]:nth-child(4) {
     bottom: 20px;
 }
 
-input[type=number]:nth-child(2) {
+input[type=number]:nth-child(3) {
     bottom: 20px;
 }
 

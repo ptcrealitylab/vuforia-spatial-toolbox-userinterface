@@ -33,8 +33,8 @@ export class MapShaderSettingsUI {
                     <div class="map-settings-section-body">
                         <div class='map-settings-section-row range-slider'>
                             <input type="range" min="0" max="90" step="1" id="sliderMinRange" value="0">
-                            <input type="number" min="0" max="90" step="1" id="sliderMinNumber" value="0">
                             <input type="range" min="0" max="90" step="1" id="sliderMaxRange" value="25">
+                            <input type="number" min="0" max="90" step="1" id="sliderMinNumber" value="0">
                             <input type="number" min="0" max="90" step="1" id="sliderMaxNumber" value="25">
                         </div>
 <!--                        <div class="hpa-settings-section-row">-->
