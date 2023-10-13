@@ -1,5 +1,6 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from "../humanPose/constants.js";
+import {JOINTS} from '../humanPose/constants.js';
+import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -161,7 +162,7 @@ export class RegionCard {
     }
 
     updatePinButtonText() {
-        let pinButton = this.element.querySelector('.analytics-region-card-pin');
+        let pinButton = this.element.querySelector('.analytics-region-card-button');
         if (pinButton) {
             pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         }
@@ -176,9 +177,9 @@ export class RegionCard {
         }
 
         if (this.state === RegionCardState.Pinned) {
-            showButton.style.display = 'inline';
+            showButton.style.opacity = '1';
         } else {
-            showButton.style.display = 'none';
+            showButton.style.opacity = '0';
         }
 
         showButton.textContent = this.displayActive ? 'Hide' : 'Show';
@@ -240,7 +241,7 @@ export class RegionCard {
                 clearTimeout(debouncedSave);
             }
             debouncedSave = setTimeout(() => {
-                this.analytics.writeDehydratedRegionCards();
+                this.analytics.writeAnalyticsData();
                 debouncedSave = null;
             }, 1000);
         });
@@ -253,7 +254,7 @@ export class RegionCard {
 
         const pinButton = document.createElement('a');
         pinButton.href = '#';
-        pinButton.classList.add('analytics-region-card-pin');
+        pinButton.classList.add('analytics-region-card-button');
         pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
         pinButton.addEventListener('click', this.onClickPin);
         this.element.appendChild(pinButton);
@@ -263,6 +264,39 @@ export class RegionCard {
         showButton.classList.add('analytics-region-card-show');
         showButton.addEventListener('click', this.onClickShow);
         this.element.appendChild(showButton);
+
+        const valueAddWasteTimeDiv = document.createElement('div');
+        valueAddWasteTimeDiv.classList.add('analytics-value-add-waste-time-container');
+        this.element.appendChild(valueAddWasteTimeDiv);
+
+        const wasteTimeButton = document.createElement('div');
+        wasteTimeButton.classList.add('analytics-waste-time-item');
+        wasteTimeButton.textContent = 'Waste';
+        wasteTimeButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.analytics.markWasteTime(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.analytics.timeline.highlightRegion;
+                this.analytics.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
+            }
+        });
+        this.wasteTimeButton = wasteTimeButton;
+        valueAddWasteTimeDiv.appendChild(wasteTimeButton);
+
+        const valueAddButton = document.createElement('div');
+        valueAddButton.classList.add('analytics-value-add-item');
+        valueAddButton.textContent = 'Value';
+        valueAddButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.analytics.markValueAdd(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.analytics.timeline.highlightRegion;
+                this.analytics.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
+            }
+        });
+        this.valueAddButton = valueAddButton;
+        valueAddWasteTimeDiv.appendChild(valueAddButton);
+        
         this.updateDisplayActive();
     }
 
@@ -510,5 +544,21 @@ export class RegionCard {
         this.remove();
         this.container = newContainer;
         this.container.appendChild(this.element);
+    }
+
+    /**
+     * @param {string} value
+     */
+    setValueAddWasteTimeValue(value) {
+        if (value === ValueAddWasteTimeTypes.WASTE_TIME) {
+            this.wasteTimeButton.classList.add('selected');
+            this.valueAddButton.classList.remove('selected');
+        } else if (value === ValueAddWasteTimeTypes.VALUE_ADD) {
+            this.valueAddButton.classList.add('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        } else {
+            this.valueAddButton.classList.remove('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        }
     }
 }
