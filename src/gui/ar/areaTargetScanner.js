@@ -524,7 +524,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                         loadingDialog = null;
 
                         // objects aren't fully initialized until they have a target.jpg, so we upload a screenshot to be the "icon"
-                        realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+                        realityEditor.app.getSnapshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
                     }
                 });
             }, 1000);
@@ -543,7 +543,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         if (base64String === "") {
             // got empty screenshot... try again later
             setTimeout(function() {
-                realityEditor.app.getScreenshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
+                realityEditor.app.getSnapshot('S', 'realityEditor.gui.ar.areaTargetScanner.onScreenshotReceived');
             }, 3000);
             return;
         }

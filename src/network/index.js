@@ -1931,7 +1931,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (typeof msgContent.getScreenshotBase64 !== "undefined") {
         realityEditor.network.frameIdForScreenshot = msgContent.frame;
-        realityEditor.app.getScreenshot("S", function(base64String) {
+        realityEditor.app.getSnapshot("S", function(base64String) {
             var thisMsg = {
                 getScreenshotBase64: base64String
                 // frameKey: realityEditor.network.frameIdForScreenshot
