@@ -13,6 +13,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     let worldId = null;
     let cachedOcclusionObject = null, inverseGroundPlaneMatrix = null, intervalId = null;
     let raycastPosOffset = null;
+    let isOnDesktop = undefined;
     
     function initService() {
         if (cachedOcclusionObject === null || cachedOcclusionObject === undefined || inverseGroundPlaneMatrix === null || inverseGroundPlaneMatrix === undefined) {
@@ -20,10 +21,10 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 if (cachedOcclusionObject !== null && cachedOcclusionObject !== undefined && inverseGroundPlaneMatrix !== null && inverseGroundPlaneMatrix !== undefined) {
                     console.log(cachedOcclusionObject);
                     if (realityEditor.avatar.isDesktop()) {
-                        console.log('%c is on Desktop!', 'color: green');
+                        isOnDesktop = true;
                         raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
                     } else {
-                        console.log('%c is NOT on Desktop!', 'color: red');
+                        isOnDesktop = false;
                         raycastPosOffset = 0;
                     }
                     clearInterval(intervalId);
@@ -47,6 +48,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     function setupEventListeners() {
         realityEditor.network.addPostMessageHandler('measureAppSetClothPos', (msgData, fullMessageData) => {
+            if (!isOnDesktop) return; // todo Steve: for now, if on mobile, disable the cloth simulation function since it's both inaccurate & slows down the entire app
             // todo Steve: besides bounding box info, we also need the volume object's uuid (b/c when finish calculating the cloth volume, we need to send & add the cloth & text under the corresponding bigParentObj
             //  we also need to have the original text label position, b/c we need to place the accurate cloth text label close by the original box volume label
             if (msgData.uuid === undefined || msgData.boundingBoxMin === undefined || msgData.boundingBoxMax === undefined) return;
