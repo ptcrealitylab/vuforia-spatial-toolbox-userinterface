@@ -95,7 +95,7 @@ createNameSpace("realityEditor.app.targetDownloader");
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
         navmeshResolution = evt.data.heatmapResolution;
-        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh)); // todo Steve: uncomment this line when pushing to Github!
+        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);

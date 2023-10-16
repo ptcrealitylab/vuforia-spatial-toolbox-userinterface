@@ -22,6 +22,7 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
     
     function setupEventListener() {
         realityEditor.network.addPostMessageHandler('measureAppSetPathPoint', (evt) => {
+            if (evt.point === undefined) return;
             if (evt.type === 'start') {
                 resetStartAndEndIndices();
                 worldPosToNavmeshIndex(new THREE.Vector3(evt.point[0], evt.point[1], evt.point[2]));

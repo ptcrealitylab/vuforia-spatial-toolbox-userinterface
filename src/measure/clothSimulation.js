@@ -15,13 +15,20 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     let raycastPosOffset = null;
     
     function initService() {
-        if (cachedOcclusionObject === null || inverseGroundPlaneMatrix === null) {
+        if (cachedOcclusionObject === null || cachedOcclusionObject === undefined || inverseGroundPlaneMatrix === null || inverseGroundPlaneMatrix === undefined) {
             intervalId = setInterval(() => {
-                if (cachedOcclusionObject !== null && inverseGroundPlaneMatrix !== null) {
-                    raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
+                if (cachedOcclusionObject !== null && cachedOcclusionObject !== undefined && inverseGroundPlaneMatrix !== null && inverseGroundPlaneMatrix !== undefined) {
+                    console.log(cachedOcclusionObject);
+                    if (realityEditor.avatar.isDesktop()) {
+                        console.log('%c is on Desktop!', 'color: green');
+                        raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
+                    } else {
+                        console.log('%c is NOT on Desktop!', 'color: red');
+                        raycastPosOffset = 0;
+                    }
                     clearInterval(intervalId);
                 }
-                if (worldId === null || cachedOcclusionObject === null) {
+                if (worldId === null || worldId === undefined || cachedOcclusionObject === null || cachedOcclusionObject === undefined) {
                     // cachedOcclusionObject = realityEditor.spatialCursor.getRaycastObjects().cachedOcclusionObject;
                     worldId = realityEditor.sceneGraph.getWorldId();
                     if (worldId === null) return;

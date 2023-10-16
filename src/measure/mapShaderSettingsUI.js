@@ -135,11 +135,11 @@ export class MapShaderSettingsUI {
 
     setUpEventListeners() {
         // todo Steve: add event listeners for turning / toggling the UI on and off
-        realityEditor.network.addPostMessageHandler('turnMeasureMapUI', (boolean) => {
+        realityEditor.network.addPostMessageHandler('measureAppTurnMapUI', (boolean) => {
             if (boolean) this.show();
             else this.hide();
         });
-        realityEditor.network.addPostMessageHandler('toggleMeasureMapUI', () => {
+        realityEditor.network.addPostMessageHandler('measureAppToggleMapUI', () => {
             this.toggle();
         });
         // Toggle menu minimization when clicking on the header, but only if not dragging
@@ -166,10 +166,8 @@ export class MapShaderSettingsUI {
             realityEditor.gui.threejsScene.changeMeasureMapType(event.target.value);
         });
         
-        realityEditor.network.addPostMessageHandler('measureAppBackToColorMap', () => {
-            this.root.querySelector('#map-settings-select-map').value = 'color';
-            realityEditor.gui.threejsScene.changeMeasureMapType('color');
-        })
+        realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted.bind(this)); // deleted using userinterface
+        realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted.bind(this)); // deleted using server
 
         this.root.querySelector('#map-settings-highlight-walkable-area').addEventListener('change', (event) => {
             realityEditor.gui.threejsScene.highlightWalkableArea(event.target.checked);
@@ -193,6 +191,17 @@ export class MapShaderSettingsUI {
                 event.stopPropagation();
             });
         });
+    }
+
+    onVehicleDeleted(event) {
+        if (!event.objectKey || !event.frameKey || event.nodeKey) {
+            return;
+        }
+        if (realityEditor.envelopeManager.getFrameTypeFromKey(event.objectKey, event.frameKey) === 'spatialMeasure') {
+            this.root.querySelector('#map-settings-select-map').value = 'color';
+            realityEditor.gui.threejsScene.changeMeasureMapType('color');
+            this.hide();
+        }
     }
 
     enableDrag() {

@@ -357,13 +357,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
+            let tmpRaycastResult = getRaycastCoordinates(screenX, screenY);
+            let threejsIntersectPoint = tmpRaycastResult.point === undefined ? undefined : {
+                x: tmpRaycastResult.point.x,
+                y: tmpRaycastResult.point.y,
+                z: tmpRaycastResult.point.z,
+            }
             realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
                 spatialCursorEvent: {
                     clientX: screenX,
                     clientY: screenY,
                     x: screenX,
                     y: screenY,
-                    projectedZ: projectedZ
+                    projectedZ: projectedZ,
+                    threejsIntersectPoint: threejsIntersectPoint
                 }
             });
         });
@@ -533,9 +540,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     
     function addPostMessageHandlers() {
-        realityEditor.network.addPostMessageHandler('toggleMeasureMode', toggleMeasureMode);
-        realityEditor.network.addPostMessageHandler('toggleCrossRotation', toggleCrossRotation);
-        realityEditor.network.addPostMessageHandler('toggleCloseLoop', toggleCloseLoop);
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleMeasureMode', toggleMeasureMode);
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleCrossRotation', toggleCrossRotation);
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleCloseLoop', toggleCloseLoop);
     }
     
     let measureFalseId = null;
