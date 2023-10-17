@@ -162,15 +162,15 @@ export class RegionCard {
     }
 
     updatePinButtonText() {
-        let pinButton = this.element.querySelector('.analytics-region-card-button');
+        let pinButton = this.element.querySelector('#analytics-region-card-step');
         if (pinButton) {
-            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         }
         this.updateDisplayActive();
     }
 
     updateDisplayActive() {
-        let showButton = this.element.querySelector('.analytics-region-card-show');
+        let showButton = this.element.querySelector('#analytics-region-card-show');
         if (!showButton) {
             console.warn('regioncard missing element');
             return;
@@ -251,23 +251,27 @@ export class RegionCard {
         this.graphSummaryValues = {};
         this.createGraphSection('reba', 'REBA');
         this.createGraphSection('accel', 'Accel');
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('analytics-region-card-button-container');
+        this.element.appendChild(buttonContainer);
 
-        const pinButton = document.createElement('a');
-        pinButton.href = '#';
+        const pinButton = document.createElement('div');
         pinButton.classList.add('analytics-region-card-button');
-        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+        pinButton.id = 'analytics-region-card-step';
+        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         pinButton.addEventListener('click', this.onClickPin);
-        this.element.appendChild(pinButton);
+        buttonContainer.appendChild(pinButton);
 
-        const showButton = document.createElement('a');
-        showButton.href = '#';
-        showButton.classList.add('analytics-region-card-show');
+        const showButton = document.createElement('div');
+        showButton.classList.add('analytics-region-card-button');
+        showButton.id = 'analytics-region-card-show';
         showButton.addEventListener('click', this.onClickShow);
-        this.element.appendChild(showButton);
+        buttonContainer.appendChild(showButton);
 
         const valueAddWasteTimeDiv = document.createElement('div');
         valueAddWasteTimeDiv.classList.add('analytics-value-add-waste-time-container');
-        this.element.appendChild(valueAddWasteTimeDiv);
+        buttonContainer.appendChild(valueAddWasteTimeDiv);
 
         const wasteTimeButton = document.createElement('div');
         wasteTimeButton.classList.add('analytics-waste-time-item');
