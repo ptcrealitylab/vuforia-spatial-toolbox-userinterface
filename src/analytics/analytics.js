@@ -367,7 +367,7 @@ export class Analytics {
             }
         }
         this.pinnedRegionCards.push(regionCard);
-        regionCard.setValueAddWasteTimeValue(this.valueAddWasteTimeManager.getValueForRegion(regionCard.startTime, regionCard.endTime));
+        regionCard.updateValueAddWasteTimeUi(this.valueAddWasteTimeManager);
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel('Step ' + this.nextStepNumber);
@@ -521,7 +521,7 @@ export class Analytics {
     markWasteTime(startTime, endTime) {
         this.valueAddWasteTimeManager.markWasteTime(startTime, endTime);
         this.pinnedRegionCards.forEach(card => {
-            card.setValueAddWasteTimeValue(this.valueAddWasteTimeManager.getValueForRegion(card.startTime, card.endTime));
+            card.updateValueAddWasteTimeUi();
         });
         this.writeAnalyticsData();
     }
@@ -533,7 +533,7 @@ export class Analytics {
     markValueAdd(startTime, endTime) {
         this.valueAddWasteTimeManager.markValueAdd(startTime, endTime);
         this.pinnedRegionCards.forEach(card => {
-            card.setValueAddWasteTimeValue(this.valueAddWasteTimeManager.getValueForRegion(card.startTime, card.endTime));
+            card.updateValueAddWasteTimeUi();
         });
         this.writeAnalyticsData();
     }

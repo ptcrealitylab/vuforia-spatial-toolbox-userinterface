@@ -1961,6 +1961,10 @@ Logic Interface CSS
     grid-column-start: span 3;
 }
 
+.analytics-region-card-value-add-waste-time-summary {
+    grid-column-start: span 3;
+}
+
 .analytics-region-card-label {
     grid-column-start: span 3;
     border-bottom: 1px solid #999;

@@ -58,6 +58,7 @@ export class RegionCard {
             this.endTime = desc.endTime;
         }
         this.setPoses(poses);
+        this.updateValueAddWasteTimeUi();
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -211,10 +212,18 @@ export class RegionCard {
             'analytics-region-card-subtitle',
             'analytics-region-card-motion-summary'
         );
+        
+        this.valueAddWasteTimeSummary = document.createElement('div');
+        this.valueAddWasteTimeSummary.classList.add('analytics-region-card-value-add-waste-time-summary');
+        this.valueAddWasteTimeSummary.setValues = (valuePercent, wastePercent) => {
+            this.valueAddWasteTimeSummary.innerHTML = `Value Add: ${valuePercent}%, Waste Time: ${wastePercent}%`;
+        }
+        this.valueAddWasteTimeSummary.setValues(0, 0);
 
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(colorDot);
         this.element.appendChild(motionSummary);
+        this.element.appendChild(this.valueAddWasteTimeSummary);
 
         this.labelElement = document.createElement('div');
         this.labelElement.classList.add('analytics-region-card-label');
@@ -550,19 +559,38 @@ export class RegionCard {
         this.container.appendChild(this.element);
     }
 
-    /**
-     * @param {string} value
-     */
-    setValueAddWasteTimeValue(value) {
-        if (value === ValueAddWasteTimeTypes.WASTE_TIME) {
+    updateValueAddWasteTimeUi() {
+        const regionValue = this.analytics.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
+
+        if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
             this.wasteTimeButton.classList.add('selected');
             this.valueAddButton.classList.remove('selected');
-        } else if (value === ValueAddWasteTimeTypes.VALUE_ADD) {
+        } else if (regionValue === ValueAddWasteTimeTypes.VALUE_ADD) {
             this.valueAddButton.classList.add('selected');
             this.wasteTimeButton.classList.remove('selected');
         } else {
             this.valueAddButton.classList.remove('selected');
             this.wasteTimeButton.classList.remove('selected');
         }
+        
+        const subset = this.analytics.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
+        let totalValueAdd = 0;
+        let totalWasteTime = 0;
+        const totalTime = this.endTime - this.startTime;
+        subset.regions.forEach(region => {
+            if (region.value === ValueAddWasteTimeTypes.VALUE_ADD) {
+                totalValueAdd += region.duration;
+            } else if (region.value === ValueAddWasteTimeTypes.WASTE_TIME) {
+                totalWasteTime += region.duration;
+            }
+        });
+        if (totalTime === 0) {
+            console.warn('Region Card has 0 duration, cannot set Value Add/Waste Time ui');
+            return;
+        }
+        const valuePercent = Math.round(totalValueAdd / totalTime * 100);
+        const wastePercent = Math.round(totalWasteTime / totalTime * 100);
+        
+        this.valueAddWasteTimeSummary.setValues(valuePercent, wastePercent);
     }
 }
