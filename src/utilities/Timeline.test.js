@@ -11,6 +11,11 @@ describe('region', () => {
             endTime: 5
         });
     });
+    
+    test('region duration is calculated properly', () => {
+        const testRegion = new Region(-5, 5, null);
+        expect(testRegion.duration).toBe(10);
+    });
 
     test('equals returns true for equivalent region', () => {
         const testRegion = new Region(0, 5, null);

@@ -17,6 +17,10 @@ export class Region {
         }
         this.value = value;
     }
+    
+    get duration() {
+        return this.endTime - this.startTime;
+    }
 
     /**
      * Returns true iff the two Regions have equal properties.
