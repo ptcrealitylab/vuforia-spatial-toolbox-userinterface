@@ -264,22 +264,28 @@ function setMatrixFromArray(matrix, array) {
  */
 function convertFromJointsV1(jointPositions, jointConfidences) {
 
-    // expand with hand joints which positions are collapsed to wrist joint
-    jointPositions[JOINTS.LEFT_PINKY] = jointPositions[JOINTS.LEFT_WRIST];
-    jointPositions[JOINTS.LEFT_INDEX] = jointPositions[JOINTS.LEFT_WRIST];
-    jointPositions[JOINTS.LEFT_THUMB] = jointPositions[JOINTS.LEFT_WRIST];
+    // expand with dummy hand joints which positions are collapsed to wrist joint
 
-    jointPositions[JOINTS.RIGHT_PINKY] = jointPositions[JOINTS.RIGHT_WRIST];
-    jointPositions[JOINTS.RIGHT_INDEX] = jointPositions[JOINTS.RIGHT_WRIST];
-    jointPositions[JOINTS.RIGHT_THUMB] = jointPositions[JOINTS.RIGHT_WRIST];    
+    [JOINTS.LEFT_THUMB_CMC, JOINTS.LEFT_THUMB_MCP, JOINTS.LEFT_THUMB_IP, JOINTS.LEFT_THUMB_TIP,
+        JOINTS.LEFT_INDEX_FINGER_MCP, JOINTS.LEFT_INDEX_FINGER_PIP, JOINTS.LEFT_INDEX_FINGER_DIP, JOINTS.LEFT_INDEX_FINGER_TIP,
+        JOINTS.LEFT_MIDDLE_FINGER_MCP, JOINTS.LEFT_MIDDLE_FINGER_PIP, JOINTS.LEFT_MIDDLE_FINGER_DIP, JOINTS.LEFT_MIDDLE_FINGER_TIP,
+        JOINTS.LEFT_RING_FINGER_MCP, JOINTS.LEFT_RING_FINGER_PIP, JOINTS.LEFT_RING_FINGER_DIP, JOINTS.LEFT_RING_FINGER_TIP,
+        JOINTS.LEFT_PINKY_MCP, JOINTS.LEFT_PINKY_PIP, JOINTS.LEFT_PINKY_DIP, JOINTS.LEFT_PINKY_TIP
+    ].forEach(joint => {
+        jointPositions[joint] = jointPositions[JOINTS.LEFT_WRIST];
+        jointConfidences[joint] = 0.0;
+    });
 
-    jointConfidences[JOINTS.LEFT_PINKY] = 0.0;
-    jointConfidences[JOINTS.LEFT_INDEX] = 0.0;
-    jointConfidences[JOINTS.LEFT_THUMB] = 0.0;
-    
-    jointConfidences[JOINTS.RIGHT_PINKY] = 0.0;
-    jointConfidences[JOINTS.RIGHT_INDEX] = 0.0;
-    jointConfidences[JOINTS.RIGHT_THUMB] = 0.0;
+    [JOINTS.RIGHT_THUMB_CMC, JOINTS.RIGHT_THUMB_MCP, JOINTS.RIGHT_THUMB_IP, JOINTS.RIGHT_THUMB_TIP,
+        JOINTS.RIGHT_INDEX_FINGER_MCP, JOINTS.RIGHT_INDEX_FINGER_PIP, JOINTS.RIGHT_INDEX_FINGER_DIP, JOINTS.RIGHT_INDEX_FINGER_TIP,
+        JOINTS.RIGHT_MIDDLE_FINGER_MCP, JOINTS.RIGHT_MIDDLE_FINGER_PIP, JOINTS.RIGHT_MIDDLE_FINGER_DIP, JOINTS.RIGHT_MIDDLE_FINGER_TIP,
+        JOINTS.RIGHT_RING_FINGER_MCP, JOINTS.RIGHT_RING_FINGER_PIP, JOINTS.RIGHT_RING_FINGER_DIP, JOINTS.RIGHT_RING_FINGER_TIP,
+        JOINTS.RIGHT_PINKY_MCP, JOINTS.RIGHT_PINKY_PIP, JOINTS.RIGHT_PINKY_DIP, JOINTS.RIGHT_PINKY_TIP
+    ].forEach(joint => {
+        jointPositions[joint] = jointPositions[JOINTS.RIGHT_WRIST];
+        jointConfidences[joint] = 0.0;
+    });
+
 }
 
 export {
