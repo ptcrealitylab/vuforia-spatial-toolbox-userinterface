@@ -315,6 +315,33 @@ export class Timeline {
     }
 
     /**
+     * @param {number} startTime
+     * @param {number} endTime
+     * @returns {Timeline} - A subset of this Timeline that starts and ends at `startTime` and `endTime`
+     */
+    subset(startTime, endTime) {
+        const subsetRegion = new Region(startTime, endTime, null);
+        const timeline = new Timeline();
+        this.regions.filter(region => region.hasOverlapWith(subsetRegion)).forEach(region => {
+            if (!region.isSubsetOf(subsetRegion)) {
+                // Region needs to be cut off
+                if (region.isSupersetOf(subsetRegion)) {
+                    timeline.addRegion(new Region(startTime, endTime, region.value));
+                    return;
+                }
+                if (region.startTime < startTime) {
+                    timeline.addRegion(new Region(startTime, region.endTime, region.value));
+                    return;
+                }
+                timeline.addRegion(new Region(region.startTime, endTime, region.value));
+                return;
+            }
+            timeline.addRegion(region.clone());
+        });
+        return timeline;
+    }
+
+    /**
      * Clears this Timeline and replicates the contents of `other`
      * @param {Timeline} other
      * @returns {Timeline} this

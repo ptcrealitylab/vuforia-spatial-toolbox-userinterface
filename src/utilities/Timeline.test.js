@@ -335,6 +335,41 @@ describe('timeline', () => {
         expect(timeline.getValueForRegion(10, 20)).toBeNull();
     });
     
+    test('subset creates subsets properly', () => {
+        const timeline = new Timeline();
+        timeline.insert(-10, 10, "initial");
+        timeline.insert(-2, 2, "value");
+        const subset1 = timeline.subset(-10, -2);
+        expect(subset1).toMatchObject({
+            regions: [
+                {
+                    startTime: -10,
+                    endTime: -2,
+                    value: "initial"
+                }
+            ]
+        });
+        const subset2 = timeline.subset(-10, 0);
+        expect(subset2).toMatchObject({
+            regions: [
+                {
+                    startTime: -10,
+                    endTime: -2,
+                    value: "initial"
+                },
+                {
+                    startTime: -2,
+                    endTime: 0,
+                    value: "value"
+                }
+            ]
+        });
+        const subset3 = timeline.subset(-20, -15);
+        expect(subset3).toMatchObject({
+            regions: []
+        });
+    });
+    
     test('copy copies timelines properly', () => {
         const timeline = new Timeline();
         expect(new Timeline().copy(timeline)).toMatchObject(timeline);
