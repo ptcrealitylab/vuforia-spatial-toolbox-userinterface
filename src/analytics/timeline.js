@@ -729,10 +729,10 @@ export class Timeline {
         this.mouseX = event.offsetX;
         this.mouseY = event.offsetY;
     }
-
-    isPointerOnActiveRow() {
+    
+    isPointerOnRow() {
         return this.mouseY > boardStart &&
-            this.mouseY < boardStart + rowPad * 2 + rowHeight;
+            this.mouseY < this.rowIndexToRowY(this.rowIndex) - rowPad;
     }
 
     isPointerOnBoard() {
@@ -778,7 +778,7 @@ export class Timeline {
 
         this.updatePointer(event);
 
-        if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
             if (this.isPointerOnStartNeedle()) {
                 this.highlightStartTime = this.highlightRegion.endTime;
@@ -818,7 +818,7 @@ export class Timeline {
         let cursor = 'default';
         if (this.isPointerOnNeedle()) {
             cursor = 'grab';
-        } else if (this.isPointerOnActiveRow()) {
+        } else if (this.isPointerOnRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
             cursor = 'move';
