@@ -291,6 +291,7 @@ export class RegionCard {
             } else {
                 const highlightRegion = this.analytics.timeline.highlightRegion;
                 this.analytics.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
             }
         });
         this.wasteTimeButton = wasteTimeButton;
@@ -305,6 +306,7 @@ export class RegionCard {
             } else {
                 const highlightRegion = this.analytics.timeline.highlightRegion;
                 this.analytics.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
             }
         });
         this.valueAddButton = valueAddButton;
