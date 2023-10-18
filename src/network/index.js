@@ -1571,7 +1571,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (msgContent.fullscreenZPosition) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
-            
+
             let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
 
             //z-translation has been hardcoded to bring position of 2D UI to foreground
