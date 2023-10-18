@@ -449,7 +449,79 @@ export const SMALL_JOINT_FLAGS = [
     false  // PELVIS 
 ];
 
+export const THIN_BONE_FLAGS = [
+    /* connections between body joints */
+    false, // elbowWristLeft
+    false, // shoulderElbowLeft
+    false, // shoulderSpan
+    false, // shoulderElbowRight
+    false, // elbowWristRight
+    false, // chestLeft
+    false, // hipSpan
+    false, // chestRight
+    false, // hipKneeLeft
+    false, //  kneeAnkleLeft
+    false, // hipKneeRight
+    false, //  kneeAnkleRight
+    /* connections between face joints */
+    true, // earSpan
+    true, // eyeSpan
+    true, // eyeNoseLeft
+    true, // eyeNoseRight
+    // connections between left hand joints
+    true, // thumb1Left
+    true, // thumb2Left
+    true, // thumb3Left
+    true, // thum4Left
+    true, // index1Left
+    true, // index2Left
+    true, // index3Left
+    true, // index4Left
+    true, // middle2Left
+    true, // middle3Left
+    true, // middle4Left
+    true, // ring2Left
+    true, // ring3Left
+    true, // ring4Left
+    true, // pinky1Left
+    true, // pinky2Left
+    true, // pinky3Left
+    true, // pinky4Left
+    true, // handSpan1Left
+    true, // handSpan2Left
+    true, // handSpan3Left
+    // connections between right hand joints
+    true, // thumb1Right
+    true, // thumb2Right
+    true, // thumb3Right
+    true, // thum4Right
+    true, // index1Right
+    true, // index2Right
+    true, // index3Right
+    true, // index4Right
+    true, // middle2Right
+    true, // middle3Right
+    true, // middle4Right
+    true, // ring2Right
+    true, // ring3Right
+    true, // ring4Right
+    true, // pinky1Right
+    true, // pinky2Right
+    true, // pinky3Right
+    true, // pinky4Right
+    true, // handSpan1Right
+    true, // handSpan2Right
+    true, // handSpan3Right
+    // connections between synthetic joints
+    false, // headNeck
+    false, // neckChest
+    false, // chestNavel
+    false, // navelPelvis
+    false // face
+];
+
 export const SMALL_JOINT_SCALE_VEC = new THREE.Vector3(0.5, 0.5, 0.5);
+export const THIN_BONE_SCALE_VEC = new THREE.Vector3(0.5, 1.0, 0.5);
 
 export const JOINT_RADIUS = 0.02; // unit: meters
 export const BONE_RADIUS = 0.01; // unit: meters
