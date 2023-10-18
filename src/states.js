@@ -176,7 +176,7 @@ var globalStates = {
     interface: "gui",
 
     useGroundPlane: false,
-    defaultFullscreenFrameZ: 0,
+    defaultFullscreenFrameZ: -10,
     defaultFullscreenFull2DFrameZ: 100
 };
 

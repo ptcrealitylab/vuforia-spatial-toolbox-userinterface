@@ -1571,14 +1571,15 @@ realityEditor.network.onInternalPostMessage = function (e) {
             if (msgContent.fullscreenZPosition) {
                 tempThisObject.fullscreenZPosition = msgContent.fullscreenZPosition;
             }
-
+            
             let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
 
+            //z-translation has been hardcoded to bring position of 2D UI to foreground
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
-                '0, 0, ' + zIndex + ', 1)';
+                '0, 0, 100, 1)';
 
             globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
             globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;
@@ -1679,11 +1680,12 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 document.getElementById("object" + msgContent.frame).classList.remove('transitioningToFullscreen');
             }, 200);
 
+            //z-translation has been hardcoded to bring position of 2D UI to foreground
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
                 '0, 1, 0, 0,' +
                 '0, 0, 1, 0,' +
-                '0, 0, ' + zIndex + ', 1)';
+                '0, 0, 100, 1)';
 
             globalDOMCache[tempThisObject.uuid].dataset.leftBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.left;
             globalDOMCache[tempThisObject.uuid].dataset.topBeforeFullscreen = globalDOMCache[tempThisObject.uuid].style.top;

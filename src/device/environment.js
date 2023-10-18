@@ -48,6 +48,13 @@ createNameSpace("realityEditor.device.environment");
 
         return !isWebView && !isIpad && !isIphone;
     }
+    
+    //this exists for z-index adjustment in Safari
+    function isSafari() {
+        const userAgent = window.navigator.userAgent;
+        const isSafari = userAgent.includes('Safari');
+        return isSafari;
+    }
 
     // initialized with default variables for iPhone environment. add-ons can modify
     let variables = {
@@ -256,5 +263,6 @@ createNameSpace("realityEditor.device.environment");
     exports.isDesktop = isDesktop;
     exports.isWithinToolboxApp = isWithinToolboxApp;
     exports.isARMode = isARMode;
+    exports.isSafari = isSafari;
 
 }(realityEditor.device.environment));

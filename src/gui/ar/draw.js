@@ -1298,7 +1298,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             if (this.isLowFrequencyUpdateFrame && activeVehicle.fullScreen === true && realityEditor.isVehicleAFrame(activeVehicle)) {
                 // update z-order of fullscreen frames so that closest ones get put in front of further-back ones
                 let distanceToFullscreenFrame = realityEditor.sceneGraph.getDistanceToCamera(activeKey);
-                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : globalStates.defaultFullscreenFrameZ - Math.log(distanceToFullscreenFrame);
+                //z-translation has been hardcoded to 100 bring position of 2D UI to foreground
+                const zPosition = activeVehicle.fullscreenZPosition ? (activeVehicle.fullscreenZPosition) : 100 - Math.log(distanceToFullscreenFrame);
                 globalDOMCache["object" + activeKey].style.transform = 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,' + zPosition + ',1)';
             }
             
