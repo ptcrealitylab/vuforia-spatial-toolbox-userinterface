@@ -8,6 +8,21 @@ const isCloud = location => {
     return !location.port || location.port === "443";
 }
 
+const isLocalServer = location => {
+    return location.port === realityEditor.device.environment.getLocalServerPort();
+}
+
+/**
+ * Transforms deepLink=newScan URLs into a join URL, makes no changes to deepLink=joinScan URLs
+ * @return {string}
+ */
+const getLocalJoinUrl = () => {
+    const queryParams = new URLSearchParams(window.location.search);
+    queryParams.set('deepLink', 'joinScan');
+    queryParams.set('toolboxWorldId', realityEditor.sceneGraph.getWorldId());
+    return `${window.location.origin}${window.location.pathname}?${queryParams.toString()}`;
+}
+
 function storeNetworkIdAndSecret() {
     const windowPath = window.location.pathname;
     const pathFragments = windowPath.split('/'); // => '', 'stable', 'n', 'networkId', 's', 'networkSecret', ''
@@ -24,9 +39,12 @@ export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
     if (!token) {
         const nonce = generateNonce();
         let state = JSON.stringify({
-            edgeServer: edgeServer, // For knowing which server to use for OAuth requests
-            toolboxUrl: window.location.href, // For redirecting back to toolbox after server gets token
-            frameName: frameName // For associating received token with tool
+            // For knowing which server to use for OAuth requests
+            edgeServer: edgeServer,
+            // For redirecting back to toolbox after server gets token, special case for local server redirect on new scan page to prevent being redirected to the new scan page
+            toolboxUrl: isLocalServer() ? getLocalJoinUrl() : window.location.href,
+            // For associating received token with tool
+            frameName: frameName
         });
         // OAuth state parameter is specifically for nonces, NOT application state
         localStorage.setItem('activeOAuthNonce', nonce);
