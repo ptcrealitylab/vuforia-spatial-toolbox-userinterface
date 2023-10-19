@@ -42,7 +42,7 @@ export function loadToken(frameName, authorizationUrl, clientId, edgeServer) {
             // For knowing which server to use for OAuth requests
             edgeServer: edgeServer,
             // For redirecting back to toolbox after server gets token, special case for local server redirect on new scan page to prevent being redirected to the new scan page
-            toolboxUrl: isLocalServer() ? getLocalJoinUrl() : window.location.href,
+            toolboxUrl: isLocalServer(window.location) ? getLocalJoinUrl() : window.location.href,
             // For associating received token with tool
             frameName: frameName
         });
