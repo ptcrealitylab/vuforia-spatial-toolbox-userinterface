@@ -9,7 +9,7 @@ const isCloud = location => {
 }
 
 const isLocalServer = location => {
-    return location.port === realityEditor.device.environment.getLocalServerPort();
+    return location.port === "49368";
 }
 
 /**
