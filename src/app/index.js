@@ -558,6 +558,14 @@ realityEditor.app.getProviderId = function(callBack) {
     this.appFunctionCall('getProviderId', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
+/**
+ * Gets the latitude and longitude if the permissions have been granted
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getGeoCoordinates = function (callBack) {
+    this.appFunctionCall('getGeoCoordinates', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+};
+
 
 /**
  **************UTILITIES****************

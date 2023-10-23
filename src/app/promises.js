@@ -33,6 +33,9 @@ createNameSpace("realityEditor.app.promises");
     // resolves to {texture: string, textureDepth: string}
     exports.get3dSnapshot = makeAPI(app.get3dSnapshot.bind(app), ['texture', 'textureDepth']);
 
+    // resolves to {latitude: number, longitude: number}
+    exports.getGeoCoordinates = makeAPI(app.getGeoCoordinates.bind(app), ['latitude', 'longitude'])
+
     // adapted from: https://stackoverflow.com/a/34637436
     class Deferred {
         constructor(onFinally) {
