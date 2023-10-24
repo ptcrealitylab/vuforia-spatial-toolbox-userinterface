@@ -91,7 +91,7 @@ const addLine = (array, startX, endX, z, value, ignoreValue, faceY, steepness) =
     if (ignoreValue) {
       array[x][z][2] = 1;
     } else {
-      array[x][z][0] += value; // todo Steve: value -- 0/1, but can be changed to store other data, eg: [0, 1]
+      array[x][z][0] += value; // total weight of faces
       array[x][z][1] += 1; // # of times faces have been added to the. Later can do a weighted sum
       array[x][z][2] = 1; // whether or not this pixel is within the mesh
         array[x][z][3] += faceY;
@@ -179,7 +179,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     const expandedWallZArray = [];
     const regionMapZArray = [];
     for (let z = 0; z < zLength; z++) {
-      faceDataZArray.push([0,0,0,0,0]); // [totalWeight, count, withinMesh, total height, total Angle], todo Steve: at the end, total angle / count ????
+      faceDataZArray.push([0,0,0,0,0]); // [totalWeight, count, withinMesh, total height, total Angle]
       outerHolesZArray.push(0);
       expandedWallZArray.push(0);
       regionMapZArray.push(0);
@@ -292,11 +292,9 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
     }
 
     // calculate steepness based on v1, v2, v3
-    //   console.log(vertexNormal1, vertexNormal2, vertexNormal3);
     vertexAngle1 = normalToSteepness(vertexNormal1);
     vertexAngle2 = normalToSteepness(vertexNormal2);
     vertexAngle3 = normalToSteepness(vertexNormal3);
-    // console.log(vertexAngle1, vertexAngle2, vertexAngle3);
       let steepness = (vertexAngle1 + vertexAngle2 + vertexAngle3) / 3;
     
     // Converting positions to navmesh coordinates to allow for rasterization of face
@@ -328,7 +326,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   // calculate the average steepness of each grid cell to a 2d array
     for (let i = 0; i < faceData.length; i++) {
         for (let j = 0; j < faceData[0].length; j++) {
-            steepnessMap[i][j] = faceData[i][j][1] === 0 ? 0 : faceData[i][j][4] / faceData[i][j][1]; // -1 --- not computed area in the navmesh, un-walkable area
+            steepnessMap[i][j] = faceData[i][j][1] === 0 ? 0 : faceData[i][j][4] / faceData[i][j][1]; // 0 --- not computed area in the navmesh, un-walkable area
         }
     }
     
@@ -350,7 +348,7 @@ const createNavmesh = (geometry, resolution) => { // resolution = number of pixe
   const normalCutoff = 0.1;
   mapGrid(faceData, value => value[0] < normalCutoff ? [0, value[1], 0] : [value[0], 0, 0]);
   
-  // now value -- [0 - not walkable / average weight - walkable, within mesh - not walkable / 0 - walkable, 0]
+  // now value -- [0 -- not walkable / average weight -- walkable, within mesh -- not walkable / 0 -- walkable, 0]
   
   // Filling outer holes (non-mesh pixels), defined as non-walkable pixels reachable from edge of grid
   const outerHolesStack = [];

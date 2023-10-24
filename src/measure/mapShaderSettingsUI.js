@@ -2,36 +2,36 @@ export class MapShaderSettingsUI {
     constructor() {
 
         this.root = document.createElement('div');
-        this.root.id = 'map-settings';
+        this.root.id = 'hpa-settings';
 
         // Styled via css/humanPoseAnalyzerSettingsUi.css
         this.root.innerHTML = `
-            <div class="map-settings-header">
-                <div class="map-settings-title">Map Settings</div>
-                <div class="map-settings-header-icon">_</div>
+            <div class="hpa-settings-header">
+                <div class="hpa-settings-title">Map Settings</div>
+                <div class="hpa-settings-header-icon">_</div>
             </div>
-            <div class="map-settings-body">
-                <div class="map-settings-section">
-                    <div class="map-settings-section-title">Map Settings</div>
-                    <div class="map-settings-section-body">
-                        <div class="map-settings-section-row">
-                            <div class="map-settings-section-row-label">Select Maps</div>
-                            <select class="map-settings-section-row-select" id="map-settings-select-map">
+            <div class="hpa-settings-body">
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">Map Settings</div>
+                    <div class="hpa-settings-section-body">
+                        <div class="hpa-settings-section-row">
+                            <div class="hpa-settings-section-row-label">Select Maps</div>
+                            <select class="hpa-settings-section-row-select" id="measure-app-select-map-shader">
                                 <option value="color">Colored Map</option>
                                 <option value="height">Height Map</option>
                                 <option value="steepness">Steepness Map</option>
                             </select>
                         </div>
-                        <div class="map-settings-section-row map-settings-section-row-checkbox-container">
-                            <div class="map-settings-section-row-label">Highlight walkable area</div>
-                            <input type="checkbox" class="map-settings-section-row-checkbox" id="map-settings-highlight-walkable-area">
+                        <div class="hpa-settings-section-row hpa-settings-section-row-checkbox-container">
+                            <div class="hpa-settings-section-row-label">Highlight walkable area</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="measure-app-highlight-walkable-area">
                         </div>
                     </div>
                 </div>
-                <div class="map-settings-section">
-                    <div class="map-settings-section-title">Steepness Range</div>
-                    <div class="map-settings-section-body">
-                        <div class='map-settings-section-row range-slider'>
+                <div class="hpa-settings-section">
+                    <div class="hpa-settings-section-title">Steepness Range</div>
+                    <div class="hpa-settings-section-body">
+                        <div class='hpa-settings-section-row range-slider'>
                             <input type="range" min="0" max="90" step="1" id="sliderMinRange" value="0">
                             <input type="range" min="0" max="90" step="1" id="sliderMaxRange" value="25">
                             <input type="number" min="0" max="90" step="1" id="sliderMinNumber" value="0">
@@ -143,7 +143,7 @@ export class MapShaderSettingsUI {
             this.toggle();
         });
         // Toggle menu minimization when clicking on the header, but only if not dragging
-        this.root.querySelector('.map-settings-header').addEventListener('mousedown', event => {
+        this.root.querySelector('.hpa-settings-header').addEventListener('mousedown', event => {
             event.stopPropagation();
             let mouseDownX = event.clientX;
             let mouseDownY = event.clientY;
@@ -153,28 +153,24 @@ export class MapShaderSettingsUI {
                 if (mouseDownX === mouseUpX && mouseDownY === mouseUpY) {
                     this.toggleMinimized();
                 }
-                this.root.querySelector('.map-settings-header').removeEventListener('mouseup', mouseUpListener);
+                this.root.querySelector('.hpa-settings-header').removeEventListener('mouseup', mouseUpListener);
             };
-            this.root.querySelector('.map-settings-header').addEventListener('mouseup', mouseUpListener);
+            this.root.querySelector('.hpa-settings-header').addEventListener('mouseup', mouseUpListener);
         });
 
-        // this.root.querySelector('#map-settings-toggle-live-history-lines').addEventListener('change', (event) => {
-        // this.humanPoseAnalyzer.setLiveHistoryLinesVisible(event.target.checked);
-        // });
-
-        this.root.querySelector('#map-settings-select-map').addEventListener('change', (event) => {
+        this.root.querySelector('#measure-app-select-map-shader').addEventListener('change', (event) => {
             realityEditor.gui.threejsScene.changeMeasureMapType(event.target.value);
         });
         
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted.bind(this)); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted.bind(this)); // deleted using server
 
-        this.root.querySelector('#map-settings-highlight-walkable-area').addEventListener('change', (event) => {
+        this.root.querySelector('#measure-app-highlight-walkable-area').addEventListener('change', (event) => {
             realityEditor.gui.threejsScene.highlightWalkableArea(event.target.checked);
         });
 
         // Add listeners to aid with clicking checkboxes
-        this.root.querySelectorAll('.map-settings-section-row-checkbox').forEach((checkbox) => {
+        this.root.querySelectorAll('.hpa-settings-section-row-checkbox').forEach((checkbox) => {
             const checkboxContainer = checkbox.parentElement;
             checkboxContainer.addEventListener('click', () => {
                 checkbox.checked = !checkbox.checked;
@@ -186,7 +182,7 @@ export class MapShaderSettingsUI {
         });
 
         // Add click listeners to selects to stop propagation to rest of app
-        this.root.querySelectorAll('.map-settings-section-row-select').forEach((select) => {
+        this.root.querySelectorAll('.hpa-settings-section-row-select').forEach((select) => {
             select.addEventListener('click', (event) => {
                 event.stopPropagation();
             });
@@ -198,9 +194,14 @@ export class MapShaderSettingsUI {
             return;
         }
         if (realityEditor.envelopeManager.getFrameTypeFromKey(event.objectKey, event.frameKey) === 'spatialMeasure') {
-            this.root.querySelector('#map-settings-select-map').value = 'color';
+            this.root.querySelector('#measure-app-select-map-shader').value = 'color';
             realityEditor.gui.threejsScene.changeMeasureMapType('color');
             this.hide();
+
+            let iframe = document.getElementById('iframe' + event.frameKey);
+            iframe.contentWindow.postMessage(JSON.stringify({
+                isAppClosed: true,
+            }), '*');
         }
     }
 
@@ -210,7 +211,7 @@ export class MapShaderSettingsUI {
         let dragStartLeft = 0;
         let dragStartTop = 0;
 
-        this.root.querySelector('.map-settings-header').addEventListener('mousedown', (event) => {
+        this.root.querySelector('.hpa-settings-header').addEventListener('mousedown', (event) => {
             event.stopPropagation();
             dragStartX = event.clientX;
             dragStartY = event.clientY;
@@ -248,8 +249,8 @@ export class MapShaderSettingsUI {
             this.root.style.left = `${window.innerWidth - this.root.offsetWidth}px`;
         }
         // Keep the header visible on the screen off the bottom
-        if (this.root.offsetTop + this.root.querySelector('.map-settings-header').offsetHeight > window.innerHeight) {
-            this.root.style.top = `${window.innerHeight - this.root.querySelector('.map-settings-header').offsetHeight}px`;
+        if (this.root.offsetTop + this.root.querySelector('.hpa-settings-header').offsetHeight > window.innerHeight) {
+            this.root.style.top = `${window.innerHeight - this.root.querySelector('.hpa-settings-header').offsetHeight}px`;
         }
     }
 
@@ -274,32 +275,24 @@ export class MapShaderSettingsUI {
             return;
         }
         const previousWidth = this.root.offsetWidth;
-        this.root.classList.add('map-settings-minimized');
+        this.root.classList.add('hpa-settings-minimized');
         this.root.style.width = `${previousWidth}px`;
-        this.root.querySelector('.map-settings-header-icon').innerText = '+';
+        this.root.querySelector('.hpa-settings-header-icon').innerText = '+';
     }
 
     maximize() {
         if (this.root.classList.contains('hidden')) {
             return;
         }
-        this.root.classList.remove('map-settings-minimized');
-        this.root.querySelector('.map-settings-header-icon').innerText = '_';
+        this.root.classList.remove('hpa-settings-minimized');
+        this.root.querySelector('.hpa-settings-header-icon').innerText = '_';
     }
 
     toggleMinimized() {
-        if (this.root.classList.contains('map-settings-minimized')) {
+        if (this.root.classList.contains('hpa-settings-minimized')) {
             this.maximize();
         } else {
             this.minimize();
         }
-    }
-
-    setActiveLens(lens) {
-        this.root.querySelector('#map-settings-select-lens').value = lens.name;
-    }
-
-    setChildHumanPosesVisible(visible) {
-        this.root.querySelector('#map-settings-toggle-child-human-poses').checked = visible;
     }
 }

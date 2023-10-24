@@ -26,9 +26,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let isMeasureMode = false;
     let isCloseLoop = false;
     let shouldCrossRotate = false;
-    let t11 = 0;
-    let t22 = 0;
-    let t33 = 0;
+    let t11 = 0; // when toggle on/off measure mode, interpolate between filled circle / cross. 0 -- filled circle; 1 -- cross
+    let t22 = 0; // when inside measure mode, when user idle for a while, trigger 2 rotations
+    let t33 = 0; // when inside measure mode, when cursor intersect a vertex & able to close a loop, interpolate between cross / hollow circle. 0 -- cross; 1 -- hollow circle
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -123,9 +123,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     uniform float opacityFactor;
     uniform float innerRadius;
     uniform bool isMeasureMode;
-    uniform float t11; // when toggle on/off measure mode, interpolate between filled circle / cross. 0 -- filled circle; 1 -- cross
-    uniform float t22; // when inside measure mode, when user idle for a while, trigger 2 rotations
-    uniform float t33; // when inside measure mode, when cursor intersect a vertex & able to close a loop, interpolate between cross / hollow circle. 0 -- cross; 1 -- hollow circle
+    uniform float t11;
+    uniform float t22;
+    uniform float t33;
     
     ${commonShader}
     
@@ -627,7 +627,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             updateTestSpatialCursor();
             tweenCursorDirection();
             uniforms['time'].value = clock.getElapsedTime() * 10;
-            // todo Steve: do smth here to update the cursor uniform values
             updateCursorMeasureStyle();
 
             if (SNAP_CURSOR_TO_TOOLS) {

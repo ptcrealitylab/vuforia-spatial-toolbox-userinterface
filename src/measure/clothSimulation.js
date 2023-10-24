@@ -20,7 +20,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             intervalId = setInterval(() => {
                 if (cachedOcclusionObject !== null && cachedOcclusionObject !== undefined && inverseGroundPlaneMatrix !== null && inverseGroundPlaneMatrix !== undefined) {
                     console.log(cachedOcclusionObject);
-                    if (realityEditor.avatar.isDesktop()) {
+                    if (realityEditor.device.environment.isDesktop()) {
                         isOnDesktop = true;
                         raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
                     } else {
@@ -30,7 +30,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                     clearInterval(intervalId);
                 }
                 if (worldId === null || worldId === undefined || cachedOcclusionObject === null || cachedOcclusionObject === undefined) {
-                    // cachedOcclusionObject = realityEditor.spatialCursor.getRaycastObjects().cachedOcclusionObject;
                     worldId = realityEditor.sceneGraph.getWorldId();
                     if (worldId === null) return;
                     cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldId);
@@ -426,7 +425,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         pins = [];
         function _makePin(x, y, z) {
             let pinParticle = particles.get(x, y, z);
-            if (isVisualize) addSphere(pinParticle.original);
+            // if (isVisualize) addSphere(pinParticle.original);
             pins.push(pinParticle)
         }
 
@@ -652,7 +651,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     const GRAVITY = 9.8 * 100;
     const _gravity = new THREE.Vector3(0, -GRAVITY, 0).multiplyScalar(MASS);
 
-    const WIND_STRENGTH = 500;
+    const WIND_STRENGTH = 1000;
     const WIND_DISTANCE_OFFSET = 1 * 1000;
     let winds = [];
 
@@ -773,7 +772,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         })
     }
     
-    const tmpTextLabelOffset = new THREE.Vector3(200, -200, 200);
+    const tmpTextLabelOffset = new THREE.Vector3(600, -600, 600);
     function getVolume(key, geometry, divObj, divObjPos) {
         if (!geometry.isBufferGeometry) {
             console.log("'geometry' must be an indexed or non-indexed buffer geometry");
@@ -838,7 +837,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 return;
             }
             
-            if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.0005) || Date.now() - value.startTime > 20000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 10%; (3) after running 20 seconds, then count as finished
+            if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.00005) || Date.now() - value.startTime > 20000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 10%; (3) after running 20 seconds, then count as finished
                 console.log(`The final computed volume is ${new_volume}`);
                 console.log(Math.abs((value.volume - new_volume) / value.volume));
                 delete CLOTH_INFO[`${key}`];

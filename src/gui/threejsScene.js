@@ -443,17 +443,17 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         console.warn('no material', gltf.scene);
                     } else {
                         // cache the original gltf material on mobile browsers, to improve performance
-                        if (!realityEditor.device.environment.isDesktop()) {
+                        // if (!realityEditor.device.environment.isDesktop()) {
                             gltf.scene.originalMaterial = gltf.scene.material.clone();
-                        }
-                        gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
-                            maxHeight: maxHeight,
-                            center: center,
-                            animateOnLoad: true,
-                            inverted: false,
-                            useFrustumCulling: true
-                        });
-                        gltf.scene.material = gltf.scene.colorMaterial;
+                        // }
+                        // gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
+                        //     maxHeight: maxHeight,
+                        //     center: center,
+                        //     animateOnLoad: true,
+                        //     inverted: false,
+                        //     useFrustumCulling: true
+                        // });
+                        gltf.scene.material = gltf.scene.originalMaterial;
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
@@ -489,14 +489,14 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         // if (!realityEditor.device.environment.isDesktop()) {
                             child.originalMaterial = child.material.clone();
                         // }
-                        child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
-                            maxHeight: maxHeight,
-                            center: center,
-                            animateOnLoad: true,
-                            inverted: false,
-                            useFrustumCulling: true
-                        });
-                        child.material = child.colorMaterial;
+                        // child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
+                        //     maxHeight: maxHeight,
+                        //     center: center,
+                        //     animateOnLoad: true,
+                        //     inverted: false,
+                        //     useFrustumCulling: true
+                        // });
+                        child.material = child.originalMaterial;
                     }
                     
                     child.geometry.computeVertexNormals();
@@ -526,7 +526,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                   geo.deleteAttribute('uv2');
                   return geo;
                 }));
-                mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
                 gltfBoundingBox = mergedGeometry.boundingBox;
 
@@ -595,7 +594,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
-                    child.material = child.colorMaterial ? child.colorMaterial : child.originalMaterial;
+                    child.material = child.originalMaterial;
                 });
                 break;
             case 'height':

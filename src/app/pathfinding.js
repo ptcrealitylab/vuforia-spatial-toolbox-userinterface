@@ -86,8 +86,8 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
         for (let j = 0; j < mapData.length; j++) { // j --- quads in a column
             for (let i = 0; i < mapData[0].length; i++) { // i --- quads in a row
                 // buildQuad(i * size, 0, j * size, size);
-                // if (mapData[j][i] === 1) { // walkable area
-                if (mapData[j][i] !== 0) { // walkable area, todo Steve: switch to count map to see what happens
+                if (mapData[j][i] !== 0) { // walkable area
+                // if (steepnessMapData[j][i] > 0 && steepnessMapData[j][i] < 25) { // walkable area
                     buildQuad(j * size, 0, i * size, size, index, true);
                 } else { // un-walkable area
                     buildQuad(j * size, 0, i * size, size, index, false);
@@ -389,49 +389,45 @@ import { MeshLine, MeshLineMaterial } from "../../thirdPartyCode/three/THREE.Mes
             console.warn('Start / end point missing. Need to define both to find path');
             return;
         }
-        // console.log(steepnessMapData);
-        // return new Promise((resolve, reject) => {
-            let open = [];
-            let closed = [];
+        let open = [];
+        let closed = [];
 
-            // manually compute start node's f/g/h costs, b/c we have to manually set start's gCost to 0
-            start.gCost = 0;
-            start.hCost = computeHCost(start);
-            start.fCost = start.gCost + start.hCost;
+        // manually compute start node's f/g/h costs, b/c we have to manually set start's gCost to 0
+        start.gCost = 0;
+        start.hCost = computeHCost(start);
+        start.fCost = start.gCost + start.hCost;
 
-            open.push(start);
+        open.push(start);
 
-            while(open.length !== 0) {
-                sortNodeArray(open); // sort the open[] array, compute & store the corresponding F/G/H cost in nodes
-                let current = open.shift();
-                closed.push(current);
-                // color closed to red
+        while(open.length !== 0) {
+            sortNodeArray(open); // sort the open[] array, compute & store the corresponding F/G/H cost in nodes
+            let current = open.shift();
+            closed.push(current);
+            // color closed to red
 
-                if (isEqual(current, end)) {
-                    buildPath(current);
-                    return;
-                    // resolve(current);
-                }
+            if (isEqual(current, end)) {
+                buildPath(current);
+                return;
+                // resolve(current);
+            }
 
-                let neighbors = findNeighbor(current);
-                for (let i = 0; i < neighbors.length; i++) {
-                    let n = neighbors[i];
-                    // console.log(steepnessMapData[n.j][n.i]);
-                    // if (mapData[n.j][n.i] === 0 || steepnessMapData[n.j][n.i] < MIN_STEEPNESS || steepnessMapData[n.j][n.i] > MAX_STEEPNESS || isNodeInArray(n, closed)) continue;
-                    if (steepnessMapData[n.j][n.i] < MIN_STEEPNESS || steepnessMapData[n.j][n.i] > MAX_STEEPNESS || isNodeInArray(n, closed)) continue; // todo Steve: changed for 9/18 demo, only consider steepness map
+            let neighbors = findNeighbor(current);
+            for (let i = 0; i < neighbors.length; i++) {
+                let n = neighbors[i];
+                // console.log(steepnessMapData[n.j][n.i]);
+                // if (mapData[n.j][n.i] === 0 || steepnessMapData[n.j][n.i] < MIN_STEEPNESS || steepnessMapData[n.j][n.i] > MAX_STEEPNESS || isNodeInArray(n, closed)) continue;
+                if (steepnessMapData[n.j][n.i] < MIN_STEEPNESS || steepnessMapData[n.j][n.i] > MAX_STEEPNESS || isNodeInArray(n, closed)) continue; // todo Steve: changed for 9/18 demo, only consider steepness map
 
-                    if (!isNodeInArray(n, open)) { // if neighbor not in open[], push it to open[]
-                        n.parent = current;
-                        open.push(n);
-                    } else { // if neighbor is already in open[], but has a lower f cost than what's originally in open[], update f cost
-                        n.parent = current;
-                        updateNewPathCost(n, open);
-                    }
+                if (!isNodeInArray(n, open)) { // if neighbor not in open[], push it to open[]
+                    n.parent = current;
+                    open.push(n);
+                } else { // if neighbor is already in open[], but has a lower f cost than what's originally in open[], update f cost
+                    n.parent = current;
+                    updateNewPathCost(n, open);
                 }
             }
-            console.log(`%c Cannot find a path.`, 'color: red');
-            // reject('Cannot find a path.');
-        // })
+        }
+        console.log(`%c Cannot find a path.`, 'color: red');
     }
     
     function updateSteepnessRange(min, max) {

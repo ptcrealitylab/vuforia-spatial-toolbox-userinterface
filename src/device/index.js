@@ -330,7 +330,6 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         this.cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(this.cachedWorldObject.objectId);
         if (this.cachedOcclusionObject) {
             this.cachedOcclusionObject.updateMatrixWorld();
-            // this.cachedOcclusionObject.children[0].geometry.computeVertexNormals(); // todo Steve: commented this part off so that adding new tools doesn't result in shader becoming "blocky". Ask Ben why did this in the first place
         }
     }
 
