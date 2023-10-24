@@ -261,7 +261,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         return particles;
     }
     
-    function addSphere(pos) {
+    function _addSphere(pos) {
         let sphere = new THREE.Mesh(sphereGeo, sphereMatRed);
         sphere.position.copy(pos);
         realityEditor.gui.threejsScene.addToScene(sphere, {layers: 1});
@@ -421,11 +421,11 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     let pins = [];
 
-    function makePins(isVisualize) {
+    function makePins(_isVisualize) {
         pins = [];
         function _makePin(x, y, z) {
             let pinParticle = particles.get(x, y, z);
-            // if (isVisualize) addSphere(pinParticle.original);
+            // if (_isVisualize) _addSphere(pinParticle.original);
             pins.push(pinParticle)
         }
 
