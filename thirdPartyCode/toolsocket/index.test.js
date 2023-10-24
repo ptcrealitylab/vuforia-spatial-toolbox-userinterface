@@ -269,6 +269,42 @@ test('validate(): out of range body validation', done => {
 
     done();
 });
+
+test('parseUrl(): handle proxy paths', () => {
+    const url = "https://alpha.toolboxedge.net/n/1vfg7mfUcG2A5tPK1wzT/i/xXGSt2HS6KpNPUI4/s/mYMKKwgpTLnlVAzlGaIO0nmvoBjIwRNaq2ISdyHi/proxy/https%3A%2F%2Fcad.onshape.com%2Fapi%2Fdocuments%3FownerType%3D1%26sortColumn%3DmodifiedAt%26offset%3D0";
+    // Proxy URL Schema from Edge Agent
+    const urlSchema = {
+        'type': 'object',
+        'items': {
+            'properties': {
+                'i': {'type': 'string', 'minLength': 1, 'maxLength': 25, 'pattern': '^[A-Za-z0-9_/+=]*$'},
+                'content': {'type': 'string', 'minLength': 1, 'maxLength': 25, 'pattern': '^[A-Za-z0-9_/+=]*$'},
+                'n': {'type': 'string', 'minLength': 1, 'maxLength': 25, 'pattern': '^[A-Za-z0-9_]*$'},
+                's': {
+                    'type': ['string', 'null', 'undefined'],
+                    'minLength': 0,
+                    'maxLength': 45,
+                    'pattern': '^[A-Za-z0-9_]*$'
+                },
+                'ip': {'type': 'string', 'minLength': 0, 'maxLength': 2000, 'pattern': '^[A-Za-z0-9.-]*$'},
+                'edge': {'type': 'string', 'minLength': 1, 'maxLength': 25, 'pattern': '^[A-Za-z0-9_]*$'},
+                'p': {'type': ['string', 'null', 'undefined'], 'minLength': 1, 'maxLength': 5, 'pattern': '^[0-9]*$'},
+            },
+            'required': ['n', 'i'],
+            'expected': ['n', 'i', 's', 'content']
+        }
+    };
+    expect(client.parseUrl(url, urlSchema)).toStrictEqual({
+        n: '1vfg7mfUcG2A5tPK1wzT',
+        i: 'xXGSt2HS6KpNPUI4',
+        s: 'mYMKKwgpTLnlVAzlGaIO0nmvoBjIwRNaq2ISdyHi',
+        route: '/proxy/https%3A%2F%2Fcad.onshape.com%2Fapi%2Fdocuments%3FownerType%3D1%26sortColumn%3DmodifiedAt%26offset%3D0',
+        server: 'alpha.toolboxedge.net',
+        protocol: 'https',
+        port: 443
+    });
+});
+
 let jsonFromURLRouteSchema = {
     "type": "object",
     "items": {
