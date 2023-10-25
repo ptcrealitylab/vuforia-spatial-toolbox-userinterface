@@ -540,6 +540,41 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         });
     }
 
+    function addSimpleGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.load(pathToGltf, function(gltf) {
+
+            gltf.scene.layers.set(1);
+            gltf.scene.traverse(child => {
+                if (child.layers) {
+                    child.layers.set(1);
+                }
+            });
+
+            // align the coordinate systems
+            gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
+            if (typeof originOffset !== 'undefined') {
+                gltf.scene.position.set(originOffset.x, originOffset.y, originOffset.z);
+            }
+            if (typeof originRotation !== 'undefined') {
+                gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
+            }
+
+            gltf.scene.layers.set(1);
+            gltf.scene.traverse(child => {
+                if (child.layers) {
+                    child.layers.set(1);
+                }
+            });
+
+            threejsContainerObj.add( gltf.scene );
+
+            if (callback) {
+                callback(gltf.scene);
+            }
+        });
+    }
+
     // small helper function for setting three.js matrices from the custom format we use
     function setMatrixFromArray(matrix, array) {
         matrix.set( array[0], array[4], array[8], array[12],
@@ -1037,6 +1072,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.addOcclusionGltf = addOcclusionGltf;
     exports.isOcclusionActive = isOcclusionActive;
     exports.addGltfToScene = addGltfToScene;
+    exports.addSimpleGltfToScene = addSimpleGltfToScene;
     exports.onAnimationFrame = onAnimationFrame;
     exports.removeAnimationCallback = removeAnimationCallback;
     exports.addToScene = addToScene;
