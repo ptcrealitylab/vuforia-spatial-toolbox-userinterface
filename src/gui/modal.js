@@ -269,7 +269,7 @@ createNameSpace("realityEditor.gui.modal");
         if (realityEditor.device.environment.variables.layoutUIForPortrait) {
             notificationUI.classList.add('statusBarPortrait');
         }
-        notificationUI.style.top = realityEditor.device.environment.variables.screenTopOffset + 'px';
+        notificationUI.style.paddingTop = (10 + realityEditor.device.environment.variables.screenTopOffset) + 'px';
         document.body.appendChild(notificationUI);
 
         let notificationTextContainer = document.createElement('div');
@@ -286,6 +286,8 @@ createNameSpace("realityEditor.gui.modal");
                 document.body.removeChild(notificationUI);
             }, timeMs);
         }
+
+        return notificationUI;
     }
 
     exports.openClassicModal = openClassicModal;

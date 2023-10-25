@@ -575,44 +575,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
     }
 
     function showMessage(message, lifetime) {
-        // create UI if needed
-        // let notificationUI = document.getElementById('captureNotificationUI');
-        // let notificationTextContainer = document.getElementById('captureNotificationStatusText');
-        // if (!notificationUI) {
-        let notificationUI = document.createElement('div');
-        // notificationUI.id = 'notificationUI';
-        notificationUI.classList.add('statusBar');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationUI.classList.add('statusBarPortrait');
-        }
-        document.body.appendChild(notificationUI);
-
-        let notificationTextContainer = document.createElement('div');
-        // notificationTextContainer.id = 'trackingStatusText';
-        notificationUI.classList.add('statusBarText');
-        notificationUI.appendChild(notificationTextContainer);
-        // }
-
-        // show and populate with message
-        notificationUI.classList.add('statusBar');
-        notificationUI.classList.remove('statusBarHidden');
-        notificationTextContainer.innerHTML = message;
-
-        setTimeout(function() {
-            // let errorNotificationUI = document.getElementById('errorNotificationUI');
-            if (!notificationUI) {
-                return;
-            } // no need to hide it if it doesn't exist
-            // notificationUI.classList.add('statusBarHidden');
-            // notificationUI.classList.remove('statusBar');
-            notificationUI.parentElement.removeChild(notificationUI);
-        }, lifetime);
-
-        // if (isLongMessage) {
-        //     notificationUI.classList.add('statusTextLong');
-        // } else {
-        //     notificationUI.classList.remove('statusTextLong');
-        // }
+        realityEditor.gui.modal.showScreenTopNotification(message, lifetime);
     }
 
     function showLoadingDialog(headerText, descriptionText) {
