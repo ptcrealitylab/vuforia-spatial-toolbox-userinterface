@@ -29,6 +29,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     let originBoxes = {};
     let hasGltfScene = false;
 
+    let allTransformControls = [];
+    
     const DISPLAY_ORIGIN_BOX = true;
 
     let customMaterials;
@@ -229,6 +231,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            allTransformControls.forEach(transformControls => {
+                transformControls.updateWorldMatrix(true, true);
+            });
         }
 
         customMaterials.update();
@@ -251,7 +256,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             }
             // Set layer to 0: everything but the background
             camera.layers.set(0);
+            camera.layers.enable(10); // <--- added this line
             renderer.render(scene, camera);
+            // Set layer to 10: the transform controls/gizmos
+            // camera.layers.set(10);
+            // renderer.render(scene, camera);
         }
     }
 
@@ -518,6 +527,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                     child.layers.set(1);
                 }
             });
+            if (!hasGltfScene) {
+                exports.primaryGltf = gltf.scene;
+            }
             hasGltfScene = true;
 
             threejsContainerObj.add( wireMesh );
@@ -537,6 +549,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             if (callback) {
               callback(gltf.scene, wireMesh);
             }
+            
         });
     }
 
@@ -996,6 +1009,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         if (typeof onDraggingChanged === 'function') {
             transformControls.addEventListener('dragging-changed', onDraggingChanged)
         }
+        
+        allTransformControls.push(transformControls);
         return transformControls;
     }
 

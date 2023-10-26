@@ -21,6 +21,7 @@ import {
 } from './three.module.js';
 
 const _raycaster = new Raycaster();
+_raycaster.layers.set(10);
 
 const _tempVector = new Vector3();
 const _tempVector2 = new Vector3();
@@ -172,10 +173,27 @@ class TransformControls extends Object3D {
 		this._onPointerMove = onPointerMove.bind( this );
 		this._onPointerUp = onPointerUp.bind( this );
 
-		this.domElement.addEventListener( 'pointerdown', this._onPointerDown );
-		this.domElement.addEventListener( 'pointermove', this._onPointerHover );
-		this.domElement.addEventListener( 'pointerup', this._onPointerUp );
+		// this.domElement.addEventListener( 'pointerdown', this._onPointerDown );
+		// this.domElement.addEventListener( 'pointermove', this._onPointerHover );
+		// this.domElement.addEventListener( 'pointerup', this._onPointerUp );
+		document.addEventListener( 'pointerdown', this._onPointerDown );
+		document.addEventListener( 'pointermove', this._onPointerHover );
+		document.addEventListener( 'pointerup', this._onPointerUp );
 
+		// todo Steve: change all objects in TransformControls to layer 10, in order to match with _raycaster layer
+		function setLayer(layer) {
+			scope._gizmo.traverse(node => {
+				if (node.isObject3D) {
+					node.layers.set(layer);
+				}
+			});
+			scope._plane.traverse(node => {
+				if (node.isObject3D) {
+					node.layers.set(layer);
+				}
+			});
+		}
+		setLayer(10);
 	}
 
 	// updateMatrixWorld  updates key transformation variables
@@ -539,10 +557,10 @@ class TransformControls extends Object3D {
 
 	dispose() {
 
-		this.domElement.removeEventListener( 'pointerdown', this._onPointerDown );
-		this.domElement.removeEventListener( 'pointermove', this._onPointerHover );
-		this.domElement.removeEventListener( 'pointermove', this._onPointerMove );
-		this.domElement.removeEventListener( 'pointerup', this._onPointerUp );
+		document.removeEventListener( 'pointerdown', this._onPointerDown );
+		document.removeEventListener( 'pointermove', this._onPointerHover );
+		document.removeEventListener( 'pointermove', this._onPointerMove );
+		document.removeEventListener( 'pointerup', this._onPointerUp );
 
 		this.traverse( function ( child ) {
 
@@ -655,7 +673,7 @@ class TransformControls extends Object3D {
 
 function getPointer( event ) {
 
-	if ( this.domElement.ownerDocument.pointerLockElement ) {
+	if ( document.pointerLockElement ) {
 
 		return {
 			x: 0,
@@ -665,11 +683,14 @@ function getPointer( event ) {
 
 	} else {
 
-		const rect = this.domElement.getBoundingClientRect();
+		// const rect = document.getBoundingClientRect();
+		let pos = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
 		return {
-			x: ( event.clientX - rect.left ) / rect.width * 2 - 1,
-			y: - ( event.clientY - rect.top ) / rect.height * 2 + 1,
+			// x: ( event.clientX - rect.left ) / rect.width * 2 - 1,
+			// y: - ( event.clientY - rect.top ) / rect.height * 2 + 1,
+			x: pos.x / window.innerWidth * 2 - 1,
+			y: - pos.y / window.innerHeight * 2 + 1,
 			button: event.button
 		};
 
@@ -698,11 +719,11 @@ function onPointerDown( event ) {
 
 	if ( ! document.pointerLockElement ) {
 
-		this.domElement.setPointerCapture( event.pointerId );
+		// document.setPointerCapture( event.pointerId );
 
 	}
 
-	this.domElement.addEventListener( 'pointermove', this._onPointerMove );
+	document.addEventListener( 'pointermove', this._onPointerMove );
 
 	this.pointerHover( this._getPointer( event ) );
 	this.pointerDown( this._getPointer( event ) );
@@ -721,9 +742,9 @@ function onPointerUp( event ) {
 
 	if ( ! this.enabled ) return;
 
-	this.domElement.releasePointerCapture( event.pointerId );
+	// document.releasePointerCapture( event.pointerId );
 
-	this.domElement.removeEventListener( 'pointermove', this._onPointerMove );
+	document.removeEventListener( 'pointermove', this._onPointerMove );
 
 	this.pointerUp( this._getPointer( event ) );
 
