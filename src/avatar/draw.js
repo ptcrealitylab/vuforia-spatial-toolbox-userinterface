@@ -62,7 +62,7 @@ createNameSpace("realityEditor.avatar.draw");
             let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
             if (numConnectedAvatars < 2) return;
 
-            drawLaserBeam(myAvatarObject.objectId, myAvatarTouchState.worldIntersectPoint, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject));
+            drawLaserBeam(myAvatarObject.objectId, null, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject), myAvatarTouchState.screenX, myAvatarTouchState.screenY);
         } catch (e) {
             console.warn(e);
         }
@@ -430,7 +430,7 @@ createNameSpace("realityEditor.avatar.draw");
         drawLaserBeam(objectKey, endWorldPosition, color, lightColor);
     }
     
-    function drawLaserBeam(objectKey, endWorldPosition, color, lightColor) {
+    function drawLaserBeam(objectKey, endWorldPosition, color, lightColor, screenX, screenY) {
         const THREE = realityEditor.gui.threejsScene.THREE;
 
         // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
@@ -440,15 +440,30 @@ createNameSpace("realityEditor.avatar.draw");
         let avatarIconElement = document.getElementById('avatarIcon' + objectKey);
         let avatarIconElementRect = avatarIconElement.getBoundingClientRect();
         let linkStartPos = [avatarIconElementRect.x + avatarIconElementRect.width / 2, avatarIconElementRect.y + avatarIconElementRect.height / 2];
-        let camWorldPos = new THREE.Vector3();
-        realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
-        let linkStartZ = camWorldPos;
-        let linkEndZ = endWorldPosition;
-        let linkDistance = linkStartZ.sub(linkEndZ).length();
-        // console.log(linkDistance);
-        let ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
-        // console.log(ratio);
-        let endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        
+        let endScreenXY = null;
+        let ratio = 1;
+        if (endWorldPosition) {
+            let camWorldPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
+            let linkStartZ = camWorldPos;
+            let linkEndZ = endWorldPosition;
+            let linkDistance = linkStartZ.sub(linkEndZ).length();
+            // console.log(linkDistance);
+            ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
+            // console.log(ratio);
+            endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        } else if (screenX && screenY) {
+            endScreenXY = {
+                x: screenX,
+                y: screenY
+            };
+            let linkDistance = Math.sqrt(Math.pow((screenX - linkStartPos[0]), 2) + Math.pow((screenY - linkStartPos[1]), 2));
+            ratio = quadraticRemap(linkDistance, 0, 1000, 0.05, 1);
+        } else {
+            return;
+        }
+        
         let linkEndPos = [endScreenXY.x, endScreenXY.y];
         realityEditor.avatar.clearLinkCanvas();
         let colorArr = HSLStrToRGBArr(color);
