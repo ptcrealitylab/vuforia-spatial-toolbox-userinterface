@@ -11,6 +11,7 @@ createNameSpace("realityEditor.avatar.draw");
 
     // main data structure that stores the various visual elements for each avatar objectKey (beam, pointer, textLabel)
     let avatarMeshes = {};
+    let avatarLinksDrawn = {};
 
     // 2D UI for keeping track of the connection status
     let debugUI = null;
@@ -23,8 +24,12 @@ createNameSpace("realityEditor.avatar.draw");
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
     function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
         try {
+            // let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
             for (const [objectKey, avatarTouchState] of Object.entries(avatarTouchStates)) {
+                // let isMyAvatar = objectKey.includes(realityEditor.avatar.utils.getAvatarName());
+                // if (!isMyAvatar || numConnectedAvatars > 1) {
                 renderAvatar(objectKey, avatarTouchState, avatarNames[objectKey]);
+                // }
             }
             for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
                 realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
@@ -32,6 +37,34 @@ createNameSpace("realityEditor.avatar.draw");
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);
+        }
+    }
+    
+    function renderMyAvatar(myAvatarObject, myAvatarTouchState) {
+        if (!myAvatarObject) return;
+        if (!myAvatarTouchState) return;
+        
+        try {
+            // if that device isn't touching down, hide its laser beam and ignore the rest
+            if (!myAvatarTouchState.isPointerDown) {
+                if (avatarLinksDrawn[myAvatarObject.objectId]) {
+                // if (avatarMeshes[myAvatarObject.objectId]) {
+                    // avatarMeshes[myAvatarObject.objectId].pointer.visible = false;
+                    // avatarMeshes[myAvatarObject.objectId].beam.visible = false;
+                    // avatarMeshes[myAvatarObject.objectId].textLabel.style.display = 'none';
+                    // realityEditor.gui.spatialArrow.deleteLaserBeamIndicator(myAvatarObject.objectId);
+                    realityEditor.avatar.clearLinkCanvas();
+                    avatarLinksDrawn[myAvatarObject.objectId] = false;
+                }
+                return;
+            }
+
+            let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
+            if (numConnectedAvatars < 2) return;
+
+            drawLaserBeam(myAvatarObject.objectId, myAvatarTouchState.worldIntersectPoint, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject));
+        } catch (e) {
+            console.warn(e);
         }
     }
 
@@ -368,6 +401,38 @@ createNameSpace("realityEditor.avatar.draw");
             endWorldPositionArray = realityEditor.sceneGraph.convertToNewCoordSystem(endWorldPositionArray, groundPlaneSceneNode, worldSceneNode);
             endWorldPosition.set(endWorldPositionArray[0], endWorldPositionArray[1], endWorldPositionArray[2]);
         }
+        // // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
+        // realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
+        // // todo Steve: draw a fake 3d line from avatar icon to the position of the laser pointer sphere (endWorldPosition)
+        // let linkCanvasInfo = realityEditor.avatar.getLinkCanvasInfo();
+        // let avatarIconElement = document.getElementById('avatarIcon' + objectKey);
+        // let avatarIconElementRect = avatarIconElement.getBoundingClientRect();
+        // let linkStartPos = [avatarIconElementRect.x + avatarIconElementRect.width / 2, avatarIconElementRect.y + avatarIconElementRect.height / 2];
+        // let camWorldPos = new THREE.Vector3();
+        // realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
+        // let linkStartZ = camWorldPos;
+        // let linkEndZ = endWorldPosition;
+        // let linkDistance = linkStartZ.sub(linkEndZ).length();
+        // // console.log(linkDistance);
+        // let ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
+        // // console.log(ratio);
+        // let endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        // let linkEndPos = [endScreenXY.x, endScreenXY.y];
+        // realityEditor.avatar.clearLinkCanvas();
+        // let colorArr = HSLStrToRGBArr(color);
+        // let lightColorArr = HSLStrToRGBArr(lightColor);
+        // if (realityEditor.avatar.isDesktop()) {
+        //     realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
+        // } else {
+        //     realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
+        // }
+        
+        drawLaserBeam(objectKey, endWorldPosition, color, lightColor);
+    }
+    
+    function drawLaserBeam(objectKey, endWorldPosition, color, lightColor) {
+        const THREE = realityEditor.gui.threejsScene.THREE;
+
         // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
         realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
         // todo Steve: draw a fake 3d line from avatar icon to the position of the laser pointer sphere (endWorldPosition)
@@ -393,7 +458,10 @@ createNameSpace("realityEditor.avatar.draw");
         } else {
             realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
         }
+        
+        avatarLinksDrawn[objectKey] = true;
     }
+    exports.drawLaserBeam = drawLaserBeam;
     
     function HSLStrToRGBArr(hslStr) {
         let hslObj = parseHSLStr(hslStr);
@@ -615,6 +683,7 @@ createNameSpace("realityEditor.avatar.draw");
     }
 
     exports.renderOtherAvatars = renderOtherAvatars;
+    exports.renderMyAvatar = renderMyAvatar;
     exports.updateAvatarName = updateAvatarName;
     exports.renderAvatarIconList = renderAvatarIconList;
     exports.renderCursorOverlay = renderCursorOverlay;

@@ -26,6 +26,7 @@ createNameSpace("realityEditor.avatar");
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
+    let myAvatarTouchState = null;
     let avatarCursorStates = {}; // data received from avatars' cursorState property in their storage node
     let avatarNames = {}; // names received from avatars' userProfile property in their storage node
     let connectedAvatarUserProfiles = {}; // similar to avatarObjects, but maps objectKey -> user profile or undefined
@@ -140,6 +141,7 @@ createNameSpace("realityEditor.avatar");
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
             draw.renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates);
+            draw.renderMyAvatar(myAvatarObject, myAvatarTouchState);
 
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
@@ -551,7 +553,12 @@ createNameSpace("realityEditor.avatar");
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
             draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
+            // draw.drawLaserBeam(myAvatarObject.objectId, touchState.worldIntersectPoint, utils.getColor(myAvatarObject), utils.getColorLighter(myAvatarObject));
             network.sendTouchState(info, touchState, { limitToFps: true });
+
+            // show your own beam, so you can tell what you're pointing at
+            // avatarTouchStates[myAvatarObject.objectId] = touchState;
+            myAvatarTouchState = touchState;
         }
 
         debugDataSent();
@@ -574,6 +581,10 @@ createNameSpace("realityEditor.avatar");
         if (info) {
             draw.renderCursorOverlay(false, screenX, screenY, utils.getColor(myAvatarObject));
             network.sendTouchState(info, touchState);
+
+            // stop showing your own beam
+            // avatarTouchStates[myAvatarObject.objectId] = touchState;
+            myAvatarTouchState = touchState;
         }
 
         debugDataSent();
@@ -690,5 +701,8 @@ createNameSpace("realityEditor.avatar");
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
+    exports.getConnectedAvatarList = () => {
+        return connectedAvatarUserProfiles;
+    };
 
 }(realityEditor.avatar));
