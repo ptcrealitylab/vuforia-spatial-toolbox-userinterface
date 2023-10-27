@@ -320,6 +320,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
 
     let projectedZ;
     let worldIntersectPoint;
+    let threejsIntersectPoint;
 
     if (!this.cachedWorldObject) {
         this.cachedWorldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -329,7 +330,6 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         this.cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(this.cachedWorldObject.objectId);
         if (this.cachedOcclusionObject) {
             this.cachedOcclusionObject.updateMatrixWorld();
-            this.cachedOcclusionObject.children[0].geometry.computeVertexNormals();
         }
     }
 
@@ -342,19 +342,30 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
             inverseGroundPlaneMatrix.invert();
-            raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+            let intersect1 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
 
             // transpose of the inverse of the ground-plane model-view matrix
             let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
 
             worldIntersectPoint = {
-                x: raycastIntersects[0].point.x,
-                y: raycastIntersects[0].point.y,
-                z: raycastIntersects[0].point.z,
+                x: intersect1.x,
+                y: intersect1.y,
+                z: intersect1.z,
                 // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
                 normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
                 // the ray direction is just a vector, so we don't need the transpose matrix
                 rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
+            };
+            
+            // compared to worldIntersectPoint, threejsSceneIntersectPoint returns the intersect point in three js container object coordinates
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix)
+            inverseGroundPlaneMatrix.invert();
+            let intersect2 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+
+            threejsIntersectPoint = {
+                x: intersect2.x,
+                y: intersect2.y,
+                z: intersect2.z,
             };
         }
     }
@@ -371,6 +382,9 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     }
     if (typeof worldIntersectPoint !== 'undefined') {
         eventData.worldIntersectPoint = worldIntersectPoint;
+    }
+    if (typeof threejsIntersectPoint !== 'undefined') {
+        eventData.threejsIntersectPoint = threejsIntersectPoint;
     }
     iframe.contentWindow.postMessage(JSON.stringify({
         event: eventData

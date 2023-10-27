@@ -23,6 +23,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let overlapped = false;
     let isMyColorDetermined = false;
     let isHighlighted = false;
+    let isMeasureMode = false;
+    let isCloseLoop = false;
+    let shouldCrossRotate = false;
+    let t11 = 0; // when toggle on/off measure mode, interpolate between filled circle / cross. 0 -- filled circle; 1 -- cross
+    let t22 = 0; // when inside measure mode, when user idle for a while, trigger 2 rotations
+    let t33 = 0; // when inside measure mode, when cursor intersect a vertex & able to close a loop, interpolate between cross / hollow circle. 0 -- cross; 1 -- hollow circle
 
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
@@ -33,6 +39,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         'time': {value: 0},
         'opacityFactor': {value: opacityFactor},
         'innerRadius': {value: innerRadius},
+        'isMeasureMode': {value: isMeasureMode},
+        't11': {value: t11},
+        't22': {value: t22},
+        't33': {value: t33}
     };
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
@@ -58,22 +68,111 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gl_Position = projectionMatrix * mvPosition;
     }
     `;
+    const commonShader = `
+        float Remap01 (float x, float low, float high) {
+            return clamp((x - low) / (high - low), 0., 1.);
+        }
+    
+        float Remap (float x, float lowIn, float highIn, float lowOut, float highOut) {
+            return lowOut + (highOut - lowOut) * Remap01(x, lowIn, highIn);
+        }
+    
+        vec2 Rot(vec2 uv, float a) {
+            return mat2(cos(a), -sin(a), sin(a), cos(a)) * vec2(uv);
+        }
+        
+        float sdRoundedBox( in vec2 p, in vec2 b, in vec4 r, in float a )
+        {
+            p = Rot(p, a);
+            r.xy = (p.x>0.0)?r.xy : r.zw;
+            r.x  = (p.y>0.0)?r.x  : r.y;
+            vec2 q = abs(p)-b+r.x;
+            return min(max(q.x,q.y),0.0) + length(max(q,0.0)) - r.x;
+        }
+    
+        float sdCross( in vec2 uv, in vec2 size, in vec4 r, in float a ) {
+            float box1 = sdRoundedBox(uv, size, r, 0. + a);
+            box1 = S(blur, -blur, box1);
+    
+            float box2 = sdRoundedBox(uv, size, r, PI / 2. + a);
+            box2 = S(blur, -blur, box2);
+    
+            float boxes = box1 + box2;
+            boxes = clamp(boxes, 0., 1.);
+            return boxes;
+        }
+    
+        float hollowCircle( in vec2 uv, in float r, in float thickness) {
+            float d = abs(length(uv)-r)-thickness;
+            return S(blur, -blur, d);
+        }
+    
+        float fillCircle( in vec2 uv, in float r) {
+            float d = length(uv) - r;
+            return S(blur, -blur, d);
+        }
+    `;
     const normalFragmentShader = `
+    #define blur 0.01
+    #define PI 3.14159
+    #define S(a, b, n) smoothstep(a, b, n)
     #define innerRadiusLow 0.1
     #define innerRadiusHigh 0.5
     ${THREE.ShaderChunk.logdepthbuf_pars_fragment}
     varying vec2 vUv;
     uniform float opacityFactor;
     uniform float innerRadius;
+    uniform bool isMeasureMode;
+    uniform float t11;
+    uniform float t22;
+    uniform float t33;
+    
+    ${commonShader}
     
     void main(void) {
         ${THREE.ShaderChunk.logdepthbuf_fragment}
-        vec2 position = -1.0 + 2.0 * vUv;
-        vec2 origin = vec2(0.0);
+        vec2 uv = -1.0 + 2.0 * vUv;
+        vec3 col = vec3(0.);
+        float alpha = 0.;
+        float d = 0.;
+        
+        // outer hollow circle --- all the time
+        float outerHollowCircle = hollowCircle(uv, 1., 0.1);
+        d += outerHollowCircle;
+        
+        // inner fill circle --- normal mode
         float innerRadiusCopy = clamp(innerRadius, innerRadiusLow, innerRadiusHigh);
-        float color = distance(position, origin) > 0.9 || distance(position, origin) < innerRadiusCopy ? 1.0 : 0.0;
-        float alpha = distance(position, origin) > 0.9 || distance(position, origin) < innerRadiusCopy ? 1.0 : 0.0;
-        gl_FragColor = vec4(color, color, color, alpha * opacityFactor);
+        float dNormalMode = fillCircle(uv, innerRadiusCopy);
+        
+        // middle circle / cross morph --- measure mode
+        float width = 0.1;
+        float t1 = t11;
+        t1 = -(t1 - 1.) * (t1 - 1.) + 1.; // ease out animation for transition between circle & cross
+        width = mix(0.1, 0.05, t1);
+        t1 = Remap(t1, 0., 1., width, 0.4);
+
+        float t2 = t22;
+        t2 = -(t2 - 1.) * (t2 - 1.) + 1.;
+        t2 = Remap(t2, 0., 1., 0., -PI);
+
+        vec2 size = vec2(t1, width);
+        vec4 roundness = vec4(width);
+
+        float innerCircleCross = sdCross(uv, size, roundness, t2);
+
+        // inner hollow circle --- measure mode close loop hint
+        float innerHollowCircle = hollowCircle(uv, 0.36, 0.05);
+
+        float t3 = t33; // 
+        
+        float dMeasureMode = mix(innerCircleCross, innerHollowCircle, t3);
+
+        bool isMeasure = isMeasureMode;
+        d += isMeasure ? dMeasureMode : dNormalMode;
+        
+        col = d * vec3(1.);
+        alpha = d;
+        gl_FragColor = vec4(col, alpha * opacityFactor);
     }
     `;
     const colorFragmentShader = `
@@ -168,6 +267,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     const remap = (x, lowIn, highIn, lowOut, highOut) => {
         return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
     }
+    
+    const fract = (x) => {
+        return x - Math.floor(x);
+    }
 
     async function getMyAvatarColor() {
         let myAvatarColor = await realityEditor.avatar.getMyAvatarColor();
@@ -237,6 +340,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             innerRadiusSpeed += 0.15;
         })
 
+        addPostMessageHandlers();
+
         if (ADD_SEARCH_TOOL_WITH_CURSOR) {
             document.addEventListener('pointerdown', (e) => {
                 if (!indicator2 || !indicator2.visible) return;
@@ -252,13 +357,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
+            let tmpRaycastResult = getRaycastCoordinates(screenX, screenY);
+            let threejsIntersectPoint = tmpRaycastResult.point === undefined ? undefined : {
+                x: tmpRaycastResult.point.x,
+                y: tmpRaycastResult.point.y,
+                z: tmpRaycastResult.point.z,
+            }
             realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
                 spatialCursorEvent: {
                     clientX: screenX,
                     clientY: screenY,
                     x: screenX,
                     y: screenY,
-                    projectedZ: projectedZ
+                    projectedZ: projectedZ,
+                    threejsIntersectPoint: threejsIntersectPoint
                 }
             });
         });
@@ -426,6 +538,71 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function isCursorOnValidPosition() {
         return Object.keys(worldIntersectPoint).length > 0;
     }
+    
+    function addPostMessageHandlers() {
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleMeasureMode', toggleMeasureMode);
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleCrossRotation', toggleCrossRotation);
+        realityEditor.network.addPostMessageHandler('spatialCursorToggleCloseLoop', toggleCloseLoop);
+    }
+    
+    let measureFalseId = null;
+    function toggleMeasureMode(boolean) { // bug: spam-toggling has visual mode bugs
+        if (boolean) {
+            isMeasureMode = true;
+            innerRadius = 0.1;
+            if (measureFalseId !== null) clearTimeout(measureFalseId);
+            uniforms['isMeasureMode'].value = true;
+        } else {
+            isMeasureMode = false;
+            innerRadius = 0.1;
+            measureFalseId = setTimeout(() => { // wait for the cross -> circle animation to finish before switching back to normal mode
+                uniforms['isMeasureMode'].value = false;
+            }, 3000);
+        }
+    }
+
+    function toggleCrossRotation(boolean) {
+        shouldCrossRotate = boolean;
+    }
+    
+    function toggleCloseLoop(boolean) {
+        isCloseLoop = boolean;
+    }
+    
+    function updateT11() {
+        if ((isMeasureMode && t11 === 1) || (!isMeasureMode && t11 === 0)) return;
+        t11 += (isMeasureMode ? 1 : -1) * 0.03;
+        t11 = clamp(t11, 0, 1);
+        uniforms['t11'].value = t11;
+    }
+    
+    function updateT22() { // only allow cross to rotate twice
+        if (!shouldCrossRotate) {
+            uniforms['t22'].value = 0;
+            return;
+        }
+        if (t22 > 2) {
+            t22 = 0;
+            uniforms['t22'].value = 0;
+            shouldCrossRotate = false;
+            return;
+        }
+        t22 += 0.008;
+        uniforms['t22'].value = fract(t22);
+    }
+
+    function updateT33() {
+        if ((isCloseLoop && t33 === 1) || (!isCloseLoop && t33 === 0)) return;
+        t33 += (isCloseLoop ? 1 : -1) * 0.06;
+        t33 = clamp(t33, 0, 1);
+        uniforms['t33'].value = t33;
+    }
+    
+    function updateCursorMeasureStyle() {
+        updateT11();
+        updateT22();
+        updateT33();
+    }
 
     function updateLoop() {
         if (!isCursorEnabled || !isMyColorDetermined) {
@@ -450,6 +627,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             updateTestSpatialCursor();
             tweenCursorDirection();
             uniforms['time'].value = clock.getElapsedTime() * 10;
+            updateCursorMeasureStyle();
 
             if (SNAP_CURSOR_TO_TOOLS) {
                 trySnappingCursorToTools(screenX, screenY);
