@@ -343,6 +343,7 @@ realityEditor.device.onload = async function () {
         realityEditor.sceneGraph.initService();
         realityEditor.gui.glRenderer.initService();
         realityEditor.gui.threejsScene.initService();
+        realityEditor.measure.clothSimulation.initService();
         // realityEditor.device.multiclientUI.initService();
         realityEditor.avatar.initService();
         realityEditor.humanPose.initService();
