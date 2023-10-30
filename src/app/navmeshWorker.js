@@ -45,7 +45,7 @@ globalThis.document = {
   }
 };
 
-const heatmapResolution = 10; // number of pixels per meter
+const heatmapResolution = 20; // number of pixels per meter
 
 onmessage = function(evt) {
   const fileName = evt.data.fileName;
