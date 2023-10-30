@@ -36,7 +36,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
-    let transformControls = null;
+    let _transformControls = null;
 
     const DISPLAY_ORIGIN_BOX = true;
 
