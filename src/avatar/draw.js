@@ -438,7 +438,7 @@ createNameSpace("realityEditor.avatar.draw");
                 y: screenY
             };
             let linkDistance = Math.sqrt(Math.pow((screenX - linkStartPos[0]), 2) + Math.pow((screenY - linkStartPos[1]), 2));
-            ratio = quadraticRemap(linkDistance, 0, 500, 0.05, 1);
+            ratio = quadraticRemap(linkDistance, 0, 10000, 0.05, 1);
         } else {
             return;
         }
