@@ -89,7 +89,7 @@ export class HumanPoseAnalyzerSettingsUi {
         const navbar = document.querySelector('.desktopMenuBar');
         const navbarHeight = navbar ? navbar.offsetHeight : 0;
         const sessionMenuContainer = document.querySelector('#sessionMenuContainer');
-        const sessionMenuLeft = sessionMenuContainer ? sessionMenuContainer.offsetLeft : 0; 
+        const sessionMenuLeft = sessionMenuContainer ? sessionMenuContainer.offsetLeft : 0;
         if (sessionMenuContainer) { // Avoid the top right menu
             this.root.style.top = `calc(${navbarHeight}px + 2em)`;
             this.root.style.left = `calc(${sessionMenuLeft - this.root.offsetWidth}px - 6em)`;
@@ -197,6 +197,24 @@ export class HumanPoseAnalyzerSettingsUi {
             document.addEventListener('mouseup', mouseUpListener);
         });
     }
+    
+    isOutOfBounds() {
+        const navbar = document.querySelector('.desktopMenuBar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        if (this.root.offsetTop < navbarHeight) {
+            return true;
+        }
+        if (this.root.offsetLeft < 0) {
+            return true;
+        }
+        if (this.root.offsetLeft + this.root.offsetWidth > window.innerWidth) {
+            return true;
+        }
+        if (this.root.offsetTop + this.root.querySelector('.hpa-settings-header').offsetHeight > window.innerHeight) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * If the settings menu is out of bounds, snap it back into the screen
@@ -221,6 +239,11 @@ export class HumanPoseAnalyzerSettingsUi {
     
     show() {
         this.root.classList.remove('hidden');
+        if (this.isOutOfBounds()) {
+            // Only happens with initial set up of the live analytics menu, since it thinks the session menu has 0
+            // offset as it hasn't fully initialized yet, and ends up far to the left of the screen
+            this.setInitialPosition();
+        }
     }
     
     hide() {

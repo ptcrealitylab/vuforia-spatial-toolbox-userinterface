@@ -518,8 +518,14 @@ createNameSpace("realityEditor.network.realtime");
         if (!allCallbacks) { return; }
         let callbacks = allCallbacks[publicDataKey];
         if (!callbacks) { return; }
+        
+        // skip messages originating from yourself
+        let msgData = JSON.parse(msg);
+        if (typeof msgData.sessionUuid !== 'undefined' && msgData.sessionUuid === globalStates.tempUuid) {
+            return;
+        }
 
-        let stringifiedData = JSON.stringify(JSON.parse(msg).publicData[publicDataKey]);
+        let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
 
         // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
         if (stringifiedData === cachedPublicData[objectKey][frameKey][publicDataKey]) {
@@ -668,7 +674,8 @@ createNameSpace("realityEditor.network.realtime");
         if (socketIP.includes(':8081')) {
             ioObject = window._oldIo.connect(socketIP);
         } else {
-            ioObject = io.connect(socketIP);
+            let tsIo = new ToolSocket.Io();
+            ioObject = tsIo.connect(socketIP);
         }
         if (DEBUG) {
             console.log('createSocketInSet', setName, socketIP, ioObject);

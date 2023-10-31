@@ -2100,3 +2100,15 @@ Logic Interface CSS
     height: 100vh;
     z-index: -1;
 }
+
+.cloth-text {
+    width: fit-content;
+    height: fit-content;
+    padding: 8px;
+    top: 0;
+    left: 0;
+    border-radius: 10px;
+    transform-origin: center;
+    color: yellow;
+    font-size: 20px;
+}

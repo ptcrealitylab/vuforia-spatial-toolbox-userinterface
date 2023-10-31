@@ -60,7 +60,8 @@ window.realityEditor = {
     app: {
         callbacks: {},
         promises: {},
-        targetDownloader: {}
+        targetDownloader: {},
+        pathfinding: {}
     },
     device: {
         distanceScaling: {},
@@ -123,10 +124,14 @@ window.realityEditor = {
         navigation: {},
         pocket: {},
         screenExtension : {},
+        shaders: {},
         threejsScene: {},
         spatialIndicator: {},
         spatialArrow: {},
         utilities: {}
+    },
+    measure: {
+        clothSimulation: {},
     },
     network: {
         discovery: {},
@@ -150,6 +155,7 @@ window.realityEditor = {
             vertexShader: {},
         }
     },
+    spatialCapture: {},
     avatar: {
         network: {},
         draw: {},
