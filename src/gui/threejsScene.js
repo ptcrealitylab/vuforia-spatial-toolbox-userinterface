@@ -36,6 +36,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
+    let _transformControls = null;
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -177,10 +178,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
         const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide} );
+        geometry.rotateX(Math.PI/2); // directly set the geometry's rotation to get the desired visual rotation & raycast direction. Otherwise setting mesh's rotation & run updateWorldMatrix(true, false) looks correct, but has wrong raycast direction
+        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide, wireframe: true} );
         const plane = new THREE.Mesh( geometry, material );
-        plane.rotateX(Math.PI/2);
+        // plane.rotateX(Math.PI/2);
         plane.visible = false;
+        plane.position.set(0, -10, 0); // todo Steve: figure out a way to raycast on mesh first & if no results, raycast on ground plane next. Figure out a way to do it in one go (possibly using depth tests & stuff), instead of using 2 raycasts, to improve performance
         addToScene(plane, {occluded: true});
         plane.name = 'groundPlaneCollider';
         groundPlaneCollider = plane;
@@ -258,6 +261,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            // transformControls.updateWorldMatrix(true, true);
         }
 
         customMaterials.update();
@@ -280,6 +284,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             }
             // Set layer to 0: everything but the background
             camera.layers.set(0);
+            camera.layers.enable(10);
             renderer.render(scene, camera);
         }
     }
@@ -544,6 +549,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             // navmesh.layers.set(1);
             // navmesh.visible = false;
             // threejsContainerObj.add(navmesh);
+            
+            // let geo = new THREE.BoxGeometry(50, 50, 50);
+            // let mat = new THREE.MeshBasicMaterial({color: 0xff0000});
+            // let box = new THREE.Mesh(geo, mat);
+            // threejsContainerObj.add(box);
+            // transformControls = addTransformControlsTo(box, {size: 1});
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
