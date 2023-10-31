@@ -177,9 +177,13 @@ realityEditor.app.acceptGroundPlaneAndStop = function() {
  * @param {string} size - 'S' (25%), 'M' (50%), or 'L' (full size)
  * @param {FunctionName} callBack
  */
-realityEditor.app.getScreenshot = function(size, callBack) {
-    this.appFunctionCall('getScreenshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+realityEditor.app.getSnapshot = function(size, callBack) {
+    this.appFunctionCall('getSnapshot', {size: size}, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
+/**
+ * @deprecated alias for getSnapshot
+ */
+realityEditor.app.getScreenshot = realityEditor.app.getSnapshot;
 
 /**
  * Debug method that gets the camera background, decodes it, and passes the blob url to a callback.
@@ -187,7 +191,7 @@ realityEditor.app.getScreenshot = function(size, callBack) {
  * @return {string} screenshotBlobUrl
  */
 realityEditor.app.getScreenshotAsJpg = function(callback) {
-    this.getScreenshot("L", function(base64String) {
+    this.getSnapshot("L", function(base64String) {
         var screenshotBlobUrl = realityEditor.device.utilities.decodeBase64JpgToBlobUrl(base64String);
         callback(screenshotBlobUrl);
         // to show the screenshot, you would: 
@@ -195,6 +199,14 @@ realityEditor.app.getScreenshotAsJpg = function(callback) {
         // document.querySelector('#screenshotHolder').style.display ='inline';
     });
 };
+
+/**
+ * Gets the background RGB texture as a base64 encoded string, and the depth texture if available as an RVL encoded byte array
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.get3dSnapshot = function(callBack) {
+    this.appFunctionCall('get3dSnapshot', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+}
 
 /**
  * Pauses the tracker (freezes the background)
