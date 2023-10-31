@@ -332,6 +332,7 @@ export class Analytics {
         
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
+            this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
         }
 
         data.regionCards.sort((rcDescA, rcDescB) => {
@@ -520,6 +521,7 @@ export class Analytics {
      */
     markWasteTime(startTime, endTime) {
         this.valueAddWasteTimeManager.markWasteTime(startTime, endTime);
+        this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
         this.pinnedRegionCards.forEach(card => {
             card.updateValueAddWasteTimeUi();
         });
@@ -532,6 +534,7 @@ export class Analytics {
      */
     markValueAdd(startTime, endTime) {
         this.valueAddWasteTimeManager.markValueAdd(startTime, endTime);
+        this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
         this.pinnedRegionCards.forEach(card => {
             card.updateValueAddWasteTimeUi();
         });
