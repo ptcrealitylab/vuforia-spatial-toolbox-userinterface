@@ -166,13 +166,16 @@ class SpatialPatchCoordinator {
             patch.add();
             this.patches[key] = patch;
             clonedPatches[key] = patch;
+
+            let previousVisibility = camera.mesh.visible;
+            let previousHidden = camera.mesh.__hidden;
             // Hide for a bit to show the patch in space
             camera.mesh.visible = false;
             camera.mesh.__hidden = true;
 
             setTimeout(() => {
-                camera.mesh.visible = this.visible;
-                camera.mesh.__hidden = !this.visible;
+                camera.mesh.visible = previousVisibility; //this.visible;
+                camera.mesh.__hidden = previousHidden; //!this.visible;
             }, 300);
         }
         return clonedPatches;
