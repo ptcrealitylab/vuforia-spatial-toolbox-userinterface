@@ -100,18 +100,31 @@ createNameSpace("realityEditor.device.environment");
 
     // using variables.suppressObjectRendering allows any module to overwrite any other module's preferences
     // but a module can add a flag, and rendering will only re-enable when all flags are cleared
-    let suppressedRenderingFlags = {};
+    let suppressedObjectRenderingFlags = {}; // suppressing objects also hides area target, canvases, etc. - everything in the scene
+    let suppressedToolRenderingFlags = {}; // suppressing tools leaves the area target, etc. visible – just hides the tool contents
 
     exports.addSuppressedObjectRenderingFlag = (flagName) => {
-        suppressedRenderingFlags[flagName] = true;
+        suppressedObjectRenderingFlags[flagName] = true;
     };
 
     exports.clearSuppressedObjectRenderingFlag = (flagName) => {
-        delete suppressedRenderingFlags[flagName];
+        delete suppressedObjectRenderingFlags[flagName];
     }
 
     exports.isObjectRenderingSuppressed = () => {
-        return Object.keys(suppressedRenderingFlags).length > 0 || variables.suppressObjectRendering;
+        return Object.keys(suppressedObjectRenderingFlags).length > 0 || variables.suppressObjectRendering;
+    }
+
+    exports.addSuppressedToolRenderingFlag = (flagName) => {
+        suppressedToolRenderingFlags[flagName] = true;
+    };
+
+    exports.clearSuppressedToolRenderingFlag = (flagName) => {
+        delete suppressedToolRenderingFlags[flagName];
+    }
+
+    exports.isToolRenderingSuppressed = () => {
+        return Object.keys(suppressedToolRenderingFlags).length > 0;
     }
 
     /**

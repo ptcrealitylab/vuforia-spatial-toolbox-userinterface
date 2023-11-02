@@ -245,7 +245,8 @@ realityEditor.gui.ar.draw.updateExtendedTrackingVisibility = function(visibleObj
 };
 
 realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
-realityEditor.gui.ar.draw.prevSuppressedRendering = false;
+realityEditor.gui.ar.draw.prevSuppressedObjectRendering = false;
+realityEditor.gui.ar.draw.prevSuppressedToolRendering = false;
 
 /**
  * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
@@ -253,8 +254,9 @@ realityEditor.gui.ar.draw.prevSuppressedRendering = false;
  * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
+    // processed the suppressedObjectRendering, as this is the strictest mode that hides all content and ignores the render loop
     if (realityEditor.device.environment.isObjectRenderingSuppressed()) {
-        if (!this.prevSuppressedRendering) {
+        if (!this.prevSuppressedObjectRendering) {
             let toolContainer = document.getElementById('GUI');
             let canvas = document.getElementById('canvas');
             let glcanvas = document.getElementById('glcanvas');
@@ -263,16 +265,46 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
                 eltToHide.classList.add('suppressedRendering');
             });
         }
-        this.prevSuppressedRendering = true;
+        this.prevSuppressedObjectRendering = true;
         return; // ignore render loop while suppressing renderer
-    } else if (this.prevSuppressedRendering) {
-        this.prevSuppressedRendering = false;
+    } else if (this.prevSuppressedObjectRendering) {
+        this.prevSuppressedObjectRendering = false;
         // un-hide the hidden tools and canvases when suppressObjectRendering variable first changes
         let toolContainer = document.getElementById('GUI');
         let canvas = document.getElementById('canvas');
         let glcanvas = document.getElementById('glcanvas');
         let threejsCanvas = document.getElementById('mainThreejsCanvas');
         [toolContainer, canvas, glcanvas, threejsCanvas].forEach(eltToHide => {
+            eltToHide.classList.remove('suppressedRendering');
+        });
+    }
+    
+    // next process the suppressedToolRendering, as this is the next strictest mode. It still computes the render loop, so you can move the camera, etc.
+    if (realityEditor.device.environment.isToolRenderingSuppressed()) {
+        if (!this.prevSuppressedToolRendering) {
+            let toolContainer = document.getElementById('GUI');
+            // toolContainer.classList.add('suppressedRendering');
+            // let canvas = document.getElementById('canvas');
+            let glcanvas = document.getElementById('glcanvas');
+            // let threejsCanvas = document.getElementById('mainThreejsCanvas');
+            [toolContainer, glcanvas].forEach(eltToHide => {
+                eltToHide.classList.add('suppressedRendering');
+            });
+        }
+        this.prevSuppressedToolRendering = true;
+        
+        // the render loop still 
+        // return; // ignore render loop while suppressing renderer
+    } else if (this.prevSuppressedToolRendering) {
+        this.prevSuppressedToolRendering = false;
+        // un-hide the hidden tools and canvases when suppressObjectRendering variable first changes
+        let toolContainer = document.getElementById('GUI');
+        // toolContainer.classList.remove('suppressedRendering');
+        
+        // let canvas = document.getElementById('canvas');
+        let glcanvas = document.getElementById('glcanvas');
+        // let threejsCanvas = document.getElementById('mainThreejsCanvas');
+        [toolContainer, glcanvas].forEach(eltToHide => {
             eltToHide.classList.remove('suppressedRendering');
         });
     }
