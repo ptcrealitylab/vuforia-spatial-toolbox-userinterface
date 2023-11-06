@@ -1086,7 +1086,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 }
             });
 
-            for (let i = indicesToRemove.length-1; i > 0; i--) {
+            for (let i = indicesToRemove.length-1; i >= 0; i--) {
                 let matIndex = indicesToRemove[i];
                 this.materialsToAnimate.splice(matIndex, 1);
             }
