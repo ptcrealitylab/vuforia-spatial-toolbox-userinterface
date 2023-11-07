@@ -830,9 +830,11 @@ createNameSpace("realityEditor.envelopeManager");
     exports.hideBlurredBackground = hideBlurredBackground;
 
     exports.getOpenEnvelopes = getOpenEnvelopes;
+    exports.getFocusedEnvelopes = getFocusedEnvelopes;
     exports.openEnvelope = openEnvelope;
     exports.closeEnvelope = closeEnvelope;
     exports.focusEnvelope = focusEnvelope;
     exports.blurEnvelope = blurEnvelope;
+    exports.getFrameTypeFromKey = getFrameTypeFromKey;
 
 }(realityEditor.envelopeManager));

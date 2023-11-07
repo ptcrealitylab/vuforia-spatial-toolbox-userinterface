@@ -3,6 +3,7 @@ import {
     setAnimationMode,
     AnimationMode, getPosesInTimeInterval,
 } from '../humanPose/draw.js';
+import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 
 const needleTopPad = 4;
 const needleTipWidth = 12;
@@ -192,10 +193,12 @@ export class Timeline {
         this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
+        this.rowIndex = 0;
         this.calculateAndDrawTicks();
         this.drawPoses();
         this.drawPinnedRegionCards();
         this.drawPatches();
+        this.drawValueAddWasteTime();
 
         this.drawHighlightRegion();
 
@@ -338,15 +341,23 @@ export class Timeline {
         return time >= this.highlightRegion.startTime &&
             time <= this.highlightRegion.endTime;
     }
+    
+    rowIndexToRowY(index) {
+        return boardStart + rowPad + (rowHeight + rowPad) * index;
+    }
 
     drawPoses() {
         if (this.poses.length < 1) {
             return;
         }
+
         let lastPoseTime = this.poses[0].time;
         let startSectionTime = lastPoseTime;
         const maxPoseDelayLenience = 500;
-        const rowY = boardStart + rowPad;
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+
         const timeMax = this.timeMin + this.widthMs;
 
         let baseFill = 'hsl(120, 80%, 50%)';
@@ -458,7 +469,13 @@ export class Timeline {
     }
 
     drawPinnedRegionCards() {
-        const rowY = boardStart + rowPad + rowHeight + rowPad;
+        if (this.analytics.pinnedRegionCards.length === 0) {
+            return;
+        }
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+        
         const timeMax = this.timeMin + this.widthMs;
 
         for (const prc of this.analytics.pinnedRegionCards) {
@@ -518,7 +535,8 @@ export class Timeline {
 
         const timeMax = this.timeMin + this.widthMs;
 
-        const rowY = boardStart + rowPad + (rowHeight + rowPad) * 2;
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
 
         this.gfx.fillStyle = 'rgb(200, 200, 200)';
 
@@ -551,6 +569,36 @@ export class Timeline {
                 rowHeight
             );
         }
+    }
+    
+    drawValueAddWasteTime() {
+        if (this.analytics.valueAddWasteTimeManager.regions.length === 0) {
+            return;
+        }
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+
+        const timeMax = this.timeMin + this.widthMs;
+        
+        this.analytics.valueAddWasteTimeManager.regions.forEach(region => {
+            if (region.endTime < this.timeMin || region.startTime > timeMax) {
+                return;
+            }
+            const timeStart = Math.max(region.startTime, this.timeMin);
+            const timeEnd = Math.min(region.endTime, timeMax);
+            
+            const startX = this.timeToX(timeStart);
+            const endX = this.timeToX(timeEnd);
+
+            this.gfx.fillStyle = region.value === ValueAddWasteTimeTypes.WASTE_TIME ? "#880000" : "#008800";
+            this.gfx.fillRect(
+                startX,
+                rowY,
+                endX - startX,
+                rowHeight
+            );
+        });
     }
 
     calculateAndDrawTicks() {
@@ -681,10 +729,10 @@ export class Timeline {
         this.mouseX = event.offsetX;
         this.mouseY = event.offsetY;
     }
-
-    isPointerOnActiveRow() {
+    
+    isPointerOnRow() {
         return this.mouseY > boardStart &&
-            this.mouseY < boardStart + rowPad * 2 + rowHeight;
+            this.mouseY < this.rowIndexToRowY(this.rowIndex) - rowPad;
     }
 
     isPointerOnBoard() {
@@ -730,7 +778,7 @@ export class Timeline {
 
         this.updatePointer(event);
 
-        if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
             if (this.isPointerOnStartNeedle()) {
                 this.highlightStartTime = this.highlightRegion.endTime;
@@ -770,7 +818,7 @@ export class Timeline {
         let cursor = 'default';
         if (this.isPointerOnNeedle()) {
             cursor = 'grab';
-        } else if (this.isPointerOnActiveRow()) {
+        } else if (this.isPointerOnRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
             cursor = 'move';

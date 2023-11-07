@@ -471,13 +471,20 @@ export class Spaghetti extends THREE.Group {
     /**
      * Deallocates all mesh paths and points, and removes them from the scene
      */
-    reset() {
+    resetPoints() {
         this.meshPaths.forEach((meshPath) => {
             meshPath.resetPoints();
             this.remove(meshPath);
         });
         this.points = [];
         this.meshPaths = [];
+    }
+
+    /**
+     * Resets the points and state of the Spaghetti line
+     */
+    reset() {
+        this.resetPoints();
         SpaghettiSelectionState.NONE.transition(this);
         this.cursorIndex = -1;
         if (activeSpaghettiByAnalyticsFrame[this.frame] === this) {
