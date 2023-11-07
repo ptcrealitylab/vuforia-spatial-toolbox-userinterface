@@ -39,7 +39,7 @@ class TimeLens extends AnalyticsLens {
 
     applyLensToHistory(poseHistory) {
         return poseHistory.map(pose => {
-            this.applyLensToPose(pose);
+            return this.applyLensToPose(pose);
         });
     }
 

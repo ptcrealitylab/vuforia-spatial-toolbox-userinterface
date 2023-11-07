@@ -1883,6 +1883,7 @@ Logic Interface CSS
     line-height: 22px;
     position: absolute;
     left: 50%;
+    width: 15rem;
 
     border-radius: 22px;
     background-color: rgba(0, 0, 0, 0.7);
@@ -1904,6 +1905,7 @@ Logic Interface CSS
 .analytics-region-card.minimized:not(.pinned) {
     padding: 14px;
     height: 28px;
+    width: max-content;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -1917,7 +1919,6 @@ Logic Interface CSS
     position: relative;
     margin: 10px 0;
     transform: translateZ(3000px);
-    width: 15rem;
 }
 
 .analytics-pinned-region-cards-container {
@@ -1960,6 +1961,10 @@ Logic Interface CSS
     grid-column-start: span 3;
 }
 
+.analytics-region-card-value-add-waste-time-summary {
+    grid-column-start: span 3;
+}
+
 .analytics-region-card-label {
     grid-column-start: span 3;
     border-bottom: 1px solid #999;
@@ -1984,12 +1989,78 @@ Logic Interface CSS
 .analytics-region-card-graph-section-value {
 }
 
-.analytics-region-card-pin, .analytics-region-card-show {
-    color: white;
+.analytics-region-card-button-container {
+    grid-column-start: span 3;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
 }
-.analytics-region-card-pin:visited, .analytics-region-card-show:visited {
+
+.analytics-region-card-button {
+    border: 1px solid white;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: fit-content;
     color: white;
+    cursor: pointer;
+    padding: 0 6px;
+    transition: all 0.1s;
 }
+
+.analytics-region-card-button:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.analytics-value-add-waste-time-container {
+    border: 1px solid white;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: fit-content;
+}
+
+.analytics-waste-time-item, .analytics-value-add-item {
+    cursor: pointer;
+    text-align: center;
+    display: inline-block;
+    padding: 0 6px;
+    transition: all 0.1s;
+}
+
+.analytics-waste-time-item {
+    border-radius: 4px 0 0 4px;
+}
+
+.analytics-waste-time-item.selected {
+    background-color: rgb(160, 0, 0);
+}
+
+.analytics-waste-time-item:hover {
+    background-color: rgb(128, 0, 0);
+}
+
+.analytics-waste-time-item.selected:hover {
+    background-color: rgb(180, 0, 0);
+}
+
+.analytics-value-add-item {
+    border-left: 1px solid white;
+    border-radius:  0 4px 4px 0;
+}
+
+.analytics-value-add-item.selected {
+    background-color: rgb(0, 160, 0);
+}
+
+.analytics-value-add-item:hover {
+    background-color: rgb(0, 128, 0);
+}
+
+.analytics-value-add-item.selected:hover {
+    background-color: rgb(0, 180, 0);
+}
+
 
 #blurredEnvelopeBackground {
     background-color: #67676760;

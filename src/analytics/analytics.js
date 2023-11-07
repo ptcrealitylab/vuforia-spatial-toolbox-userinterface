@@ -9,6 +9,7 @@ import {HumanPoseAnalyzer} from '../humanPose/HumanPoseAnalyzer.js';
 import {
     postPersistRequest,
 } from './utils.js';
+import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 
 export class Analytics {
     /**
@@ -41,6 +42,7 @@ export class Analytics {
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
         this.createNewPinnedRegionCardsContainer();
+        this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
 
         this.draw = this.draw.bind(this);
 
@@ -320,19 +322,24 @@ export class Analytics {
     }
 
 
-    hydrateRegionCards(regionCardDescriptions) {
+    hydrateAnalytics(data) {
         if (this.loadingHistory) {
             setTimeout(() => {
-                this.hydrateRegionCards(regionCardDescriptions);
+                this.hydrateAnalytics(data);
             }, 100);
             return;
         }
+        
+        if (data.valueAddWasteTime) {
+            this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
+            this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
+        }
 
-        regionCardDescriptions.sort((rcDescA, rcDescB) => {
+        data.regionCards.sort((rcDescA, rcDescB) => {
             return rcDescA.startTime - rcDescB.startTime;
         });
 
-        for (let desc of regionCardDescriptions) {
+        for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
                 let defaultAnalytics = realityEditor.analytics.getDefaultAnalytics();
@@ -361,6 +368,7 @@ export class Analytics {
             }
         }
         this.pinnedRegionCards.push(regionCard);
+        regionCard.updateValueAddWasteTimeUi(this.valueAddWasteTimeManager);
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel('Step ' + this.nextStepNumber);
@@ -398,7 +406,7 @@ export class Analytics {
         // }, patchTolerance);
     }
 
-    writeDehydratedRegionCards() {
+    writeAnalyticsData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
         let allCards = this.pinnedRegionCards.map(regionCard => {
@@ -416,7 +424,11 @@ export class Analytics {
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
-            realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'cards', allCards);
+            const analyticsData = {
+                regionCards: allCards,
+                valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
+            }
+            realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', analyticsData);
         }
     }
 
@@ -434,7 +446,7 @@ export class Analytics {
             regionCard.removePinAnimation();
 
             this.addRegionCard(regionCard);
-            this.writeDehydratedRegionCards();
+            this.writeAnalyticsData();
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
         }, 750);
@@ -445,7 +457,7 @@ export class Analytics {
             return prc !== regionCard;
         });
         this.updateCsvExportLink();
-        this.writeDehydratedRegionCards();
+        this.writeAnalyticsData();
     }
 
     updateCsvExportLink() {
@@ -501,5 +513,31 @@ export class Analytics {
         if (this.activeRegionCard) {
             this.activeRegionCard.setPoses(timelineRegionCard.poses);
         }
+    }
+    
+    /**
+     * @param {number} startTime
+     * @param {number} endTime
+     */
+    markWasteTime(startTime, endTime) {
+        this.valueAddWasteTimeManager.markWasteTime(startTime, endTime);
+        this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
+        this.pinnedRegionCards.forEach(card => {
+            card.updateValueAddWasteTimeUi();
+        });
+        this.writeAnalyticsData();
+    }
+    
+    /**
+     * @param {number} startTime
+     * @param {number} endTime
+     */
+    markValueAdd(startTime, endTime) {
+        this.valueAddWasteTimeManager.markValueAdd(startTime, endTime);
+        this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
+        this.pinnedRegionCards.forEach(card => {
+            card.updateValueAddWasteTimeUi();
+        });
+        this.writeAnalyticsData();
     }
 }
