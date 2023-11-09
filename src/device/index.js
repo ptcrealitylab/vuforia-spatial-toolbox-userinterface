@@ -566,6 +566,10 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     realityEditor.device.editingState.startingTransform = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).getTransformMatrix();
 
     globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
+    
+    console.log('corners shown');
+
+    realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
 
     this.sendEditingStateToFrameContents(frameKey, true);
 
@@ -1633,6 +1637,9 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
 
             if (activeVehicle && !globalStates.editingMode) {
                 globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
+                
+                console.log('corners hidden');
+                realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
             }
 
             this.resetEditingState();
