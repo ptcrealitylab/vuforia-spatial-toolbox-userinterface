@@ -115,8 +115,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         
         document.addEventListener('keydown', (e) => {
-            e.stopPropagation();
             if (e.key === 'n' || e.key === 'N') {
+                e.stopPropagation();
                 navmesh.visible = !navmesh.visible;
             }
         })
