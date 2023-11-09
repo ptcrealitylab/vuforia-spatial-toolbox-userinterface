@@ -1174,10 +1174,47 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
             if (activeVehicle.alwaysFaceCamera === true) {
+                // let options = {
+                //     localOffset: [0, 0, 3000]
+                // };
                 let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
                 let modelViewMatrix = [];
                 utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+
+                // TOD
+                // strip out the rotation elements from the matrix to ensure it's really straight-up
+                // finalMatrix[0] = 0;
+                // modelViewMatrix[1] = 0;
+                // modelViewMatrix[2] = 0;
+                // modelViewMatrix[3] = 0;
+                //
+                // modelViewMatrix[4] = 0;
+                // // finalMatrix[5] = 0;
+                // modelViewMatrix[6] = 0;
+                // modelViewMatrix[7] = 0;
+                //
+                // modelViewMatrix[8] = 0;
+                // modelViewMatrix[9] = 0;
+                // // finalMatrix[10] = 0;
+                // modelViewMatrix[11] = 0;
+                
                 utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+
+                // // strip out the rotation elements from the matrix to ensure it's really straight-up
+                // finalMatrix[0] = 0;
+                finalMatrix[1] = 0;
+                finalMatrix[2] = 0;
+                finalMatrix[3] = 0;
+
+                finalMatrix[4] = 0;
+                // finalMatrix[5] = 0;
+                finalMatrix[6] = 0;
+                finalMatrix[7] = 0;
+
+                finalMatrix[8] = 0;
+                finalMatrix[9] = 0;
+                // finalMatrix[10] = 0;
+                finalMatrix[11] = 0;
             }
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera

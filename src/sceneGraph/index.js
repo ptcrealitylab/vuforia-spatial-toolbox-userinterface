@@ -688,14 +688,30 @@ createNameSpace("realityEditor.sceneGraph");
 
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
-    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true} = {}) {
+    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true, localOffset = null} = {}) {
         let utils = realityEditor.gui.ar.utilities;
 
         // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
         let mSource = sourceNode.getMatrixRelativeTo(worldNode);
-        let mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
+        let mTarget = [];
+        // if (localOffset) {
+        //     let nodeToLookAt = realityEditor.sceneGraph.getSceneNodeById(idToLookAt);
+        //     // if they're the same, we should get identity matrix
+        //     let offset = realityEditor.gui.ar.utilities.newIdentityMatrix();
+        //     offset[12] = localOffset[0];
+        //     offset[13] = localOffset[1];
+        //     offset[14] = localOffset[2];
+        //     let offsetNodeMatrix = [];
+        //     utils.multiplyMatrix(nodeToLookAt.worldMatrix, offset, offsetNodeMatrix);
+        //    
+        //     // let relativeMatrix = [];
+        //     // utils.multiplyMatrix(nodeToLookAt.worldMatrix, utils.invertMatrix(worldNode.worldMatrix), relativeMatrix);
+        //     utils.multiplyMatrix(offsetNodeMatrix, utils.invertMatrix(worldNode.worldMatrix), mTarget);
+        // } else {
+            mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
+        // }
 
         let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
         let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };

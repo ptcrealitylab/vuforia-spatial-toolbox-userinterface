@@ -491,6 +491,9 @@ createNameSpace("realityEditor.avatar");
                     y: e.pageY
                 };
                 lastPointerState.timestamp = Date.now();
+
+                // allow laser beam to pass through full2D tools with title bars, if started outside them
+                realityEditor.gui.ar.positioning.coverFull2DTools(true);
             }
         });
 
@@ -499,6 +502,8 @@ createNameSpace("realityEditor.avatar");
                 if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
                 setBeamOff();
                 lastPointerState.position = null;
+
+                realityEditor.gui.ar.positioning.coverFull2DTools(false);
             });
         });
 

@@ -760,12 +760,21 @@ realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectType
     return dataToSend;
 };
 
+let previousMoveDelays = {};
+
 realityEditor.gui.ar.positioning.addTitleBarToTool = function(objectKey, frameKey) {
     let toolContainer = globalDOMCache[`object${frameKey}`];
     let toolIframe = globalDOMCache[`iframe${frameKey}`];
     let toolOverlay = globalDOMCache[frameKey];
     if (!toolContainer || !toolIframe || !toolOverlay) return;
     
+    let existingTitleBar = toolContainer.querySelector('.tool-title-bar');
+    if (existingTitleBar) return;
+    
+    let thisTool = realityEditor.getFrame(objectKey, frameKey);
+    previousMoveDelays[frameKey] = thisTool.moveDelay;
+    thisTool.moveDelay = 10;
+
     // create a new domElement to visually look like the tool title bar
     let titleBar = document.createElement('div');
     titleBar.classList.add('tool-title-bar');
@@ -804,7 +813,12 @@ realityEditor.gui.ar.positioning.removeTitleBarFromTool = function(objectKey, fr
     if (!toolContainer || !toolIframe || !toolOverlay) return;
     let titleBar = toolContainer.querySelector('.tool-title-bar');
     if (!titleBar) return;
-    
+
+    let thisTool = realityEditor.getFrame(objectKey, frameKey);
+    if (typeof previousMoveDelays[frameKey] !== 'undefined') {
+        thisTool.moveDelay = previousMoveDelays[frameKey];
+    }
+
     // remove the title bar
     toolContainer.removeChild(titleBar);
 
@@ -863,6 +877,7 @@ realityEditor.gui.ar.positioning.updateMoveabilityCorners = function(objectKey, 
 };
 
 realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
+    if (!globalDOMCache[frameKey]) return;
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     if (!cornersContainer.classList.contains('corners-title-bar')) return;
     
@@ -884,6 +899,7 @@ realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(obj
 };
 
 realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
+    if (!globalDOMCache[frameKey]) return;
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     if (!cornersContainer.classList.contains('corners-title-bar')) return;
 
@@ -910,3 +926,14 @@ realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded = function(obje
 
 };
 
+// smooth the camera controls while there are full2D tools with title bars
+realityEditor.gui.ar.positioning.coverFull2DTools = function(shouldCover) {
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        // var thisFrame = realityEditor.getFrame(objectKey, frameKey);
+        if (shouldCover) {
+            realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(objectKey, frameKey);
+        } else {
+            realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded(objectKey, frameKey);
+        }
+    });
+}
