@@ -358,7 +358,7 @@ realityEditor.device.onload = async function () {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
         console.error('error in initService functions, might lead to corrupted app state', initError);
         try {
-            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 30000);
         } catch (alertError) {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }
