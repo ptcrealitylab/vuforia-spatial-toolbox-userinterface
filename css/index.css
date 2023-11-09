@@ -1855,7 +1855,7 @@ Logic Interface CSS
 
 #analytics-timeline-container {
     position: absolute;
-    bottom: calc(30px + 68px + 30px - 12px);
+    bottom: 48px;
     left: 50%;
     max-width: 1024px;
     width: 100%;
