@@ -569,7 +569,8 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
     
     console.log('corners shown');
 
-    realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
+    realityEditor.gui.ar.positioning.coverFull2DTools(true);
+    // realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
 
     this.sendEditingStateToFrameContents(frameKey, true);
 
@@ -1639,7 +1640,8 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
                 globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
                 
                 console.log('corners hidden');
-                realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
+                // realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded(this.editingState.object, this.editingState.frame);
+                realityEditor.gui.ar.positioning.coverFull2DTools(false);
             }
 
             this.resetEditingState();

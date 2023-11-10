@@ -2208,3 +2208,9 @@ Logic Interface CSS
 /*.tool-title-bar-dragging {*/
 /*    */
 /*}*/
+
+.tool-title-bar-iframe-background {
+    position: fixed;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+}

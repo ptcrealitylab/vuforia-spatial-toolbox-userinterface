@@ -1351,9 +1351,14 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                         // TODO ben: send translation iff not three.js fullscreen
                         if (activeVehicle.alwaysFaceCamera) {
                             // thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
-                            let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            // let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            let sourcePosition = realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid);
+                            let cameraForward = realityEditor.gui.ar.utilities.getForwardVector(realityEditor.sceneGraph.getCameraNode().worldMatrix);
+                            let billboardRotationMatrix = realityEditor.sceneGraph.createBillboardMatrix(sourcePosition, cameraForward);
+                            
                             let modelViewMatrix = [];
-                            utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                            utilities.multiplyMatrix(billboardRotationMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                            // utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
                             thisMsg.modelViewMatrix = modelViewMatrix;
                         } else {
                             thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrix(activeVehicle.uuid);

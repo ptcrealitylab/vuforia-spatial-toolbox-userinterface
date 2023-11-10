@@ -685,6 +685,21 @@ createNameSpace("realityEditor.sceneGraph");
         let inputPosition = {x: localDistanceVector[0], y: localDistanceVector[1], z: localDistanceVector[2]};
         return convertToNewCoordSystem(inputPosition, camNode, coordinateSystem);
     }
+    
+    function createBillboardMatrix(position, cameraForward) {
+        // Assuming Y is up, calculate right and up vectors for the billboard
+        let up = [0, 1, 0]; //{ x: 0, y: 1, z: 0 };
+        let right = realityEditor.gui.ar.utilities.crossProduct(up, cameraForward);
+        up = realityEditor.gui.ar.utilities.crossProduct(cameraForward, right); // Recompute up to ensure orthogonality
+
+        // Construct billboard rotation matrix
+        return [
+            right[0], right[1], right[2], 0,
+            up[0], up[1], up[2], 0,
+            cameraForward[0], cameraForward[1], cameraForward[2], 0,
+            position.x, position.y, position.z, 1
+        ];
+    }
 
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
@@ -870,6 +885,7 @@ createNameSpace("realityEditor.sceneGraph");
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
     exports.getModelMatrixLookingAt = getModelMatrixLookingAt;
+    exports.createBillboardMatrix = createBillboardMatrix;
     exports.convertToNewCoordSystem = convertToNewCoordSystem;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
 

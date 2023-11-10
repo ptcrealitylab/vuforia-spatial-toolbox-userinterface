@@ -791,6 +791,15 @@ realityEditor.gui.ar.positioning.addTitleBarToTool = function(objectKey, frameKe
 
     toolContainer.appendChild(titleBar);
     
+    // add a semi-transparent background behind the iframe, in case it takes awhile to load
+    let iframeBackground = document.createElement('div');
+    iframeBackground.classList.add('tool-title-bar-iframe-background');
+    iframeBackground.style.width = toolIframe.style.width;
+    iframeBackground.style.height = toolIframe.style.height;
+    iframeBackground.style.top = toolIframe.style.top;
+    iframeBackground.style.left = toolIframe.style.left;
+    toolContainer.insertBefore(iframeBackground, toolContainer.firstChild); // add in the beginning so it renders behind the iframe
+
     // reshape the tool overlay to cover the new title bar element, so existing touch events work on title bar
     toolOverlay.classList.add('tool-title-bar-overlay');
     // toolOverlay.classList.remove('deactivatedIframeOverlay');
@@ -821,6 +830,12 @@ realityEditor.gui.ar.positioning.removeTitleBarFromTool = function(objectKey, fr
 
     // remove the title bar
     toolContainer.removeChild(titleBar);
+    
+    // remove the iframe background
+    let iframeBackground = toolContainer.querySelector('.tool-title-bar-iframe-background');
+    if (iframeBackground) {
+        toolContainer.removeChild(iframeBackground);
+    }
 
     // reshape the tool overlay to cover the iframe again
     toolOverlay.classList.remove('tool-title-bar-overlay');
