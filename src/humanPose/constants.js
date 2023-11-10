@@ -32,8 +32,8 @@ export const JOINTS_V1 = {
 
 export const JOINTS_V1_COUNT = Object.keys(JOINTS_V1).length;
 
-/*
-export const JOINTS = {
+/* Previous joint scheme with simple hands. */
+export const JOINTS_V2 = {
     NOSE: 'nose',
     LEFT_EYE: 'left_eye',
     RIGHT_EYE: 'right_eye',
@@ -64,39 +64,9 @@ export const JOINTS = {
     PELVIS: 'pelvis', // synthetic
 };
 
-export const JOINT_CONNECTIONS = {
-    elbowWristLeft: [JOINTS.LEFT_WRIST, JOINTS.LEFT_ELBOW], // 0
-    shoulderElbowLeft: [JOINTS.LEFT_ELBOW, JOINTS.LEFT_SHOULDER],
-    shoulderSpan: [JOINTS.LEFT_SHOULDER, JOINTS.RIGHT_SHOULDER],
-    shoulderElbowRight: [JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_SHOULDER],
-    elbowWristRight: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_ELBOW],
-    chestLeft: [JOINTS.LEFT_SHOULDER, JOINTS.LEFT_HIP], // 5
-    hipSpan: [JOINTS.LEFT_HIP, JOINTS.RIGHT_HIP],
-    chestRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_SHOULDER],
-    hipKneeLeft: [JOINTS.LEFT_HIP, JOINTS.LEFT_KNEE],
-    kneeAnkleLeft: [JOINTS.LEFT_KNEE, JOINTS.LEFT_ANKLE],
-    hipKneeRight: [JOINTS.RIGHT_HIP, JOINTS.RIGHT_KNEE], // 10
-    kneeAnkleRight: [JOINTS.RIGHT_KNEE, JOINTS.RIGHT_ANKLE], // 11
-    thumbLeft: [JOINTS.LEFT_THUMB, JOINTS.LEFT_WRIST],
-    indexLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_WRIST],
-    pinkyLeft: [JOINTS.LEFT_PINKY, JOINTS.LEFT_WRIST],
-    fingerSpanLeft: [JOINTS.LEFT_INDEX, JOINTS.LEFT_PINKY],
-    thumbRight: [JOINTS.RIGHT_THUMB, JOINTS.RIGHT_WRIST],
-    indexRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_WRIST],
-    pinkyRight: [JOINTS.RIGHT_PINKY, JOINTS.RIGHT_WRIST],
-    fingerSpanRight: [JOINTS.RIGHT_INDEX, JOINTS.RIGHT_PINKY],
-    earSpan: [JOINTS.LEFT_EAR, JOINTS.RIGHT_EAR],
-    eyeSpan: [JOINTS.LEFT_EYE, JOINTS.RIGHT_EYE],
-    eyeNoseLeft: [JOINTS.LEFT_EYE, JOINTS.NOSE],
-    eyeNoseRight: [JOINTS.RIGHT_EYE, JOINTS.NOSE],
-    headNeck: [JOINTS.HEAD, JOINTS.NECK],   // connections between synthetic joints
-    neckChest: [JOINTS.NECK, JOINTS.CHEST],
-    chestNavel: [JOINTS.CHEST, JOINTS.NAVEL],
-    navelPelvis: [JOINTS.NAVEL, JOINTS.PELVIS],
-    face: [JOINTS.HEAD, JOINTS.NOSE]
-};
-*/
+export const JOINTS_V2_COUNT = Object.keys(JOINTS_V2).length;
 
+/* Current joint scheme with detailed hands. */
 export const JOINTS = {
     /* body joints */
     NOSE: 'nose',

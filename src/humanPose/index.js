@@ -5,7 +5,7 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {JOINTS, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
+import {JOINTS, JOINTS_V1_COUNT, JOINTS_V2_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
 
 (function(exports) {
@@ -240,7 +240,7 @@ import {Pose} from "./Pose.js";
                     return;
                 }
                 if (length !== JOINTS_PER_POSE) {
-                    if (length == JOINTS_V1_COUNT) {
+                    if (length == JOINTS_V1_COUNT || length == JOINTS_V2_COUNT) {
                         utils.convertFromJointsV1(jointPositions, jointConfidences);
                     }
                     else {
