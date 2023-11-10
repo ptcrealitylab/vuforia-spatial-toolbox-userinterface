@@ -135,11 +135,11 @@ import {AnalyticsMobile} from './AnalyticsMobile.js'
             analyticsByFrame[msgData.frame].setDisplayRegion(msgData.displayRegion);
         });
 
-        realityEditor.network.addPostMessageHandler('analyticsHydrateRegionCards', (msgData) => {
+        realityEditor.network.addPostMessageHandler('analyticsHydrate', (msgData) => {
             if (!analyticsByFrame[msgData.frame]) {
                 return;
             }
-            analyticsByFrame[msgData.frame].hydrateRegionCards(msgData.regionCards);
+            analyticsByFrame[msgData.frame].hydrateAnalytics(msgData.analyticsData);
         });
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface

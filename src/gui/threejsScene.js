@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { CSS2DRenderer } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
@@ -9,6 +10,7 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
+import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
 (function(exports) {
 
@@ -28,6 +30,12 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
     let hasGltfScene = false;
+    let allMeshes = [];
+    let isHeightMapOn = false;
+    let isSteepnessMapOn = false;
+    let navmesh = null;
+    let gltfBoundingBox = null;
+    let cssRenderer = null;
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -68,6 +76,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         setupLighting();
 
         customMaterials = new CustomMaterials();
+        let _mapShaderUI = new MapShaderSettingsUI();
 
         // Add the BVH optimized raycast function from three-mesh-bvh.module.js
         // Assumes the BVH is available on the `boundsTree` variable
@@ -104,6 +113,24 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 toggleDisplayOriginBoxes(newValue);
             }, { dontPersist: true });
         }
+        
+        document.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'n' || e.key === 'N') {
+                navmesh.visible = !navmesh.visible;
+            }
+        })
+
+        cssRenderer = new CSS2DRenderer();
+        cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        const css3dCanvas = cssRenderer.domElement;
+        css3dCanvas.id = 'three-js-scene-css-3d-renderer';
+        // set the position style and pointer events none to complete the setup
+        css3dCanvas.style.position = 'absolute';
+        css3dCanvas.style.pointerEvents = 'none';
+        css3dCanvas.style.top = '0';
+        css3dCanvas.style.left = '0';
+        document.body.appendChild(css3dCanvas);
     }
 
     // light the scene with a combination of ambient and directional white light
@@ -163,6 +190,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
+        cssRenderer.render(scene, camera);
+        
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
@@ -382,6 +411,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
      * @param {{x: number, y: number, z: number}} originOffset - offset of model for ground plane being aligned with y=0
      * @param {{x: number, y: number, z: number}} originRotation - rotation for up to be up
      * @param {number} maxHeight - maximum (ceiling) height of model
+     * @param {number} ceilingAndFloor - max y (ceiling) and min y (floor) value of model mesh
      * @param {{x: number, y: number, z: number}} center - center of model for loading animation
      * @param {function} callback - Called on load with gltf's threejs object
      *
@@ -391,7 +421,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         originRotation = {x: 0, y: 2.661627109291353, z: 0};
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
-    function addGltfToScene(pathToGltf, originOffset, originRotation, maxHeight, center, callback) {
+    function addGltfToScene(pathToGltf, map, steepnessMap, heightMap, originOffset, originRotation, maxHeight, ceilingAndFloor, center, callback) {
         const gltfLoader = new GLTFLoader();
         gltfLoader.load(pathToGltf, function(gltf) {
             let wireMesh;
@@ -407,36 +437,39 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
             });
 
             if (gltf.scene.geometry) {
+                allMeshes.push(gltf.scene);
                 if (typeof maxHeight !== 'undefined') {
                     if (!gltf.scene.material) {
                         console.warn('no material', gltf.scene);
                     } else {
                         // cache the original gltf material on mobile browsers, to improve performance
-                        if (!realityEditor.device.environment.isDesktop()) {
-                            gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            });
                         }
-                        gltf.scene.material = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
-                            maxHeight: maxHeight,
-                            center: center,
-                            animateOnLoad: true,
-                            inverted: false,
-                            useFrustumCulling: true
-                        });
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
                 gltf.scene.geometry.computeBoundingBox();
+                gltf.scene.heightMaterial = customMaterials.heightMapMaterial(gltf.scene.material, {ceilingAndFloor: ceilingAndFloor});
+                gltf.scene.gradientMaterial = customMaterials.gradientMapMaterial(gltf.scene.material);
+                gltf.scene.material = gltf.scene.colorMaterial || gltf.scene.originalMaterial;
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
                 gltf.scene.geometry.boundsTree = new MeshBVH( gltf.scene.geometry );
 
                 wireMesh = new THREE.Mesh(gltf.scene.geometry, wireMaterial);
             } else {
-                let allMeshes = [];
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
-                        if (child.name && child.name.toLocaleLowerCase() === 'mesh_0') {
+                        if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
                             meshesToRemove.push(child);
                             return;
                         }
@@ -453,17 +486,22 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                         // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
                         //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        // if (!realityEditor.device.environment.isDesktop()) {
-                            child.originalMaterial = child.material.clone();
-                        // }
-                        child.material = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
-                            maxHeight: maxHeight,
-                            center: center,
-                            animateOnLoad: true,
-                            inverted: false,
-                            useFrustumCulling: true
-                        });
+                        child.originalMaterial = child.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            });
+                        }
                     }
+
+                    child.geometry.computeVertexNormals();
+                    child.heightMaterial = customMaterials.heightMapMaterial(child.material, {ceilingAndFloor: ceilingAndFloor});
+                    child.gradientMaterial = customMaterials.gradientMapMaterial(child.material);
+                    child.material = child.colorMaterial || child.originalMaterial;
 
                     // the attributes must be non-indexed in order to add a barycentric coordinate buffer
                     child.geometry = child.geometry.toNonIndexed();
@@ -488,8 +526,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                   geo.deleteAttribute('uv2');
                   return geo;
                 }));
-                mergedGeometry.computeVertexNormals();
                 mergedGeometry.computeBoundingBox();
+                gltfBoundingBox = mergedGeometry.boundingBox;
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
                 allMeshes.map(child => {
@@ -498,6 +536,14 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 
                 wireMesh = new THREE.Mesh(mergedGeometry, wireMaterial);
             }
+            
+            navmesh = realityEditor.app.pathfinding.initService(map, steepnessMap, heightMap);
+            // add in the navmesh
+            // navmesh.scale.set(1000, 1000, 1000);
+            // navmesh.position.set(gltfBoundingBox.min.x * 1000, 0, gltfBoundingBox.min.z * 1000);
+            // navmesh.layers.set(1);
+            // navmesh.visible = false;
+            // threejsContainerObj.add(navmesh);
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
@@ -538,6 +584,60 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
               callback(gltf.scene, wireMesh);
             }
         });
+    }
+    
+    function changeMeasureMapType(mapType) {
+        switch (mapType) {
+            case 'color':
+                isHeightMapOn = false;
+                isSteepnessMapOn = false;
+                realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
+                allMeshes.forEach((child) => {
+                    child.material.dispose();
+                    child.material = child.colorMaterial || child.originalMaterial;
+                });
+                break;
+            case 'height':
+                isHeightMapOn = true;
+                isSteepnessMapOn = false;
+                realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
+                allMeshes.forEach((child) => {
+                    child.material.dispose();
+                    child.material = child.heightMaterial;
+                });
+                break;
+            case 'steepness':
+                isHeightMapOn = false;
+                isSteepnessMapOn = true;
+                realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
+                allMeshes.forEach((child) => {
+                    child.material.dispose();
+                    child.material = child.gradientMaterial;
+                });
+                break;
+        }
+    }
+    
+    function postHeightMapChangeEventIntoIframes(objectkey, framekey) {
+        if (realityEditor.envelopeManager.getFrameTypeFromKey(objectkey, framekey) === 'spatialMeasure') {
+            let iframe = document.getElementById('iframe' + framekey);
+            iframe.contentWindow.postMessage(JSON.stringify({
+                isHeightMapOn: isHeightMapOn,
+                isSteepnessMapOn: isSteepnessMapOn,
+            }), '*');
+        }
+    }
+    
+    function highlightWalkableArea(isOn) {
+        if (customMaterials) {
+            customMaterials.highlightWalkableArea(isOn);
+        }
+    }
+    
+    function updateGradientMapThreshold(minAngle, maxAngle) {
+        if (customMaterials) {
+            customMaterials.updateGradientMapThreshold(minAngle, maxAngle);
+        }
     }
 
     // small helper function for setting three.js matrices from the custom format we use
@@ -785,6 +885,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     class CustomMaterials {
         constructor() {
             this.materialsToAnimate = [];
+            this.heightMapMaterials = [];
+            this.gradientMapMaterials = [];
             this.lastUpdate = -1;
         }
         areaTargetVertexShader({useFrustumCulling, useLoadingAnimation, center}) {
@@ -857,6 +959,66 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 }
             });
         }
+        heightMapMaterial(sourceMaterial, {ceilingAndFloor}) {
+            let material = sourceMaterial.clone();
+
+            material.uniforms = THREE.UniformsUtils.merge([
+                THREE.ShaderLib.physical.uniforms,
+                {
+                    heightMap_maxY: {value: ceilingAndFloor.ceiling},
+                    heightMap_minY: {value: ceilingAndFloor.floor},
+                    distanceToCamera: {value: 0} // todo Steve; later in the code, need to set gltf.scene.material.uniforms['....'] to desired value
+                }
+            ]);
+
+            material.vertexShader = realityEditor.gui.shaders.heightMapVertexShader();
+            
+            material.fragmentShader = realityEditor.gui.shaders.heightMapFragmentShader();
+
+            material.type = 'verycoolheightmapmaterial';
+
+            material.needsUpdate = true;
+            
+            this.heightMapMaterials.push(material);
+
+            return material;
+        }
+        gradientMapMaterial(sourceMaterial) {
+            let material = sourceMaterial.clone();
+
+            material.uniforms = THREE.UniformsUtils.merge([
+                THREE.ShaderLib.physical.uniforms,
+                {
+                    gradientMap_minAngle: {value: 0},
+                    gradientMap_maxAngle: {value: 25},
+                    gradientMap_outOfRangeAreaOriginalColor: {value: false},
+                    distanceToCamera: {value: 0}
+                }
+            ]);
+
+            material.vertexShader = realityEditor.gui.shaders.gradientMapVertexShader();
+
+            material.fragmentShader = realityEditor.gui.shaders.gradientMapFragmentShader();
+
+            material.type = 'verycoolgradientmapmaterial';
+
+            material.needsUpdate = true;
+
+            this.gradientMapMaterials.push(material);
+
+            return material;
+        }
+        highlightWalkableArea(isOn) {
+            this.gradientMapMaterials.forEach((material) => {
+                material.uniforms['gradientMap_outOfRangeAreaOriginalColor'].value = isOn;
+            });
+        }
+        updateGradientMapThreshold(minAngle, maxAngle) {
+            this.gradientMapMaterials.forEach((material) => {
+                material.uniforms['gradientMap_minAngle'].value = minAngle;
+                material.uniforms['gradientMap_maxAngle'].value = maxAngle;
+            });
+        }
         areaTargetMaterialWithTextureAndHeight(sourceMaterial, {maxHeight, center, animateOnLoad, inverted, useFrustumCulling}) {
             let material = sourceMaterial.clone();
             
@@ -924,7 +1086,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
                 }
             });
 
-            for (let i = indicesToRemove.length-1; i > 0; i--) {
+            for (let i = indicesToRemove.length-1; i >= 0; i--) {
                 let matIndex = indicesToRemove[i];
                 this.materialsToAnimate.splice(matIndex, 1);
             }
@@ -1016,6 +1178,10 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
         let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(toolMatrix);
         return new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]);
     }
+    
+    exports.getGltfBoundingBox = function() {
+        return gltfBoundingBox;
+    }
 
     /**
      * @return {{
@@ -1054,6 +1220,9 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
     exports.toggleDisplayOriginBoxes = toggleDisplayOriginBoxes;
     exports.updateMaterialCullingFrustum = updateMaterialCullingFrustum;
     exports.removeMaterialCullingFrustum = removeMaterialCullingFrustum;
+    exports.changeMeasureMapType = changeMeasureMapType;
+    exports.highlightWalkableArea = highlightWalkableArea;
+    exports.updateGradientMapThreshold = updateGradientMapThreshold;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;

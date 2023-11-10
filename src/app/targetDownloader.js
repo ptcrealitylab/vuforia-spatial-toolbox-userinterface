@@ -81,6 +81,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         onMarkerAdded: [],
         onTargetState: []
     }
+    
+    let navmeshResolution = null;
 
     /**
      * Worker that generates navmeshes from upload area target meshes
@@ -92,6 +94,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     navmeshWorker.onmessage = function(evt) {
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
+        navmeshResolution = evt.data.heatmapResolution;
         window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
@@ -696,7 +699,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         for (var objectKey in objects) {
             if (!objects.hasOwnProperty(objectKey)) continue;
             const object = realityEditor.getObject(objectKey);
-            if (object.ip === ip && object.name === objectName) {
+            const ipMatches = object.ip === ip || object.ip === 'localhost' || ip === 'localhost';
+            if (ipMatches && object.name === objectName) {
                 return objectKey;
             }
         }
@@ -799,6 +803,10 @@ createNameSpace("realityEditor.app.targetDownloader");
                 listener.callback(targetDownloadStates[objectID]);
             }
         });
+    }
+    
+    exports.getNavmeshResolution = function() {
+        return navmeshResolution;
     }
 
     // These functions are the public API that should be called by other modules

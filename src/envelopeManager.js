@@ -433,7 +433,7 @@ createNameSpace("realityEditor.envelopeManager");
                     frameId: params.frameKey,
                     frameType: params.frameType
                 }
-            }, params.frameType);
+            }, params.frameType, { requiresFocus: true });
         }, function() {
             return globalDOMCache['iframe' + params.frameKey] && globalDOMCache['iframe' + params.frameKey].getAttribute('loaded');
         }, 500, 10);
@@ -669,11 +669,12 @@ createNameSpace("realityEditor.envelopeManager");
      * If a compatibilityTypeRequirement is provided, filters out envelopes that don't support that type of frame.
      * @param {Object} message
      * @param {string|undefined} compatibilityTypeRequirement
+     * @param {*} options
      */
-    function sendMessageToOpenEnvelopes(message, compatibilityTypeRequirement) {
+    function sendMessageToOpenEnvelopes(message, compatibilityTypeRequirement, options = { requiresFocus: false}) {
         for (var frameKey in knownEnvelopes) {
             var envelope = knownEnvelopes[frameKey];
-            if (envelope.isOpen) {
+            if (envelope.isOpen && (envelope.hasFocus || !options.requiresFocus)) {
                 sendMessageToEnvelope(frameKey, message, compatibilityTypeRequirement);
             }
         }
@@ -829,9 +830,11 @@ createNameSpace("realityEditor.envelopeManager");
     exports.hideBlurredBackground = hideBlurredBackground;
 
     exports.getOpenEnvelopes = getOpenEnvelopes;
+    exports.getFocusedEnvelopes = getFocusedEnvelopes;
     exports.openEnvelope = openEnvelope;
     exports.closeEnvelope = closeEnvelope;
     exports.focusEnvelope = focusEnvelope;
     exports.blurEnvelope = blurEnvelope;
+    exports.getFrameTypeFromKey = getFrameTypeFromKey;
 
 }(realityEditor.envelopeManager));

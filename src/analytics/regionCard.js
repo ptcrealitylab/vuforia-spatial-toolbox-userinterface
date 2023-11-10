@@ -1,5 +1,6 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from "../humanPose/constants.js";
+import {JOINTS} from '../humanPose/constants.js';
+import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -57,6 +58,7 @@ export class RegionCard {
             this.endTime = desc.endTime;
         }
         this.setPoses(poses);
+        this.updateValueAddWasteTimeUi();
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -161,24 +163,24 @@ export class RegionCard {
     }
 
     updatePinButtonText() {
-        let pinButton = this.element.querySelector('.analytics-region-card-pin');
+        let pinButton = this.element.querySelector('#analytics-region-card-step');
         if (pinButton) {
-            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         }
         this.updateDisplayActive();
     }
 
     updateDisplayActive() {
-        let showButton = this.element.querySelector('.analytics-region-card-show');
+        let showButton = this.element.querySelector('#analytics-region-card-show');
         if (!showButton) {
             console.warn('regioncard missing element');
             return;
         }
 
         if (this.state === RegionCardState.Pinned) {
-            showButton.style.display = 'inline';
+            showButton.style.opacity = '1';
         } else {
-            showButton.style.display = 'none';
+            showButton.style.opacity = '0';
         }
 
         showButton.textContent = this.displayActive ? 'Hide' : 'Show';
@@ -210,10 +212,18 @@ export class RegionCard {
             'analytics-region-card-subtitle',
             'analytics-region-card-motion-summary'
         );
+        
+        this.valueAddWasteTimeSummary = document.createElement('div');
+        this.valueAddWasteTimeSummary.classList.add('analytics-region-card-value-add-waste-time-summary');
+        this.valueAddWasteTimeSummary.setValues = (valuePercent, wastePercent) => {
+            this.valueAddWasteTimeSummary.innerHTML = `Value Add: ${valuePercent}%, Waste Time: ${wastePercent}%`;
+        }
+        this.valueAddWasteTimeSummary.setValues(0, 0);
 
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(colorDot);
         this.element.appendChild(motionSummary);
+        this.element.appendChild(this.valueAddWasteTimeSummary);
 
         this.labelElement = document.createElement('div');
         this.labelElement.classList.add('analytics-region-card-label');
@@ -240,7 +250,7 @@ export class RegionCard {
                 clearTimeout(debouncedSave);
             }
             debouncedSave = setTimeout(() => {
-                this.analytics.writeDehydratedRegionCards();
+                this.analytics.writeAnalyticsData();
                 debouncedSave = null;
             }, 1000);
         });
@@ -250,19 +260,58 @@ export class RegionCard {
         this.graphSummaryValues = {};
         this.createGraphSection('reba', 'REBA');
         this.createGraphSection('accel', 'Accel');
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('analytics-region-card-button-container');
+        this.element.appendChild(buttonContainer);
 
-        const pinButton = document.createElement('a');
-        pinButton.href = '#';
-        pinButton.classList.add('analytics-region-card-pin');
-        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+        const pinButton = document.createElement('div');
+        pinButton.classList.add('analytics-region-card-button');
+        pinButton.id = 'analytics-region-card-step';
+        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         pinButton.addEventListener('click', this.onClickPin);
-        this.element.appendChild(pinButton);
+        buttonContainer.appendChild(pinButton);
 
-        const showButton = document.createElement('a');
-        showButton.href = '#';
-        showButton.classList.add('analytics-region-card-show');
+        const showButton = document.createElement('div');
+        showButton.classList.add('analytics-region-card-button');
+        showButton.id = 'analytics-region-card-show';
         showButton.addEventListener('click', this.onClickShow);
-        this.element.appendChild(showButton);
+        buttonContainer.appendChild(showButton);
+
+        const valueAddWasteTimeDiv = document.createElement('div');
+        valueAddWasteTimeDiv.classList.add('analytics-value-add-waste-time-container');
+        buttonContainer.appendChild(valueAddWasteTimeDiv);
+
+        const wasteTimeButton = document.createElement('div');
+        wasteTimeButton.classList.add('analytics-waste-time-item');
+        wasteTimeButton.textContent = 'Waste';
+        wasteTimeButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.analytics.markWasteTime(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.analytics.timeline.highlightRegion;
+                this.analytics.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
+            }
+        });
+        this.wasteTimeButton = wasteTimeButton;
+        valueAddWasteTimeDiv.appendChild(wasteTimeButton);
+
+        const valueAddButton = document.createElement('div');
+        valueAddButton.classList.add('analytics-value-add-item');
+        valueAddButton.textContent = 'Value';
+        valueAddButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.analytics.markValueAdd(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.analytics.timeline.highlightRegion;
+                this.analytics.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
+            }
+        });
+        this.valueAddButton = valueAddButton;
+        valueAddWasteTimeDiv.appendChild(valueAddButton);
+        
         this.updateDisplayActive();
     }
 
@@ -510,5 +559,40 @@ export class RegionCard {
         this.remove();
         this.container = newContainer;
         this.container.appendChild(this.element);
+    }
+
+    updateValueAddWasteTimeUi() {
+        const regionValue = this.analytics.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
+
+        if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
+            this.wasteTimeButton.classList.add('selected');
+            this.valueAddButton.classList.remove('selected');
+        } else if (regionValue === ValueAddWasteTimeTypes.VALUE_ADD) {
+            this.valueAddButton.classList.add('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        } else {
+            this.valueAddButton.classList.remove('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        }
+        
+        const subset = this.analytics.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
+        let totalValueAdd = 0;
+        let totalWasteTime = 0;
+        const totalTime = this.endTime - this.startTime;
+        subset.regions.forEach(region => {
+            if (region.value === ValueAddWasteTimeTypes.VALUE_ADD) {
+                totalValueAdd += region.duration;
+            } else if (region.value === ValueAddWasteTimeTypes.WASTE_TIME) {
+                totalWasteTime += region.duration;
+            }
+        });
+        if (totalTime === 0) {
+            console.warn('Region Card has 0 duration, cannot set Value Add/Waste Time ui');
+            return;
+        }
+        const valuePercent = Math.round(totalValueAdd / totalTime * 100);
+        const wastePercent = Math.round(totalWasteTime / totalTime * 100);
+        
+        this.valueAddWasteTimeSummary.setValues(valuePercent, wastePercent);
     }
 }
