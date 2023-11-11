@@ -685,48 +685,17 @@ createNameSpace("realityEditor.sceneGraph");
         let inputPosition = {x: localDistanceVector[0], y: localDistanceVector[1], z: localDistanceVector[2]};
         return convertToNewCoordSystem(inputPosition, camNode, coordinateSystem);
     }
-    
-    function createBillboardMatrix(position, cameraForward) {
-        // Assuming Y is up, calculate right and up vectors for the billboard
-        let up = [0, 1, 0]; //{ x: 0, y: 1, z: 0 };
-        let right = realityEditor.gui.ar.utilities.crossProduct(up, cameraForward);
-        up = realityEditor.gui.ar.utilities.crossProduct(cameraForward, right); // Recompute up to ensure orthogonality
-
-        // Construct billboard rotation matrix
-        return [
-            right[0], right[1], right[2], 0,
-            up[0], up[1], up[2], 0,
-            cameraForward[0], cameraForward[1], cameraForward[2], 0,
-            position.x, position.y, position.z, 1
-        ];
-    }
 
     // preserves the position and scale of the sceneNode[id] and rotates it to look at sceneNode[idToLookAt]
     // if resulting matrix is looking away from target instead of towards, or is flipped upside-down, use flipX, flipY to correct it
-    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true, localOffset = null} = {}) {
+    function getModelMatrixLookingAt(id, idToLookAt, {flipX = true, flipY = true, includeScale = true} = {}) {
         let utils = realityEditor.gui.ar.utilities;
 
         // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
         let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
         let mSource = sourceNode.getMatrixRelativeTo(worldNode);
-        let mTarget = [];
-        // if (localOffset) {
-        //     let nodeToLookAt = realityEditor.sceneGraph.getSceneNodeById(idToLookAt);
-        //     // if they're the same, we should get identity matrix
-        //     let offset = realityEditor.gui.ar.utilities.newIdentityMatrix();
-        //     offset[12] = localOffset[0];
-        //     offset[13] = localOffset[1];
-        //     offset[14] = localOffset[2];
-        //     let offsetNodeMatrix = [];
-        //     utils.multiplyMatrix(nodeToLookAt.worldMatrix, offset, offsetNodeMatrix);
-        //    
-        //     // let relativeMatrix = [];
-        //     // utils.multiplyMatrix(nodeToLookAt.worldMatrix, utils.invertMatrix(worldNode.worldMatrix), relativeMatrix);
-        //     utils.multiplyMatrix(offsetNodeMatrix, utils.invertMatrix(worldNode.worldMatrix), mTarget);
-        // } else {
-            mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
-        // }
+        let mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
 
         let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
         let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };
@@ -758,36 +727,6 @@ createNameSpace("realityEditor.sceneGraph");
 
         return flippedModelMatrix;
     }
-
-    function getModelMatrixLookingAtPosition(id, worldPositionOffset) {
-        let utils = realityEditor.gui.ar.utilities;
-
-        // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
-        let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-        let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
-        let mSource = sourceNode.getMatrixRelativeTo(worldNode);
-        let mTarget = sourceNode.getMatrixRelativeTo(worldNode);
-        mTarget[12] += worldPositionOffset.x;
-        mTarget[13] += worldPositionOffset.y;
-        mTarget[14] += worldPositionOffset.z;
-
-        // let mTarget = mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
-
-        let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
-        let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };
-        let lookAtMatrix = utils.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
-        let correspondingModelMatrix = utils.invertMatrix(lookAtMatrix); // lookAt returns a ~"view" matrix, invert to get the model matrix
-
-        // ensure we preserve the scale from before
-        let scaledModelMatrix = correspondingModelMatrix;
-
-        // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
-        let modelMatrix = [];
-        utils.multiplyMatrix(scaledModelMatrix, worldNode.worldMatrix, modelMatrix);
-        
-        return modelMatrix;
-    }
-    exports.getModelMatrixLookingAtPosition = getModelMatrixLookingAtPosition;
 
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
@@ -915,7 +854,6 @@ createNameSpace("realityEditor.sceneGraph");
     exports.isInFrontOfCamera = isInFrontOfCamera;
     exports.getViewMatrix = getViewMatrix;
     exports.getModelMatrixLookingAt = getModelMatrixLookingAt;
-    exports.createBillboardMatrix = createBillboardMatrix;
     exports.convertToNewCoordSystem = convertToNewCoordSystem;
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
 

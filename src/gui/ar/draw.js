@@ -1174,62 +1174,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
             if (activeVehicle.alwaysFaceCamera === true) {
-
-                // Calculate the billboard matrix using quaternion
-                let billboardMatrix = calculateBillboardMatrix(activeVehicle, 'CAMERA');
-                
-                // let options = {
-                //     localOffset: [0, 0, 3000]
-                // };
-                // let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
+                // this gives a pretty good billboard effect, as long as you aren't looking from top-down
+                let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
                 let modelViewMatrix = [];
-                utilities.multiplyMatrix(billboardMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
+                utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
 
+                // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+                // so let's correct the scale and remove the rotation
                 let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
-
-                modelViewMatrix[0] = scale;
-                modelViewMatrix[5] = -scale;
-                modelViewMatrix[10] = scale;
-
-                // ensure we preserve the scale from before
-                    // let transformMatrix = utils.newIdentityMatrix();
-                    // [0, 5, 10].forEach(index => transformMatrix[index] = scale);
-                    // utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
-
-                // TOD
-                // strip out the rotation elements from the matrix to ensure it's really straight-up
-                // finalMatrix[0] = 0;
-                // modelViewMatrix[1] = 0;
-                // modelViewMatrix[2] = 0;
-                // modelViewMatrix[3] = 0;
-                //
-                // modelViewMatrix[4] = 0;
-                // // finalMatrix[5] = 0;
-                // modelViewMatrix[6] = 0;
-                // modelViewMatrix[7] = 0;
-                //
-                // modelViewMatrix[8] = 0;
-                // modelViewMatrix[9] = 0;
-                // // finalMatrix[10] = 0;
-                // modelViewMatrix[11] = 0;
-                
-                utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
-
-                // // strip out the rotation elements from the matrix to ensure it's really straight-up
-                // finalMatrix[0] = 0;
-                finalMatrix[1] = 0;
-                finalMatrix[2] = 0;
-                finalMatrix[3] = 0;
-
-                finalMatrix[4] = 0;
-                // finalMatrix[5] = 0;
-                finalMatrix[6] = 0;
-                finalMatrix[7] = 0;
-
-                finalMatrix[8] = 0;
-                finalMatrix[9] = 0;
-                // finalMatrix[10] = 0;
-                finalMatrix[11] = 0;
+                let constructedModelViewMatrix = [
+                    scale, 0, 0, 0,
+                    0, -scale, 0, 0,
+                    0, 0, scale, 0,
+                    modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+                ];
+                utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
             }
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
@@ -1542,144 +1501,6 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
         }
     }
 };
-
-// -------------
-
-// Function to calculate billboard matrix using quaternion
-function calculateBillboardMatrix(activeVehicle, cameraId) {
-    // let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
-    let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAtPosition(activeVehicle.uuid, {x: 0, y: 0, z: 1000});
-    // console.log(modelMatrix);
-    
-    let elementPosition = realityEditor.sceneGraph.getWorldPosition(activeVehicle.uuid);
-    let eltPosVec3 = [elementPosition.x, elementPosition.y, elementPosition.z];
-    let cameraPosition = realityEditor.sceneGraph.getWorldPosition(cameraId);
-    let camPosVec3 = [cameraPosition.x, cameraPosition.y, cameraPosition.z];
-    let direction = calculateDirectionVector(eltPosVec3, camPosVec3);
-    let quaternion = quaternionFromDirection(direction);
-
-    // Convert the quaternion to a rotation matrix
-    let rotationMatrix = quaternionToMatrix(quaternion);
-
-    // Get the original model matrix
-    let originalModelMatrix = realityEditor.sceneGraph.getSceneNodeById(activeVehicle.uuid).worldMatrix;
-    let combinedMatrix = realityEditor.gui.ar.utilities.newIdentityMatrix();
-    // combinedMatrix[0] = originalModelMatrix[0];
-    // combinedMatrix[5] = originalModelMatrix[5];
-    // combinedMatrix[10] = originalModelMatrix[10];
-    
-    let temp1 = [];
-    realityEditor.gui.ar.utilities.multiplyMatrix(rotationMatrix, modelMatrix, temp1);
-
-    temp1[12] = originalModelMatrix[12];
-    temp1[13] = originalModelMatrix[13];
-    temp1[14] = originalModelMatrix[14];
-    
-    temp1[0] = 1;
-    temp1[5] = 1;
-    temp1[10] = 1;
-    
-    // // Replace the rotation part of the original model matrix
-    // for (let i = 0; i < 3; i++) {
-    //     for (let j = 0; j < 3; j++) {
-    //         originalModelMatrix[i * 4 + j] = rotationMatrix[i * 4 + j];
-    //     }
-    // }
-    
-    // console.log(temp1);
-
-    return temp1;
-}
-
-
-// Function to subtract two vectors represented as arrays
-function subtractVectors(a, b) {
-    return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
-// Function to normalize a vector
-function normalizeVector(v) {
-    var length = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-    return [v[0] / length, v[1] / length, v[2] / length];
-}
-
-// Function to calculate the quaternion from a direction vector
-function quaternionFromDirection(direction) {
-    let defaultForward = [0, 0, -1];
-    let dot = defaultForward[0] * direction[0] + defaultForward[1] * direction[1] + defaultForward[2] * direction[2];
-
-    if (Math.abs(dot - (-1.0)) < 0.000001) {
-        return [0, 1, 0, Math.PI];
-    }
-    if (Math.abs(dot - 1.0) < 0.000001) {
-        return [0, 0, 0, 1];
-    }
-
-    let rotAngle = Math.acos(dot);
-    let rotAxis = [
-        defaultForward[1] * direction[2] - defaultForward[2] * direction[1],
-        defaultForward[2] * direction[0] - defaultForward[0] * direction[2],
-        defaultForward[0] * direction[1] - defaultForward[1] * direction[0]
-    ];
-    rotAxis = normalizeVector(rotAxis);
-    return [
-        rotAxis[0] * Math.sin(rotAngle / 2),
-        rotAxis[1] * Math.sin(rotAngle / 2),
-        rotAxis[2] * Math.sin(rotAngle / 2),
-        Math.cos(rotAngle / 2)
-    ];
-}
-
-// Function to apply a quaternion to an element's rotation
-function applyQuaternionRotation(element, quaternion) {
-    element.rotation = quaternion; // Assuming element.rotation can be a quaternion array
-}
-
-// Main update function for billboarding
-function updateBillboard(element, camera) {
-    // Calculate the direction vector from the element to the camera
-    var direction = calculateDirectionVector(element.position, camera.position);
-
-    // Calculate the quaternion representing the rotation to face the camera
-    var quaternion = quaternionFromDirection(direction);
-
-    // Apply the quaternion rotation to the element
-    applyQuaternionRotation(element, quaternion);
-}
-
-function quaternionToMatrix(q) {
-// Assuming q is [x, y, z, w]
-    const x = q[0], y = q[1], z = q[2], w = q[3];
-    const x2 = x + x, y2 = y + y, z2 = z + z;
-    const xx = x * x2, xy = x * y2, xz = x * z2;
-    const yy = y * y2, yz = y * z2, zz = z * z2;
-    const wx = w * x2, wy = w * y2, wz = w * z2;
-
-    return [
-        1 - (yy + zz), xy - wz, xz + wy, 0,
-        xy + wz, 1 - (xx + zz), yz - wx, 0,
-        xz - wy, yz + wx, 1 - (xx + yy), 0,
-        0, 0, 0, 1
-    ];
-}
-
-function combineMatrices(a, b) {
-    let result = [];
-
-    for (let i = 0; i < 4; i++) {
-        result[i] = [];
-        for (let j = 0; j < 4; j++) {
-            result[i][j] = a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j] + a[i][3] * b[3][j];
-        }
-    }
-
-    return result;
-}
-
-function calculateDirectionVector(elementPosition, cameraPosition) {
-    // Calculate and return the direction vector
-    return normalizeVector(subtractVectors(cameraPosition, elementPosition));
-}
 
 realityEditor.gui.ar.draw.debugDrawVehicle = function(activeVehicle, finalMatrix) {
     let bbox = realityEditor.gui.ar.positioning.getVehicleBoundingBoxFast(finalMatrix, parseInt(activeVehicle.frameSizeX)/2, parseInt(activeVehicle.frameSizeY)/2);
