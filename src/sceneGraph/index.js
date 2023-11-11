@@ -759,6 +759,36 @@ createNameSpace("realityEditor.sceneGraph");
         return flippedModelMatrix;
     }
 
+    function getModelMatrixLookingAtPosition(id, worldPositionOffset) {
+        let utils = realityEditor.gui.ar.utilities;
+
+        // convert everything into a consistent reference frame, regardless of remote operator vs AR platform
+        let worldNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+        let sourceNode = realityEditor.sceneGraph.getSceneNodeById(id);
+        let mSource = sourceNode.getMatrixRelativeTo(worldNode);
+        let mTarget = sourceNode.getMatrixRelativeTo(worldNode);
+        mTarget[12] += worldPositionOffset.x;
+        mTarget[13] += worldPositionOffset.y;
+        mTarget[14] += worldPositionOffset.z;
+
+        // let mTarget = mTarget = realityEditor.sceneGraph.getSceneNodeById(idToLookAt).getMatrixRelativeTo(worldNode);
+
+        let sourcePosition = { x: mSource[12] / mSource[15], y: mSource[13] / mSource[15], z: mSource[14] / mSource[15] };
+        let targetPosition = { x: mTarget[12] / mTarget[15], y: mTarget[13] / mTarget[15], z: mTarget[14] / mTarget[15] };
+        let lookAtMatrix = utils.lookAt(sourcePosition.x, sourcePosition.y, sourcePosition.z, targetPosition.x, targetPosition.y, targetPosition.z, 0, 1, 0);
+        let correspondingModelMatrix = utils.invertMatrix(lookAtMatrix); // lookAt returns a ~"view" matrix, invert to get the model matrix
+
+        // ensure we preserve the scale from before
+        let scaledModelMatrix = correspondingModelMatrix;
+
+        // lookAtMatrix is calculated in coordinates relative to the world object, so we convert from world to ROOT
+        let modelMatrix = [];
+        utils.multiplyMatrix(scaledModelMatrix, worldNode.worldMatrix, modelMatrix);
+        
+        return modelMatrix;
+    }
+    exports.getModelMatrixLookingAtPosition = getModelMatrixLookingAtPosition;
+
     /************ Private Functions ************/
     function addRotateX(sceneNodeObject, objectId, groundPlaneVariation) {
         let sceneNodeRotateX;

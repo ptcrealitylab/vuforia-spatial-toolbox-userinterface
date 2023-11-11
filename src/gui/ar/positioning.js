@@ -869,6 +869,15 @@ realityEditor.gui.ar.positioning.updateTitleBarIfNeeded = function(objectKey, fr
 
     toolOverlay.style.height = titleBar.style.height;
     toolOverlay.style.top = titleBar.style.top;
+    
+    // also updates the iframe background
+    let iframeBackground = toolContainer.querySelector('.tool-title-bar-iframe-background');
+    if (iframeBackground) {
+        iframeBackground.style.width = toolIframe.style.width;
+        iframeBackground.style.height = toolIframe.style.height;
+        iframeBackground.style.top = toolIframe.style.top;
+        iframeBackground.style.left = toolIframe.style.left;
+    }
 
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
 }
@@ -880,7 +889,7 @@ realityEditor.gui.ar.positioning.updateMoveabilityCorners = function(objectKey, 
     
     let width = parseInt(toolOverlay.style.width);
     let height = parseInt(toolOverlay.style.height);
-    console.log('size moveability corners: ' + frameKey, width, height);
+    // console.log('size moveability corners: ' + frameKey, width, height);
     
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     // cornersContainer.classList.add('corners-title-bar');
@@ -896,7 +905,7 @@ realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(obj
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     if (!cornersContainer.classList.contains('corners-title-bar')) return;
     
-    console.log('make the corners and overlay cover the entire iframe while dragging');
+    // console.log('make the corners and overlay cover the entire iframe while dragging');
 
     let toolIframe = globalDOMCache[`iframe${frameKey}`];
     let toolOverlay = globalDOMCache[frameKey];
