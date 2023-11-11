@@ -3219,19 +3219,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
         setTimeout(function() {
-            // var trueSize = {
-            //     width: globalDOMCache['iframe' + activeKey].clientWidth,
-            //     height: globalDOMCache['iframe' + activeKey].clientHeight
-            // };
-            //
-            // var cornerPadding = 24;
-            // globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding*2 + 'px';
-            // globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding*2 + 'px';
-            // console.log('size moveability corners (onElementLoad): ' + frameKey, trueSize.width + cornerPadding*2, trueSize.height + cornerPadding*2);
-
             realityEditor.gui.ar.positioning.updateTitleBarIfNeeded(objectKey, activeKey);
             realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, activeKey);
-
         }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 
