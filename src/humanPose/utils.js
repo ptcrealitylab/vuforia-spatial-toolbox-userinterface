@@ -288,6 +288,15 @@ function convertFromJointsV1(jointPositions, jointConfidences) {
 
 }
 
+/**
+ * Converts joint positions and confidences from schema JOINTS_V2 to the current JOINTS schema
+ * @param {Object.<string, THREE.Vector3>} jointPositions - dictionary of positions (in/out param) 
+ * @param {Object.<string, number>} jointConfidences - dictionary of confidences (in/out param)
+ */
+function convertFromJointsV2(jointPositions, jointConfidences) {
+    convertFromJointsV1(jointPositions, jointConfidences)
+}
+
 export {
     JOINT_NODE_NAME,
     JOINT_PUBLIC_DATA_KEYS,
@@ -301,5 +310,6 @@ export {
     indexOfMin,
     getJointNodeInfo,
     createDummySkeleton,
-    convertFromJointsV1
+    convertFromJointsV1,
+    convertFromJointsV2
 };

@@ -66,7 +66,11 @@ export const JOINTS_V2 = {
 
 export const JOINTS_V2_COUNT = Object.keys(JOINTS_V2).length;
 
-/* Current joint scheme with detailed hands. */
+/** Current joint scheme with detailed hands. 
+ *  Medical naming for hand joints (https://en.wikipedia.org/wiki/Interphalangeal_joints_of_the_hand).
+ *  Finger: Wrist -> MetaCarpoPhalangeal (MCP) ->  Proximal InterPhalangeal (PIP) -> Distal InterPhalangeal (DIP) -> Tip of finger 
+ *  Thumb:  Wrist -> CarpoMetaCarpal (CMC) -> MetaCarpoPhalangeal (MCP) -> InterPhalangeal (IP) -> Tip of thumb
+ */
 export const JOINTS = {
     /* body joints */
     NOSE: 'nose',
@@ -86,7 +90,7 @@ export const JOINTS = {
     RIGHT_KNEE: 'right_knee',
     LEFT_ANKLE: 'left_ankle',
     RIGHT_ANKLE: 'right_ankle',
-    /* left hand joints */
+    /* left hand joints (from a wrist to a finger tip) */
     LEFT_THUMB_CMC: 'left_thumb_cmc',
     LEFT_THUMB_MCP: 'left_thumb_mcp',
     LEFT_THUMB_IP: 'left_thumb_ip',
@@ -107,7 +111,7 @@ export const JOINTS = {
     LEFT_PINKY_PIP: 'left_pinky_pip',
     LEFT_PINKY_DIP: 'left_pinky_dip',
     LEFT_PINKY_TIP: 'left_pinky_tip',
-    /* right hand joints */
+    /* right hand joints (from a wrist to a finger tip) */
     RIGHT_THUMB_CMC: 'right_thumb_cmc',
     RIGHT_THUMB_MCP: 'right_thumb_mcp',
     RIGHT_THUMB_IP: 'right_thumb_ip',
@@ -158,7 +162,7 @@ export const JOINT_CONNECTIONS = {
     thumb1Left: [JOINTS.LEFT_WRIST, JOINTS.LEFT_THUMB_CMC], // 16
     thumb2Left: [JOINTS.LEFT_THUMB_CMC, JOINTS.LEFT_THUMB_MCP],
     thumb3Left: [JOINTS.LEFT_THUMB_MCP, JOINTS.LEFT_THUMB_IP],
-    thum4Left: [JOINTS.LEFT_THUMB_IP, JOINTS.LEFT_THUMB_TIP],
+    thumb4Left: [JOINTS.LEFT_THUMB_IP, JOINTS.LEFT_THUMB_TIP],
     index1Left: [JOINTS.LEFT_WRIST, JOINTS.LEFT_INDEX_FINGER_MCP],
     index2Left: [JOINTS.LEFT_INDEX_FINGER_MCP, JOINTS.LEFT_INDEX_FINGER_PIP],
     index3Left: [JOINTS.LEFT_INDEX_FINGER_PIP, JOINTS.LEFT_INDEX_FINGER_DIP],
@@ -180,7 +184,7 @@ export const JOINT_CONNECTIONS = {
     thumb1Right: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_THUMB_CMC], // 37
     thumb2Right: [JOINTS.RIGHT_THUMB_CMC, JOINTS.RIGHT_THUMB_MCP],
     thumb3Right: [JOINTS.RIGHT_THUMB_MCP, JOINTS.RIGHT_THUMB_IP],
-    thum4Right: [JOINTS.RIGHT_THUMB_IP, JOINTS.RIGHT_THUMB_TIP],
+    thumb4Right: [JOINTS.RIGHT_THUMB_IP, JOINTS.RIGHT_THUMB_TIP],
     index1Right: [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_INDEX_FINGER_MCP],
     index2Right: [JOINTS.RIGHT_INDEX_FINGER_MCP, JOINTS.RIGHT_INDEX_FINGER_PIP],
     index3Right: [JOINTS.RIGHT_INDEX_FINGER_PIP, JOINTS.RIGHT_INDEX_FINGER_DIP],
@@ -261,7 +265,7 @@ export const HIDDEN_BONES = [
     getBoneName(JOINT_CONNECTIONS.thumb1Left),
     getBoneName(JOINT_CONNECTIONS.thumb2Left),
     getBoneName(JOINT_CONNECTIONS.thumb3Left),
-    getBoneName(JOINT_CONNECTIONS.thum4Left),
+    getBoneName(JOINT_CONNECTIONS.thumb4Left),
     getBoneName(JOINT_CONNECTIONS.index1Left),
     getBoneName(JOINT_CONNECTIONS.index2Left),
     getBoneName(JOINT_CONNECTIONS.index3Left),
@@ -282,7 +286,7 @@ export const HIDDEN_BONES = [
     getBoneName(JOINT_CONNECTIONS.thumb1Right),
     getBoneName(JOINT_CONNECTIONS.thumb2Right),
     getBoneName(JOINT_CONNECTIONS.thumb3Right),
-    getBoneName(JOINT_CONNECTIONS.thum4Right),
+    getBoneName(JOINT_CONNECTIONS.thumb4Right),
     getBoneName(JOINT_CONNECTIONS.index1Right),
     getBoneName(JOINT_CONNECTIONS.index2Right),
     getBoneName(JOINT_CONNECTIONS.index3Right),
@@ -442,7 +446,7 @@ export const THIN_BONE_FLAGS = [
     true, // thumb1Left
     true, // thumb2Left
     true, // thumb3Left
-    true, // thum4Left
+    true, // thumb4Left
     true, // index1Left
     true, // index2Left
     true, // index3Left
@@ -464,7 +468,7 @@ export const THIN_BONE_FLAGS = [
     true, // thumb1Right
     true, // thumb2Right
     true, // thumb3Right
-    true, // thum4Right
+    true, // thumb4Right
     true, // index1Right
     true, // index2Right
     true, // index3Right

@@ -240,8 +240,11 @@ import {Pose} from "./Pose.js";
                     return;
                 }
                 if (length !== JOINTS_PER_POSE) {
-                    if (length == JOINTS_V1_COUNT || length == JOINTS_V2_COUNT) {
+                    if (length == JOINTS_V1_COUNT) {
                         utils.convertFromJointsV1(jointPositions, jointConfidences);
+                    }
+                    else if (length == JOINTS_V2_COUNT) {
+                        utils.convertFromJointsV2(jointPositions, jointConfidences);
                     }
                     else {
                         console.error('Unknown joint schema of a recorded pose.');

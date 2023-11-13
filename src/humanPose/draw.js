@@ -380,7 +380,7 @@ function setChildHumanPosesVisible(visible) {
     }
 }
 
-const DEBUG = false
+const DEBUG = false;
 /**
  * Determines whether 2D pose is or can be rendered at all on videobackground (possible on mobile devices only)
  */
