@@ -875,6 +875,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
         }
+        objectsToCheck = objectsToCheck.concat(Object.values(realityEditor.spatialCapture.spatialPatchCoordinator.patches).map(patch => patch.container));
+
         // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
         //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
         // }
