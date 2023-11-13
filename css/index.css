@@ -1855,8 +1855,8 @@ Logic Interface CSS
 
 #analytics-step-container {
     position: absolute;
-    bottom: calc(230px + 10px * 2 + 64px);
-    left: calc(50% + 10px);
+    bottom: calc(48px + 128px + 26px);
+    left: calc(50% + 12px + 64px + 24px);
     pointer-events: all;
 }
 
