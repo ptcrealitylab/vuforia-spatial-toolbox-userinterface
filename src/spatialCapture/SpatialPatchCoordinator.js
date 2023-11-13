@@ -129,7 +129,7 @@ class SpatialPatchCoordinator {
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
     }
-    
+
     setMatrixFromArray(matrix, array) {
         matrix.set(
             array[0], array[4], array[8], array[12],
@@ -202,17 +202,19 @@ class SpatialPatchCoordinator {
         const textureDepthImage = document.createElement('img');
         textureDepthImage.src = serialization.textureDepth;
 
-        const patch = CameraVisPatch.createPatch(
-            containerMatrix,
-            phoneMatrix,
-            textureImage,
-            textureDepthImage,
-            serialization.creationTime
-        );
-        patch.add();
-        this.patches[serialization.key] = patch;
+        textureDepthImage.onload = () => {
+            const patch = CameraVisPatch.createPatch(
+                containerMatrix,
+                phoneMatrix,
+                textureImage,
+                textureDepthImage,
+                serialization.creationTime
+            );
+            patch.add();
+            this.patches[serialization.key] = patch;
+        };
     }
-    
+
     // updates the snapshot shader to render more flatly when you observe it from a similar position and angle
     // compared to the position/angle that it was captured at
     updatePatchMaterialUniforms() {

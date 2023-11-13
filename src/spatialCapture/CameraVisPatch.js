@@ -46,9 +46,9 @@ export class CameraVisPatch {
         let matrix = this.phone.matrixWorld.clone();
 
         let initialVehicleMatrix = new THREE.Matrix4().fromArray([
-            -1, 0, 0, 0,
+            1, 0, 0, 0,
             0, 1, 0, 0,
-            0, 0, -1, 0,
+            0, 0, 1, 0,
             0, 0, 0, 1,
         ]);
         matrix.multiply(initialVehicleMatrix);
