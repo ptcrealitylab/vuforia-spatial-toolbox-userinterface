@@ -1870,6 +1870,10 @@ Logic Interface CSS
     cursor: pointer;
 }
 
+.analytics-step-label-container-active {
+    border: 1px solid white;
+}
+
 #analytics-step-file {
     pointer-events: none;
     opacity: 0;
@@ -1902,7 +1906,7 @@ Logic Interface CSS
     cursor: pointer;
 }
 
-.analytics-region-card, #analytics-step-file-upload-container {
+.analytics-region-card, .analytics-button-container {
     font-size: 14px;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     line-height: 22px;
@@ -1913,10 +1917,14 @@ Logic Interface CSS
     padding: 14px;
 }
 
-#analytics-step-file-upload-container {
+.analytics-button-container {
     text-align: center;
     width: 15rem;
     font-size: 18px;
+    border-radius: 0;
+}
+
+.analytics-button-container > label {
     cursor: pointer;
 }
 
@@ -1971,15 +1979,9 @@ Logic Interface CSS
     overflow-y: auto;
 }
 
-.analytics-pinned-region-cards-csv {
-    position: absolute;
-    top: 84px;
-    right: calc(100vw - 30px);
-    pointer-events: all;
-}
-
 .analytics-pinned-region-cards-csv,
 .analytics-pinned-region-cards-csv:visited {
+    cursor: pointer;
     color: white;
 }
 
