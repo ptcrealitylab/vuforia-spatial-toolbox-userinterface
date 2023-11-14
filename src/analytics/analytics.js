@@ -36,11 +36,9 @@ export class Analytics {
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
-        this.stepContainer = document.createElement('div');
-        this.stepContainer.id = 'analytics-step-container';
-        this.stepContainer.style.display = 'none';
-        this.createStepComponent();
-        this.container.appendChild(this.stepContainer);
+        this.createStepLabelComponent();
+
+        this.onStepFileChange = this.onStepFileChange.bind(this);
 
         this.threejsContainer = new THREE.Group();
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
@@ -62,12 +60,29 @@ export class Analytics {
         requestAnimationFrame(this.draw);
     }
 
-    createStepComponent() {
+    createStepLabelComponent() {
+        this.stepLabelContainer = document.createElement('div');
+        this.stepLabelContainer.id = 'analytics-step-label-container';
+        // this.stepLabelContainer.style.display = '';
+
         this.onStepFileChange = this.onStepFileChange.bind(this);
+        this.stepLabel = document.createElement('span');
+        this.stepLabel.classList.add('analytics-step');
+        this.stepLabel.textContent = 'Step 1';
+
+        this.stepLabelContainer.appendChild(this.stepLabel);
+
+        this.container.appendChild(this.stepLabelContainer);
+    }
+
+    createStepFileUploadComponent() {
+        this.stepFileUploadContainer = document.createElement('div');
+        this.stepFileUploadContainer.id = 'analytics-step-file-upload-container';
+
         this.stepFileInputLabel = document.createElement('label');
-        this.stepFileInputLabel.classList.add('analytics-step');
+        // this.stepFileInputLabel.classList.add('analytics-step');
         this.stepFileInputLabel.setAttribute('for', 'analytics-step-file');
-        this.stepFileInputLabel.textContent = 'Upload Step File';
+        this.stepFileInputLabel.textContent = 'Import Step File';
 
         this.stepFileInput = document.createElement('input');
         this.stepFileInput.id = 'analytics-step-file';
@@ -75,8 +90,10 @@ export class Analytics {
         this.stepFileInput.accept = '.xml,text/xml';
         this.stepFileInput.addEventListener('change', this.onStepFileChange);
 
-        this.stepContainer.appendChild(this.stepFileInputLabel);
-        this.stepContainer.appendChild(this.stepFileInput);
+        this.stepFileUploadContainer.appendChild(this.stepFileInputLabel);
+        this.stepFileUploadContainer.appendChild(this.stepFileInput);
+
+        this.pinnedRegionCardsContainer.appendChild(this.stepFileUploadContainer);
     }
 
     /**
@@ -165,7 +182,6 @@ export class Analytics {
     createNewPinnedRegionCardsContainer() {
         if (this.pinnedRegionCardsContainer) {
             this.container.removeChild(this.pinnedRegionCardsContainer);
-            this.container.removeChild(this.pinnedRegionCardsCsvLink);
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
@@ -175,14 +191,16 @@ export class Analytics {
         });
         this.container.appendChild(pinnedRegionCardsContainer);
 
+        this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
+        this.pinnedRegionCards = [];
+
         this.pinnedRegionCardsCsvLink = document.createElement('a');
         this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
         this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
-        this.pinnedRegionCardsCsvLink.textContent = 'csv';
-        this.container.appendChild(this.pinnedRegionCardsCsvLink);
-
-        this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
-        this.pinnedRegionCards = [];
+        this.pinnedRegionCardsCsvLink.textContent = 'Export CSV';
+        this.pinnedRegionCardsCsvLink.style.display = 'none';
+        this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.createStepFileUploadComponent();
     }
 
     draw() {
