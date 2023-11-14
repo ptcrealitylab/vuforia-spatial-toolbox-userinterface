@@ -1963,7 +1963,7 @@ Logic Interface CSS
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: 320px; /* guess at timeline top */
+    bottom: calc(320px - 66px); /* guess at timeline top */
     left: 35px;
     padding: 0;
     padding-right: 8px;
