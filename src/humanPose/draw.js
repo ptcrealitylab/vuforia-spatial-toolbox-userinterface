@@ -487,14 +487,18 @@ function draw2DPoses(poses, imageSize) {
             y = (point.imgY - pointHeight / 2) * (outHeight / pointHeight) + halfCanvasHeight;
         }
 
-        points2D.push([x, y]);
+        let valid = (Math.abs(point.imgX) > 1e-6 && Math.abs(point.imgY) > 1e-6);
+        points2D.push([x, y, valid]);
 
-        gfx.fillStyle = `hsl(180, 100%, ${point.score * 50.0}%`;
-        gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
-        gfx.fill();
-        if (debug) {
-            gfx.fillText(`${Math.round(point.imgX)} ${Math.round(point.imgY)}`, x + jointSize, y - jointSize);
-            debug = false;
+        // point 2D position is not valid if it is [0,0]. Don't draw in this case.
+        if (valid) {
+            gfx.fillStyle = `hsl(180, 100%, ${point.score * 50.0}%`;
+            gfx.arc(x, y, jointSize, 0, 2 * Math.PI);
+            gfx.fill();
+            if (debug) {
+                gfx.fillText(`${Math.round(point.imgX)} ${Math.round(point.imgY)}`, x + jointSize, y - jointSize);
+                debug = false;
+            }
         }
     }
 
@@ -504,13 +508,16 @@ function draw2DPoses(poses, imageSize) {
 
     gfx.beginPath();
     let conns = Object.values(JOINT_CONNECTIONS);
-    for (let i = 0; i < 24; i++) {   // skipping connections between synthetic joints which do not exist yet 
+    for (let i = 0; i < 58; i++) {   // skipping connections between synthetic joints which do not exist yet 
 
         let a = points2D[JOINT_TO_INDEX[conns[i][0]]];
         let b = points2D[JOINT_TO_INDEX[conns[i][1]]];
 
-        gfx.moveTo(a[0], a[1]);
-        gfx.lineTo(b[0], b[1]);
+        // skip draw lines between invalid points
+        if (a[2] && b[2]) { 
+            gfx.moveTo(a[0], a[1]);
+            gfx.lineTo(b[0], b[1]);
+        }
     }
     gfx.stroke();
 }
