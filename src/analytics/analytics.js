@@ -385,7 +385,7 @@ export class Analytics {
     }
 
     getStepLabel() {
-        const i = Math.max(this.nextStepNumber - 1, 1);
+        const i = this.nextStepNumber;
         let label = 'Step ' + i;
         if (i < this.stepLabels.length) {
             label = this.stepLabels[i];
