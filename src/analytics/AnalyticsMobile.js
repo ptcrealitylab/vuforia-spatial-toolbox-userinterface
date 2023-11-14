@@ -9,6 +9,7 @@ export class AnalyticsMobile extends Analytics {
         // Only show timeline and other simple 2d ui
         if (!this.container.parentElement) {
             document.body.appendChild(this.container);
+            this.timelineContainer.style.display = 'none';
         }
     }
 }
