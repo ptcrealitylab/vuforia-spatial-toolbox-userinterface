@@ -1848,8 +1848,8 @@ Logic Interface CSS
     width: 100%;
     height: 100%;
 
-    z-index: 2800;
-    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    z-index: 1050;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1050, 1);
     pointer-events: none;
 }
 
