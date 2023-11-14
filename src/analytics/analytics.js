@@ -78,6 +78,7 @@ export class Analytics {
     createStepFileUploadComponent() {
         this.stepFileUploadContainer = document.createElement('div');
         this.stepFileUploadContainer.id = 'analytics-step-file-upload-container';
+        this.stepFileUploadContainer.classList.add('analytics-button-container');
 
         this.stepFileInputLabel = document.createElement('label');
         // this.stepFileInputLabel.classList.add('analytics-step');
@@ -194,12 +195,15 @@ export class Analytics {
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];
 
+        this.pinnedRegionCardsCsvContainer = document.createElement('div');
+        this.pinnedRegionCardsCsvContainer.classList.add('analytics-button-container');
         this.pinnedRegionCardsCsvLink = document.createElement('a');
         this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
         this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
         this.pinnedRegionCardsCsvLink.textContent = 'Export CSV';
-        this.pinnedRegionCardsCsvLink.style.display = 'none';
-        this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.pinnedRegionCardsCsvContainer.style.display = 'none';
+        this.pinnedRegionCardsCsvContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvContainer);
         this.createStepFileUploadComponent();
     }
 
@@ -343,18 +347,22 @@ export class Analytics {
         switch (recordingState) {
             case RecordingState.empty:
             case RecordingState.recording:
-                this.stepContainer.style.display = '';
+                this.stepLabelContainer.style.display = '';
+                this.pinnedRegionCardsCsvContainer.style.display = 'none';
                 break;
             case RecordingState.done:
             default:
-                this.stepContainer.style.display = 'none';
+                this.stepLabelContainer.style.display = 'none';
+                this.pinnedRegionCardsCsvContainer.style.display = '';
                 break;
         }
-
-        if (recordingState === RegionCardState.recording) {
-          this.updateStepLabel();
-          this.stepFileInputLabel.style.pointerEvents = 'none';
+        if (recordingState !== RecordingState.empty) {
+            this.stepFileUploadContainer.style.display = 'none';
+            this.stepLabelContainer.classList.add('analytics-step-label-container-active');
+        } else {
+            this.stepFileUploadContainer.style.display = '';
         }
+        this.updateStepLabel();
     }
 
     onStepFileChange() {
@@ -377,7 +385,7 @@ export class Analytics {
     }
 
     getStepLabel() {
-        const i = this.nextStepNumber - 1;
+        const i = Math.max(this.nextStepNumber - 1, 1);
         let label = 'Step ' + i;
         if (i < this.stepLabels.length) {
             label = this.stepLabels[i];
@@ -391,8 +399,8 @@ export class Analytics {
     }
 
     updateStepLabel() {
-        this.stepFileInputLabel.style.color = this.getStepColor();
-        this.stepFileInputLabel.textContent = this.getStepLabel();
+        this.stepLabelContainer.style.borderColor = this.getStepColor();
+        this.stepLabel.textContent = this.getStepLabel();
     }
 
     /**
