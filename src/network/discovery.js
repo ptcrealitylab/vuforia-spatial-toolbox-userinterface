@@ -5,6 +5,7 @@ createNameSpace("realityEditor.network.discovery");
     // discoveryMap[serverIp][objectId] = { heartbeat: { id, ip, port, vn, tcs }, metadata: { name, type } }
     let discoveryMap = {};
     let serverServices = {};
+    let serverPortMappings = {};
 
     // Allows us to pause object discovery from the time the app loads until we have finished scanning
     let exceptions = []; // when scanning a world object, we add its name to the exceptions so we can still load it
@@ -50,6 +51,7 @@ createNameSpace("realityEditor.network.discovery");
     function updateDiscoveryMap(message) {
         if (typeof discoveryMap[message.ip] === 'undefined') {
             discoveryMap[message.ip] = {};
+            serverPortMappings[message.ip] = realityEditor.network.getPort(message);
             callbacks.onServerDetected.forEach(cb => cb(message.ip));
         }
         if (typeof discoveryMap[message.ip][message.id] === 'undefined') {
@@ -205,6 +207,10 @@ createNameSpace("realityEditor.network.discovery");
             });
         })
         return matchingObjects;
+    }
+
+    exports.getPortForIp = (ip) => {
+        return serverPortMappings[ip];
     }
 
     exports.initService = initService;
