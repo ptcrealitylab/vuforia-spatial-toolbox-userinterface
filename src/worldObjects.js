@@ -392,6 +392,16 @@ createNameSpace("realityEditor.worldObjects");
         }
     }
 
+    let detectedEmptyWorldCallbacks = [];
+    function onDetectedEmptyWorld(callback) {
+        detectedEmptyWorldCallbacks.push(callback);
+        
+        // trigger immediately if we already have one
+        Object.keys(emptyWorldObjects).forEach((emptyWorldObjectKey) => {
+            callback(emptyWorldObjectKey);
+        });
+    }
+    
     /**
      * Retrieves the origin of a certain world object (result will be null if hasn't been seen yet)
      * @param {string} objectKey
@@ -456,6 +466,30 @@ createNameSpace("realityEditor.worldObjects");
             }
         }
     }
+
+    /**
+     * @param heartbeat
+     * @return {boolean|*}
+     */
+    async function checkIsEmptyWorldHeartbeat(heartbeat) {
+        const route = '/object/' + heartbeat.id + '/checkFileExists/target/target.dat';
+        let checkFileURL = realityEditor.network.getURL(heartbeat.ip, realityEditor.network.getPort(heartbeat), route);
+        return await fetch(checkFileURL);
+    }
+
+    let emptyWorldObjects = {};
+    
+    function initializeEmptyWorldObject(heartbeat) {
+        if (typeof emptyWorldObjects[heartbeat.id] !== 'undefined') {
+            return; // don't double-init the empty object
+        }
+        console.log('initializeEmptyWorldObject', heartbeat.id);
+        emptyWorldObjects[heartbeat.id] = realityEditor.getObject(heartbeat.id);
+
+        detectedEmptyWorldCallbacks.forEach(function(callback) {
+            callback(heartbeat.id);
+        });
+    }
     
     exports.initService = initService;
     exports.getWorldObjects = getWorldObjects;
@@ -475,5 +509,8 @@ createNameSpace("realityEditor.worldObjects");
     exports.getOriginObjects = getOriginObjects;
     exports.getMatchingOriginObject = getMatchingOriginObject;
     exports.getMatchingWorldObject = getMatchingWorldObject;
+    exports.checkIsEmptyWorldHeartbeat = checkIsEmptyWorldHeartbeat;
+    exports.initializeEmptyWorldObject = initializeEmptyWorldObject;
+    exports.onDetectedEmptyWorld = onDetectedEmptyWorld;
 
 }(realityEditor.worldObjects));

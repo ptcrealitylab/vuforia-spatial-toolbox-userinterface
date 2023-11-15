@@ -126,6 +126,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         if (!shouldStartDownloadingFiles(objectHeartbeat)) {
             if (realityEditor.gui.ar.anchors.isAnchorHeartbeat(objectHeartbeat)) {
                 realityEditor.gui.ar.anchors.createAnchorFromHeartbeat(objectHeartbeat);
+            // } else if (realityEditor.worldObjects.isEmptyWorldHeartbeat(objectHeartbeat)) {
+               // realityEditor.worldObjects.initializeEmptyWorldObject(objectHeartbeat)
             } else {
                 onDownloadFailed(); // reschedule this attempt for later
             }
@@ -177,13 +179,29 @@ createNameSpace("realityEditor.app.targetDownloader");
             onTargetXMLDownloaded(true, xmlAddress); // just directly trigger onTargetXMLDownloaded
             return;
         }
-
-        // downloads the vuforia target.xml file if it doesn't have it yet
-        realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
-        targetDownloadStates[objectID].XML = DownloadState.STARTED;
+        
+        // check if it's an empty world object
+        realityEditor.worldObjects.checkIsEmptyWorldHeartbeat(objectHeartbeat).then((res) => {
+            return res.json();
+        }).then(body => {
+            console.log('fileExists', body);
+            
+            if (body.exists) {
+                // THIS IS THE REGULAR / MOST COMMON PATH TO TAKE:
+                // downloads the vuforia target.xml file if it doesn't have it yet
+                realityEditor.app.downloadFile(xmlAddress, moduleName + '.onTargetXMLDownloaded');
+                targetDownloadStates[objectID].XML = DownloadState.STARTED;
+            } else {
+                let object = realityEditor.getObject(objectHeartbeat.id);
+                if (object.isWorldObject || object.type === 'world') {
+                    realityEditor.worldObjects.initializeEmptyWorldObject(objectHeartbeat);
+                }
+            }
+        });
     }
 
     function getObjectNameFromId(objectId) {
+        // TODO: this is a very fragile implementation that adds a constraint into how names and IDs must relate
         let objectName = objectId.slice(0,-12); // get objectName from objectId
         if (objectName.length === 0) { objectName = objectId; } // use objectId as a backup (e.g. for _WORLD_local)
         return objectName;

@@ -75,34 +75,14 @@ createNameSpace("realityEditor.avatar");
         utils = realityEditor.avatar.utils;
 
         // begin creating our own avatar object when we localize within a world object
-        realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
-            if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
-
-            // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
-            //       migrate our existing avatar to the server hosting the current world object that we're looking at
-            if (myAvatarObject || myAvatarId) { return; }
-
-            connectionStatus.isLocalized = true;
-            refreshStatusUI();
-            network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
-
-            attemptToCreateAvatarOnServer(worldObjectKey);
-
-            setInterval(() => {
-                try {
-                    reestablishAvatarIfNeeded();
-                } catch (e) {
-                    console.warn('error trying to reestablish avatar', e);
-                }
-            }, 1000);
-
-            // if it takes longer than 10 seconds to load the avatar, hide the "loading" UI - todo: retry if timeout
-            setTimeout(() => {
-                if (myAvatarId) return;
-                connectionStatus.didCreationFail = true;
-                refreshStatusUI();
-            }, AVATAR_CREATION_TIMEOUT_LENGTH);
+        realityEditor.worldObjects.onLocalizedWithinWorld((worldObjectKey) => {
+            localizedWithinWorldHandler(worldObjectKey);
         });
+
+        // create an avatar if we join a session with an empty world object
+        realityEditor.worldObjects.onDetectedEmptyWorld((worldObjectKey) => {
+            localizedWithinWorldHandler(worldObjectKey);
+        })
 
         if (document.getElementsByClassName('link-canvas-container')[0] === undefined) {
             isDesktop = realityEditor.device.environment.isDesktop();
@@ -220,6 +200,35 @@ createNameSpace("realityEditor.avatar");
                 }
             });
         });
+    }
+
+    function localizedWithinWorldHandler(worldObjectKey) {
+        if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
+
+        // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
+        //       migrate our existing avatar to the server hosting the current world object that we're looking at
+        if (myAvatarObject || myAvatarId) { return; }
+
+        connectionStatus.isLocalized = true;
+        refreshStatusUI();
+        network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
+
+        attemptToCreateAvatarOnServer(worldObjectKey);
+
+        setInterval(() => {
+            try {
+                reestablishAvatarIfNeeded();
+            } catch (e) {
+                console.warn('error trying to reestablish avatar', e);
+            }
+        }, 1000);
+
+        // if it takes longer than 10 seconds to load the avatar, hide the "loading" UI - todo: retry if timeout
+        setTimeout(() => {
+            if (myAvatarId) return;
+            connectionStatus.didCreationFail = true;
+            refreshStatusUI();
+        }, AVATAR_CREATION_TIMEOUT_LENGTH);
     }
     
     function addLinkCanvas() {
