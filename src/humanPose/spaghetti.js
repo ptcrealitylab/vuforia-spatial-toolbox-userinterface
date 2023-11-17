@@ -4,12 +4,12 @@ import {
     setAnimationMode,
     AnimationMode,
 } from './draw.js';
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 
-const spaghettiListsByAnalyticsFrame = {};
-const activeSpaghettiByAnalyticsFrame = {};
-function updateAllSpaghettiColorsByAnalyticsFrame(frame) {
-    spaghettiListsByAnalyticsFrame[frame].forEach((spaghetti) => {
+const spaghettiListsByMotionStudyFrame = {};
+const activeSpaghettiByMotionStudyFrame = {};
+function updateAllSpaghettiColorsByMotionStudyFrame(frame) {
+    spaghettiListsByMotionStudyFrame[frame].forEach((spaghetti) => {
         spaghetti.updateColors();
     });
 }
@@ -106,12 +106,12 @@ const SpaghettiSelectionState = {
             const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(e.pageX, e.pageY, spaghetti.meshPaths);
             spaghetti.cursorIndex = spaghetti.getValidPointFromIntersects(intersects);
             if (spaghetti.cursorIndex === -1) {
-                // Note: Cannot set analytics cursor time to -1 here because other spaghettis may be hovering, handled by HPA
+                // Note: Cannot set motionStudy cursor time to -1 here because other spaghettis may be hovering, handled by HPA
                 return;
             }
             setAnimationMode(AnimationMode.cursor);
-            if (spaghetti.analytics) {
-                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            if (spaghetti.motionStudy) {
+                spaghetti.motionStudy.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
             }
         },
         colorPoints: (spaghetti) => {
@@ -145,14 +145,14 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
 
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] === spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = null;
-                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
+            if (activeSpaghettiByMotionStudyFrame[spaghetti.frame] === spaghetti) {
+                activeSpaghettiByMotionStudyFrame[spaghetti.frame] = null;
+                updateAllSpaghettiColorsByMotionStudyFrame(spaghetti.frame);
             }
             
-            if (spaghetti.analytics) {
-                spaghetti.analytics.setHighlightRegion(null, true);
-                spaghetti.analytics.setCursorTime(-1, true);
+            if (spaghetti.motionStudy) {
+                spaghetti.motionStudy.setHighlightRegion(null, true);
+                spaghetti.motionStudy.setCursorTime(-1, true);
             }
         }
     },
@@ -186,9 +186,9 @@ const SpaghettiSelectionState = {
             const minIndex = Math.min(spaghetti.cursorIndex, initialSelectionIndex);
             const maxIndex = Math.max(spaghetti.cursorIndex, initialSelectionIndex);
 
-            if (spaghetti.analytics) {
-                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
-                spaghetti.analytics.setHighlightRegion({
+            if (spaghetti.motionStudy) {
+                spaghetti.motionStudy.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+                spaghetti.motionStudy.setHighlightRegion({
                     startTime: spaghetti.points[minIndex].timestamp,
                     endTime: spaghetti.points[maxIndex].timestamp
                 }, true);
@@ -237,9 +237,9 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
             
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] !== spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = spaghetti;
-                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
+            if (activeSpaghettiByMotionStudyFrame[spaghetti.frame] !== spaghetti) {
+                activeSpaghettiByMotionStudyFrame[spaghetti.frame] = spaghetti;
+                updateAllSpaghettiColorsByMotionStudyFrame(spaghetti.frame);
             }
         }
     },
@@ -265,8 +265,8 @@ const SpaghettiSelectionState = {
 
             spaghetti.cursorIndex = index;
             setAnimationMode(AnimationMode.cursor);
-            if (spaghetti.analytics) {
-                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
+            if (spaghetti.motionStudy) {
+                spaghetti.motionStudy.setCursorTime(spaghetti.points[spaghetti.cursorIndex].timestamp, true);
             }
         },
         colorPoints: (spaghetti) => {
@@ -299,18 +299,18 @@ const SpaghettiSelectionState = {
 
             spaghetti.getMeasurementLabel().requestVisible(false, spaghetti.pathId);
 
-            if (spaghetti.analytics) {
-                spaghetti.analytics.setCursorTime(spaghetti.points[spaghetti.highlightRegion.startIndex].timestamp, true);
-                spaghetti.analytics.setHighlightRegion({
+            if (spaghetti.motionStudy) {
+                spaghetti.motionStudy.setCursorTime(spaghetti.points[spaghetti.highlightRegion.startIndex].timestamp, true);
+                spaghetti.motionStudy.setHighlightRegion({
                     startTime: spaghetti.points[startIndex].timestamp,
                     endTime: spaghetti.points[endIndex].timestamp
                 }, true);
             }
             setAnimationMode(AnimationMode.region);
 
-            if (activeSpaghettiByAnalyticsFrame[spaghetti.frame] !== spaghetti) {
-                activeSpaghettiByAnalyticsFrame[spaghetti.frame] = spaghetti;
-                updateAllSpaghettiColorsByAnalyticsFrame(spaghetti.frame);
+            if (activeSpaghettiByMotionStudyFrame[spaghetti.frame] !== spaghetti) {
+                activeSpaghettiByMotionStudyFrame[spaghetti.frame] = spaghetti;
+                updateAllSpaghettiColorsByMotionStudyFrame(spaghetti.frame);
             }
         }
     }
@@ -320,10 +320,10 @@ const SpaghettiSelectionState = {
  * A spaghetti object handles the rendering of multiple paths and the touch events for selecting on those paths
  */
 export class Spaghetti extends THREE.Group {
-    constructor(points, analytics, name, params) {
+    constructor(points, motionStudy, name, params) {
         super();
         this.points = [];
-        this.analytics = analytics; // Null when used outside of pose analytics, e.g. camera spaghetti lines 
+        this.motionStudy = motionStudy; // Null when used outside of pose motionStudy, e.g. camera spaghetti lines 
         this.name = name;
         this.meshPathParams = params; // Used for mesh path creation
         this.meshPaths = [];
@@ -340,10 +340,10 @@ export class Spaghetti extends THREE.Group {
         this.setupPointerEvents();
         this.addPoints(points);
         
-        if (!spaghettiListsByAnalyticsFrame[this.frame]) {
-            spaghettiListsByAnalyticsFrame[this.frame] = [];
+        if (!spaghettiListsByMotionStudyFrame[this.frame]) {
+            spaghettiListsByMotionStudyFrame[this.frame] = [];
         }
-        spaghettiListsByAnalyticsFrame[this.frame].push(this);
+        spaghettiListsByMotionStudyFrame[this.frame].push(this);
     }
     
     get selectionState() {
@@ -368,8 +368,8 @@ export class Spaghetti extends THREE.Group {
     }
     
     get frame() {
-        if (this.analytics) {
-            return this.analytics.frame;
+        if (this.motionStudy) {
+            return this.motionStudy.frame;
         }
         return null;
     }
@@ -390,11 +390,11 @@ export class Spaghetti extends THREE.Group {
                 point.color = new THREE.Color(point.color[0] / 255, point.color[1] / 255, point.color[2] / 255);
             }
             point.originalColor = [point.color.r * 255, point.color.g * 255, point.color.b * 255, 255];
-            const fadeColor = AnalyticsColors.fade(point.color, 0.2);
+            const fadeColor = MotionStudyColors.fade(point.color, 0.2);
             point.selectableOutOfRangeColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.5 * 255];
             point.unselectableColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0.3 * 255];
             point.inactiveColor = [fadeColor.r * 255, fadeColor.g * 255, fadeColor.b * 255, 0];
-            const cursorColor = AnalyticsColors.highlight(point.color);
+            const cursorColor = MotionStudyColors.highlight(point.color);
             point.cursorColor = [cursorColor.r * 255, cursorColor.g * 255, cursorColor.b * 255, 255];
             
             if (this.points.length === 0) {
@@ -447,8 +447,8 @@ export class Spaghetti extends THREE.Group {
     }
     
     transferStateTo(otherSpaghetti) {
-        if (activeSpaghettiByAnalyticsFrame[this.frame] === this) {
-            activeSpaghettiByAnalyticsFrame[this.frame] = otherSpaghetti;
+        if (activeSpaghettiByMotionStudyFrame[this.frame] === this) {
+            activeSpaghettiByMotionStudyFrame[this.frame] = otherSpaghetti;
         }
         otherSpaghetti.selectionState = this.selectionState;
         otherSpaghetti.highlightRegion = {
@@ -487,8 +487,8 @@ export class Spaghetti extends THREE.Group {
         this.resetPoints();
         SpaghettiSelectionState.NONE.transition(this);
         this.cursorIndex = -1;
-        if (activeSpaghettiByAnalyticsFrame[this.frame] === this) {
-            activeSpaghettiByAnalyticsFrame[this.frame] = null;
+        if (activeSpaghettiByMotionStudyFrame[this.frame] === this) {
+            activeSpaghettiByMotionStudyFrame[this.frame] = null;
         }
     }
 
@@ -497,7 +497,7 @@ export class Spaghetti extends THREE.Group {
      * Returns false otherwise.
      */
     isActive() {
-        const activeSpaghetti = activeSpaghettiByAnalyticsFrame[this.frame];
+        const activeSpaghetti = activeSpaghettiByMotionStudyFrame[this.frame];
         return activeSpaghetti === this || activeSpaghetti === null || activeSpaghetti === undefined;
     }
 
@@ -523,7 +523,7 @@ export class Spaghetti extends THREE.Group {
                 this.getMeasurementLabel().requestVisible(false, this.pathId);
                 return;
             }
-            if (this.analytics && realityEditor.analytics.getActiveAnalytics() !== this.analytics) {
+            if (this.motionStudy && realityEditor.motionStudy.getActiveMotionStudy() !== this.motionStudy) {
                 return;
             }
             if (!this.isVisible()) {
@@ -536,7 +536,7 @@ export class Spaghetti extends THREE.Group {
                 return;
             }
             if (realityEditor.device.isMouseEventCameraControl(e)) return;
-            if (this.analytics && realityEditor.analytics.getActiveAnalytics() !== this.analytics) {
+            if (this.motionStudy && realityEditor.motionStudy.getActiveMotionStudy() !== this.motionStudy) {
                 return;
             }
             if (!this.isVisible()) {

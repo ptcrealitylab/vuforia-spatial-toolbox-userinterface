@@ -1,5 +1,5 @@
-import {AnalyticsLens} from "./AnalyticsLens.js";
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyLens} from "./MotionStudyLens.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
 const TIME_INTERVAL_DURATION = 10000; // 10 seconds
@@ -7,7 +7,7 @@ const TIME_INTERVAL_DURATION = 10000; // 10 seconds
 /**
  * TimeLens is a lens that colors poses based on when they were recorded.
  */
-class TimeLens extends AnalyticsLens {
+class TimeLens extends MotionStudyLens {
     /**
      * Creates a new RebaLens object.
      */
@@ -45,25 +45,25 @@ class TimeLens extends AnalyticsLens {
 
     getColorForJoint(joint) {
         if (typeof joint.timeFrac === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
-        const startColor = AnalyticsColors.red;
-        const endColor = AnalyticsColors.blue;
+        const startColor = MotionStudyColors.red;
+        const endColor = MotionStudyColors.blue;
         return startColor.clone().lerpHSL(endColor, joint.timeFrac);
     }
 
     getColorForBone(bone) {
         if (typeof bone.timeFrac === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
-        const startColor = AnalyticsColors.red;
-        const endColor = AnalyticsColors.blue;
+        const startColor = MotionStudyColors.red;
+        const endColor = MotionStudyColors.blue;
         return startColor.clone().lerpHSL(endColor, bone.timeFrac);
     }
     
     getColorForPose(pose) {
         if (typeof pose.getJoint(JOINTS.HEAD).timeFrac === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return this.getColorForJoint(pose.getJoint(JOINTS.HEAD));
     }

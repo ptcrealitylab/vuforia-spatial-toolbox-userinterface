@@ -1,12 +1,12 @@
-import {AnalyticsLens} from "./AnalyticsLens.js";
+import {MotionStudyLens} from "./MotionStudyLens.js";
 import * as Reba from "./rebaScore.js";
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
 /**
  * RebaLens is a lens that calculates the REBA score for each bone in the pose history.
  */
-export class RebaLens extends AnalyticsLens {
+export class RebaLens extends MotionStudyLens {
     /**
      * Creates a new RebaLens object.
      */
@@ -47,21 +47,21 @@ export class RebaLens extends AnalyticsLens {
     
     getColorForJoint(joint) {
         if (typeof joint.rebaColor === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return joint.rebaColor;
     }
     
     getColorForBone(bone) {
         if (typeof bone.rebaColor === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return bone.rebaColor;
     }
     
     getColorForPose(pose) {
         if (typeof pose.getJoint(JOINTS.HEAD).rebaColorOverall === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return pose.getJoint(JOINTS.HEAD).rebaColorOverall;
     }

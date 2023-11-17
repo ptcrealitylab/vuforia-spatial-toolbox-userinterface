@@ -1,12 +1,12 @@
 /**
- * AnalyticsLens is a class that represents a lens in the analytics system.
+ * MotionStudyLens is a class that represents a lens in the motion study system.
  * Inherit from this class to create new lenses.
  */
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 
-export class AnalyticsLens {
+export class MotionStudyLens {
     /**
-     * Creates a new AnalyticsLens object.
+     * Creates a new MotionStudyLens object.
      * @param {string} name The name of the lens, used in menus.
      */
     constructor(name) {
@@ -52,7 +52,7 @@ export class AnalyticsLens {
      * @return {Color} The color to use for the value.
      */
     getColorForJoint(_joint) {
-        return AnalyticsColors.undefined;
+        return MotionStudyColors.undefined;
     }
 
     /**
@@ -61,7 +61,7 @@ export class AnalyticsLens {
      * @return {Color} The color to use for the value.
      */
     getColorForBone(_bone) {
-        return AnalyticsColors.undefined;
+        return MotionStudyColors.undefined;
     }
 
     /**
@@ -70,6 +70,6 @@ export class AnalyticsLens {
      * @return {Color} The color to use for the value.
      */
     getColorForPose(_pose) {
-        return AnalyticsColors.undefined;
+        return MotionStudyColors.undefined;
     }
 }

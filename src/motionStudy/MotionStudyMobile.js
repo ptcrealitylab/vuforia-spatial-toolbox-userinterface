@@ -1,6 +1,6 @@
-import {Analytics} from './analytics.js';
+import {MotionStudy} from './motionStudy.js';
 
-export class AnalyticsMobile extends Analytics {
+export class MotionStudyMobile extends MotionStudy {
     constructor(frame) {
         super(frame);
     }
