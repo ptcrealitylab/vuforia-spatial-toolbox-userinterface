@@ -1391,7 +1391,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     if (realityEditor.device.profiling.isEnabled()) {
                         let matrixHash = realityEditor.device.profiling.getShortHashForString(JSON.stringify(realityEditor.sceneGraph.getCameraNode().worldMatrix));
                         let processName = `cameraUpdate_${matrixHash}`;
-                        realityEditor.device.profiling.stopTimeProcess(processName, 'cameraUpdates');
+                        // realityEditor.device.profiling.stopTimeProcess(processName, 'cameraUpdates');
                     }
                     
                     if (activeType === 'ui') {

@@ -68,9 +68,10 @@ createNameSpace("realityEditor.avatar.draw");
             iconContainer.removeChild(iconContainer.lastChild);
         }
 
-        if (Object.keys(connectedAvatars).length < 2) {
-            return; // don't show my icon unless there is at least one other user connected
-        }
+        // if (Object.keys(connectedAvatars).length < 2) {
+        //     return; // don't show my icon unless there is at least one other user connected
+        // }
+        if (Object.keys(connectedAvatars).length === 0) return;
 
         let sortedKeys = realityEditor.avatar.utils.sortAvatarList(connectedAvatars);
 

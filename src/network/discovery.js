@@ -94,6 +94,8 @@ createNameSpace("realityEditor.network.discovery");
             ignoreFromPause = !exceptions.some(name => message.id.includes(name));
         }
 
+        // console.log('processHeartbeat (ignore? = ' + ignoreFromPause + ')');
+
         if (realityEditor.device.environment.variables.suppressObjectDetections || ignoreFromPause || isSystemInitializing) {
             // only add it if we don't already have the same one pending
             const alreadyInArray = queuedHeartbeats.some(existingMessage => {
@@ -146,18 +148,49 @@ createNameSpace("realityEditor.network.discovery");
         return primaryWorld;
     }
 
-    exports.pauseObjectDetections = () => {
+    let pausedDetectionFlags = {};
+
+    function addPausedObjectDetectionsFlag(flagName) {
+        pausedDetectionFlags[flagName] = true;
         heartbeatsPaused = true;
     }
+    exports.addPausedObjectDetectionsFlag = addPausedObjectDetectionsFlag;
 
-    exports.resumeObjectDetections = () => {
-        heartbeatsPaused = false;
-        processNextQueuedHeartbeat();
+    function clearPausedObjectDetectionsFlag(flagName) {
+        delete pausedDetectionFlags[flagName];
+        console.log('resumeObjectDetections');
+        heartbeatsPaused = Object.keys(pausedDetectionFlags).length > 0;
+        if (!heartbeatsPaused) {
+            processNextQueuedHeartbeat();
+        }
     }
+    exports.clearPausedObjectDetectionsFlag = clearPausedObjectDetectionsFlag;
 
-    exports.addExceptionToPausedObjectDetections = (objectName) => {
+    function addExceptionToPausedObjectDetections(objectName) {
         exceptions.push(objectName);
     }
+    exports.addExceptionToPausedObjectDetections = addExceptionToPausedObjectDetections;
+
+    function waitForNewWorld(objectName) {
+        // console.log('waitForNewWorld named ' + objectName);
+        // heartbeatsPaused = true; // pause heartbeats
+        exceptions.push(objectName);
+        addPausedObjectDetectionsFlag('waitForNewWorld');
+    }
+    exports.waitForNewWorld = waitForNewWorld;
+    
+    function doneWaitingForWorld(worldId) {
+        primaryWorld = {
+            ip: null,
+            id: worldId
+        };
+        
+        clearPausedObjectDetectionsFlag('waitForNewWorld');
+        // // resumeObjectDetections
+        // heartbeatsPaused = false;
+        // processNextQueuedHeartbeat();
+    }
+    exports.doneWaitingForWorld = doneWaitingForWorld;
 
     exports.deleteObject = (ip, id) => {
         deleteFromDiscoveryMap(ip, id);

@@ -20,9 +20,14 @@ createNameSpace("realityEditor.network.realtime");
     var hasBeenInitialized = false;
     let batchedUpdates = {};
 
-    let didSubscribeToPublicData = false;
+    let didSubscribeToPublicData = false; // TODO: is this where some errors can come from, if multiple servers are involved?
+    let didSubscribeToPublicDataOnServer = {}; // TODO: use this instead?
+    let didSubscribeToDataOnServer = {};
     let publicDataCallbacks = {};
     let cachedPublicData = {}; // check to only trigger callbacks for property keys with changes
+    
+    let dataCallbacks = {};
+    let cachedData = {};
 
     /**
      * Public init function that sets up the sockets for realtime updates.
@@ -96,9 +101,11 @@ createNameSpace("realityEditor.network.realtime");
      * the set of known servers and establish a websocket connection to it, for the purpose of streaming realtime changes
      * of its object/frame/node position data and other properties for realtime collaboration
      * @param {Object} object
-     * @param {string} objectKey
+     * @param {string} _objectKey
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
+        
+        console.log('addServerForObjectIfNeeded', _objectKey);
         
         // if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
         // Note that we still create a localhost socket even though we don't
@@ -462,6 +469,83 @@ createNameSpace("realityEditor.network.realtime");
         // add the new update to the batch, to be sent to the server on the next interval tick
         batchedUpdates[objectKey].push(newUpdate);
     }
+    
+    function subscribeToData(objectKey, frameKey, callback) {
+        let object = realityEditor.getObject(objectKey);
+        if (!object) return;
+        let serverSocket = getServerSocketForObject(objectKey);
+        if (!serverSocket) {
+            console.log('no server socket... retry subscribeToData');
+            // retry this in 100ms
+            setTimeout(() => {
+                subscribeToData(objectKey, frameKey, callback);
+            }, 100);
+            return;
+        }
+        
+        let subscribeTitle = realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditor');
+        serverSocket.emit(subscribeTitle, JSON.stringify({
+            object: objectKey,
+            frame: frameKey,
+            protocol: object.protocol
+        }));
+
+        // assuming that there is a single node per frame (thus skipping another level for nodeKey)
+        if (typeof dataCallbacks[objectKey] === 'undefined') {
+            dataCallbacks[objectKey] = {};
+            cachedData[objectKey] = {};
+        }
+        if (typeof dataCallbacks[objectKey][frameKey] === 'undefined') {
+            dataCallbacks[objectKey][frameKey] = [];
+            cachedData[objectKey][frameKey] = {};
+        }
+        // if (typeof dataCallbacks[objectKey][frameKey][nodeKey] === 'undefined') {
+        //     // dataCallbacks[objectKey][frameKey][nodeKey] = [];
+        //     cachedData[objectKey][frameKey][nodeKey] = null;
+        // }
+        dataCallbacks[objectKey][frameKey].push(callback);
+
+        // only need to subscribe to this one time, because we are setting single listener per port which handles 
+        // public data of all nodes across all objects (as long as we set up the right callbacks by multiple calls of the code above)
+        if (!didSubscribeToDataOnServer[object.ip]) {
+            didSubscribeToDataOnServer[object.ip] = true;
+            let dataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object');
+            const listener = (msg) => {
+                let msgData = JSON.parse(msg);
+                if (typeof msgData.node === 'undefined') return;
+                // if (msgData.node === nodeKey)
+                let callbacks = dataCallbacks[objectKey][frameKey];
+                if (!callbacks) return;
+                let prevDataState = cachedData[objectKey][frameKey][msgData.node] ? JSON.parse(cachedData[objectKey][frameKey][msgData.node]) : null;
+                callbacks.forEach(cb => cb(msgData, prevDataState));
+
+                cachedData[objectKey][frameKey][msgData.node] = JSON.stringify(msgData);
+                
+                // Object.keys(msgData.publicData).forEach(dataKey => {
+                //     // attempt triggering callbacks for all keys in the publicData.
+                //     // only ones with registered callbacks will do anything
+                //     handlePublicDataFromServer(msg, msgData.object, msgData.frame, dataKey);
+                // });
+
+                // self.ioObject.on('object', function (msg) {
+                //     var thisMsg = JSON.parse(msg);
+                //     if (typeof thisMsg.node !== 'undefined') {
+                //         if (thisMsg.node === spatialObject.frame + node) {
+                //             if (thisMsg.data) {
+                //                 callback(thisMsg.data);
+                //             }
+                //         }
+                //     }
+                // });
+            };
+
+            serverSocket.on(dataTitle, listener);
+            if (dataTitle !== 'object') {
+                serverSocket.on('object', listener);
+            }
+        }
+        
+    }
 
     function subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback) {
         if (DEBUG) {
@@ -657,6 +741,7 @@ createNameSpace("realityEditor.network.realtime");
         if (typeof sockets[setName] === 'undefined') {
             return [];
         }
+        // console.log('getSocketIPsForSet', sockets[setName]);
         return Object.keys(sockets[setName]);
     }
 
@@ -667,6 +752,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function|undefined} onConnect - optional .on('connect') callback
      */
     function createSocketInSet(setName, socketIP, onConnect) {
+        // console.log('createSocketInSet', setName, socketIP);
         let ioObject;
         if (socketIP.includes(':8081')) {
             ioObject = window._oldIo.connect(socketIP);
@@ -750,6 +836,8 @@ createNameSpace("realityEditor.network.realtime");
 
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
+    
+    exports.subscribeToData = subscribeToData;
     
     exports.sendDisconnectMessage = sendDisconnectMessage;
 

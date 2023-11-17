@@ -66,6 +66,11 @@ createNameSpace("realityEditor.avatar");
         didSendAnything: false,
         didRecentlySend: false
     }
+    
+    let callbacks = {
+        onMyAvatarInitialized: [],
+        onMyUsernameUpdated: []
+    };
 
     let isDesktop = false;
 
@@ -171,11 +176,11 @@ createNameSpace("realityEditor.avatar");
         const placeholderText = '';
         realityEditor.gui.settings.addToggleWithText('User Name', description, propertyName, iconSrc, defaultValue, placeholderText, (isToggled) => {
             isUsernameActive = isToggled;
-            writeUsername(isToggled ? myUsername : null);
+            writeMyUsername(isToggled ? myUsername : null);
         }, (text) => {
             myUsername = text;
             if (isUsernameActive) {
-                writeUsername(myUsername);
+                writeMyUsername(myUsername);
             }
         });
 
@@ -188,7 +193,7 @@ createNameSpace("realityEditor.avatar");
         realityEditor.app.promises.getProviderId().then(providerId => {
             myProviderId = providerId;
             // write user name will also persist providerId
-            writeUsername(myUsername);
+            writeMyUsername(myUsername);
         });
 
         realityEditor.network.addPostMessageHandler('getUserDetails', (_, fullMessageData) => {
@@ -489,7 +494,9 @@ createNameSpace("realityEditor.avatar");
         connectionStatus.isMyAvatarInitialized = true;
         refreshStatusUI();
 
-        writeUsername(myUsername);
+        writeMyUsername(myUsername);
+
+        callbacks.onMyAvatarInitialized.forEach((cb) => cb(myAvatarObject));
 
         document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
@@ -530,11 +537,13 @@ createNameSpace("realityEditor.avatar");
     // you can set this even before the avatar has been created
     function setMyUsername(name) {
         myUsername = name;
+
+        callbacks.onMyUsernameUpdated.forEach((cb) => cb(name));
     }
 
     // name is one property within the avatar node's userProfile public data
     // avatar has to exist before calling this
-    function writeUsername(name) {
+    function writeMyUsername(name) {
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
         draw.updateAvatarName(myAvatarId, name);
@@ -544,6 +553,8 @@ createNameSpace("realityEditor.avatar");
         if (info) {
             network.sendUserProfile(info, name, myProviderId);
         }
+
+        callbacks.onMyUsernameUpdated.forEach((cb) => cb(name));
     }
 
     // send touch intersect to other users via the public data node, and show visual feedback on your cursor
@@ -701,6 +712,21 @@ createNameSpace("realityEditor.avatar");
         };
     }
 
+    function subscribeToMyAvatarInitialized(callback) {
+        // trigger immediately if already initialized
+        
+        callbacks.onMyAvatarInitialized.push(callback);
+    }
+
+    function subscribeToMyUsernameUpdated(callback) {
+        // trigger immediately if already initialized
+        if (myUsername) {
+            callback(myUsername);
+        }
+
+        callbacks.onMyUsernameUpdated.push(callback);
+    }
+
     exports.initService = initService;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
@@ -717,5 +743,9 @@ createNameSpace("realityEditor.avatar");
     exports.setLinkCanvasNeedsClear = (value) => {
         linkCanvasNeedsClear = value;
     }
+    
+    exports.subscribeToMyAvatarInitialized = subscribeToMyAvatarInitialized;
+    // exports.onMyAvatarDeleted = onMyAvatarDeleted;
+    exports.subscribeToMyUsernameUpdated = subscribeToMyUsernameUpdated;
 
 }(realityEditor.avatar));
