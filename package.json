@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/PTCInc/RE-userinterface/issues"
   },
-  "homepage": "https://github.com/PTCInc/RE-userinterface#readme"
+  "homepage": "https://github.com/PTCInc/RE-userinterface#readme",
+  "dependencies": {
+    "@microsoft/teams-js": "^2.17.0"
+  }
 }
