@@ -1848,9 +1848,41 @@ Logic Interface CSS
     width: 100%;
     height: 100%;
 
-    z-index: 2800;
-    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    z-index: 1050;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1050, 1);
     pointer-events: none;
+}
+
+#analytics-step-label-container {
+    position: absolute;
+    bottom: calc(48px + 128px + 26px);
+    left: calc(50% + 12px + 64px + 24px);
+    pointer-events: all;
+}
+
+.analytics-step {
+    text-align: left;
+    display: block;
+    color: white;
+    background-color: #000000a0;
+    padding: 10px;
+    max-width: 20vw;
+    cursor: pointer;
+}
+
+.analytics-step-label-container-active {
+    border: 1px solid white;
+}
+
+#analytics-step-file {
+    pointer-events: none;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.analytics-step-file-input-label {
+    cursor: pointer;
 }
 
 #analytics-timeline-container {
@@ -1874,20 +1906,35 @@ Logic Interface CSS
     cursor: pointer;
 }
 
-.analytics-region-card {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
+.analytics-region-card, .analytics-button-container {
     font-size: 14px;
     font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
     line-height: 22px;
-    position: absolute;
-    left: 50%;
     width: 15rem;
 
     border-radius: 22px;
     background-color: rgba(0, 0, 0, 0.7);
     padding: 14px;
+}
+
+.analytics-button-container {
+    text-align: center;
+    width: 15rem;
+    font-size: 18px;
+    border-radius: 0;
+}
+
+.analytics-button-container > label {
+    cursor: pointer;
+}
+
+.analytics-region-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+
+    position: absolute;
+    left: 50%;
 
     z-index: 3000;
     transform: translate3d(-50%, 0, 3000px);
@@ -1924,7 +1971,7 @@ Logic Interface CSS
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: 320px; /* guess at timeline top */
+    bottom: calc(320px - 66px); /* guess at timeline top */
     left: 35px;
     padding: 0;
     padding-right: 8px;
@@ -1932,15 +1979,9 @@ Logic Interface CSS
     overflow-y: auto;
 }
 
-.analytics-pinned-region-cards-csv {
-    position: absolute;
-    top: 84px;
-    right: calc(100vw - 30px);
-    pointer-events: all;
-}
-
 .analytics-pinned-region-cards-csv,
 .analytics-pinned-region-cards-csv:visited {
+    cursor: pointer;
     color: white;
 }
 

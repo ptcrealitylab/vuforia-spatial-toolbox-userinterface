@@ -11,6 +11,12 @@ import {
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 
+const RecordingState = {
+    empty: 'empty',
+    recording: 'recording',
+    done: 'done',
+};
+
 export class Analytics {
     /**
      * @param {string} frame - frame id associated with instance of
@@ -30,6 +36,10 @@ export class Analytics {
         this.container.appendChild(this.timelineContainer);
         this.timeline = new Timeline(this, this.timelineContainer);
 
+        this.createStepLabelComponent();
+
+        this.onStepFileChange = this.onStepFileChange.bind(this);
+
         this.threejsContainer = new THREE.Group();
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
@@ -39,6 +49,7 @@ export class Analytics {
         this.pinnedRegionCards = [];
         this.activeRegionCard = null;
         this.nextStepNumber = 1;
+        this.stepLabels = [];
         this.pinnedRegionCardsContainer = null;
         this.pinnedRegionCardsCsvLink = null;
         this.createNewPinnedRegionCardsContainer();
@@ -47,6 +58,43 @@ export class Analytics {
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
+    }
+
+    createStepLabelComponent() {
+        this.stepLabelContainer = document.createElement('div');
+        this.stepLabelContainer.id = 'analytics-step-label-container';
+        // this.stepLabelContainer.style.display = '';
+
+        this.onStepFileChange = this.onStepFileChange.bind(this);
+        this.stepLabel = document.createElement('span');
+        this.stepLabel.classList.add('analytics-step');
+        this.stepLabel.textContent = 'Step 1';
+
+        this.stepLabelContainer.appendChild(this.stepLabel);
+
+        this.container.appendChild(this.stepLabelContainer);
+    }
+
+    createStepFileUploadComponent() {
+        this.stepFileUploadContainer = document.createElement('div');
+        this.stepFileUploadContainer.id = 'analytics-step-file-upload-container';
+        this.stepFileUploadContainer.classList.add('analytics-button-container');
+
+        this.stepFileInputLabel = document.createElement('label');
+        // this.stepFileInputLabel.classList.add('analytics-step');
+        this.stepFileInputLabel.setAttribute('for', 'analytics-step-file');
+        this.stepFileInputLabel.textContent = 'Import Step File';
+
+        this.stepFileInput = document.createElement('input');
+        this.stepFileInput.id = 'analytics-step-file';
+        this.stepFileInput.type = 'file';
+        this.stepFileInput.accept = '.xml,text/xml';
+        this.stepFileInput.addEventListener('change', this.onStepFileChange);
+
+        this.stepFileUploadContainer.appendChild(this.stepFileInputLabel);
+        this.stepFileUploadContainer.appendChild(this.stepFileInput);
+
+        this.pinnedRegionCardsContainer.appendChild(this.stepFileUploadContainer);
     }
 
     /**
@@ -135,7 +183,6 @@ export class Analytics {
     createNewPinnedRegionCardsContainer() {
         if (this.pinnedRegionCardsContainer) {
             this.container.removeChild(this.pinnedRegionCardsContainer);
-            this.container.removeChild(this.pinnedRegionCardsCsvLink);
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
@@ -145,14 +192,19 @@ export class Analytics {
         });
         this.container.appendChild(pinnedRegionCardsContainer);
 
+        this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
+        this.pinnedRegionCards = [];
+
+        this.pinnedRegionCardsCsvContainer = document.createElement('div');
+        this.pinnedRegionCardsCsvContainer.classList.add('analytics-button-container');
         this.pinnedRegionCardsCsvLink = document.createElement('a');
         this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
         this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
-        this.pinnedRegionCardsCsvLink.textContent = 'csv';
-        this.container.appendChild(this.pinnedRegionCardsCsvLink);
-
-        this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
-        this.pinnedRegionCards = [];
+        this.pinnedRegionCardsCsvLink.textContent = 'Export CSV';
+        this.pinnedRegionCardsCsvContainer.style.display = 'none';
+        this.pinnedRegionCardsCsvContainer.appendChild(this.pinnedRegionCardsCsvLink);
+        this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvContainer);
+        this.createStepFileUploadComponent();
     }
 
     draw() {
@@ -258,6 +310,10 @@ export class Analytics {
      *                  modifying human pose spaghetti which calls this function
      */
     async setDisplayRegion(region, fromSpaghetti) {
+        if (region.recordingState) {
+            this.updateStepVisibility(region.recordingState);
+        }
+
         if (this.lastDisplayRegion) {
             if (Math.abs(this.lastDisplayRegion.startTime - region.startTime) < 1 &&
                 Math.abs(this.lastDisplayRegion.endTime - region.endTime) < 1) {
@@ -273,6 +329,7 @@ export class Analytics {
             await postPersistRequest();
         }
         this.livePlayback = livePlayback;
+
         this.loadingHistory = true;
         this.humanPoseAnalyzer.resetLiveHistoryClones();
         this.humanPoseAnalyzer.resetLiveHistoryLines();
@@ -284,6 +341,66 @@ export class Analytics {
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);
         }
+    }
+
+    updateStepVisibility(recordingState) {
+        switch (recordingState) {
+            case RecordingState.empty:
+            case RecordingState.recording:
+                this.stepLabelContainer.style.display = '';
+                this.pinnedRegionCardsCsvContainer.style.display = 'none';
+                break;
+            case RecordingState.done:
+            default:
+                this.stepLabelContainer.style.display = 'none';
+                this.pinnedRegionCardsCsvContainer.style.display = '';
+                break;
+        }
+        if (recordingState !== RecordingState.empty) {
+            this.stepFileUploadContainer.style.display = 'none';
+            this.stepLabelContainer.classList.add('analytics-step-label-container-active');
+        } else {
+            this.stepFileUploadContainer.style.display = '';
+        }
+        this.updateStepLabel();
+    }
+
+    onStepFileChange() {
+        if (this.stepFileInput.files.length === 0) {
+            return;
+        }
+        const file = this.stepFileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          let parser = new DOMParser();
+          let doc = parser.parseFromString(e.target.result, 'text/xml');
+          let elts = doc.querySelectorAll('TextAS-KD');
+          this.stepLabels = Array.from(elts).map(elt => elt.textContent);
+          this.updateStepLabel();
+        };
+        reader.onerror = (e) => {
+            console.error(e);
+        };
+        reader.readAsText(file);
+    }
+
+    getStepLabel() {
+        const i = this.nextStepNumber;
+        let label = 'Step ' + i;
+        if (i < this.stepLabels.length) {
+            label = this.stepLabels[i];
+        }
+        return label;
+    }
+
+    getStepColor() {
+        let hue = (this.nextStepNumber * 17) % 360;
+        return `hsl(${hue} 100% 70%)`;
+    }
+
+    updateStepLabel() {
+        this.stepLabelContainer.style.borderColor = this.getStepColor();
+        this.stepLabel.textContent = this.getStepLabel();
     }
 
     /**
@@ -371,13 +488,14 @@ export class Analytics {
         regionCard.updateValueAddWasteTimeUi(this.valueAddWasteTimeManager);
 
         if (regionCard.getLabel().length === 0) {
-            regionCard.setLabel('Step ' + this.nextStepNumber);
+            regionCard.setLabel(this.getStepLabel());
         }
 
-        let hue = (this.nextStepNumber * 17) % 360;
-        regionCard.setAccentColor(`hsl(${hue}, 100%, 50%)`);
+        regionCard.setAccentColor(this.getStepColor());
 
         this.nextStepNumber += 1;
+
+        this.updateStepLabel();
 
         this.updateCsvExportLink();
 
