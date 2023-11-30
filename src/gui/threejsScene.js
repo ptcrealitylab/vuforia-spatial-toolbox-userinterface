@@ -52,8 +52,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(rendererWidth, rendererHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.autoClear = false;
 
