@@ -1,6 +1,7 @@
 // Author: Fyrestar https://mevedia.com (https://github.com/Fyrestar/THREE.InfiniteGridHelper)
 // modified by Ben Reynolds (breynolds@ptc.com) on July 21, 2022 to remove everything except the module imports and exports
 // modified by Steve Xie (kaxie@ptc.com) on Jan 27, 2023 to add thickness support for the Infinite Grid custom shader
+// modified by Rik de Leeuw (rdeleeuw@ptc.com) on Nov 30, 2023 disable zwrite and push to ZFar
 
 import {
     DoubleSide,
@@ -28,6 +29,7 @@ class InfiniteGridHelper extends Mesh {
         const material = new ShaderMaterial( {
 
             side: DoubleSide,
+            ZWrite: false,
             
             uniforms: {
                 uSize1: {
@@ -56,6 +58,7 @@ class InfiniteGridHelper extends Mesh {
                     //pos.${planeAxes} += cameraPosition.${planeAxes};
                     worldPosition = pos;
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    gl_Position.z = gl_Position.w;
                 }
            `,
 

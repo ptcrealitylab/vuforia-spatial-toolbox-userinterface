@@ -10,10 +10,11 @@ import { TransformControls } from '../../thirdPartyCode/three/TransformControls.
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
+import { Renderer3D } from "./Renderer3D.js"; 
 
 (function(exports) {
 
-    var camera, scene, renderer;
+    var camera, scene;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
     var aspectRatio = rendererWidth / rendererHeight;
@@ -46,23 +47,23 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     // for now, this contains everything not attached to a specific world object
     var threejsContainerObj;
 
+    /**
+     * @type Renderer3D
+     */
+    let renderer3D = null;
+
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
-        renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(rendererWidth, rendererHeight);
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.autoClear = false;
 
+        renderer3D = new Renderer3D(domElement);
+        
         camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
         camera.matrixAutoUpdate = false;
         scene = new THREE.Scene();
         scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
 
-        realityEditor.device.layout.onWindowResized(({width, height}) => {
-            renderer.setSize(width, height);
-        });
+        
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
@@ -95,7 +96,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
 
-        let pmremGenerator = new THREE.PMREMGenerator(renderer);
+        let pmremGenerator = renderer3D.createPMREMGenerator();
         pmremGenerator.compileEquirectangularShader();
 
         let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
@@ -261,23 +262,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.clear();
-            // render the ground plane visualizer first
-            camera.layers.set(2);
-            renderer.render(scene, camera);
-            renderer.clearDepth();
-            if (hasGltfScene) {
-                // Set rendered layer to 1: only the background, i.e. the
-                // static gltf mesh
-                camera.layers.set(1);
-                renderer.render(scene, camera);
-                // Leaves only the color from the render, discarding depth and
-                // stencil
-                renderer.clear(false, true, true);
-            }
-            // Set layer to 0: everything but the background
-            camera.layers.set(0);
-            renderer.render(scene, camera);
+            renderer3D.render(scene, camera, hasGltfScene)
         }
     }
 
@@ -1098,7 +1083,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(camera, renderer.domElement);
+        let transformControls = new TransformControls(camera, renderer3D.getCanvasElement());
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1179,14 +1164,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     /**
      * @return {{
            camera: THREE.PerspectiveCamera,
-           renderer: THREE.WebGLRenderer,
            scene: THREE.Scene,
        }} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
         return {
             camera,
-            renderer,
             scene,
         };
     };
