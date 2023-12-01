@@ -76,6 +76,9 @@ createNameSpace("realityEditor.network.realtime");
         }
     }
 
+    function getDesktopSocket() {
+        return desktopSocket;
+    }
 
     function loop() {
         if (typeof BATCHED_UPDATE_FRAMERATE !== 'undefined') {
@@ -752,5 +755,6 @@ createNameSpace("realityEditor.network.realtime");
     exports.subscribeToPublicData = subscribeToPublicData;
     
     exports.sendDisconnectMessage = sendDisconnectMessage;
+    exports.getDesktopSocket = getDesktopSocket;
 
 }(realityEditor.network.realtime));
