@@ -37,7 +37,7 @@ export const AnimationMode = {
 function renderLiveHumanPoseObjects(poseObjects, timestamp) {
     //if (is2DPoseRendered()) return;
 
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
 
     if (!activeHumanPoseAnalyzer) {
         console.error('No active HPA');
@@ -58,8 +58,8 @@ let hidePoseRenderInstanceTimeoutIds = {};
  * @param {number} timestamp - the timestamp of when the poseObject was recorded
  */
 function updatePoseRenderer(poseObject, timestamp) {
-    let activeAnalytics = realityEditor.analytics.getActiveAnalytics();
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeMotionStudy = realityEditor.motionStudy.getActiveMotionStudy();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
 
     if (!activeHumanPoseAnalyzer) {
         console.error('No active HPA');
@@ -74,7 +74,7 @@ function updatePoseRenderer(poseObject, timestamp) {
         poseRenderInstances[identifier] = new HumanPoseRenderInstance(renderer, identifier, activeHumanPoseAnalyzer.activeLens);
     }
     const poseRenderInstance = poseRenderInstances[identifier];
-    const hideId = activeAnalytics.frame + '-' + poseRenderInstance.id;
+    const hideId = activeMotionStudy.frame + '-' + poseRenderInstance.id;
     updateJointsAndBones(poseRenderInstance, poseObject, timestamp);
     if (hidePoseRenderInstanceTimeoutIds[hideId]) {
         clearTimeout(hidePoseRenderInstanceTimeoutIds[hideId]);
@@ -98,7 +98,7 @@ const mostRecentPoseByObjectId = {};
  * @param {number} timestamp - when the pose was recorded
  */
 function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
-    let liveHumanPoseAnalyzer = realityEditor.analytics.getDefaultAnalytics().humanPoseAnalyzer;
+    let liveHumanPoseAnalyzer = realityEditor.motionStudy.getDefaultMotionStudy().humanPoseAnalyzer;
 
     let groundPlaneRelativeMatrix = getGroundPlaneRelativeMatrix();
 
@@ -147,8 +147,8 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     poseRenderInstance.renderer.markNeedsUpdate();
 
     liveHumanPoseAnalyzer.poseUpdated(pose, false);
-    if (realityEditor.analytics) {
-        let timeline = realityEditor.analytics.getActiveTimeline();
+    if (realityEditor.motionStudy) {
+        let timeline = realityEditor.motionStudy.getActiveTimeline();
         if (timeline) {
             timeline.appendPose({
                 time: timestamp,
@@ -161,7 +161,7 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
  * Resets the HumanPoseAnalyzer's live history lines
  */
 function resetLiveHistoryLines() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -183,7 +183,7 @@ function resetHistoryLines() {
  * Resets the HumanPoseAnalyzer's live history clones
  */
 function resetLiveHistoryClones() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -208,7 +208,7 @@ function resetHistoryClones() {
  * @return {Pose[]} - the poses that are within the given time interval
  */
 function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         return [];
     }
@@ -220,7 +220,7 @@ function getPosesInTimeInterval(firstTimestamp, secondTimestamp) {
  * @param {boolean} visible - whether to show the historical history lines
  */
 function setHistoricalHistoryLinesVisible(visible) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -233,7 +233,7 @@ function setHistoricalHistoryLinesVisible(visible) {
  * @param {boolean} visible - whether to show the live history lines
  */
 function setLiveHistoryLinesVisible(visible) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -245,7 +245,7 @@ function setLiveHistoryLinesVisible(visible) {
  * @param {AnimationMode} animationMode
  */
 function setAnimationMode(animationMode) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -258,7 +258,7 @@ function setAnimationMode(animationMode) {
  * @param {boolean} enabled - whether to render all clones or just one
  */
 function setRecordingClonesEnabled(enabled) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -272,10 +272,10 @@ function setRecordingClonesEnabled(enabled) {
 }
 
 /**
- * Advances the human pose analyzer's analytics lens
+ * Advances the human pose analyzer's motion study lens
  */
 function advanceLens() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -301,7 +301,7 @@ function advanceCloneMaterial() {
  * function
  */
 function setCursorTime(time, fromSpaghetti) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -313,7 +313,7 @@ function setCursorTime(time, fromSpaghetti) {
  * Shows the HumanPoseAnalyzer's settings UI
  */
 function showAnalyzerSettingsUI() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -327,7 +327,7 @@ function showAnalyzerSettingsUI() {
  * Hides the HumanPoseAnalyzer's settings UI
  */
 function hideAnalyzerSettingsUI() {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;
@@ -342,7 +342,7 @@ function hideAnalyzerSettingsUI() {
  * Used by the remote operator menu bar
  */
 function toggleAnalyzerSettingsUI() {
-    let defaultHumanPoseAnalyzer = realityEditor.analytics.getDefaultAnalytics().humanPoseAnalyzer;
+    let defaultHumanPoseAnalyzer = realityEditor.motionStudy.getDefaultMotionStudy().humanPoseAnalyzer;
     if (!defaultHumanPoseAnalyzer) {
         console.warn('No default HPA');
         return;
@@ -357,7 +357,7 @@ function toggleAnalyzerSettingsUI() {
  * @param {boolean} visible - whether to show or not
  */
 function setHumanPosesVisible(visible) {
-    const humanPoseAnalyzers = realityEditor.analytics.getAllHumanPoseAnalyzers();
+    const humanPoseAnalyzers = realityEditor.motionStudy.getAllHumanPoseAnalyzers();
     for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
         humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
     }
@@ -369,7 +369,7 @@ function setHumanPosesVisible(visible) {
  * @param {boolean} visible - whether to show or not
  */
 function setChildHumanPosesVisible(visible) {
-    let activeHumanPoseAnalyzer = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+    let activeHumanPoseAnalyzer = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
     if (!activeHumanPoseAnalyzer) {
         console.warn('No active HPA');
         return;

@@ -122,12 +122,12 @@ import {Pose} from "./Pose.js";
 
     /**
      * @param {TimeRegion} historyRegion
-     * @param {Analytics} analytics
+     * @param {MotionStudy} motionStudy
      */
-    async function loadHistory(historyRegion, analytics) {
+    async function loadHistory(historyRegion, motionStudy) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
-                loadHistory(historyRegion, analytics);
+                loadHistory(historyRegion, motionStudy);
             }, 500);
             return;
         }
@@ -177,16 +177,16 @@ import {Pose} from "./Pose.js";
                 }
             }
             if (log) {
-                await replayHistory(log, analytics);
+                await replayHistory(log, motionStudy);
             } else {
                 console.error('Unable to load history log after retries', `${historyLogsUrl}/${logName}`);
             }
         }
 
-        analytics.humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
+        motionStudy.humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
     }
 
-    async function replayHistory(history, analytics) {
+    async function replayHistory(history, motionStudy) {
         inHistoryPlayback = true;
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
@@ -262,7 +262,7 @@ import {Pose} from "./Pose.js";
                 poses.push(pose);
             }
         });
-        analytics.bulkRenderHistoricalPoses(poses);
+        motionStudy.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
     }
 
