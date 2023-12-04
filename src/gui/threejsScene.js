@@ -7,17 +7,12 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import { Renderer3D } from "./Renderer3D.js"; 
+import { Camera3D } from "./Camera3D.js";
 
 (function(exports) {
-
-    var camera, scene;
-    var rendererWidth = window.innerWidth;
-    var rendererHeight = window.innerHeight;
-    var aspectRatio = rendererWidth / rendererHeight;
     var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
@@ -52,29 +47,28 @@ import { Renderer3D } from "./Renderer3D.js";
      */
     let renderer3D = null;
 
+    /**
+     * @type Camera3D
+     */
+    let camera3D = null
+
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
 
         renderer3D = new Renderer3D(domElement);
-        
-        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
-        camera.matrixAutoUpdate = false;
-        scene = new THREE.Scene();
-        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
-
-        
+        camera3D = new Camera3D(renderer3D);
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
         threejsContainerObj = new THREE.Object3D();
         threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-        scene.add(threejsContainerObj);
-
-        setupLighting();
+        renderer3D.add(threejsContainerObj);
 
         customMaterials = new CustomMaterials();
         let _mapShaderUI = new MapShaderSettingsUI();
+
+        camera3D.registerCustomMaterials(customMaterials);
 
         // Add the BVH optimized raycast function from three-mesh-bvh.module.js
         // Assumes the BVH is available on the `boundsTree` variable
@@ -95,12 +89,6 @@ import { Renderer3D } from "./Renderer3D.js";
         // mesh.position.setZ(150);
 
         addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
-
-        let pmremGenerator = renderer3D.createPMREMGenerator();
-        pmremGenerator.compileEquirectangularShader();
-
-        let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-        scene.environment = neutralEnvironment;
 
         // this triggers with a requestAnimationFrame on remote operator,
         // or at frequency of Vuforia updates on mobile
@@ -131,43 +119,9 @@ import { Renderer3D } from "./Renderer3D.js";
         document.body.appendChild(css3dCanvas);
     }
 
-    // light the scene with a combination of ambient and directional white light
-    function setupLighting() {
-        // This doesn't seem to work with the area target model material, but adding it for everything else
-        let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambLight);
-
-        // attempts to light the scene evenly with directional lights from each side, but mostly from the top
-        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLightTopDown.position.set(0, 1, 0); // top-down
-        dirLightTopDown.lookAt(0, 0, 0);
-        scene.add(dirLightTopDown);
-
-        // let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXLeft.position.set(1, 0, 0);
-        // scene.add(dirLightXLeft);
-
-        // let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXRight.position.set(-1, 0, 0);
-        // scene.add(dirLightXRight);
-
-        // let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZLeft.position.set(0, 0, 1);
-        // scene.add(dirLightZLeft);
-
-        // let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZRight.position.set(0, 0, -1);
-        // scene.add(dirLightZRight);
-    }
-
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
-        setMatrixFromArray(camera.matrix, matrix);
-        camera.updateMatrixWorld(true);
-        if (customMaterials) {
-            let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
-            customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
-        }
+        camera3D.setCameraMatrix(matrix);
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
@@ -188,7 +142,7 @@ import { Renderer3D } from "./Renderer3D.js";
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
-        cssRenderer.render(scene, camera);
+        cssRenderer.render(renderer3D.getInternalScene(), camera3D.getInternalObject());
         
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
@@ -196,8 +150,7 @@ import { Renderer3D } from "./Renderer3D.js";
         });
 
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
-            setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
-            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+            camera3D.setProjectionMatrix(globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
 
@@ -208,7 +161,7 @@ import { Renderer3D } from "./Renderer3D.js";
                 group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-                scene.add(group);
+                renderer3D.add(group);
 
                 // Helps visualize world object origin point for debugging
                 if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId() && !realityEditor.device.environment.variables.hideOriginCube) {
@@ -262,7 +215,7 @@ import { Renderer3D } from "./Renderer3D.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer3D.render(scene, camera, hasGltfScene)
+            renderer3D.render(camera3D, hasGltfScene)
         }
     }
 
@@ -291,9 +244,9 @@ import { Renderer3D } from "./Renderer3D.js";
         }
         if (parentToCamera) {
             if (attach) {
-                camera.attach(obj);
+                camera3D.attach(obj);
             } else {
-                camera.add(obj);
+                camera3D.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
@@ -373,13 +326,13 @@ import { Renderer3D } from "./Renderer3D.js";
             const group = new THREE.Group(); // mesh needs to be in group so scale doesn't get overriden by model view matrix
             group.add(mesh);
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
-            scene.add(group);
+            renderer3D.add(group);
             worldOcclusionObjects[objectId] = group;
         });
     }
 
     function getObjectForWorldRaycasts(objectId) {
-        return worldOcclusionObjects[objectId] || scene.getObjectByName('areaTargetMesh');
+        return worldOcclusionObjects[objectId] || renderer3D.getObjectByName('areaTargetMesh');
     }
 
     function isOcclusionActive(objectId) {
@@ -640,7 +593,7 @@ import { Renderer3D } from "./Renderer3D.js";
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
         //2. set the picking ray from the camera position and mouse coordinates
-        raycaster.setFromCamera( mouse, camera );
+        raycaster.setFromCamera( mouse, camera3D.getInternalObject() );
 
         raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
 
@@ -649,7 +602,7 @@ import { Renderer3D } from "./Renderer3D.js";
         objectsToCheck.forEach(obj => {
             raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
         });
-        let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
+        let results = raycaster.intersectObjects( objectsToCheck || renderer3D.getInternalScene().children, true );
         results.forEach(intersection => {
             intersection.rayDirection = raycaster.ray.direction;
         });
@@ -669,24 +622,19 @@ import { Renderer3D } from "./Renderer3D.js";
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.unproject(camera3D.getInternalObject());
         distanceRaycastVector.normalize();
         distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
         return distanceRaycastResultPosition;
     }
 
     function getObjectByName(name) {
-        return scene.getObjectByName(name);
+        return renderer3D.getObjectByName(name);
     }
     
     // return all objects with the name
     function getObjectsByName(name) {
-        if (name === undefined) return;
-        const objects = [];
-        scene.traverse((object) => {
-            if (object.name === name) objects.push(object);
-        })
-        return objects;
+        return renderer3D.getObjectsByNameRecursive(name);
     }
 
     function getGroundPlaneCollider() {
@@ -1083,7 +1031,7 @@ import { Renderer3D } from "./Renderer3D.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(camera, renderer3D.getCanvasElement());
+        let transformControls = new TransformControls(camera3D.getInternalObject(), renderer3D.getCanvasElement());
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1097,7 +1045,7 @@ import { Renderer3D } from "./Renderer3D.js";
             transformControls.size = options.size;
         }
         transformControls.attach(object);
-        scene.add(transformControls);
+        renderer3D.add(transformControls);
 
         if (typeof onChange === 'function') {
             transformControls.addEventListener('change', onChange);
@@ -1112,12 +1060,12 @@ import { Renderer3D } from "./Renderer3D.js";
     exports.getScreenXY = function(meshPosition) {
         let pos = meshPosition.clone();
         let projScreenMat = new THREE.Matrix4();
-        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        projScreenMat.multiplyMatrices(camera3D.getInternalObject().projectionMatrix, camera3D.getInternalObject().matrixWorldInverse);
         pos.applyMatrix4(projScreenMat);
         
         // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
         let meshPosWrtCamera = meshPosition.clone();
-        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
+        meshPosWrtCamera.applyMatrix4(camera3D.getInternalObject().matrixWorldInverse);
         if (meshPosWrtCamera.z > 0) {
             pos.negate();
         }
@@ -1132,7 +1080,7 @@ import { Renderer3D } from "./Renderer3D.js";
     exports.isPointOnScreen = function(pointPosition) {
         let frustum = new THREE.Frustum();
         let matrix = new THREE.Matrix4();
-        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        matrix.multiplyMatrices(camera3D.getInternalObject().projectionMatrix, camera3D.getInternalObject().matrixWorldInverse);
         frustum.setFromProjectionMatrix(matrix);
         if (frustum.containsPoint(pointPosition)) {
             return true;
@@ -1169,8 +1117,8 @@ import { Renderer3D } from "./Renderer3D.js";
      */
     exports.getInternals = function getInternals() {
         return {
-            camera,
-            scene,
+            camera:camera3D.getInternalObject(),
+            scene: renderer3D.getInternalScene(),
         };
     };
 

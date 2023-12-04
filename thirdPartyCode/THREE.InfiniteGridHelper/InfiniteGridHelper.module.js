@@ -29,7 +29,7 @@ class InfiniteGridHelper extends Mesh {
         const material = new ShaderMaterial( {
 
             side: DoubleSide,
-            ZWrite: false,
+            depthWrite: false,
             
             uniforms: {
                 uSize1: {
