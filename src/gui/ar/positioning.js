@@ -759,3 +759,21 @@ realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectType
     });
     return dataToSend;
 };
+
+// adjusts the screenZ to give values that correctly determine stacking order based on distance to screen
+realityEditor.gui.ar.positioning.getFinalMatrixScreenZ = function(originalScreenZ, thisIsBeingEdited = false, shouldRenderFramesInNodeView = false) {
+    // activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
+    let activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
+    let newScreenZ = 200 + activeElementZIncrease + 1000000 / Math.max(10, originalScreenZ);
+    // on devices that make elements visible from further away, make sure the z value increases proportionally so it is > 0
+    if (realityEditor.device.environment.variables.distanceScaleFactor > 1) {
+        newScreenZ += realityEditor.device.environment.variables.distanceScaleFactor * 1000;
+    }
+
+    // put frames all the way in the back if you are in node view
+    if (shouldRenderFramesInNodeView) {
+        newScreenZ = 100;
+    }
+
+    return newScreenZ;
+};
