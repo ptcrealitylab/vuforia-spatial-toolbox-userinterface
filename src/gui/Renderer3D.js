@@ -23,7 +23,6 @@ class Renderer3D {
         /** @type {THREE.WebGLRenderer} */
         this.renderer = new THREE.WebGLRenderer({canvas: canvasElement, alpha: true, antialias: false});
         this.renderer.outputEncoding = THREE.sRGBEncoding;
-        this.renderer.autoClear = false;
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
 
@@ -73,19 +72,7 @@ class Renderer3D {
      * @param {Camera3D} camera 
      * @param {boolean} hasGltfScene 
      */
-    render(camera, hasGltfScene) {
-        this.renderer.clear();
-        if (hasGltfScene) {
-            // Set rendered layer to 1: only the background, i.e. the
-            // static gltf mesh
-            camera.setLayers(1);
-            this.renderer.render(this.scene, camera.getInternalObject());
-            // Leaves only the color from the render, discarding depth and
-            // stencil
-            this.renderer.clear(false, true, true);
-        }
-        // Set layer to 0: everything but the background
-        camera.setLayers(0);
+    render(camera) {
         this.renderer.render(this.scene, camera.getInternalObject());
     }
 

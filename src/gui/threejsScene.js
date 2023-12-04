@@ -11,6 +11,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import { Renderer3D } from "./Renderer3D.js"; 
 import { Camera3D } from "./Camera3D.js";
+import { GltfObjectFactory } from "./GLTFObjectFactory.js";
 
 (function(exports) {
     var isProjectionMatrixSet = false;
@@ -24,7 +25,6 @@ import { Camera3D } from "./Camera3D.js";
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
@@ -215,7 +215,7 @@ import { Camera3D } from "./Camera3D.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer3D.render(camera3D, hasGltfScene)
+            renderer3D.render(camera3D)
         }
     }
 
@@ -290,8 +290,7 @@ import { Camera3D } from "./Camera3D.js";
             return; // Don't try creating multiple occlusion objects for the same world object
         }
 
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load(pathToGltf, function(gltf) {
+        GltfObjectFactory.getInstance().createObject(pathToGltf, function(gltf) {
             const geometries = [];
             gltf.scene.traverse(obj => {
                 if (obj.geometry) {
@@ -357,8 +356,7 @@ import { Camera3D } from "./Camera3D.js";
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
     function addGltfToScene(pathToGltf, map, steepnessMap, heightMap, originOffset, originRotation, maxHeight, ceilingAndFloor, center, callback) {
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load(pathToGltf, function(gltf) {
+        GltfObjectFactory.getInstance().createObject(pathToGltf, function(gltf) {
             let wireMesh;
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
@@ -491,15 +489,6 @@ import { Camera3D } from "./Camera3D.js";
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
-
-            wireMesh.layers.set(1);
-            gltf.scene.layers.set(1);
-            gltf.scene.traverse(child => {
-                if (child.layers) {
-                    child.layers.set(1);
-                }
-            });
-            hasGltfScene = true;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
