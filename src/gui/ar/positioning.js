@@ -760,16 +760,20 @@ realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectType
     return dataToSend;
 };
 
-// adjusts the screenZ to give values that correctly determine stacking order based on distance to screen
+// adjusts the screenZ (modelViewProjection[14]) to give values that correctly determine stacking order based on distance
+// to screen. if you don't do this, CSS-3D tools/icons have opposite stacking order compared to how you might expect.
 realityEditor.gui.ar.positioning.getFinalMatrixScreenZ = function(originalScreenZ, thisIsBeingEdited = false, shouldRenderFramesInNodeView = false) {
-    // activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
     let activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
+
+    // originalScreenZ is lower as it is closer to camera. We want newScreenZ to be higher when it approaches camera.
     let newScreenZ = 200 + activeElementZIncrease + 1000000 / Math.max(10, originalScreenZ);
+
+    // apply legacy adjustments to z order... these might be adjusted/removed in future...
+
     // on devices that make elements visible from further away, make sure the z value increases proportionally so it is > 0
     if (realityEditor.device.environment.variables.distanceScaleFactor > 1) {
         newScreenZ += realityEditor.device.environment.variables.distanceScaleFactor * 1000;
     }
-
     // put frames all the way in the back if you are in node view
     if (shouldRenderFramesInNodeView) {
         newScreenZ = 100;
