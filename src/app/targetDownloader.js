@@ -83,6 +83,7 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
     
     let navmeshResolution = null;
+    let navmeshReference = null;
 
     /**
      * Worker that generates navmeshes from upload area target meshes
@@ -106,6 +107,8 @@ createNameSpace("realityEditor.app.targetDownloader");
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath);
         // let floorOffset = -1.55 * 1000;
         // realityEditor.gui.threejsScene.addGltfToScene(gltfPath, {x: -600, y: -floorOffset, z: -3300}, {x: 0, y: 2.661627109291353, z: 0});
+
+        navmeshReference = navmesh;
 
         callbacks.onCreateNavmesh.forEach(cb => cb(navmesh));
     }
@@ -345,6 +348,18 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
         navmeshWorker.postMessage({fileName, objectID});
     }
+
+    function onNavmeshCreated(callback) {
+        if (!callback) {
+            return;
+        }
+        if (navmeshReference) {
+            callback(navmeshReference);
+        } else {
+            callbacks.onCreateNavmesh.push(callback);
+        }
+    }
+    exports.onNavmeshCreated = onNavmeshCreated;
 
     /**
      * If successfully downloads target JPG, tries to add a new marker to Vuforia
