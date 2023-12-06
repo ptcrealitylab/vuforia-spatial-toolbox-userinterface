@@ -143,6 +143,13 @@ class EnvelopeIconRenderer {
         normalizedMatrix[7] = 0;
         normalizedMatrix[11] = 0;
 
+        // if tool is rendering while it should be behind the camera, visually hide it (for now)
+        if (normalizedMatrix[14] < 0) {
+            iconDiv.classList.add('elementBehindCamera');
+        } else {
+            iconDiv.classList.remove('elementBehindCamera');
+        }
+
         iconDiv.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
     }
 
