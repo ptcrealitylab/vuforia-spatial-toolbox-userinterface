@@ -23,6 +23,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let overlapped = false;
     let isMyColorDetermined = false;
     let isHighlighted = false;
+    let isOnGroundPlane = false;
     let isMeasureMode = false;
     let isCloseLoop = false;
     let shouldCrossRotate = false;
@@ -677,14 +678,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      * @param {string} objectKey
      * @param {number[]} cursorMatrix
      * @param {string} cursorColorHSL - hsl string of color
+     * @param {string} isColored - if cursor within area target mesh, isColored === true; otherwise false
      * @param {string} relativeToWorldId
      */
-    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId) {
+    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, isColored, relativeToWorldId) {
         if (relativeToWorldId !== realityEditor.sceneGraph.getWorldId()) return; // ignore cursors in other worlds
         if (typeof cursorColorHSL !== 'string') return; // color is required to initialize the material
 
         if (typeof otherSpatialCursors[objectKey] === 'undefined') {
-            let cursorGroup = addOtherSpatialCursor(cursorColorHSL);
+            let cursorGroup = addOtherSpatialCursor(cursorColorHSL, isColored);
             otherSpatialCursors[objectKey] = {
                 group: cursorGroup,
                 worldId: relativeToWorldId,
@@ -700,6 +702,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         otherSpatialCursors[objectKey].group.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(
             cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+        let scaleFactor = isColored ? 0 : 1;
+        otherSpatialCursors[objectKey].group.children[1].scale.set(scaleFactor, scaleFactor, scaleFactor);
+        otherSpatialCursors[objectKey].group.children[0].material.uniforms['isColored'].value = isColored;
     }
 
     /**
@@ -707,11 +712,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      * The material is more transparent than your own cursor.
      * @returns {Group}
      */
-    function addOtherSpatialCursor(cursorColorHSL) {
+    function addOtherSpatialCursor(cursorColorHSL, isColored) {
         const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
         // todo Steve: use ShaderMaterial.clone() to prevent the other cursor inner circles from playing the same expanding animation
         // todo Steve: probably a better idea to separate the inner & outer circles of all indicator1's, and animate the scale property, b/c that way animation can reflect to other clients when I click
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial.clone());
+        indicator1.material.uniforms['avatarColor'].value = [{
+            color: new THREE.Color(cursorColorHSL),
+            colorLighter: new THREE.Color(cursorColorHSL)
+        }];
         indicator1.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2 + 1;
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
@@ -725,7 +734,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                         colorLighter: new THREE.Color(cursorColorHSL)
                     }]
                 },
-                'opacityFactor': { value: 0.4 } // alpha = 0.5 * opacityFactor
+                'opacityFactor': { value: 0.4 }, // alpha = 0.5 * opacityFactor
+                'isColored': {value: isColored},
             },
             transparent: true,
             side: THREE.DoubleSide,
@@ -776,6 +786,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let MAX_SCALE_FACTOR = isHighlighted ? 3 : 1; // get larger when in "highlighted" state
         
         if (Object.keys(worldIntersectPoint).length === 0 || worldIntersectPoint.isOnGroundPlane) {
+            isOnGroundPlane = true;
             // if doesn't intersect any point in world || intersects with ground plane
             if (scaleFactor === 0) return;
             if (scaleAcceleration === scaleAccelerationFactor) {
@@ -789,6 +800,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             indicator2.scale.set(scaleFactor, scaleFactor, scaleFactor); // indicator 2: the lower fill color indicator
             indicator1.material.uniforms['isColored'].value = true;
         } else {
+            isOnGroundPlane = false;
             // if intersects with other meshes in the world
             if (scaleFactor === MAX_SCALE_FACTOR) return;
             if (scaleAcceleration === -scaleAccelerationFactor) {
@@ -1043,6 +1055,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getOrientedCursorAtSpecificCoords = getOrientedCursorAtSpecificCoords;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
+    exports.isSpatialCursorOnGroundPlane = () => { return isOnGroundPlane; }
     exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
     exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;
