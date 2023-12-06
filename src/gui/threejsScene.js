@@ -886,8 +886,9 @@ import CustomMaterials from "./CustomMaterials.js"
      */
     exports.getInternals = function getInternals() {
         return {
-            camera:camera3D.getInternalObject(),
+            camera: camera3D.getInternalObject(),
             scene: renderer3D.getInternalScene(),
+            renderer3D
         };
     };
 

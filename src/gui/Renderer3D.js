@@ -23,6 +23,9 @@ class Renderer3D {
         /** @type {THREE.WebGLRenderer} */
         this.renderer = new THREE.WebGLRenderer({canvas: canvasElement, alpha: true, antialias: false});
         this.renderer.outputEncoding = THREE.sRGBEncoding;
+        // temporary vr button
+        this.renderer.xr.enabled = true;
+
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
 
@@ -78,6 +81,14 @@ class Renderer3D {
      */
     render(camera) {
         this.renderer.render(this.scene, camera.getInternalObject());
+    }
+
+    /**
+     * 
+     * @param {function():void} func 
+     */
+    setAnimationLoop(func) {
+        this.renderer.setAnimationLoop(func);
     }
 
     /**
