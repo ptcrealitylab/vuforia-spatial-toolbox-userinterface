@@ -123,17 +123,21 @@ class EnvelopeIconRenderer {
         let modelViewMatrix = [];
         this.arUtilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
 
-        // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
-        // so let's correct the scale and remove the rotation
-        let scale = realityEditor.sceneGraph.getSceneNodeById(frameId).getVehicleScale();
-        let constructedModelViewMatrix = [
-            scale, 0, 0, 0,
-            0, -scale, 0, 0,
-            0, 0, scale, 0,
-            modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
-        ];
-
-        this.arUtilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+        // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
+        if (realityEditor.device.environment.isARMode()) {
+            this.arUtilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+        } else {
+            // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+            // so let's correct the scale and remove the rotation – this works on desktop because camera up = scene up
+            let scale = realityEditor.sceneGraph.getSceneNodeById(frameId).getVehicleScale();
+            let constructedModelViewMatrix = [
+                scale, 0, 0, 0,
+                0, -scale, 0, 0,
+                0, 0, scale, 0,
+                modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+            ];
+            this.arUtilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+        }
 
         finalMatrix[14] = realityEditor.gui.ar.positioning.getFinalMatrixScreenZ(finalMatrix[14]);
 
