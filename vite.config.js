@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 import { fileURLToPath } from 'node:url';
+import {configDefaults} from "vitest/config";
 
 const filesNeedToExclude = ['thirdPartyCode/three/three.module.js'];
 
@@ -28,4 +29,7 @@ export default defineConfig({
       ],
     },
   },
+  test: {
+    exclude: [...configDefaults.exclude, "**/thirdPartyCode/**"]
+  }
 });

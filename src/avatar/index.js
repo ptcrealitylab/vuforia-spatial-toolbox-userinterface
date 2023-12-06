@@ -14,12 +14,10 @@ createNameSpace("realityEditor.avatar");
 
     const KEEP_ALIVE_HEARTBEAT_INTERVAL = 3 * 1000; // should be a small fraction of the keep-alive timeout on the server (currently 15 seconds)
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
-    const RAYCAST_AGAINST_GROUNDPLANE = false;
+    const RAYCAST_AGAINST_GROUNDPLANE = true;
 
     let linkCanvas = null, linkCanvasCtx = null;
-    let linkObject = {
-        ballAnimationCount: 0
-    };
+    let linkCanvasNeedsClear = true;
     let menuBarHeight;
     
     let myAvatarId = null;
@@ -112,7 +110,7 @@ createNameSpace("realityEditor.avatar");
             resizeLinkCanvas();
             translateLinkCanvas();
             window.addEventListener('resize', () => {
-                clearLinkCanvas();
+                realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
             });
         }
@@ -130,7 +128,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarUserProfiles);
-            clearLinkCanvas();
+            realityEditor.avatar.setLinkCanvasNeedsClear(true);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
             if (objectKey === myAvatarId) {
@@ -140,6 +138,10 @@ createNameSpace("realityEditor.avatar");
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
+            if (linkCanvasNeedsClear) {
+                clearLinkCanvas();
+            }
+
             draw.renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates);
             draw.renderMyAvatar(myAvatarObject, myAvatarTouchState);
 
@@ -254,6 +256,7 @@ createNameSpace("realityEditor.avatar");
 
     function clearLinkCanvas() {
         linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
+        linkCanvasNeedsClear = false;
     }
 
     function reestablishAvatarIfNeeded() {
@@ -453,6 +456,7 @@ createNameSpace("realityEditor.avatar");
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
                 let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
                 raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane]);
+                groundPlane.updateWorldMatrix(true, false);
                 if (raycastIntersects.length > 0) {
                     worldIntersectPoint = raycastIntersects[0].point;
                 }
@@ -553,11 +557,9 @@ createNameSpace("realityEditor.avatar");
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
             draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
-            // draw.drawLaserBeam(myAvatarObject.objectId, touchState.worldIntersectPoint, utils.getColor(myAvatarObject), utils.getColorLighter(myAvatarObject));
             network.sendTouchState(info, touchState, { limitToFps: true });
 
             // show your own beam, so you can tell what you're pointing at
-            // avatarTouchStates[myAvatarObject.objectId] = touchState;
             myAvatarTouchState = touchState;
         }
 
@@ -583,7 +585,6 @@ createNameSpace("realityEditor.avatar");
             network.sendTouchState(info, touchState);
 
             // stop showing your own beam
-            // avatarTouchStates[myAvatarObject.objectId] = touchState;
             myAvatarTouchState = touchState;
         }
 
@@ -687,7 +688,7 @@ createNameSpace("realityEditor.avatar");
         return {
             canvas: linkCanvas,
             ctx: linkCanvasCtx,
-            linkObject: linkObject
+            // linkObject: linkObject
         };
     }
 
@@ -704,5 +705,8 @@ createNameSpace("realityEditor.avatar");
     exports.getConnectedAvatarList = () => {
         return connectedAvatarUserProfiles;
     };
+    exports.setLinkCanvasNeedsClear = (value) => {
+        linkCanvasNeedsClear = value;
+    }
 
 }(realityEditor.avatar));

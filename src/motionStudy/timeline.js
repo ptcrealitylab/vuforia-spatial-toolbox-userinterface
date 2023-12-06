@@ -3,6 +3,7 @@ import {
     setAnimationMode,
     AnimationMode, getPosesInTimeInterval,
 } from '../humanPose/draw.js';
+import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 
 const needleTopPad = 4;
 const needleTipWidth = 12;
@@ -32,11 +33,11 @@ const DEFAULT_WIDTH_MS = 60 * 1000;
 
 export class Timeline {
     /**
-     * @param {Analytics} analytics - parent Analytics instance of this timeline
+     * @param {MotionStudy} motionStudy - parent MotionStudy instance of this timeline
      * @param {Element} container - where to insert timeline
      */
-    constructor(analytics, container) {
-        this.analytics = analytics;
+    constructor(motionStudy, container) {
+        this.motionStudy = motionStudy;
         this.container = container;
 
         this.canvas = document.createElement('canvas');
@@ -192,10 +193,12 @@ export class Timeline {
         this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
+        this.rowIndex = 0;
         this.calculateAndDrawTicks();
         this.drawPoses();
         this.drawPinnedRegionCards();
         this.drawPatches();
+        this.drawValueAddWasteTime();
 
         this.drawHighlightRegion();
 
@@ -316,11 +319,11 @@ export class Timeline {
             }
             this.regionCard = null;
         }
-        this.regionCard = new RegionCard(this.analytics, this.container, getPosesInTimeInterval(leftTime, rightTime));
+        this.regionCard = new RegionCard(this.motionStudy, this.container, getPosesInTimeInterval(leftTime, rightTime));
 
         this.regionCard.moveTo(midX, this.height + labelPad);
 
-        this.analytics.setTimelineRegionCard(this.regionCard);
+        this.motionStudy.setTimelineRegionCard(this.regionCard);
     }
 
     timeToX(timeMs) {
@@ -338,15 +341,23 @@ export class Timeline {
         return time >= this.highlightRegion.startTime &&
             time <= this.highlightRegion.endTime;
     }
+    
+    rowIndexToRowY(index) {
+        return boardStart + rowPad + (rowHeight + rowPad) * index;
+    }
 
     drawPoses() {
         if (this.poses.length < 1) {
             return;
         }
+
         let lastPoseTime = this.poses[0].time;
         let startSectionTime = lastPoseTime;
         const maxPoseDelayLenience = 500;
-        const rowY = boardStart + rowPad;
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+
         const timeMax = this.timeMin + this.widthMs;
 
         let baseFill = 'hsl(120, 80%, 50%)';
@@ -458,10 +469,16 @@ export class Timeline {
     }
 
     drawPinnedRegionCards() {
-        const rowY = boardStart + rowPad + rowHeight + rowPad;
+        if (this.motionStudy.pinnedRegionCards.length === 0) {
+            return;
+        }
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+        
         const timeMax = this.timeMin + this.widthMs;
 
-        for (const prc of this.analytics.pinnedRegionCards) {
+        for (const prc of this.motionStudy.pinnedRegionCards) {
             if (!prc.accentColor) {
                 continue;
             }
@@ -510,7 +527,7 @@ export class Timeline {
         }
 
         let patches = Object.values(desktopRenderer.getCameraVisPatches() || {})
-            .filter(this.analytics.patchFilter);
+            .filter(this.motionStudy.patchFilter);
 
         if (patches.length === 0) {
             return;
@@ -518,7 +535,8 @@ export class Timeline {
 
         const timeMax = this.timeMin + this.widthMs;
 
-        const rowY = boardStart + rowPad + (rowHeight + rowPad) * 2;
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
 
         this.gfx.fillStyle = 'rgb(200, 200, 200)';
 
@@ -551,6 +569,36 @@ export class Timeline {
                 rowHeight
             );
         }
+    }
+    
+    drawValueAddWasteTime() {
+        if (this.motionStudy.valueAddWasteTimeManager.regions.length === 0) {
+            return;
+        }
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+        this.rowIndex += 1;
+
+        const timeMax = this.timeMin + this.widthMs;
+        
+        this.motionStudy.valueAddWasteTimeManager.regions.forEach(region => {
+            if (region.endTime < this.timeMin || region.startTime > timeMax) {
+                return;
+            }
+            const timeStart = Math.max(region.startTime, this.timeMin);
+            const timeEnd = Math.min(region.endTime, timeMax);
+            
+            const startX = this.timeToX(timeStart);
+            const endX = this.timeToX(timeEnd);
+
+            this.gfx.fillStyle = region.value === ValueAddWasteTimeTypes.WASTE_TIME ? "#880000" : "#008800";
+            this.gfx.fillRect(
+                startX,
+                rowY,
+                endX - startX,
+                rowHeight
+            );
+        });
     }
 
     calculateAndDrawTicks() {
@@ -621,7 +669,7 @@ export class Timeline {
         this.controlsGfx.clearRect(0, boardStart + rowPad, rowHeight, rowHeight);
         this.controlsGfx.fillRect(0, boardStart + rowPad, rowHeight, rowHeight);
 
-        let hpa = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+        let hpa = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
         if (hpa && hpa.animationMode === AnimationMode.region) {
             let icon = this.iconPlay;
             if (hpa.animationPlaying) {
@@ -662,7 +710,7 @@ export class Timeline {
             return;
         }
 
-        let hpa = realityEditor.analytics.getActiveHumanPoseAnalyzer();
+        let hpa = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
         if (hpa) {
             hpa.animationPlaying = !hpa.animationPlaying;
         }
@@ -681,10 +729,10 @@ export class Timeline {
         this.mouseX = event.offsetX;
         this.mouseY = event.offsetY;
     }
-
-    isPointerOnActiveRow() {
+    
+    isPointerOnRow() {
         return this.mouseY > boardStart &&
-            this.mouseY < boardStart + rowPad * 2 + rowHeight;
+            this.mouseY < this.rowIndexToRowY(this.rowIndex) - rowPad;
     }
 
     isPointerOnBoard() {
@@ -730,7 +778,7 @@ export class Timeline {
 
         this.updatePointer(event);
 
-        if (this.isPointerOnActiveRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
             if (this.isPointerOnStartNeedle()) {
                 this.highlightStartTime = this.highlightRegion.endTime;
@@ -743,7 +791,7 @@ export class Timeline {
         } else {
             this.dragMode = DragMode.PAN;
         }
-        this.analytics.setCursorTime(-1);
+        this.motionStudy.setCursorTime(-1);
         event.stopPropagation();
     }
 
@@ -770,14 +818,14 @@ export class Timeline {
         let cursor = 'default';
         if (this.isPointerOnNeedle()) {
             cursor = 'grab';
-        } else if (this.isPointerOnActiveRow()) {
+        } else if (this.isPointerOnRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
             cursor = 'move';
         }
         this.canvas.style.cursor = cursor;
 
-        this.analytics.setCursorTime(this.xToTime(this.mouseX));
+        this.motionStudy.setCursorTime(this.xToTime(this.mouseX));
     }
 
     onPointerMoveDragModeSelect(_event) {
@@ -786,7 +834,7 @@ export class Timeline {
 
         let startTime = Math.min(this.highlightStartTime, highlightEndTime);
         let endTime = Math.max(this.highlightStartTime, highlightEndTime);
-        this.analytics.setHighlightRegion({
+        this.motionStudy.setHighlightRegion({
             startTime,
             endTime,
         });
@@ -895,13 +943,13 @@ export class Timeline {
 
         if (this.dragMode === DragMode.SELECT &&
             Math.abs(this.timeToX(this.highlightStartTime) - this.mouseX) < 3) {
-            this.analytics.setHighlightRegion(null);
+            this.motionStudy.setHighlightRegion(null);
         } else {
             setAnimationMode(AnimationMode.region);
         }
 
         this.dragMode = DragMode.NONE;
-        this.analytics.setCursorTime(-1);
+        this.motionStudy.setCursorTime(-1);
 
         event.stopPropagation();
     }
@@ -913,7 +961,7 @@ export class Timeline {
     }
 
     onPointerOut(_event) {
-        this.analytics.setCursorTime(-1);
+        this.motionStudy.setCursorTime(-1);
     }
 
     onWheel(event) {

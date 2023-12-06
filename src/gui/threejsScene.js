@@ -448,23 +448,23 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         console.warn('no material', gltf.scene);
                     } else {
                         // cache the original gltf material on mobile browsers, to improve performance
-                        // if (!realityEditor.device.environment.isDesktop()) {
-                            gltf.scene.originalMaterial = gltf.scene.material.clone();
-                        // }
-                        // gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
-                        //     maxHeight: maxHeight,
-                        //     center: center,
-                        //     animateOnLoad: true,
-                        //     inverted: false,
-                        //     useFrustumCulling: true
-                        // });
-                        gltf.scene.material = gltf.scene.originalMaterial;
+                        gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            });
+                        }
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
                 gltf.scene.geometry.computeBoundingBox();
                 gltf.scene.heightMaterial = customMaterials.heightMapMaterial(gltf.scene.material, {ceilingAndFloor: ceilingAndFloor});
                 gltf.scene.gradientMaterial = customMaterials.gradientMapMaterial(gltf.scene.material);
+                gltf.scene.material = gltf.scene.colorMaterial || gltf.scene.originalMaterial;
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
                 gltf.scene.geometry.boundsTree = new MeshBVH( gltf.scene.geometry );
@@ -474,7 +474,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
-                        if (child.name && child.name.toLocaleLowerCase() === 'mesh_0') {
+                        if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
                             meshesToRemove.push(child);
                             return;
                         }
@@ -491,22 +491,22 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
                         //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        // if (!realityEditor.device.environment.isDesktop()) {
-                            child.originalMaterial = child.material.clone();
-                        // }
-                        // child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
-                        //     maxHeight: maxHeight,
-                        //     center: center,
-                        //     animateOnLoad: true,
-                        //     inverted: false,
-                        //     useFrustumCulling: true
-                        // });
-                        child.material = child.originalMaterial;
+                        child.originalMaterial = child.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            });
+                        }
                     }
-                    
+
                     child.geometry.computeVertexNormals();
                     child.heightMaterial = customMaterials.heightMapMaterial(child.material, {ceilingAndFloor: ceilingAndFloor});
                     child.gradientMaterial = customMaterials.gradientMapMaterial(child.material);
+                    child.material = child.colorMaterial || child.originalMaterial;
 
                     // the attributes must be non-indexed in order to add a barycentric coordinate buffer
                     child.geometry = child.geometry.toNonIndexed();
@@ -605,7 +605,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
-                    child.material = child.originalMaterial;
+                    child.material = child.colorMaterial || child.originalMaterial;
                 });
                 break;
             case 'height':
@@ -1097,7 +1097,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 }
             });
 
-            for (let i = indicesToRemove.length-1; i > 0; i--) {
+            for (let i = indicesToRemove.length-1; i >= 0; i--) {
                 let matIndex = indicesToRemove[i];
                 this.materialsToAnimate.splice(matIndex, 1);
             }
