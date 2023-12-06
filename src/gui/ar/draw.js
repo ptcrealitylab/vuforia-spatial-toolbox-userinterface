@@ -1179,16 +1179,21 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 let modelViewMatrix = [];
                 utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
 
-                // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
-                // so let's correct the scale and remove the rotation
-                let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
-                let constructedModelViewMatrix = [
-                    scale, 0, 0, 0,
-                    0, -scale, 0, 0,
-                    0, 0, scale, 0,
-                    modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
-                ];
-                utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
+                if (realityEditor.device.environment.isARMode()) {
+                    utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                } else {
+                    // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+                    // so let's correct the scale and remove the rotation – this works on desktop because camera up = scene up
+                    let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
+                    let constructedModelViewMatrix = [
+                        scale, 0, 0, 0,
+                        0, -scale, 0, 0,
+                        0, 0, scale, 0,
+                        modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+                    ];
+                    utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                }
             }
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
