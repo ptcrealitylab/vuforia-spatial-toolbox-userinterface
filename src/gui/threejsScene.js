@@ -36,7 +36,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
-    let _transformControls = null;
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -261,7 +260,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
             setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
-            // transformControls.updateWorldMatrix(true, true);
         }
 
         customMaterials.update();
@@ -549,12 +547,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             // navmesh.layers.set(1);
             // navmesh.visible = false;
             // threejsContainerObj.add(navmesh);
-            
-            // let geo = new THREE.BoxGeometry(50, 50, 50);
-            // let mat = new THREE.MeshBasicMaterial({color: 0xff0000});
-            // let box = new THREE.Mesh(geo, mat);
-            // threejsContainerObj.add(box);
-            // transformControls = addTransformControlsTo(box, {size: 1});
 
             // align the coordinate systems
             gltf.scene.scale.set(1000, 1000, 1000); // convert meters -> mm
