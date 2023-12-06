@@ -1209,6 +1209,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     normalizedMatrix[7] = 0;
                     normalizedMatrix[11] = 0;
                     activeElt.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
+
+                    // if tool is rendering while it should be behind the camera, visually hide it (for now)
+                    if (normalizedMatrix[14] < 0) {
+                        activeElt.classList.add('elementBehindCamera');
+                    } else {
+                        activeElt.classList.remove('elementBehindCamera');
+                    }
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }

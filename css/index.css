@@ -885,6 +885,10 @@ body {
     opacity: 0.7;
 }
 
+.elementBehindCamera {
+    display: none;
+}
+
 .outsideOfViewport {
     display: none;
 }
