@@ -3,7 +3,7 @@ import {Renderer3D} from "./Renderer3D.js"
 
 class Camera3D {
     /**
-     * 
+     * creates a default camera
      * @param {Renderer3D} renderer 
      */
     constructor(renderer) {

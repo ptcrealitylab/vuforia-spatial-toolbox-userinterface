@@ -1,9 +1,11 @@
 import { GltfObjectFactory } from "./GLTFObjectFactory.js";
+import CustomMaterials from "./CustomMaterials.js"
 
 class EnvironmentScan {
-    constructor(url) {
+    constructor(url, center, maxHeight) {
         this.url = url;
         GltfObjectFactory.getInstance().createObject(url);
+        this.wireMaterial = customShaders.areaTargetMaterialWithTextureAndHeight()
     }
 }
 

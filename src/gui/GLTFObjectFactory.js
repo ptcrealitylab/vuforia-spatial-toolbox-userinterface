@@ -1,9 +1,15 @@
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { DRACOLoader } from '../../thirdPartyCode/three/DRACOLoader.module.js';
 
+/**
+ * Loads gltf 3d objects from url
+ */
 class GltfObjectFactory {
     instance = null;
 
+    /**
+     * Configures the gltf loader with draco support
+     */
     constructor() {
         this.gltfLoader = new GLTFLoader();
         this.dracoLoader = new DRACOLoader();
@@ -21,7 +27,7 @@ class GltfObjectFactory {
     }
 
     /**
-     * Loads a glTF model
+     * Loads a glTF model async
      * @param {string} pathToGltf - url of glTF
      * @returns {Promise} 
      */
@@ -31,10 +37,18 @@ class GltfObjectFactory {
         });
     }
 
+    /**
+     * Default error reporting
+     * @param {Error} error 
+     */
     defaultError(error) {
         console.error(error);
     }
 
+    /**
+     * returns singleton instance
+     * @returns {GltfObjectFactory}
+     */
     static getInstance() {
         if (!GltfObjectFactory.instance) {
             GltfObjectFactory.instance = new GltfObjectFactory();
