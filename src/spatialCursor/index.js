@@ -952,6 +952,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function getOrientedCursorIfItWereAtScreenCenter() {
         // move cursor to center, then get the matrix, then move the cursor back to where it was
         worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
+            worldIntersectPoint.distance = 1000;
+
+            let camPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+            inverseGroundPlaneMatrix.invert();
+            camPos.applyMatrix4(inverseGroundPlaneMatrix);
+
+            let originalPoint = worldIntersectPoint.point;
+            worldIntersectPoint.point = camPos.add(originalPoint.clone().sub(camPos).normalize().multiplyScalar(1000));
+        }
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld(); // update immediately before doing the calculations
@@ -973,6 +987,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function getOrientedCursorAtSpecificCoords(screenX, screenY) {
         // get specific coordinates of cursor
         worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+        if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
+            worldIntersectPoint.distance = 1000;
+
+            let camPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+            inverseGroundPlaneMatrix.invert();
+            camPos.applyMatrix4(inverseGroundPlaneMatrix);
+
+            let originalPoint = worldIntersectPoint.point;
+            worldIntersectPoint.point = camPos.add(originalPoint.clone().sub(camPos).normalize().multiplyScalar(1000));
+        }
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld(); // update immediately before doing the calculations
