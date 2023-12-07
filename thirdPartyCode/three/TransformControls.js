@@ -1,3 +1,25 @@
+/**
+ *
+ * Modified by Steve KX 2023
+ * Made some custom changes in Transform Controls to make it work within our system, namely:
+ * 1. Changed the raycaster & gizmos to layer 10, so that they don't conflict with our three js scene objects
+ * 2. Modified the event listener system to make it compatible with our event systems
+ * 
+ * To add a TransformControls to an object in threejsScene.js, one need to:
+ * 
+ * 1. let geo = new THREE.BoxGeometry(50, 50, 50);
+ *    let mat = new THREE.MeshBasicMaterial({color: 0xff0000});
+ *    let box = new THREE.Mesh(geo, mat);
+ *    addToScene(box);
+ *    transformControls = addTransformControlsTo(box, {size: 1});
+ * 
+ * 2. In renderScene(), add:
+ *    transformControls.updateWorldMatrix(true, true);
+ *    
+ * The rest is the same with default three.js TransformControls functions.
+ * 
+ */
+
 import {
 	BoxGeometry,
 	BufferGeometry,
@@ -173,14 +195,10 @@ class TransformControls extends Object3D {
 		this._onPointerMove = onPointerMove.bind( this );
 		this._onPointerUp = onPointerUp.bind( this );
 
-		// this.domElement.addEventListener( 'pointerdown', this._onPointerDown );
-		// this.domElement.addEventListener( 'pointermove', this._onPointerHover );
-		// this.domElement.addEventListener( 'pointerup', this._onPointerUp );
         document.addEventListener( 'pointerdown', this._onPointerDown );
         document.addEventListener( 'pointermove', this._onPointerHover );
         document.addEventListener( 'pointerup', this._onPointerUp );
 
-        // todo Steve: change all objects in TransformControls to layer 10, in order to match with _raycaster layer
         function setLayer(layer) {
             scope._gizmo.traverse(node => {
                 if (node.isObject3D) {
@@ -683,12 +701,9 @@ function getPointer( event ) {
 
 	} else {
 
-		// const rect = document.getBoundingClientRect();
         let pos = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
 
 		return {
-			// x: ( event.clientX - rect.left ) / rect.width * 2 - 1,
-			// y: - ( event.clientY - rect.top ) / rect.height * 2 + 1,
             x: pos.x / window.innerWidth * 2 - 1,
 			y: - pos.y / window.innerHeight * 2 + 1,
 			button: event.button
@@ -717,12 +732,6 @@ function onPointerDown( event ) {
 
 	if ( ! this.enabled ) return;
 
-	if ( ! document.pointerLockElement ) {
-
-        // document.setPointerCapture( event.pointerId );
-
-	}
-
     document.addEventListener( 'pointermove', this._onPointerMove );
 
 	this.pointerHover( this._getPointer( event ) );
@@ -741,8 +750,6 @@ function onPointerMove( event ) {
 function onPointerUp( event ) {
 
 	if ( ! this.enabled ) return;
-
-    // document.releasePointerCapture( event.pointerId );
 
     document.removeEventListener( 'pointermove', this._onPointerMove );
 
@@ -767,8 +774,6 @@ function intersectObjectWithRay( object, raycaster, includeInvisible ) {
 	return false;
 
 }
-
-//
 
 // Reusable utility variables
 

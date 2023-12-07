@@ -96,7 +96,14 @@ createNameSpace("realityEditor.app.targetDownloader");
         const navmesh = evt.data.navmesh;
         const objectID = evt.data.objectID;
         navmeshResolution = evt.data.heatmapResolution;
-        // window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const key = window.localStorage.key(i);
+            if (key.includes("realityEditor.navmesh.") && !key.includes(`${objectID}`)) {
+                window.localStorage.removeItem(key);
+                i--;
+            }
+        }
+        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);
