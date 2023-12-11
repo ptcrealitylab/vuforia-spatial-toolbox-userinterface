@@ -746,5 +746,6 @@ createNameSpace("realityEditor.network.realtime");
     
     exports.sendDisconnectMessage = sendDisconnectMessage;
     exports.getDesktopSocket = getDesktopSocket;
+    exports.getServerSocketForObject = getServerSocketForObject;
 
 }(realityEditor.network.realtime));
