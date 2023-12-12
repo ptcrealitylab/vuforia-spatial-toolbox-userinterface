@@ -743,10 +743,11 @@ createNameSpace("realityEditor.envelopeManager");
      * Helper function to convert a frameKey into a frame type
      * @param {string} objectKey
      * @param {string} frameKey
-     * @return {string}
+     * @return {string||null}
      */
     function getFrameTypeFromKey(objectKey, frameKey) {
-        var frame = realityEditor.getFrame(objectKey, frameKey);
+        let frame = realityEditor.getFrame(objectKey, frameKey);
+        if (!frame) return null;
         return frame.src;
     }
     

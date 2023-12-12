@@ -357,6 +357,7 @@ function toggleAnalyzerSettingsUI() {
  * @param {boolean} visible - whether to show or not
  */
 function setHumanPosesVisible(visible) {
+    if (!realityEditor.motionStudy.getAllHumanPoseAnalyzers) return;
     const humanPoseAnalyzers = realityEditor.motionStudy.getAllHumanPoseAnalyzers();
     for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
         humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
