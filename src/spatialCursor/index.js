@@ -892,7 +892,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
                 let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
                 let cameraDirection = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldDirection(cameraDirection);
+                realityEditor.gui.threejsScene.getInternals().camera3D.getWorldDirection(cameraDirection);
                 if (cameraDirection.dot(normalVector) > 0) {
                     normalVector.negate();
                 }

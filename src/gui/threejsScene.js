@@ -12,17 +12,15 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import { Renderer3D } from "./Renderer3D.js"; 
 import { Camera3D } from "./Camera3D.js";
 import { GltfObjectFactory } from "./GLTFObjectFactory.js";
-import CustomMaterials from "./CustomMaterials.js"
+import { CustomMaterials } from "./CustomMaterials.js";
+import { GroundPlane } from "./GroundPlane.js";
+import { AnchoredGroup } from "./AnchoredGroup.js"
 
 (function(exports) {
-    var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlaneCollider;
-    let raycaster;
-    let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
@@ -38,43 +36,49 @@ import CustomMaterials from "./CustomMaterials.js"
     let customMaterials;
     let materialCullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
 
-    // for now, this contains everything not attached to a specific world object
+    /** 
+     * for now, this contains everything not attached to a specific world object
+     * @type {AnchoredGroup}
+     */
     var threejsContainerObj;
 
     /**
-     * @type Renderer3D
+     * @type {Renderer3D}
      */
     let renderer3D = null;
 
     /**
-     * @type Camera3D
+     * @type {Camera3D}
      */
-    let camera3D = null
+    let camera3D = null;
+
+    /**
+     * @type {GroundPlane}
+     */
+    let groundPlane = null;
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
 
         renderer3D = new Renderer3D(domElement);
-        camera3D = new Camera3D(renderer3D);
+        const renderSize = renderer3D.getSize(); 
+        camera3D = new Camera3D(renderSize.width, renderSize.height);
+        renderer3D.setCamera(camera3D);
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainerObj = new THREE.Object3D();
-        threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-        renderer3D.add(threejsContainerObj);
+        threejsContainerObj = new AnchoredGroup();
+        renderer3D.add(threejsContainerObj.getInternalObject());
 
         customMaterials = new CustomMaterials();
         let _mapShaderUI = new MapShaderSettingsUI();
 
-        camera3D.registerCustomMaterials(customMaterials);
+        camera3D.addCameraMatrixListener((matrix) => {customMaterials.onCameraMatrixChanged(matrix);});
 
         // Add the BVH optimized raycast function from three-mesh-bvh.module.js
         // Assumes the BVH is available on the `boundsTree` variable
         THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -118,7 +122,10 @@ import CustomMaterials from "./CustomMaterials.js"
         document.body.appendChild(css3dCanvas);
     }
 
-    // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
+    /**
+     * use this helper function to update the camera matrix using the camera matrix from the sceneGraph
+     * @param {Float32Array} matrix camera matrix, milimeter scale 
+     */
     function setCameraPosition(matrix) {
         camera3D.setCameraMatrix(matrix);
     }
@@ -127,19 +134,23 @@ import CustomMaterials from "./CustomMaterials.js"
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
-        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide} );
-        const plane = new THREE.Mesh( geometry, material );
-        plane.rotateX(Math.PI/2);
-        plane.visible = false;
-        addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneCollider';
-        groundPlaneCollider = plane;
+        groundPlane = new GroundPlane(sceneSizeInMeters / renderer3D.getSceneScale());
+        addToScene(groundPlane.getInternalObject(), {occluded: true});
     }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
+
+        if (renderer3D.isInWebXRMode()) {
+            if (renderer3D.getDeviceScale() !== 1) {
+                renderer3D.setDeviceScale(1);
+            }
+        } else {
+            if (renderer3D.getDeviceScale() !== 1000) {
+                renderer3D.setDeviceScale(1000);
+            }
+        }
 
         cssRenderer.render(renderer3D.getInternalScene(), camera3D.getInternalObject());
         
@@ -150,7 +161,6 @@ import CustomMaterials from "./CustomMaterials.js"
 
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             camera3D.setProjectionMatrix(globalStates.realProjectionMatrix);
-            isProjectionMatrixSet = true;
         }
 
         const worldObjectIds = realityEditor.worldObjects.getWorldObjectKeys();
@@ -207,15 +217,20 @@ import CustomMaterials from "./CustomMaterials.js"
         // the main three.js container object has its origin set to the ground plane origin
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            /** @type {THREE.Matrix4} */
+            const matOrig = new THREE.Matrix4();
+            setMatrixFromArray(matOrig, rootMatrix);
+            /** @type {THREE.Matrix4} */
+            const matScale = new THREE.Matrix4();
+            matScale.makeScale(renderer3D.getWorldScale(), renderer3D.getWorldScale(), renderer3D.getWorldScale());
+            /** @type {THREE.Matrix4} */
+            const matResult = matScale.multiply(matOrig); 
+            threejsContainerObj.setMatrix(matResult.elements);
         }
 
         customMaterials.update();
 
-        // only render the scene if the projection matrix is initialized
-        if (isProjectionMatrixSet) {
-            renderer3D.render(camera3D)
-        }
+        renderer3D.render();
     }
 
     function toggleDisplayOriginBoxes(newValue) {
@@ -224,6 +239,11 @@ import CustomMaterials from "./CustomMaterials.js"
         });
     }
 
+    /**
+     * 
+     * @param {THREE.Object3D} obj 
+     * @param {*} parameters 
+     */
     function addToScene(obj, parameters) {
         if (!parameters) {
             parameters = {};
@@ -233,6 +253,7 @@ import CustomMaterials from "./CustomMaterials.js"
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
         if (occluded) {
+            // set renderOrder to 2 recursive
             const queue = [obj];
             while (queue.length > 0) {
                 const currentObj = queue.pop();
@@ -242,18 +263,21 @@ import CustomMaterials from "./CustomMaterials.js"
         }
         if (parentToCamera) {
             if (attach) {
+                console.log("warning: camera.attach does not comply with meter conversion");
                 camera3D.attach(obj);
             } else {
                 camera3D.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
+                console.log("warning: worldObjectGroups.attach does not comply with meter conversion");
                 worldObjectGroups[worldObjectId].attach(obj);
             } else {
                 worldObjectGroups[worldObjectId].add(obj);
             }
         } else {
             if (attach) {
+                console.log("warning: threejsContainerObj.attach does not comply with meter conversion");
                 threejsContainerObj.attach(obj);
             } else {
                 threejsContainerObj.add(obj);
@@ -573,24 +597,7 @@ import CustomMaterials from "./CustomMaterials.js"
     // NOTE: returns the coordinates in threejs scene world coordinates:
     //       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
     function getRaycastIntersects(clientX, clientY, objectsToCheck) {
-        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
-
-        //2. set the picking ray from the camera position and mouse coordinates
-        raycaster.setFromCamera( mouse, camera3D.getInternalObject() );
-
-        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
-
-        //3. compute intersections
-        // add object layer to raycast layer mask
-        objectsToCheck.forEach(obj => {
-            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
-        });
-        let results = raycaster.intersectObjects( objectsToCheck || renderer3D.getInternalScene().children, true );
-        results.forEach(intersection => {
-            intersection.rayDirection = raycaster.ray.direction;
-        });
-        return results;
+        return renderer3D.getRaycastIntersects(clientX, clientY, objectsToCheck);
     }
 
     /**
@@ -621,8 +628,12 @@ import CustomMaterials from "./CustomMaterials.js"
         return renderer3D.getObjectsByNameRecursive(name);
     }
 
+    /**
+     * 
+     * @returns {GroundPlane}
+     */
     function getGroundPlaneCollider() {
-        return groundPlaneCollider;
+        return groundPlane;
     }
 
     function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
@@ -879,17 +890,10 @@ import CustomMaterials from "./CustomMaterials.js"
     }
 
     /**
-     * @return {{
-           camera: THREE.PerspectiveCamera,
-           scene: THREE.Scene,
-       }} Various internal objects necessary for advanced (hacky) functions
+     * @return {Renderer3D} yeah let's not do that anymore -> Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
-        return {
-            camera: camera3D.getInternalObject(),
-            scene: renderer3D.getInternalScene(),
-            renderer3D
-        };
+        return {camera3D, renderer3D};
     };
 
     exports.initService = initService;

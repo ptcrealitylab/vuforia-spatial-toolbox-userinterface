@@ -121,6 +121,12 @@ class InfiniteGridHelper extends Mesh {
 
     }
 
+    setSizesAndDistance(size1, size2, distance) {
+        this.material.uniforms.uSize1.value = size1;
+        this.material.uniforms.uSize2.value = size2;
+        this.material.uniforms.uDistance.value = distance;
+    }
+
 }
 
 export { InfiniteGridHelper };

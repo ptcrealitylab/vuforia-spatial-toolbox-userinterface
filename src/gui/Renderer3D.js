@@ -1,8 +1,13 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
+import { VRButton } from '../../thirdPartyCode/three/VRButton.module.js';
+import { Camera3D } from './Camera3D.js'
 
 /**
  @typedef {number} PixelCount 
+ @typedef {number} UnitsPerMeter
+ @typedef {number} MetersPerUnit
+ @typedef {number} UnitsPerUnit
  */
 
 /**
@@ -14,6 +19,10 @@ class Renderer3D {
      * @param {HTMLCanvasElement} canvasElement 
      */
     constructor(canvasElement) {
+        /** @type {UnitsPerMeter} standard device is in mm */
+        this.deviceScale = 1000;
+        /** @type {MetersPerUnit} our scene is in mm */
+        this.sceneScale = 0.001;
         /** @type {PixelCount} */
         this.width = 0;
         /** @type {PixelCount} */
@@ -25,21 +34,27 @@ class Renderer3D {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         // temporary vr button
         this.renderer.xr.enabled = true;
+        document.body.appendChild(VRButton.createButton(this.renderer))
 
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
 
+         /** @type {THREE.Group} */
+         this.worldScaleNode = new THREE.Group();
+         this.worldScaleNode.scale.set(this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale);
+         this.scene.add(this.worldScaleNode);
+
         // This doesn't seem to work with the area target model material, but adding it for everything else
         /** @type {THREE.AmbientLight} */
         let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
-        this.scene.add(ambLight);
+        this.add(ambLight);
 
         // lights the scene from above
         /** @type {THREE.DirectionalLight} */
         let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLightTopDown.position.set(0, 1, 0); // top-down
         dirLightTopDown.lookAt(0, 0, 0);
-        this.scene.add(dirLightTopDown);
+        this.add(dirLightTopDown);
 
         /** @type {THREE.PMREMGenerator} */
         let pmremGenerator = new THREE.PMREMGenerator(this.renderer);
@@ -51,6 +66,15 @@ class Renderer3D {
 
         this.setSize(window.innerWidth, window.innerHeight);
         realityEditor.device.layout.onWindowResized(({width, height}) => {this.setSize(width, height)});
+
+        /** @type {Camera3D} */
+        this.camera = null;    
+
+        /** @type {THREE.Raycaster} */
+        this.raycaster = new THREE.Raycaster();
+
+        /** @type {[(deviceScale: UnitsPerMeter, sceneScale: MetersPerUnit) => void]} */
+        this.scaleListeners = [];
     }
 
     /**
@@ -63,6 +87,9 @@ class Renderer3D {
         this.height = height;
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
+        if (this.camera) {
+            this.camera.setSize(width, height);
+        }
     }
 
     /**
@@ -74,18 +101,62 @@ class Renderer3D {
     }
 
     /**
-     * renders the scene using the given camera
-     * @param {THREE.Scene} scene 
-     * @param {Camera3D} camera 
-     * @param {boolean} hasGltfScene 
+     * 
+     * @returns {UnitsPerUnit}
      */
-    render(camera) {
-        this.renderer.render(this.scene, camera.getInternalObject());
+    getWorldScale() {
+        return this.sceneScale * this.deviceScale;
+    }
+
+    /**
+     * @returns {UnitsPerMeter}
+     */
+    getDeviceScale() {
+        return this.deviceScale;
+    }
+
+    /**
+     * @returns {MetersPerUnit}
+     */
+    getSceneScale() {
+        return this.sceneScale;
     }
 
     /**
      * 
-     * @param {function():void} func 
+     * @param {UnitsPerMeter} scale 
+     */
+    setDeviceScale(scale) {
+        this.deviceScale = scale;
+        this.worldScaleNode.scale.set(this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale);
+        for (const func of this.scaleListeners) {
+            func(scale, this.sceneScale);
+        }
+    }
+
+    /**
+     * renders the scene using the given camera
+     * @param {THREE.Scene} scene 
+     * @param {boolean} hasGltfScene 
+     */
+    render() {
+        // only render the scene if the camera is initialized
+        if (this.camera.isInitialized()) {
+            this.renderer.render(this.scene, this.camera.getInternalObject());
+        }
+    }
+
+    /**
+     * 
+     * @returns {boolean}
+     */
+    isInWebXRMode() {
+        return this.renderer.xr.isPresenting;
+    }
+
+    /**
+     * 
+     * @param {() => void} func 
      */
     setAnimationLoop(func) {
         this.renderer.setAnimationLoop(func);
@@ -96,7 +167,15 @@ class Renderer3D {
      * @param {THREE.Object3D} obj 
      */
     add(obj) {
-        this.scene.add(obj);
+        this.worldScaleNode.add(obj);
+    }
+
+    /**
+     * removes an object form the scene
+     * @param {THREE.Object3D} obj 
+     */
+    remove(obj) {
+        this.worldScaleNode.remove(obj);
     }
 
     /**
@@ -105,7 +184,7 @@ class Renderer3D {
      * @returns {ObjectD|undefined}
      */
     getObjectByName(name) {
-        return this.scene.getObjectByName(name);
+        return this.worldScaleNode.getObjectByName(name);
     }
 
     /**
@@ -116,7 +195,7 @@ class Renderer3D {
     getObjectsByNameRecursive(name) {
         if (name === undefined) return;
         const objects = [];
-        this.scene.traverse((object) => {
+        this.worldScaleNode.traverse((object) => {
             if (object.name === name) objects.push(object);
         })
         return objects;
@@ -136,6 +215,54 @@ class Renderer3D {
      */
     getInternalScene() {
         return this.scene;
+    }
+
+    /**
+     * set the camera used for rendering this scene
+     * @param {Camera3D} camera 
+     */
+    setCamera(camera) {
+        if (this.camera !== null) {
+            this.remove(this.camera.getInternalObject());
+        }
+        this.camera = camera;
+        this.add(this.camera.getInternalObject()); // Normally not needed, but needed in order to add child objects relative to camera
+    }
+
+    /**
+     * this module exports this utility so that other modules can perform hit tests
+     * objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+     * NOTE: returns the coordinates in threejs scene world coordinates:
+     *       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
+     * @param {PixelCount} clientX 
+     * @param {PixelCount} clientY 
+     * @param {[THREE.Object3D]} objectsToCheck 
+     * @returns 
+     */
+    getRaycastIntersects(clientX, clientY, objectsToCheck) {
+        let mouse = new THREE.Vector2();
+        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+
+        //2. set the picking ray from the camera position and mouse coordinates
+        this.raycaster.setFromCamera( mouse, this.camera.getInternalObject() );
+
+        this.raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
+
+        //3. compute intersections
+        // add object layer to raycast layer mask
+        objectsToCheck.forEach(obj => {
+            this.raycaster.layers.mask = this.raycaster.layers.mask | obj.layers.mask;
+        });
+        let results = this.raycaster.intersectObjects( objectsToCheck || this.worldScaleNode.children, true );
+        results.forEach(intersection => {
+            intersection.rayDirection = this.raycaster.ray.direction;
+        });
+        return results;
+    }
+
+    addScaleListener(func) {
+        this.scaleListeners.push(func);
     }
 }
 

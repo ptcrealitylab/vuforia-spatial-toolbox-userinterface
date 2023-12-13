@@ -9,6 +9,16 @@ class CustomMaterials {
         this.lastUpdate = -1;
         this.areaTargetMaterials = [];
     }
+
+    /**
+     * 
+     * @param {Float32Array} matrix 
+     */
+    onCameraMatrixChanged(matrix) {
+        let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
+        this.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
+    }
+
     /**
      * 
      * @param {boolean} isTransparent 
@@ -232,4 +242,4 @@ varying float len;
     }
 }
 
-export default CustomMaterials
+export {CustomMaterials}
