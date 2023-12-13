@@ -353,18 +353,6 @@ function toggleAnalyzerSettingsUI() {
 }
 
 /**
- * Sets the visibility of the human poses
- * @param {boolean} visible - whether to show or not
- */
-function setHumanPosesVisible(visible) {
-    if (!realityEditor.motionStudy.getAllHumanPoseAnalyzers) return;
-    const humanPoseAnalyzers = realityEditor.motionStudy.getAllHumanPoseAnalyzers();
-    for (let humanPoseAnalyzer of Object.values(humanPoseAnalyzers)) {
-        humanPoseAnalyzer.setLiveHumanPosesVisible(visible);
-    }
-}
-
-/**
  * Sets the visibility of the child human pose objects
  * Note: Used in live mode so far
  * @param {boolean} visible - whether to show or not
@@ -541,7 +529,6 @@ export {
     showAnalyzerSettingsUI,
     hideAnalyzerSettingsUI,
     toggleAnalyzerSettingsUI,
-    setHumanPosesVisible,
     setChildHumanPosesVisible,
     draw2DPoses,
     is2DPoseRendered
