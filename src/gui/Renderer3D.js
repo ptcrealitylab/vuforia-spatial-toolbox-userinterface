@@ -1,6 +1,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { Camera3D } from './Camera3D.js'
+import { VRButton } from '../../thirdPartyCode/three/VRButton.module.js';
 
 /**
  @typedef {number} PixelCount 
@@ -33,6 +34,7 @@ class Renderer3D {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         // enable webxr
         this.renderer.xr.enabled = true;
+        document.body.appendChild(VRButton.createButton(this.renderer));
 
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
