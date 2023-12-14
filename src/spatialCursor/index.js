@@ -907,7 +907,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (includeGroundPlane && realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
-            objectsToCheck.push(groundPlane);
+            objectsToCheck.push(groundPlane.getInternalObject());
         }
         if (cachedWorldObject && objectsToCheck.length > 0) {
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system

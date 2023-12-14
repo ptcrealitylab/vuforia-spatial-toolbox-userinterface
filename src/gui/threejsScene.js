@@ -156,17 +156,17 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
         const tryUpdatingGroundPlanePosition = () => {
             if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
 
-            groundPlaneCollider.parent.remove(groundPlaneCollider);
-            areaTargetMesh.add(groundPlaneCollider);
+            groundPlane.getInternalObject().parent.remove(groundPlane.getInternalObject());
+            areaTargetMesh.add(groundPlane.getInternalObject());
             let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
             let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
-            groundPlaneCollider.position.set(0, floorOffset, 0);
-            groundPlaneCollider.updateMatrix();
-            groundPlaneCollider.updateMatrixWorld(true);
-            console.log(groundPlaneCollider.matrixWorld);
+            groundPlane.getInternalObject().position.set(0, floorOffset, 0);
+            groundPlane.getInternalObject().updateMatrix();
+            groundPlane.getInternalObject().updateMatrixWorld(true);
+            console.log(groundPlane.getInternalObject().matrixWorld);
 
             // update the groundPlane sceneNode to match the position of the new groundplane collider
-            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());
+            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlane.getInternalObject().position.clone());
             let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
             realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
 
@@ -926,7 +926,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
     }
 
     /**
-     * @return {Renderer3D} yeah let's not do that anymore -> Various internal objects necessary for advanced (hacky) functions
+     * @return {Camera3D, Renderer3D} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
         return {camera3D, renderer3D};
