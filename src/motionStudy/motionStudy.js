@@ -17,10 +17,10 @@ const RecordingState = {
     done: 'done',
 };
 
-export class Analytics {
+export class MotionStudy {
     /**
      * @param {string} frame - frame id associated with instance of
-     * analytics
+     * motionStudy
      */
     constructor(frame) {
         this.frame = frame;
@@ -439,10 +439,10 @@ export class Analytics {
     }
 
 
-    hydrateAnalytics(data) {
+    hydrateMotionStudy(data) {
         if (this.loadingHistory) {
             setTimeout(() => {
-                this.hydrateAnalytics(data);
+                this.hydrateMotionStudy(data);
             }, 100);
             return;
         }
@@ -459,8 +459,8 @@ export class Analytics {
         for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
-                let defaultAnalytics = realityEditor.analytics.getDefaultAnalytics();
-                poses = defaultAnalytics.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
+                let defaultMotionStudy = realityEditor.motionStudy.getDefaultMotionStudy();
+                poses = defaultMotionStudy.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             }
             let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses, desc);
             regionCard.state = RegionCardState.Pinned;
@@ -524,7 +524,7 @@ export class Analytics {
         // }, patchTolerance);
     }
 
-    writeAnalyticsData() {
+    writeMotionStudyData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
         let allCards = this.pinnedRegionCards.map(regionCard => {
@@ -542,11 +542,11 @@ export class Analytics {
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
-            const analyticsData = {
+            const motionStudyData = {
                 regionCards: allCards,
                 valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
             }
-            realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', analyticsData);
+            realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
         }
     }
 
@@ -564,7 +564,7 @@ export class Analytics {
             regionCard.removePinAnimation();
 
             this.addRegionCard(regionCard);
-            this.writeAnalyticsData();
+            this.writeMotionStudyData();
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
         }, 750);
@@ -575,7 +575,7 @@ export class Analytics {
             return prc !== regionCard;
         });
         this.updateCsvExportLink();
-        this.writeAnalyticsData();
+        this.writeMotionStudyData();
     }
 
     updateCsvExportLink() {
@@ -643,7 +643,7 @@ export class Analytics {
         this.pinnedRegionCards.forEach(card => {
             card.updateValueAddWasteTimeUi();
         });
-        this.writeAnalyticsData();
+        this.writeMotionStudyData();
     }
     
     /**
@@ -656,6 +656,6 @@ export class Analytics {
         this.pinnedRegionCards.forEach(card => {
             card.updateValueAddWasteTimeUi();
         });
-        this.writeAnalyticsData();
+        this.writeMotionStudyData();
     }
 }

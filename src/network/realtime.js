@@ -10,7 +10,6 @@ createNameSpace("realityEditor.network.realtime");
 
 (function(exports) {
     const DEBUG = false;
-    const PROXY = /(\w+\.)?toolboxedge.net/.test(window.location.host);
 
     const BATCHED_UPDATE_FRAMERATE = updateFramerate;
 
@@ -69,13 +68,12 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     function createDesktopSocket() {
-        if (PROXY) {
-            desktopSocket = io.connect();
-        } else {
-            desktopSocket = window._oldIo.connect();
-        }
+        desktopSocket = io.connect();
     }
 
+    function getDesktopSocket() {
+        return desktopSocket;
+    }
 
     function loop() {
         if (typeof BATCHED_UPDATE_FRAMERATE !== 'undefined') {
@@ -667,13 +665,8 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function|undefined} onConnect - optional .on('connect') callback
      */
     function createSocketInSet(setName, socketIP, onConnect) {
-        let ioObject;
-        if (socketIP.includes(':8081')) {
-            ioObject = window._oldIo.connect(socketIP);
-        } else {
-            let tsIo = new ToolSocket.Io();
-            ioObject = tsIo.connect(socketIP);
-        }
+        let tsIo = new ToolSocket.Io();
+        let ioObject = tsIo.connect(socketIP);
         if (DEBUG) {
             console.log('createSocketInSet', setName, socketIP, ioObject);
         }
@@ -752,5 +745,7 @@ createNameSpace("realityEditor.network.realtime");
     exports.subscribeToPublicData = subscribeToPublicData;
     
     exports.sendDisconnectMessage = sendDisconnectMessage;
+    exports.getDesktopSocket = getDesktopSocket;
+    exports.getServerSocketForObject = getServerSocketForObject;
 
 }(realityEditor.network.realtime));

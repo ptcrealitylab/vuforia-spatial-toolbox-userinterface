@@ -16,7 +16,7 @@
     left: 20vw;
     top: 20vh;
     text-align: center;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 13px;
     border-radius: 5px;
     -webkit-transform: translateZ(9000px)
@@ -174,7 +174,7 @@
     top: 5vh;
     height: 90vh;
     text-align: left;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
     -webkit-transform: translateZ(8995px);
@@ -187,7 +187,7 @@
     top: 25vh;
     height: 50vh;
     text-align: center;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
     -webkit-transform: translateZ(8995px);
@@ -281,7 +281,7 @@ a.modalLink:active { color: #757575; }
     top: 25vh;
     height: 30vh;
     text-align: center;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
     -webkit-transform: translateZ(8995px);

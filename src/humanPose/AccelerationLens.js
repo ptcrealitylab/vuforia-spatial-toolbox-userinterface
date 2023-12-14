@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {AnalyticsLens} from "./AnalyticsLens.js";
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyLens} from "./MotionStudyLens.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
 const HIGH_CUTOFF = 35 // In m/s^2
@@ -9,7 +9,7 @@ const MED_CUTOFF = 15 // In m/s^2
 /**
  * AccelerationLens is a lens that calculates the acceleration of each joint in the pose history.
  */
-export class AccelerationLens extends AnalyticsLens {
+export class AccelerationLens extends MotionStudyLens {
     /**
      * Creates a new AccelerationLens object.
      */
@@ -88,17 +88,17 @@ export class AccelerationLens extends AnalyticsLens {
      */
     getColorForAcceleration(acceleration) {
         if (acceleration > HIGH_CUTOFF) {
-            return AnalyticsColors.red;
+            return MotionStudyColors.red;
         }
         if (acceleration > MED_CUTOFF) {
-            return AnalyticsColors.yellow;
+            return MotionStudyColors.yellow;
         }
-        return AnalyticsColors.green;
+        return MotionStudyColors.green;
     }
 
     getColorForJoint(joint) {
         if (typeof joint.accelerationMagnitude !== "number") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         const acceleration = joint.accelerationMagnitude;
         return this.getColorForAcceleration(acceleration);
@@ -106,7 +106,7 @@ export class AccelerationLens extends AnalyticsLens {
 
     getColorForBone(bone) {
         if (typeof bone.joint0.accelerationMagnitude !== "number" || typeof bone.joint1.accelerationMagnitude !== "number") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         const maxAcceleration = Math.max(bone.joint0.accelerationMagnitude, bone.joint1.accelerationMagnitude);
         return this.getColorForAcceleration(maxAcceleration);
@@ -114,12 +114,12 @@ export class AccelerationLens extends AnalyticsLens {
     
     getColorForPose(pose) {
         if (typeof pose.getJoint(JOINTS.HEAD).accelerationMagnitude !== "number") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         let maxAcceleration = 0;
         pose.forEachJoint(joint => {
             maxAcceleration = Math.max(maxAcceleration, joint.accelerationMagnitude);
         });
-        return AnalyticsColors.fade(this.getColorForAcceleration(maxAcceleration));
+        return MotionStudyColors.fade(this.getColorForAcceleration(maxAcceleration));
     }
 }

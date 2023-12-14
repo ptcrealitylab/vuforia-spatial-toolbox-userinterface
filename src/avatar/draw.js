@@ -29,7 +29,7 @@ createNameSpace("realityEditor.avatar.draw");
             }
             for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
                 realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
-                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.isColored, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);

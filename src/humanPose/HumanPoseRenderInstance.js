@@ -8,7 +8,7 @@ import {
     HIDDEN_BONES,
     DISPLAY_HIDDEN_ELEMENTS
 } from './constants.js';
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 
 /**
  * A single 3d skeleton rendered in a HumanPoseRenderer's slot
@@ -17,7 +17,7 @@ export class HumanPoseRenderInstance {
     /**
      * @param {HumanPoseRenderer} renderer
      * @param {string} id - Unique identifier of human pose being rendered
-     * @param {AnalyticsLens} lens - The initial lens to use for this instance
+     * @param {MotionStudyLens} lens - The initial lens to use for this instance
      */
     constructor(renderer, id, lens) {
         this.renderer = renderer;
@@ -46,11 +46,11 @@ export class HumanPoseRenderInstance {
         }
 
         Object.values(JOINT_TO_INDEX).forEach(index => {
-            this.renderer.setJointColorAt(this.slot, index, AnalyticsColors.base);
+            this.renderer.setJointColorAt(this.slot, index, MotionStudyColors.base);
         });
 
         Object.values(BONE_TO_INDEX).forEach(index => {
-            this.renderer.setBoneColorAt(this.slot, index, AnalyticsColors.base);
+            this.renderer.setBoneColorAt(this.slot, index, MotionStudyColors.base);
         });
 
         return true;
@@ -158,7 +158,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Sets the active lens for pose coloring
-     * @param {AnalyticsLens} lens - lens to set
+     * @param {MotionStudyLens} lens - lens to set
      */
     setLens(lens) {
         this.lens = lens;
@@ -193,7 +193,7 @@ export class HumanPoseRenderInstance {
 
     /**
      * Sets the colors of the pose based on the current lens
-     * @param {AnalyticsLens} lens - lens to use for updating colors
+     * @param {MotionStudyLens} lens - lens to use for updating colors
      */
     updateColorBuffers(lens) {
         if (this.slot < 0) {
@@ -202,8 +202,8 @@ export class HumanPoseRenderInstance {
 
         if (!this.lensColors[lens.name]) {
             this.lensColors[lens.name] = {
-                joints: Object.values(JOINT_TO_INDEX).map(() => AnalyticsColors.undefined),
-                bones: Object.values(BONE_TO_INDEX).map(() => AnalyticsColors.undefined),
+                joints: Object.values(JOINT_TO_INDEX).map(() => MotionStudyColors.undefined),
+                bones: Object.values(BONE_TO_INDEX).map(() => MotionStudyColors.undefined),
             };
         }
         this.pose.forEachJoint(joint => {
@@ -231,7 +231,7 @@ export class HumanPoseRenderInstance {
         if (typeof JOINT_TO_INDEX[jointName] === 'undefined') {
             return;
         }
-        let baseColorHSL = AnalyticsColors.base.getHSL({});
+        let baseColorHSL = MotionStudyColors.base.getHSL({});
         baseColorHSL.l = baseColorHSL.l * confidence;
         let color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
         this.setJointColor(jointName, color);
