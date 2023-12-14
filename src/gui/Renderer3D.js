@@ -1,6 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { VRButton } from '../../thirdPartyCode/three/VRButton.module.js';
 import { Camera3D } from './Camera3D.js'
 
 /**
@@ -32,9 +31,8 @@ class Renderer3D {
         /** @type {THREE.WebGLRenderer} */
         this.renderer = new THREE.WebGLRenderer({canvas: canvasElement, alpha: true, antialias: false});
         this.renderer.outputEncoding = THREE.sRGBEncoding;
-        // temporary vr button
+        // enable webxr
         this.renderer.xr.enabled = true;
-        document.body.appendChild(VRButton.createButton(this.renderer))
 
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();

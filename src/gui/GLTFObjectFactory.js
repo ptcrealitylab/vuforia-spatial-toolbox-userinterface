@@ -1,5 +1,4 @@
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
-import { DRACOLoader } from '../../thirdPartyCode/three/DRACOLoader.module.js';
 
 /**
  * Loads gltf 3d objects from url
@@ -12,9 +11,6 @@ class GltfObjectFactory {
      */
     constructor() {
         this.gltfLoader = new GLTFLoader();
-        this.dracoLoader = new DRACOLoader();
-        this.dracoLoader.setDecoderPath('../../thirdPartyCode/three/libs/draco');
-        this.gltfLoader.setDRACOLoader(this.dracoLoader);
     }
 
     /**
