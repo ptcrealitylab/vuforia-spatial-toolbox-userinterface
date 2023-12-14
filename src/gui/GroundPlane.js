@@ -23,6 +23,15 @@ class GroundPlane {
 
     /**
      * 
+     * @param {boolean} updateParents 
+     * @param {boolean} updateChildren 
+     */
+    updateWorldMatrix(updateParents, updateChildren) {
+        this.plane.updateWorldMatrix(updateParents, updateChildren);
+    }
+
+    /**
+     * 
      * @returns {THREE.Mesh}
      */
     getInternalObject() {

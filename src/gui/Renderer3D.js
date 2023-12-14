@@ -250,7 +250,7 @@ class Renderer3D {
         //3. compute intersections
         // add object layer to raycast layer mask
         objectsToCheck.forEach(obj => {
-            this.raycaster.layers.mask = this.raycaster.layers.mask | obj.layers.mask;
+           this.raycaster.layers.mask = this.raycaster.layers.mask | obj.layers.mask; 
         });
         let results = this.raycaster.intersectObjects( objectsToCheck || this.worldScaleNode.children, true );
         results.forEach(intersection => {
