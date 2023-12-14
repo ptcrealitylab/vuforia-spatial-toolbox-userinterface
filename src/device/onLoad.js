@@ -347,7 +347,7 @@ realityEditor.device.onload = async function () {
         // realityEditor.device.multiclientUI.initService();
         realityEditor.avatar.initService();
         realityEditor.humanPose.initService();
-        realityEditor.analytics.initService();
+        realityEditor.motionStudy.initService();
         realityEditor.oauth.initService();
         realityEditor.spatialCursor.initService();
         realityEditor.gui.spatialIndicator.initService();

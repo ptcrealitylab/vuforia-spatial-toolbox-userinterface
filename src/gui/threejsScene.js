@@ -21,6 +21,10 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
+    let groundPlaneCollider;
+    let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
+    let raycaster;
+    let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
@@ -136,6 +140,38 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
         groundPlane = new GroundPlane(sceneSizeInMeters / renderer3D.getSceneScale());
         addToScene(groundPlane.getInternalObject(), {occluded: true});
+
+        let areaTargetNavmesh = null;
+        realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
+            areaTargetNavmesh = navmesh;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        let areaTargetMesh = null;
+        realityEditor.avatar.network.onLoadOcclusionObject((_cachedWorldObject, cachedOcclusionObject) => {
+            areaTargetMesh = cachedOcclusionObject;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        const tryUpdatingGroundPlanePosition = () => {
+            if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
+
+            groundPlane.getInternalObject().parent.remove(groundPlane.getInternalObject());
+            areaTargetMesh.add(groundPlane.getInternalObject());
+            let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
+            let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
+            groundPlane.getInternalObject().position.set(0, floorOffset, 0);
+            groundPlane.getInternalObject().updateMatrix();
+            groundPlane.getInternalObject().updateMatrixWorld(true);
+            console.log(groundPlane.getInternalObject().matrixWorld);
+
+            // update the groundPlane sceneNode to match the position of the new groundplane collider
+            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlane.getInternalObject().position.clone());
+            let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
+            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
+
+            isGroundPlanePositionSet = true;
+        }
     }
 
     function renderScene() {
@@ -890,7 +926,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
     }
 
     /**
-     * @return {Renderer3D} yeah let's not do that anymore -> Various internal objects necessary for advanced (hacky) functions
+     * @return {Camera3D, Renderer3D} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
         return {camera3D, renderer3D};
@@ -910,6 +946,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
     exports.getObjectByName = getObjectByName;
     exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
+    exports.isGroundPlanePositionSet = () => { return isGroundPlanePositionSet; };
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;

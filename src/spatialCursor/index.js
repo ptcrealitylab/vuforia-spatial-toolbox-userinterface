@@ -18,11 +18,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let innerRadius = 0.1;
     let innerRadiusSpeed = -0.01;
     let scaleFactor = 0;
-    let indicator1;
-    let indicator2;
+    let indicator1; // top indicator --- a ring with a dot in the center
+    let indicator2; // bottom indicator --- a filled circle with avatar color
     let overlapped = false;
     let isMyColorDetermined = false;
     let isHighlighted = false;
+    let isOnGroundPlane = false;
     let isMeasureMode = false;
     let isCloseLoop = false;
     let shouldCrossRotate = false;
@@ -34,16 +35,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let otherSpatialCursors = {};
 
     let clock = new THREE.Clock();
-    let uniforms = {
-        'EPSILON': {value: Number.EPSILON},
-        'time': {value: 0},
-        'opacityFactor': {value: opacityFactor},
-        'innerRadius': {value: innerRadius},
-        'isMeasureMode': {value: isMeasureMode},
-        't11': {value: t11},
-        't22': {value: t22},
-        't33': {value: t33}
-    };
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
     const topCursorOffset = 15;
@@ -127,6 +118,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     uniform float t22;
     uniform float t33;
     
+    // changing top cursor to colored when outside of the mesh
+    uniform bool isColored;
+    struct AvatarColor {
+        vec3 color;
+        vec3 colorLighter;
+    };
+    uniform AvatarColor avatarColor[1];
+    
     ${commonShader}
     
     void main(void) {
@@ -170,9 +169,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         bool isMeasure = isMeasureMode;
         d += isMeasure ? dMeasureMode : dNormalMode;
         
-        col = d * vec3(1.);
+        col = d * (isColored ? avatarColor[0].color : vec3(1.));
         alpha = d;
-        gl_FragColor = vec4(col, alpha * opacityFactor);
+        gl_FragColor = vec4(col, alpha * 0.5 * opacityFactor);
     }
     `;
     const colorFragmentShader = `
@@ -191,6 +190,26 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gl_FragColor = vec4(r, g, b, 1.0);
     }
     `;
+
+    let color = 'rgb(0, 255, 255)', colorLighter = 'rgb(255, 255, 255)';
+    let finalColor = [{
+        color: new THREE.Color(color),
+        colorLighter: new THREE.Color(colorLighter)
+    }];
+    
+    let uniforms = {
+        'EPSILON': {value: Number.EPSILON},
+        'time': {value: 0},
+        'opacityFactor': {value: opacityFactor},
+        'innerRadius': {value: innerRadius},
+        'isMeasureMode': {value: isMeasureMode},
+        't11': {value: t11},
+        't22': {value: t22},
+        't33': {value: t33},
+
+        'isColored': {value: false},
+        'avatarColor': {value: finalColor},
+    };
     // remember to set depthTest=false and depthWrite=false after creating the material, to prevent visual glitches
     const normalCursorMaterial = new THREE.ShaderMaterial({
         vertexShader: vertexShader,
@@ -206,13 +225,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         transparent: true,
         side: THREE.DoubleSide,
     });
-
-
-    let color = 'rgb(0, 255, 255)', colorLighter = 'rgb(255, 255, 255)';
-    let finalColor = [{
-        color: new THREE.Color(color),
-        colorLighter: new THREE.Color(colorLighter)
-    }];
+    
     let uniforms2 = {
         'EPSILON': {value: Number.EPSILON},
         'avatarColor': {value: finalColor},
@@ -357,7 +370,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
-            let tmpRaycastResult = getRaycastCoordinates(screenX, screenY);
+            let tmpRaycastResult = getRaycastCoordinates(screenX, screenY, false);
             let threejsIntersectPoint = tmpRaycastResult.point === undefined ? undefined : {
                 x: tmpRaycastResult.point.x,
                 y: tmpRaycastResult.point.y,
@@ -665,14 +678,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      * @param {string} objectKey
      * @param {number[]} cursorMatrix
      * @param {string} cursorColorHSL - hsl string of color
+     * @param {string} isColored - if cursor within area target mesh, isColored === true; otherwise false
      * @param {string} relativeToWorldId
      */
-    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, relativeToWorldId) {
+    function renderOtherSpatialCursor(objectKey, cursorMatrix, cursorColorHSL, isColored, relativeToWorldId) {
         if (relativeToWorldId !== realityEditor.sceneGraph.getWorldId()) return; // ignore cursors in other worlds
         if (typeof cursorColorHSL !== 'string') return; // color is required to initialize the material
 
         if (typeof otherSpatialCursors[objectKey] === 'undefined') {
-            let cursorGroup = addOtherSpatialCursor(cursorColorHSL);
+            let cursorGroup = addOtherSpatialCursor(cursorColorHSL, isColored);
             otherSpatialCursors[objectKey] = {
                 group: cursorGroup,
                 worldId: relativeToWorldId,
@@ -688,6 +702,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         otherSpatialCursors[objectKey].group.matrix = realityEditor.sceneGraph.convertToNewCoordSystem(
             cursorMatrix, worldSceneNode, groundPlaneSceneNode);
+        let scaleFactor = isColored ? 0 : 1;
+        otherSpatialCursors[objectKey].group.children[1].scale.set(scaleFactor, scaleFactor, scaleFactor);
+        otherSpatialCursors[objectKey].group.children[0].material.uniforms['isColored'].value = isColored;
     }
 
     /**
@@ -695,11 +712,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
      * The material is more transparent than your own cursor.
      * @returns {Group}
      */
-    function addOtherSpatialCursor(cursorColorHSL) {
+    function addOtherSpatialCursor(cursorColorHSL, isColored) {
         const geometry1 = new THREE.CircleGeometry(geometryLength, 32);
         // todo Steve: use ShaderMaterial.clone() to prevent the other cursor inner circles from playing the same expanding animation
         // todo Steve: probably a better idea to separate the inner & outer circles of all indicator1's, and animate the scale property, b/c that way animation can reflect to other clients when I click
         const indicator1 = new THREE.Mesh(geometry1, normalCursorMaterial.clone());
+        indicator1.material.uniforms['avatarColor'].value = [{
+            color: new THREE.Color(cursorColorHSL),
+            colorLighter: new THREE.Color(cursorColorHSL)
+        }];
         indicator1.renderOrder = 5 + Object.keys(otherSpatialCursors).length * 2 + 1;
 
         const geometry2 = new THREE.CircleGeometry(geometryLength, 32);
@@ -713,7 +734,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                         colorLighter: new THREE.Color(cursorColorHSL)
                     }]
                 },
-                'opacityFactor': { value: 0.4 } // alpha = 0.5 * opacityFactor
+                'opacityFactor': { value: 0.4 }, // alpha = 0.5 * opacityFactor
+                'isColored': {value: isColored},
             },
             transparent: true,
             side: THREE.DoubleSide,
@@ -763,8 +785,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function updateScaleFactor() {
         let MAX_SCALE_FACTOR = isHighlighted ? 3 : 1; // get larger when in "highlighted" state
         
-        if (Object.keys(worldIntersectPoint).length === 0) {
-            // if doesn't intersect any point in world
+        if (Object.keys(worldIntersectPoint).length === 0 || worldIntersectPoint.isOnGroundPlane) {
+            isOnGroundPlane = true;
+            // if doesn't intersect any point in world || intersects with ground plane
             if (scaleFactor === 0) return;
             if (scaleAcceleration === scaleAccelerationFactor) {
                 // if previously, intersects with some point in world
@@ -774,9 +797,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1); // get larger faster when highlighted
             scaleFactor += scaleSpeed;
             scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
-            indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            indicator2.scale.set(scaleFactor, scaleFactor, scaleFactor); // indicator 2: the lower fill color indicator
+            indicator1.material.uniforms['isColored'].value = true;
         } else {
-            // if intersects with some point in world
+            isOnGroundPlane = false;
+            // if intersects with other meshes in the world
             if (scaleFactor === MAX_SCALE_FACTOR) return;
             if (scaleAcceleration === -scaleAccelerationFactor) {
                 // if previously, doesn't intersect with some point in world
@@ -786,7 +811,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             scaleSpeed += scaleAcceleration * (isHighlighted ? 6 : 1);
             scaleFactor += scaleSpeed;
             scaleFactor = clamp(scaleFactor, 0, MAX_SCALE_FACTOR);
-            indicator1.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            indicator2.scale.set(scaleFactor, scaleFactor, scaleFactor);
+            indicator1.material.uniforms['isColored'].value = false;
         }
     }
     
@@ -869,7 +895,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     let projectedZ = null;
-    function getRaycastCoordinates(screenX, screenY) {
+    function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
         let worldIntersectPoint = null;
         let objectsToCheck = [];
         if (cachedOcclusionObject) {
@@ -878,10 +904,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
         //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
         // }
+        if (includeGroundPlane && realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+            let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
+            groundPlane.updateWorldMatrix(true, false);
+            objectsToCheck.push(groundPlane.getInternalObject());
+        }
         if (cachedWorldObject && objectsToCheck.length > 0) {
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
+                // console.log(raycastIntersects[0].object.name);
                 projectedZ = raycastIntersects[0].distance;
                 let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
@@ -900,6 +932,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     point: raycastIntersects[0].point,
                     normalVector: normalVector,
                     distance: raycastIntersects[0].distance,
+                    isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
                 }
                 return worldIntersectPoint; // these are relative to the world object
             }
@@ -919,6 +952,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function getOrientedCursorIfItWereAtScreenCenter() {
         // move cursor to center, then get the matrix, then move the cursor back to where it was
         worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
+            worldIntersectPoint.distance = 1000;
+
+            let camPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+            inverseGroundPlaneMatrix.invert();
+            camPos.applyMatrix4(inverseGroundPlaneMatrix);
+
+            let originalPoint = worldIntersectPoint.point;
+            worldIntersectPoint.point = camPos.add(originalPoint.clone().sub(camPos).normalize().multiplyScalar(1000));
+        }
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld(); // update immediately before doing the calculations
@@ -940,6 +987,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function getOrientedCursorAtSpecificCoords(screenX, screenY) {
         // get specific coordinates of cursor
         worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+        if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
+            worldIntersectPoint.distance = 1000;
+
+            let camPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+            inverseGroundPlaneMatrix.invert();
+            camPos.applyMatrix4(inverseGroundPlaneMatrix);
+
+            let originalPoint = worldIntersectPoint.point;
+            worldIntersectPoint.point = camPos.add(originalPoint.clone().sub(camPos).normalize().multiplyScalar(1000));
+        }
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld(); // update immediately before doing the calculations
@@ -1022,6 +1083,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getOrientedCursorAtSpecificCoords = getOrientedCursorAtSpecificCoords;
     exports.toggleDisplaySpatialCursor = toggleDisplaySpatialCursor;
     exports.isSpatialCursorEnabled = () => { return isCursorEnabled; }
+    exports.isSpatialCursorOnGroundPlane = () => { return isOnGroundPlane; }
     exports.getWorldIntersectPoint = () => { return worldIntersectPoint; };
     exports.addToolAtScreenCenter = addToolAtScreenCenter;
     exports.addToolAtSpecifiedCoords = addToolAtSpecifiedCoords;

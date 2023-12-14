@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
@@ -33,7 +33,7 @@ function angleBetween(vector1, vector2) {
  */
 function neckReba(rebaData) {
     let neckScore = 1;
-    let neckColor = AnalyticsColors.undefined;
+    let neckColor = MotionStudyColors.undefined;
 
     const headUp = rebaData.orientations.head.up;
     const headForward = rebaData.orientations.head.forward;
@@ -69,11 +69,11 @@ function neckReba(rebaData) {
     neckScore = clamp(neckScore, 1, 3);
 
     if (neckScore === 1 ) {
-        neckColor = AnalyticsColors.green;
+        neckColor = MotionStudyColors.green;
     } else if (neckScore === 2) {
-        neckColor = AnalyticsColors.yellow;
+        neckColor = MotionStudyColors.yellow;
     } else {
-        neckColor = AnalyticsColors.red;
+        neckColor = MotionStudyColors.red;
     }
     
     [JOINTS.NECK,
@@ -107,7 +107,7 @@ function neckReba(rebaData) {
  */
 function trunkReba(rebaData) {
     let trunkScore = 1;
-    let trunkColor = AnalyticsColors.undefined;
+    let trunkColor = MotionStudyColors.undefined;
     
     const chestUp = rebaData.orientations.chest.up;
     const chestForward = rebaData.orientations.chest.forward;
@@ -150,11 +150,11 @@ function trunkReba(rebaData) {
     trunkScore = clamp(trunkScore, 1, 5);
 
     if (trunkScore === 1 ) {
-        trunkColor = AnalyticsColors.green;
+        trunkColor = MotionStudyColors.green;
     } else if (trunkScore <= 4) {
-        trunkColor = AnalyticsColors.yellow;
+        trunkColor = MotionStudyColors.yellow;
     } else {
-        trunkColor = AnalyticsColors.red;
+        trunkColor = MotionStudyColors.red;
     }
     
     [JOINTS.CHEST,
@@ -184,9 +184,9 @@ function trunkReba(rebaData) {
  */
 function legsReba(rebaData) {
     let leftLegScore = 1;
-    let leftLegColor = AnalyticsColors.undefined;
+    let leftLegColor = MotionStudyColors.undefined;
     let rightLegScore = 1;
-    let rightLegColor = AnalyticsColors.undefined;
+    let rightLegColor = MotionStudyColors.undefined;
     
     // +1 for knee bending > 30 degrees
     // Another +1 for knee bending > 60 degrees
@@ -226,19 +226,19 @@ function legsReba(rebaData) {
     rightLegScore = clamp(rightLegScore, 1, 4);
 
     if (leftLegScore === 1) {
-        leftLegColor = AnalyticsColors.green;
+        leftLegColor = MotionStudyColors.green;
     } else if (leftLegScore === 2) {
-        leftLegColor = AnalyticsColors.yellow;
+        leftLegColor = MotionStudyColors.yellow;
     } else {
-        leftLegColor = AnalyticsColors.red;
+        leftLegColor = MotionStudyColors.red;
     }
 
     if (rightLegScore === 1) {
-        rightLegColor = AnalyticsColors.green;
+        rightLegColor = MotionStudyColors.green;
     } else if (rightLegScore === 2) {
-        rightLegColor = AnalyticsColors.yellow;
+        rightLegColor = MotionStudyColors.yellow;
     } else {
-        rightLegColor = AnalyticsColors.red;
+        rightLegColor = MotionStudyColors.red;
     }
     
     [JOINTS.LEFT_HIP,
@@ -278,9 +278,9 @@ function legsReba(rebaData) {
  */
 function upperArmReba(rebaData) {
     let leftArmScore = 1;
-    let leftArmColor = AnalyticsColors.undefined;
+    let leftArmColor = MotionStudyColors.undefined;
     let rightArmScore = 1;
-    let rightArmColor = AnalyticsColors.undefined;
+    let rightArmColor = MotionStudyColors.undefined;
     
     // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture
     
@@ -346,19 +346,19 @@ function upperArmReba(rebaData) {
     rightArmScore = clamp(rightArmScore, 1, 6);
     
     if (leftArmScore === 1) {
-        leftArmColor = AnalyticsColors.green;
+        leftArmColor = MotionStudyColors.green;
     } else if (leftArmScore < 5) {
-        leftArmColor = AnalyticsColors.yellow;
+        leftArmColor = MotionStudyColors.yellow;
     } else {
-        leftArmColor = AnalyticsColors.red;
+        leftArmColor = MotionStudyColors.red;
     }
     
     if (rightArmScore === 1) {
-        rightArmColor = AnalyticsColors.green;
+        rightArmColor = MotionStudyColors.green;
     } else if (rightArmScore < 5) {
-        rightArmColor = AnalyticsColors.yellow;
+        rightArmColor = MotionStudyColors.yellow;
     } else {
-        rightArmColor = AnalyticsColors.red;
+        rightArmColor = MotionStudyColors.red;
     }
     
     rebaData.scores[JOINTS.LEFT_SHOULDER] = leftArmScore;
@@ -378,9 +378,9 @@ function upperArmReba(rebaData) {
  */
 function lowerArmReba(rebaData) {
     let leftArmScore = 1;
-    let leftArmColor = AnalyticsColors.undefined;
+    let leftArmColor = MotionStudyColors.undefined;
     let rightArmScore = 1;
-    let rightArmColor = AnalyticsColors.undefined;
+    let rightArmColor = MotionStudyColors.undefined;
     
     // 1 by default, 2 for elbow bent < 60 degrees or > 100 degrees
     
@@ -412,15 +412,15 @@ function lowerArmReba(rebaData) {
     rightArmScore = clamp(rightArmScore, 1, 2);
     
     if (leftArmScore === 1) {
-        leftArmColor = AnalyticsColors.green;
+        leftArmColor = MotionStudyColors.green;
     } else {
-        leftArmColor = AnalyticsColors.red;
+        leftArmColor = MotionStudyColors.red;
     }
     
     if (rightArmScore === 1) {
-        rightArmColor = AnalyticsColors.green;
+        rightArmColor = MotionStudyColors.green;
     } else {
-        rightArmColor = AnalyticsColors.red;
+        rightArmColor = MotionStudyColors.red;
     }
     
     rebaData.scores[JOINTS.LEFT_ELBOW] = leftArmScore;
@@ -440,9 +440,9 @@ function lowerArmReba(rebaData) {
  */
 function wristReba(rebaData) {
     let leftWristScore = 1;
-    let leftWristColor = AnalyticsColors.undefined;
+    let leftWristColor = MotionStudyColors.undefined;
     let rightWristScore = 1;
-    let rightWristColor = AnalyticsColors.undefined;
+    let rightWristColor = MotionStudyColors.undefined;
 
 
     /* left wrist */
@@ -486,11 +486,11 @@ function wristReba(rebaData) {
         leftWristScore = clamp(leftWristScore, 1, 3);
 
         if (leftWristScore === 1) {
-            leftWristColor = AnalyticsColors.green;
+            leftWristColor = MotionStudyColors.green;
         } else if (leftWristScore == 2) {
-            leftWristColor = AnalyticsColors.yellow;
+            leftWristColor = MotionStudyColors.yellow;
         } else {
-            leftWristColor = AnalyticsColors.red;
+            leftWristColor = MotionStudyColors.red;
         }
     }
         
@@ -534,11 +534,11 @@ function wristReba(rebaData) {
         rightWristScore = clamp(rightWristScore, 1, 3);
 
         if (rightWristScore === 1) {
-            rightWristColor = AnalyticsColors.green;
+            rightWristColor = MotionStudyColors.green;
         } else if (rightWristScore == 2) {
-            rightWristColor = AnalyticsColors.yellow;
+            rightWristColor = MotionStudyColors.yellow;
         } else {
-            rightWristColor = AnalyticsColors.red;
+            rightWristColor = MotionStudyColors.red;
         }
     }
 
@@ -588,8 +588,8 @@ function wristReba(rebaData) {
     
 }
 
-const startColor = AnalyticsColors.fade(AnalyticsColors.green);
-const endColor = AnalyticsColors.fade(AnalyticsColors.red);
+const startColor = MotionStudyColors.fade(MotionStudyColors.green);
+const endColor = MotionStudyColors.fade(MotionStudyColors.red);
 
 function getOverallRebaColor(rebaScore) {
     const lowCutoff = 4;
@@ -785,7 +785,7 @@ function overallRebaCalculation(rebaData) {
 function extractRebaData(pose) {
     let rebaData = {
         overallRebaScore: 0,
-        overallRebaColor: AnalyticsColors.undefined,
+        overallRebaColor: MotionStudyColors.undefined,
         joints: {},
         scores: {},
         colors: {},
@@ -812,11 +812,11 @@ function extractRebaData(pose) {
     for (let jointId of Object.values(JOINTS)) {
         rebaData.joints[jointId] = pose.getJoint(jointId).position;
         rebaData.scores[jointId] = 0;
-        rebaData.colors[jointId] = AnalyticsColors.undefined;
+        rebaData.colors[jointId] = MotionStudyColors.undefined;
     }
     for (let boneId of Object.keys(JOINT_CONNECTIONS)) {
         rebaData.boneScores[boneId] = 0;
-        rebaData.boneColors[boneId] = AnalyticsColors.undefined;
+        rebaData.boneColors[boneId] = MotionStudyColors.undefined;
     }
     
     rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();

@@ -1,5 +1,5 @@
 /**
- * Classes that can be followed (e.g. CameraVis, VideoPlayer, Analytics) can
+ * Classes that can be followed (e.g. CameraVis, VideoPlayer, MotionStudy) can
  * adhere to this interface by subclassing it and overriding the methods
  */
 export class Followable {

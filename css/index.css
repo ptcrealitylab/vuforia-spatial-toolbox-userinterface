@@ -78,7 +78,7 @@ body {
     /* -webkit-user-select: none;  Disable selection/Copy of UIWebView */
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
-    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     color: #ffffff;
     /*background-color: black;*/
 }
@@ -885,6 +885,10 @@ body {
     opacity: 0.7;
 }
 
+.elementBehindCamera {
+    display: none;
+}
+
 .outsideOfViewport {
     display: none;
 }
@@ -1073,7 +1077,7 @@ Logic Interface CSS
     display: -webkit-box;
     -webkit-box-pack: center;
     -webkit-box-align: center;
-    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 18px;
 }
 
@@ -1119,7 +1123,7 @@ Logic Interface CSS
   -webkit-box-align:center;
   background-color: rgba(0,0,0,0.7);
   border: 2px solid rgba(0,255,255,0.5);
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 .blockDivHighlighted {
@@ -1133,7 +1137,7 @@ Logic Interface CSS
   -webkit-box-align:center;
   background-color: rgba(0,0,0,0.7);
   border: 2px solid rgba(0,255,255,0.5);
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 /* block settings */
@@ -1194,7 +1198,7 @@ Logic Interface CSS
   user-select:none;
   -webkit-user-select:none;
   color: white;
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
   font-size: 14px;
   position: absolute;
   overflow: hidden; /* crop the icon to the size of the container */
@@ -1640,7 +1644,7 @@ Logic Interface CSS
 .anchorTextField {
     position: absolute;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     text-align: center;
     vertical-align: bottom;
     right: 1%;
@@ -1676,7 +1680,7 @@ Logic Interface CSS
     width: calc(100vw - 220px);
     height: 30px;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     background-color: rgba(0,0,0,0.7);
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
@@ -1743,7 +1747,7 @@ Logic Interface CSS
 .avatarBeamLabel, .timelineBoardLabel {
     position: absolute;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 24px;
     background-color: rgba(0, 0, 0, 0.3);
     z-index: 3000;
@@ -1908,7 +1912,7 @@ Logic Interface CSS
 
 .analytics-region-card, .analytics-button-container {
     font-size: 14px;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     line-height: 22px;
     width: 15rem;
 

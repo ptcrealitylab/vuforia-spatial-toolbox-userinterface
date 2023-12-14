@@ -26,14 +26,14 @@ export const RegionCardState = {
  */
 export class RegionCard {
     /**
-     * @param {Analytics} analytics - parent instance of Analytics
+     * @param {MotionStudy} motionStudy - parent instance of MotionStudy
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
      * @param {{startTime: number, endTime: number}?} desc - If present, the
      * dehydrated description of this card
      */
-    constructor(analytics, container, poses, desc) {
-        this.analytics = analytics;
+    constructor(motionStudy, container, poses, desc) {
+        this.motionStudy = motionStudy;
         this.container = container;
         this.poses = poses;
         this.element = document.createElement('div');
@@ -69,7 +69,7 @@ export class RegionCard {
     onPointerOver() {
         this.element.classList.remove('minimized');
         // if (this.state === RegionCardState.Pinned) {
-        //     this.analytics.setHighlightRegion({
+        //     this.motionStudy.setHighlightRegion({
         //         startTime: this.startTime,
         //         endTime: this.endTime,
         //     });
@@ -102,13 +102,13 @@ export class RegionCard {
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                this.analytics.setActiveRegionCard(null);
-                this.analytics.setHighlightRegion(null);
-                this.analytics.setCursorTime(-1);
+                this.motionStudy.setActiveRegionCard(null);
+                this.motionStudy.setHighlightRegion(null);
+                this.motionStudy.setCursorTime(-1);
                 this.displayActive = false;
             } else {
-                this.analytics.setActiveRegionCard(this);
-                this.analytics.setHighlightRegion({
+                this.motionStudy.setActiveRegionCard(this);
+                this.motionStudy.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
                     label: this.getLabel(),
@@ -131,7 +131,7 @@ export class RegionCard {
         this.element.classList.add('pinAnimation', 'minimized');
         this.updatePinButtonText();
 
-        this.analytics.pinRegionCard(this);
+        this.motionStudy.pinRegionCard(this);
     }
 
     save() {
@@ -159,7 +159,7 @@ export class RegionCard {
 
     unpin() {
         this.remove();
-        this.analytics.unpinRegionCard(this);
+        this.motionStudy.unpinRegionCard(this);
     }
 
     updatePinButtonText() {
@@ -250,7 +250,7 @@ export class RegionCard {
                 clearTimeout(debouncedSave);
             }
             debouncedSave = setTimeout(() => {
-                this.analytics.writeAnalyticsData();
+                this.motionStudy.writeMotionStudyData();
                 debouncedSave = null;
             }, 1000);
         });
@@ -287,11 +287,11 @@ export class RegionCard {
         wasteTimeButton.textContent = 'Waste';
         wasteTimeButton.addEventListener('click', () => {
             if (this.state === RegionCardState.Pinned) {
-                this.analytics.markWasteTime(this.startTime, this.endTime);
+                this.motionStudy.markWasteTime(this.startTime, this.endTime);
             } else {
-                const highlightRegion = this.analytics.timeline.highlightRegion;
-                this.analytics.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
-                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
+                const highlightRegion = this.motionStudy.timeline.highlightRegion;
+                this.motionStudy.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the motionStudy session does not track or update them
             }
         });
         this.wasteTimeButton = wasteTimeButton;
@@ -302,11 +302,11 @@ export class RegionCard {
         valueAddButton.textContent = 'Value';
         valueAddButton.addEventListener('click', () => {
             if (this.state === RegionCardState.Pinned) {
-                this.analytics.markValueAdd(this.startTime, this.endTime);
+                this.motionStudy.markValueAdd(this.startTime, this.endTime);
             } else {
-                const highlightRegion = this.analytics.timeline.highlightRegion;
-                this.analytics.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
-                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the analytics session does not track or update them
+                const highlightRegion = this.motionStudy.timeline.highlightRegion;
+                this.motionStudy.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the motionStudy session does not track or update them
             }
         });
         this.valueAddButton = valueAddButton;
@@ -562,7 +562,7 @@ export class RegionCard {
     }
 
     updateValueAddWasteTimeUi() {
-        const regionValue = this.analytics.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
+        const regionValue = this.motionStudy.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
 
         if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
             this.wasteTimeButton.classList.add('selected');
@@ -575,7 +575,7 @@ export class RegionCard {
             this.wasteTimeButton.classList.remove('selected');
         }
         
-        const subset = this.analytics.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
+        const subset = this.motionStudy.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
         let totalValueAdd = 0;
         let totalWasteTime = 0;
         const totalTime = this.endTime - this.startTime;
