@@ -1,7 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { Camera3D } from './Camera3D.js'
-import { VRButton } from '../../thirdPartyCode/three/VRButton.module.js';
 
 /**
  @typedef {number} PixelCount 
@@ -34,19 +32,20 @@ class Renderer3D {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         // enable webxr
         this.renderer.xr.enabled = true;
-        document.body.appendChild(VRButton.createButton(this.renderer));
 
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
 
-         /** @type {THREE.Group} */
-         this.worldScaleNode = new THREE.Group();
-         this.worldScaleNode.scale.set(this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale);
-         this.scene.add(this.worldScaleNode);
+        /** @type {THREE.Group} */
+        this.worldScaleNode = new THREE.Group();
+        this.worldScaleNode.scale.set(this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale, this.sceneScale * this.deviceScale);
+        this.worldScaleNode.name = "worldScaleNode";
+        this.scene.add(this.worldScaleNode);
 
         // This doesn't seem to work with the area target model material, but adding it for everything else
         /** @type {THREE.AmbientLight} */
         let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
+        ambLight.name = "ambLight";
         this.add(ambLight);
 
         // lights the scene from above
@@ -54,6 +53,7 @@ class Renderer3D {
         let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLightTopDown.position.set(0, 1, 0); // top-down
         dirLightTopDown.lookAt(0, 0, 0);
+        dirLightTopDown.name = "dirLightTopDown";
         this.add(dirLightTopDown);
 
         /** @type {THREE.PMREMGenerator} */
@@ -257,6 +257,9 @@ class Renderer3D {
         let results = this.raycaster.intersectObjects( objectsToCheck || this.worldScaleNode.children, true );
         results.forEach(intersection => {
             intersection.rayDirection = this.raycaster.ray.direction;
+            intersection.scenePoint = intersection.point.clone();
+            intersection.scenePoint.multiplyScalar(1.0 / this.getWorldScale());
+            intersection.sceneDistance = intersection.distance / this.getWorldScale();
         });
         return results;
     }

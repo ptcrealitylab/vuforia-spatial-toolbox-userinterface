@@ -13,6 +13,7 @@ class Camera3D {
          */
         this.camera = new THREE.PerspectiveCamera(70, width / height, 1, 1000);
         this.camera.matrixAutoUpdate = false;
+        this.camera.name = "camera3D"
         /**
          * when the camera matrix changes these functions will be called
          * @type {[function(Float32Array):void]}
@@ -101,6 +102,10 @@ class Camera3D {
      */
     getWorldDirection(target) {
         this.camera.getWorldDirection(target);
+    }
+
+    getWorldPosition(target) {
+        return this.camera.getWorldPosition(target);
     }
 
     /**

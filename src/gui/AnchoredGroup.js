@@ -1,10 +1,11 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 class AnchoredGroup {
-    constructor() {
+    constructor(name) {
         /** @type {THREE.Group} */
         this.threejsContainerObj = new THREE.Group();
         this.threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
+        this.threejsContainerObj.name = name;
     }
 
     /**

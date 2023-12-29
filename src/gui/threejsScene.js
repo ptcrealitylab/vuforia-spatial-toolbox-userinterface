@@ -7,7 +7,7 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
+import { ViewFrustum, MAX_VIEW_FRUSTUMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import { Renderer3D } from "./Renderer3D.js"; 
 import { Camera3D } from "./Camera3D.js";
@@ -21,10 +21,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlaneCollider;
     let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
-    let raycaster;
-    let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
@@ -72,7 +69,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainerObj = new AnchoredGroup();
+        threejsContainerObj = new AnchoredGroup("threejsContainerObj");
         renderer3D.add(threejsContainerObj.getInternalObject());
 
         customMaterials = new CustomMaterials();
@@ -159,7 +156,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
             groundPlane.getInternalObject().parent.remove(groundPlane.getInternalObject());
             areaTargetMesh.add(groundPlane.getInternalObject());
             let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
-            let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
+            let floorOffset = (areaTargetNavmesh.floorOffset / renderer3D.getSceneScale()) / areaTargetMeshScale;
             groundPlane.getInternalObject().position.set(0, floorOffset, 0);
             groundPlane.getInternalObject().updateMatrix();
             groundPlane.getInternalObject().updateMatrixWorld(true);
@@ -195,7 +192,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
             callback(deltaTime);
         });
 
-        if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
+         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
             camera3D.setProjectionMatrix(globalStates.realProjectionMatrix);
         }
 
@@ -253,15 +250,7 @@ import { AnchoredGroup } from "./AnchoredGroup.js"
         // the main three.js container object has its origin set to the ground plane origin
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
-            /** @type {THREE.Matrix4} */
-            const matOrig = new THREE.Matrix4();
-            setMatrixFromArray(matOrig, rootMatrix);
-            /** @type {THREE.Matrix4} */
-            const matScale = new THREE.Matrix4();
-            matScale.makeScale(renderer3D.getWorldScale(), renderer3D.getWorldScale(), renderer3D.getWorldScale());
-            /** @type {THREE.Matrix4} */
-            const matResult = matScale.multiply(matOrig); 
-            threejsContainerObj.setMatrix(matResult.elements);
+            threejsContainerObj.setMatrix(rootMatrix);
         }
 
         customMaterials.update();

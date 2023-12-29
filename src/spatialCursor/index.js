@@ -769,6 +769,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicator1.renderOrder = 4;
         indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator1.material.depthWrite = false;
+        indicator1.name = "spatialCursor_indicator1";
         realityEditor.gui.threejsScene.addToScene(indicator1);
     }
     
@@ -778,6 +779,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicator2.renderOrder = 3;
         indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator2.material.depthWrite = false;
+        indicator2.name = "spatialCursor_indicator2";
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
 
@@ -914,12 +916,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
                 // console.log(raycastIntersects[0].object.name);
-                projectedZ = raycastIntersects[0].distance;
+                projectedZ = raycastIntersects[0].sceneDistance;
                 let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
                 inverseGroundPlaneMatrix.invert();
-                raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+                raycastIntersects[0].scenePoint.applyMatrix4(inverseGroundPlaneMatrix);
                 let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
                 // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
                 let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
@@ -929,9 +931,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     normalVector.negate();
                 }
                 worldIntersectPoint = {
-                    point: raycastIntersects[0].point,
+                    point: raycastIntersects[0].scenePoint,
                     normalVector: normalVector,
-                    distance: raycastIntersects[0].distance,
+                    distance: raycastIntersects[0].sceneDistance,
                     isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
                 }
                 return worldIntersectPoint; // these are relative to the world object
