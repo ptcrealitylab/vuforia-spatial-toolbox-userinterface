@@ -254,7 +254,7 @@ realityEditor.device.onload = async function () {
         setInterval(async () => {
             let settings;
             try {
-                let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+                let res = await fetch(`https://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
                 settings = await res.json();
             } catch (_e) {
                 return;

@@ -130,7 +130,7 @@ realityEditor.network.getURL = function(server, identifier, route){
     let secret = null;
 
     if (parseInt(Number(identifier))) {
-        protocol = "http"
+        protocol = "https"
         url = server;
         port = identifier;
     } else {
@@ -2706,6 +2706,9 @@ realityEditor.network.updateNodeBlocksSettingsData = function(ip, objectKey, fra
  * @param {*} options
  */
 realityEditor.network.getData = function (objectKey, frameKey, nodeKey, url, callback, options = {bypassCache: false}) {
+    if (url.startsWith("null:")) {
+        console.log("gotcha");
+    }
     if (!nodeKey) nodeKey = null;
     if (!frameKey) frameKey = null;
     var req = new XMLHttpRequest();

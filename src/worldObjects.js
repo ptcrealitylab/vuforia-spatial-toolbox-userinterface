@@ -161,6 +161,8 @@ createNameSpace("realityEditor.worldObjects");
         if (object.ip !== '127.0.0.1' && object.ip !== 'localhost') {
             return;
         }
+
+        return; // this is here for the webxr version
         
         // REST endpoint for for downloading the world object for that server
         var urlEndpoint = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object.port), '/worldObject/');
