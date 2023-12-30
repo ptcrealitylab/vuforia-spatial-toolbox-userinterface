@@ -1,5 +1,6 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from "../humanPose/constants.js";
+import {JOINTS} from '../humanPose/constants.js';
+import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -25,14 +26,14 @@ export const RegionCardState = {
  */
 export class RegionCard {
     /**
-     * @param {Analytics} analytics - parent instance of Analytics
+     * @param {MotionStudy} motionStudy - parent instance of MotionStudy
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
      * @param {{startTime: number, endTime: number}?} desc - If present, the
      * dehydrated description of this card
      */
-    constructor(analytics, container, poses, desc) {
-        this.analytics = analytics;
+    constructor(motionStudy, container, poses, desc) {
+        this.motionStudy = motionStudy;
         this.container = container;
         this.poses = poses;
         this.element = document.createElement('div');
@@ -57,6 +58,7 @@ export class RegionCard {
             this.endTime = desc.endTime;
         }
         this.setPoses(poses);
+        this.updateValueAddWasteTimeUi();
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -67,7 +69,7 @@ export class RegionCard {
     onPointerOver() {
         this.element.classList.remove('minimized');
         // if (this.state === RegionCardState.Pinned) {
-        //     this.analytics.setHighlightRegion({
+        //     this.motionStudy.setHighlightRegion({
         //         startTime: this.startTime,
         //         endTime: this.endTime,
         //     });
@@ -100,13 +102,13 @@ export class RegionCard {
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                this.analytics.setActiveRegionCard(null);
-                this.analytics.setHighlightRegion(null);
-                this.analytics.setCursorTime(-1);
+                this.motionStudy.setActiveRegionCard(null);
+                this.motionStudy.setHighlightRegion(null);
+                this.motionStudy.setCursorTime(-1);
                 this.displayActive = false;
             } else {
-                this.analytics.setActiveRegionCard(this);
-                this.analytics.setHighlightRegion({
+                this.motionStudy.setActiveRegionCard(this);
+                this.motionStudy.setHighlightRegion({
                     startTime: this.startTime,
                     endTime: this.endTime,
                     label: this.getLabel(),
@@ -129,7 +131,7 @@ export class RegionCard {
         this.element.classList.add('pinAnimation', 'minimized');
         this.updatePinButtonText();
 
-        this.analytics.pinRegionCard(this);
+        this.motionStudy.pinRegionCard(this);
     }
 
     save() {
@@ -157,28 +159,28 @@ export class RegionCard {
 
     unpin() {
         this.remove();
-        this.analytics.unpinRegionCard(this);
+        this.motionStudy.unpinRegionCard(this);
     }
 
     updatePinButtonText() {
-        let pinButton = this.element.querySelector('.analytics-region-card-pin');
+        let pinButton = this.element.querySelector('#analytics-region-card-step');
         if (pinButton) {
-            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+            pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         }
         this.updateDisplayActive();
     }
 
     updateDisplayActive() {
-        let showButton = this.element.querySelector('.analytics-region-card-show');
+        let showButton = this.element.querySelector('#analytics-region-card-show');
         if (!showButton) {
             console.warn('regioncard missing element');
             return;
         }
 
         if (this.state === RegionCardState.Pinned) {
-            showButton.style.display = 'inline';
+            showButton.style.opacity = '1';
         } else {
-            showButton.style.display = 'none';
+            showButton.style.opacity = '0';
         }
 
         showButton.textContent = this.displayActive ? 'Hide' : 'Show';
@@ -210,10 +212,18 @@ export class RegionCard {
             'analytics-region-card-subtitle',
             'analytics-region-card-motion-summary'
         );
+        
+        this.valueAddWasteTimeSummary = document.createElement('div');
+        this.valueAddWasteTimeSummary.classList.add('analytics-region-card-value-add-waste-time-summary');
+        this.valueAddWasteTimeSummary.setValues = (valuePercent, wastePercent) => {
+            this.valueAddWasteTimeSummary.innerHTML = `Value Add: ${valuePercent}%, Waste Time: ${wastePercent}%`;
+        }
+        this.valueAddWasteTimeSummary.setValues(0, 0);
 
         this.element.appendChild(dateTimeTitle);
         this.element.appendChild(colorDot);
         this.element.appendChild(motionSummary);
+        this.element.appendChild(this.valueAddWasteTimeSummary);
 
         this.labelElement = document.createElement('div');
         this.labelElement.classList.add('analytics-region-card-label');
@@ -240,7 +250,7 @@ export class RegionCard {
                 clearTimeout(debouncedSave);
             }
             debouncedSave = setTimeout(() => {
-                this.analytics.writeDehydratedRegionCards();
+                this.motionStudy.writeMotionStudyData();
                 debouncedSave = null;
             }, 1000);
         });
@@ -250,19 +260,58 @@ export class RegionCard {
         this.graphSummaryValues = {};
         this.createGraphSection('reba', 'REBA');
         this.createGraphSection('accel', 'Accel');
+        
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('analytics-region-card-button-container');
+        this.element.appendChild(buttonContainer);
 
-        const pinButton = document.createElement('a');
-        pinButton.href = '#';
-        pinButton.classList.add('analytics-region-card-pin');
-        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Unpin' : 'Pin';
+        const pinButton = document.createElement('div');
+        pinButton.classList.add('analytics-region-card-button');
+        pinButton.id = 'analytics-region-card-step';
+        pinButton.textContent = this.state === RegionCardState.Pinned ? 'Remove Step' : 'Mark Step';
         pinButton.addEventListener('click', this.onClickPin);
-        this.element.appendChild(pinButton);
+        buttonContainer.appendChild(pinButton);
 
-        const showButton = document.createElement('a');
-        showButton.href = '#';
-        showButton.classList.add('analytics-region-card-show');
+        const showButton = document.createElement('div');
+        showButton.classList.add('analytics-region-card-button');
+        showButton.id = 'analytics-region-card-show';
         showButton.addEventListener('click', this.onClickShow);
-        this.element.appendChild(showButton);
+        buttonContainer.appendChild(showButton);
+
+        const valueAddWasteTimeDiv = document.createElement('div');
+        valueAddWasteTimeDiv.classList.add('analytics-value-add-waste-time-container');
+        buttonContainer.appendChild(valueAddWasteTimeDiv);
+
+        const wasteTimeButton = document.createElement('div');
+        wasteTimeButton.classList.add('analytics-waste-time-item');
+        wasteTimeButton.textContent = 'Waste';
+        wasteTimeButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.motionStudy.markWasteTime(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.motionStudy.timeline.highlightRegion;
+                this.motionStudy.markWasteTime(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the motionStudy session does not track or update them
+            }
+        });
+        this.wasteTimeButton = wasteTimeButton;
+        valueAddWasteTimeDiv.appendChild(wasteTimeButton);
+
+        const valueAddButton = document.createElement('div');
+        valueAddButton.classList.add('analytics-value-add-item');
+        valueAddButton.textContent = 'Value';
+        valueAddButton.addEventListener('click', () => {
+            if (this.state === RegionCardState.Pinned) {
+                this.motionStudy.markValueAdd(this.startTime, this.endTime);
+            } else {
+                const highlightRegion = this.motionStudy.timeline.highlightRegion;
+                this.motionStudy.markValueAdd(highlightRegion.startTime, highlightRegion.endTime);
+                this.updateValueAddWasteTimeUi(); // Needed for Tooltips, since the motionStudy session does not track or update them
+            }
+        });
+        this.valueAddButton = valueAddButton;
+        valueAddWasteTimeDiv.appendChild(valueAddButton);
+        
         this.updateDisplayActive();
     }
 
@@ -510,5 +559,40 @@ export class RegionCard {
         this.remove();
         this.container = newContainer;
         this.container.appendChild(this.element);
+    }
+
+    updateValueAddWasteTimeUi() {
+        const regionValue = this.motionStudy.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
+
+        if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
+            this.wasteTimeButton.classList.add('selected');
+            this.valueAddButton.classList.remove('selected');
+        } else if (regionValue === ValueAddWasteTimeTypes.VALUE_ADD) {
+            this.valueAddButton.classList.add('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        } else {
+            this.valueAddButton.classList.remove('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        }
+        
+        const subset = this.motionStudy.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
+        let totalValueAdd = 0;
+        let totalWasteTime = 0;
+        const totalTime = this.endTime - this.startTime;
+        subset.regions.forEach(region => {
+            if (region.value === ValueAddWasteTimeTypes.VALUE_ADD) {
+                totalValueAdd += region.duration;
+            } else if (region.value === ValueAddWasteTimeTypes.WASTE_TIME) {
+                totalWasteTime += region.duration;
+            }
+        });
+        if (totalTime === 0) {
+            console.warn('Region Card has 0 duration, cannot set Value Add/Waste Time ui');
+            return;
+        }
+        const valuePercent = Math.round(totalValueAdd / totalTime * 100);
+        const wastePercent = Math.round(totalWasteTime / totalTime * 100);
+        
+        this.valueAddWasteTimeSummary.setValues(valuePercent, wastePercent);
     }
 }

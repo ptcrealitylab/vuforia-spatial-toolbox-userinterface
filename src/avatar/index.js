@@ -14,18 +14,17 @@ createNameSpace("realityEditor.avatar");
 
     const KEEP_ALIVE_HEARTBEAT_INTERVAL = 3 * 1000; // should be a small fraction of the keep-alive timeout on the server (currently 15 seconds)
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
-    const RAYCAST_AGAINST_GROUNDPLANE = false;
+    const RAYCAST_AGAINST_GROUNDPLANE = true;
 
     let linkCanvas = null, linkCanvasCtx = null;
-    let linkObject = {
-        ballAnimationCount: 0
-    };
+    let linkCanvasNeedsClear = true;
     let menuBarHeight;
     
     let myAvatarId = null;
     let myAvatarObject = null;
     let avatarObjects = {}; // avatar objects are stored here, so that we know which ones we've discovered/initialized
     let avatarTouchStates = {}; // data received from avatars' touchState property in their storage node
+    let myAvatarTouchState = null;
     let avatarCursorStates = {}; // data received from avatars' cursorState property in their storage node
     let avatarNames = {}; // names received from avatars' userProfile property in their storage node
     let connectedAvatarUserProfiles = {}; // similar to avatarObjects, but maps objectKey -> user profile or undefined
@@ -111,7 +110,7 @@ createNameSpace("realityEditor.avatar");
             resizeLinkCanvas();
             translateLinkCanvas();
             window.addEventListener('resize', () => {
-                clearLinkCanvas();
+                realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
             });
         }
@@ -129,7 +128,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
             draw.renderAvatarIconList(connectedAvatarUserProfiles);
-            clearLinkCanvas();
+            realityEditor.avatar.setLinkCanvasNeedsClear(true);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
             if (objectKey === myAvatarId) {
@@ -139,7 +138,12 @@ createNameSpace("realityEditor.avatar");
         });
 
         realityEditor.gui.ar.draw.addUpdateListener(() => {
+            if (linkCanvasNeedsClear) {
+                clearLinkCanvas();
+            }
+
             draw.renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates);
+            draw.renderMyAvatar(myAvatarObject, myAvatarTouchState);
 
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
@@ -252,6 +256,7 @@ createNameSpace("realityEditor.avatar");
 
     function clearLinkCanvas() {
         linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
+        linkCanvasNeedsClear = false;
     }
 
     function reestablishAvatarIfNeeded() {
@@ -367,6 +372,7 @@ createNameSpace("realityEditor.avatar");
         let cursorState = {
             matrix: spatialCursorMatrix,
             colorHSL: utils.getColor(myAvatarObject),
+            isColored: realityEditor.spatialCursor.isSpatialCursorOnGroundPlane(),
             worldId: worldId
         }
 
@@ -450,7 +456,8 @@ createNameSpace("realityEditor.avatar");
             // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
                 let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane]);
+                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
+                groundPlane.updateWorldMatrix(true, false);
                 if (raycastIntersects.length > 0) {
                     worldIntersectPoint = raycastIntersects[0].point;
                 }
@@ -552,6 +559,9 @@ createNameSpace("realityEditor.avatar");
         if (info) {
             draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
             network.sendTouchState(info, touchState, { limitToFps: true });
+
+            // show your own beam, so you can tell what you're pointing at
+            myAvatarTouchState = touchState;
         }
 
         debugDataSent();
@@ -574,6 +584,9 @@ createNameSpace("realityEditor.avatar");
         if (info) {
             draw.renderCursorOverlay(false, screenX, screenY, utils.getColor(myAvatarObject));
             network.sendTouchState(info, touchState);
+
+            // stop showing your own beam
+            myAvatarTouchState = touchState;
         }
 
         debugDataSent();
@@ -676,7 +689,7 @@ createNameSpace("realityEditor.avatar");
         return {
             canvas: linkCanvas,
             ctx: linkCanvasCtx,
-            linkObject: linkObject
+            // linkObject: linkObject
         };
     }
 
@@ -690,5 +703,11 @@ createNameSpace("realityEditor.avatar");
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
+    exports.getConnectedAvatarList = () => {
+        return connectedAvatarUserProfiles;
+    };
+    exports.setLinkCanvasNeedsClear = (value) => {
+        linkCanvasNeedsClear = value;
+    }
 
 }(realityEditor.avatar));

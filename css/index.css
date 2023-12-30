@@ -78,7 +78,7 @@ body {
     /* -webkit-user-select: none;  Disable selection/Copy of UIWebView */
     -webkit-transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
-    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     color: #ffffff;
     /*background-color: black;*/
 }
@@ -885,6 +885,10 @@ body {
     opacity: 0.7;
 }
 
+.elementBehindCamera {
+    display: none;
+}
+
 .outsideOfViewport {
     display: none;
 }
@@ -1073,7 +1077,7 @@ Logic Interface CSS
     display: -webkit-box;
     -webkit-box-pack: center;
     -webkit-box-align: center;
-    font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 18px;
 }
 
@@ -1119,7 +1123,7 @@ Logic Interface CSS
   -webkit-box-align:center;
   background-color: rgba(0,0,0,0.7);
   border: 2px solid rgba(0,255,255,0.5);
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 .blockDivHighlighted {
@@ -1133,7 +1137,7 @@ Logic Interface CSS
   -webkit-box-align:center;
   background-color: rgba(0,0,0,0.7);
   border: 2px solid rgba(0,255,255,0.5);
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 /* block settings */
@@ -1194,7 +1198,7 @@ Logic Interface CSS
   user-select:none;
   -webkit-user-select:none;
   color: white;
-  font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: "Open Sans", sans-serif;
   font-size: 14px;
   position: absolute;
   overflow: hidden; /* crop the icon to the size of the container */
@@ -1640,7 +1644,7 @@ Logic Interface CSS
 .anchorTextField {
     position: absolute;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     text-align: center;
     vertical-align: bottom;
     right: 1%;
@@ -1676,7 +1680,7 @@ Logic Interface CSS
     width: calc(100vw - 220px);
     height: 30px;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     background-color: rgba(0,0,0,0.7);
     border-bottom-right-radius: 10px;
     border-bottom-left-radius: 10px;
@@ -1743,7 +1747,7 @@ Logic Interface CSS
 .avatarBeamLabel, .timelineBoardLabel {
     position: absolute;
     color: white;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     font-size: 24px;
     background-color: rgba(0, 0, 0, 0.3);
     z-index: 3000;
@@ -1848,14 +1852,46 @@ Logic Interface CSS
     width: 100%;
     height: 100%;
 
-    z-index: 2800;
-    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2800, 1);
+    z-index: 1050;
+    transform: matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1050, 1);
     pointer-events: none;
+}
+
+#analytics-step-label-container {
+    position: absolute;
+    bottom: calc(48px + 128px + 26px);
+    left: calc(50% + 12px + 64px + 24px);
+    pointer-events: all;
+}
+
+.analytics-step {
+    text-align: left;
+    display: block;
+    color: white;
+    background-color: #000000a0;
+    padding: 10px;
+    max-width: 20vw;
+    cursor: pointer;
+}
+
+.analytics-step-label-container-active {
+    border: 1px solid white;
+}
+
+#analytics-step-file {
+    pointer-events: none;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.analytics-step-file-input-label {
+    cursor: pointer;
 }
 
 #analytics-timeline-container {
     position: absolute;
-    bottom: calc(30px + 68px + 30px - 12px);
+    bottom: 48px;
     left: 50%;
     max-width: 1024px;
     width: 100%;
@@ -1874,19 +1910,35 @@ Logic Interface CSS
     cursor: pointer;
 }
 
-.analytics-region-card {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
+.analytics-region-card, .analytics-button-container {
     font-size: 14px;
-    font-family: "Futura", Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-family: "Open Sans", sans-serif;
     line-height: 22px;
-    position: absolute;
-    left: 50%;
+    width: 15rem;
 
     border-radius: 22px;
     background-color: rgba(0, 0, 0, 0.7);
     padding: 14px;
+}
+
+.analytics-button-container {
+    text-align: center;
+    width: 15rem;
+    font-size: 18px;
+    border-radius: 0;
+}
+
+.analytics-button-container > label {
+    cursor: pointer;
+}
+
+.analytics-region-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+
+    position: absolute;
+    left: 50%;
 
     z-index: 3000;
     transform: translate3d(-50%, 0, 3000px);
@@ -1904,6 +1956,7 @@ Logic Interface CSS
 .analytics-region-card.minimized:not(.pinned) {
     padding: 14px;
     height: 28px;
+    width: max-content;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -1917,13 +1970,12 @@ Logic Interface CSS
     position: relative;
     margin: 10px 0;
     transform: translateZ(3000px);
-    width: 15rem;
 }
 
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: 320px; /* guess at timeline top */
+    bottom: calc(320px - 66px); /* guess at timeline top */
     left: 35px;
     padding: 0;
     padding-right: 8px;
@@ -1931,15 +1983,9 @@ Logic Interface CSS
     overflow-y: auto;
 }
 
-.analytics-pinned-region-cards-csv {
-    position: absolute;
-    top: 84px;
-    right: calc(100vw - 30px);
-    pointer-events: all;
-}
-
 .analytics-pinned-region-cards-csv,
 .analytics-pinned-region-cards-csv:visited {
+    cursor: pointer;
     color: white;
 }
 
@@ -1957,6 +2003,10 @@ Logic Interface CSS
 }
 
 .analytics-region-card-subtitle {
+    grid-column-start: span 3;
+}
+
+.analytics-region-card-value-add-waste-time-summary {
     grid-column-start: span 3;
 }
 
@@ -1984,12 +2034,78 @@ Logic Interface CSS
 .analytics-region-card-graph-section-value {
 }
 
-.analytics-region-card-pin, .analytics-region-card-show {
-    color: white;
+.analytics-region-card-button-container {
+    grid-column-start: span 3;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
 }
-.analytics-region-card-pin:visited, .analytics-region-card-show:visited {
+
+.analytics-region-card-button {
+    border: 1px solid white;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: fit-content;
     color: white;
+    cursor: pointer;
+    padding: 0 6px;
+    transition: all 0.1s;
 }
+
+.analytics-region-card-button:hover {
+    background-color: rgb(180, 180, 180);
+}
+
+.analytics-value-add-waste-time-container {
+    border: 1px solid white;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: fit-content;
+}
+
+.analytics-waste-time-item, .analytics-value-add-item {
+    cursor: pointer;
+    text-align: center;
+    display: inline-block;
+    padding: 0 6px;
+    transition: all 0.1s;
+}
+
+.analytics-waste-time-item {
+    border-radius: 4px 0 0 4px;
+}
+
+.analytics-waste-time-item.selected {
+    background-color: rgb(160, 0, 0);
+}
+
+.analytics-waste-time-item:hover {
+    background-color: rgb(128, 0, 0);
+}
+
+.analytics-waste-time-item.selected:hover {
+    background-color: rgb(180, 0, 0);
+}
+
+.analytics-value-add-item {
+    border-left: 1px solid white;
+    border-radius:  0 4px 4px 0;
+}
+
+.analytics-value-add-item.selected {
+    background-color: rgb(0, 160, 0);
+}
+
+.analytics-value-add-item:hover {
+    background-color: rgb(0, 128, 0);
+}
+
+.analytics-value-add-item.selected:hover {
+    background-color: rgb(0, 180, 0);
+}
+
 
 #blurredEnvelopeBackground {
     background-color: #67676760;

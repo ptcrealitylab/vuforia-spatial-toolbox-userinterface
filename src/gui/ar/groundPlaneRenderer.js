@@ -9,6 +9,7 @@
 */
 
 // import * as THREE from "../../../thirdPartyCode/three/three.module";
+import {InfiniteGridHelper} from "../../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js"
 
 createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
@@ -88,10 +89,13 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
-            gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
+            gridHelper = new InfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
-            gridHelper.layers.set(2);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+            realityEditor.gui.threejsScene.getInternals().renderer3D.addScaleListener((deviceScale, sceneScale) => {
+                const worldScale = sceneScale * deviceScale;
+                gridHelper.setSizesAndDistance(gridSquareSizeInMm * worldScale, gridRegionSizeInMm * worldScale, maxVisibilityDistanceInMm * worldScale);
+            });
         }
 
         // don't show origin on devices that don't support AR tracking, because it's to help debug the groundplane tracker

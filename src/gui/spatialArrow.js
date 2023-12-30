@@ -135,6 +135,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let angle = 0;
         let k;
         
+        if (worldPos === null) return; // if rendering my avatar laser beam, then doesn't need to draw the arrow, since the laser beam is always on screen
         // if the object is off screen, then reverse its original screen position, then add the indicator
         if (!realityEditor.gui.threejsScene.isPointOnScreen(worldPos)) {
             let screenXY = realityEditor.gui.threejsScene.getScreenXY(worldPos);

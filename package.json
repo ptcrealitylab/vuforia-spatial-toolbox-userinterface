@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "User interface of the Reality Editor",
   "devDependencies": {
-    "eslint": "^8.52.0",
+    "@vitest/coverage-v8": "^1.0.4",
+    "eslint": "^8.55.0",
     "jsdoc": "^4.0.0",
-    "vite": "^4.5.0"
+    "vite": "^5.0.8",
+    "vitest": "^1.0.4"
   },
   "scripts": {
     "test": "npm run lint",
@@ -21,6 +23,5 @@
   "bugs": {
     "url": "https://github.com/PTCInc/RE-userinterface/issues"
   },
-  "homepage": "https://github.com/PTCInc/RE-userinterface#readme",
-  "dependencies": {}
+  "homepage": "https://github.com/PTCInc/RE-userinterface#readme"
 }

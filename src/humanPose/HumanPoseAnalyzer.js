@@ -3,10 +3,11 @@ import {JOINTS} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
+import {ValueAddWasteTimeLens} from "./ValueAddWasteTimeLens.js";
 import {AccelerationLens} from "./AccelerationLens.js";
 import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
-import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 
+import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
@@ -38,16 +39,23 @@ export class HumanPoseAnalyzer {
      * Creates a new HumanPoseAnalyzer
      * @param {Object3D} parent - container to add the analyzer's containers to
      */
-    constructor(analytics, parent) {
-        this.analytics = analytics
+    constructor(motionStudy, parent) {
+        this.motionStudy = motionStudy;
         this.setupContainers(parent);
 
-        /** @type {AnalyticsLens[]} */
+        this.rebaLens = new RebaLens();
+        this.overallRebaLens = new OverallRebaLens();
+        this.valueAddWasteTimeLens = new ValueAddWasteTimeLens(this.motionStudy);
+        this.accelerationLens = new AccelerationLens();
+        this.poseObjectIdLens = new PoseObjectIdLens();
+        
+        /** @type {MotionStudyLens[]} */
         this.lenses = [
-            new RebaLens(),
-            new OverallRebaLens(),
-            new AccelerationLens(),
-            new PoseObjectIdLens()
+            this.rebaLens,
+            this.overallRebaLens,
+            this.valueAddWasteTimeLens,
+            this.accelerationLens,
+            this.poseObjectIdLens
         ]
         this.activeLensIndex = 0;
 
@@ -126,7 +134,7 @@ export class HumanPoseAnalyzer {
     }
 
     get active() {
-      return realityEditor.analytics.getActiveHumanPoseAnalyzer() === this;
+      return realityEditor.motionStudy.getActiveHumanPoseAnalyzer() === this;
     }
 
     get activeLens() {
@@ -369,51 +377,76 @@ export class HumanPoseAnalyzer {
      */
     addPointsToSpaghetti(poses, historical) {
         this.lenses.forEach(lens => {
-            const pointsById = {};
-            poses.forEach(pose => {
-                const timestamp = pose.timestamp;
-                const id = pose.metadata.poseObjectId;
-                let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
-                currentPoint.y += 400;
-                if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
-                    this.createSpaghetti(lens, id, historical);
-                }
-
-                const color = lens.getColorForPose(pose);
-
-                /** @type {SpaghettiMeshPathPoint} */
-                const historyPoint = {
-                    x: currentPoint.x,
-                    y: currentPoint.y,
-                    z: currentPoint.z,
-                    color,
-                    timestamp,
-                };
-                if (!pointsById[id]) {
-                    pointsById[id] = [historyPoint];
-                } else {
-                    pointsById[id].push(historyPoint);
-                }
-            });
-
-            Object.keys(pointsById).forEach(id => {
-                const spaghetti = this.historyLines[lens.name].all[id];
-                spaghetti.addPoints(pointsById[id]);
-            });
+            this.addPointsToSpaghettiForLens(lens, poses, historical);
         });
+    }
+
+    /**
+     * Adds a poseRenderInstance's point to the history line's points for the given lens, updating the history line if desired
+     * @param {MotionStudyLens} lens - the lens to use for the spaghetti
+     * @param {Pose[]} poses - the poses to add the points from
+     * @param {boolean} historical - whether the pose is historical or live
+     */
+    addPointsToSpaghettiForLens(lens, poses, historical) {
+        const pointsById = {};
+        poses.forEach(pose => {
+            const timestamp = pose.timestamp;
+            const id = pose.metadata.poseObjectId;
+            let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
+            currentPoint.y += 400;
+            if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
+                this.createSpaghetti(lens, id, historical);
+            }
+
+            const color = lens.getColorForPose(pose);
+
+            /** @type {SpaghettiMeshPathPoint} */
+            const historyPoint = {
+                x: currentPoint.x,
+                y: currentPoint.y,
+                z: currentPoint.z,
+                color,
+                timestamp,
+            };
+            if (!pointsById[id]) {
+                pointsById[id] = [historyPoint];
+            } else {
+                pointsById[id].push(historyPoint);
+            }
+        });
+
+        Object.keys(pointsById).forEach(id => {
+            const spaghetti = this.historyLines[lens.name].all[id];
+            spaghetti.addPoints(pointsById[id]);
+        });
+    }
+
+    /**
+     * Resets spaghetti info with updated lens colors
+     * @param {MotionStudyLens} lens - the lens to use for the spaghetti
+     */
+    reprocessSpaghettiForLens(lens) {
+        const livePoses = this.clones.live.map(clone => clone.pose);
+        const historicalPoses = this.clones.historical.map(clone => clone.pose);
+
+        Object.values(this.historyLines[lens.name].all).forEach(spaghetti => {
+            spaghetti.resetPoints();
+        });
+        this.addPointsToSpaghettiForLens(lens, livePoses, false);
+        this.addPointsToSpaghettiForLens(lens, historicalPoses, true);
     }
 
     /**
      * Creates a spaghetti line using a given lens
      * Side effect: adds the spaghetti line to the appropriate historyLineContainer and historyLines
-     * @param {AnalyticsLens} lens - the lens to use for the spaghetti
+     * @param {MotionStudyLens} lens - the lens to use for the spaghetti
      * @param {string} id - key for spaghettis (the pose object id)
      * @param {boolean} historical - whether the spaghetti is historical or live
      * @return {Spaghetti} - the spaghetti line that was created
      */
     createSpaghetti(lens, id, historical) {
-        const analytics = this.analytics;
-        const spaghetti = new Spaghetti([], analytics, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
+        const motionStudy = this.motionStudy;
+        const spaghetti = new Spaghetti([], motionStudy, `spaghetti-${id}-${lens.name}-${historical ? 'historical' : 'live'}`, {
             widthMm: 30,
             heightMm: 30,
             usePerVertexColors: true,
@@ -507,8 +540,25 @@ export class HumanPoseAnalyzer {
     }
 
     /**
+     * Reprocesses the given lens, applying it to poses and spaghetti lines
+     * @param {MotionStudyLens} lens - the lens to reprocess
+     */
+    reprocessLens(lens) {
+        [this.clones.live, this.clones.historical].forEach(relevantClones => {
+            const posesChanged = lens.applyLensToHistory(relevantClones.map(clone => clone.pose));
+            posesChanged.forEach((wasChanged, index) => {
+                if (wasChanged) { // Only update colors if the pose data was modified
+                    relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].renderer.markColorNeedsUpdate();
+                }
+            });
+        });
+        this.reprocessSpaghettiForLens(lens);
+    }
+
+    /**
      * Sets the active lens
-     * @param {AnalyticsLens} lens - the lens to set as active
+     * @param {MotionStudyLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
         const previousLens = this.activeLens;
@@ -947,7 +997,7 @@ export class HumanPoseAnalyzer {
 
         // As the active HPA we control the shared cursor
         if (this.active) {
-            this.analytics.setCursorTime(this.animationPosition, true);
+            this.motionStudy.setCursorTime(this.animationPosition, true);
         } else {
             // Otherwise display the clone without interfering
             this.displayClonesByTimestamp(this.animationPosition);

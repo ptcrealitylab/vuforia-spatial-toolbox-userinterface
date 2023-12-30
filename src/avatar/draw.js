@@ -11,6 +11,7 @@ createNameSpace("realityEditor.avatar.draw");
 
     // main data structure that stores the various visual elements for each avatar objectKey (beam, pointer, textLabel)
     let avatarMeshes = {};
+    let linkObjects = {}; // contains the animation properties for the lines drawn from avatars
 
     // 2D UI for keeping track of the connection status
     let debugUI = null;
@@ -28,10 +29,32 @@ createNameSpace("realityEditor.avatar.draw");
             }
             for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
                 realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
-                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.isColored, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);
+        }
+    }
+    
+    function renderMyAvatar(myAvatarObject, myAvatarTouchState) {
+        if (!myAvatarObject) return;
+        if (!myAvatarTouchState) return;
+
+        realityEditor.avatar.setLinkCanvasNeedsClear(true);
+
+        try {
+            // if that device isn't touching down, hide its laser beam and ignore the rest
+            if (!myAvatarTouchState.isPointerDown) {
+                return;
+            }
+
+            // it only makes sense to draw the laser beam on our own screen if at least one other user is connected
+            let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
+            if (numConnectedAvatars < 2) return;
+
+            drawLaserBeam(myAvatarObject.objectId, null, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject), myAvatarTouchState.screenX, myAvatarTouchState.screenY);
+        } catch (e) {
+            console.warn(e);
         }
     }
 
@@ -211,6 +234,8 @@ createNameSpace("realityEditor.avatar.draw");
     function renderAvatar(objectKey, touchState, avatarName) {
         if (!touchState) { return; }
 
+        realityEditor.avatar.setLinkCanvasNeedsClear(true);
+
         // if that device isn't touching down, hide its laser beam and ignore the rest
         if (!touchState.isPointerDown) {
             if (avatarMeshes[objectKey]) {
@@ -218,7 +243,6 @@ createNameSpace("realityEditor.avatar.draw");
                 avatarMeshes[objectKey].beam.visible = false;
                 avatarMeshes[objectKey].textLabel.style.display = 'none';
                 realityEditor.gui.spatialArrow.deleteLaserBeamIndicator(objectKey);
-                realityEditor.avatar.clearLinkCanvas();
             }
             return;
         }
@@ -368,30 +392,69 @@ createNameSpace("realityEditor.avatar.draw");
             endWorldPositionArray = realityEditor.sceneGraph.convertToNewCoordSystem(endWorldPositionArray, groundPlaneSceneNode, worldSceneNode);
             endWorldPosition.set(endWorldPositionArray[0], endWorldPositionArray[1], endWorldPositionArray[2]);
         }
+        drawLaserBeam(objectKey, endWorldPosition, color, lightColor);
+    }
+
+    function drawLaserBeam(objectKey, endWorldPosition, color, lightColor, screenX, screenY) {
+        const THREE = realityEditor.gui.threejsScene.THREE;
         // realityEditor.gui.spatialArrow.drawArrowBasedOnWorldPosition(endWorldPosition, color, lightColor);
         realityEditor.gui.spatialArrow.addLaserBeamIndicator(objectKey, endWorldPosition, color, lightColor);
         // todo Steve: draw a fake 3d line from avatar icon to the position of the laser pointer sphere (endWorldPosition)
         let linkCanvasInfo = realityEditor.avatar.getLinkCanvasInfo();
         let avatarIconElement = document.getElementById('avatarIcon' + objectKey);
-        let avatarIconElementRect = avatarIconElement.getBoundingClientRect();
+        let avatarIconElementRect;
+        // try to draw the line coming from the avatar icon that corresponds with who sent the line
+        if (avatarIconElement) {
+            avatarIconElementRect = avatarIconElement.getBoundingClientRect();
+        } else {
+            // if we can't find the icon for the avatar, then try to get the last icon in the container (the "+N" one)
+            let avatarIconContainer = document.getElementById('avatarIconContainer');
+            let iconList = avatarIconContainer.querySelectorAll('.avatarListIcon');
+            let lastIcon = iconList[iconList.length - 1];
+            if (lastIcon) {
+                avatarIconElementRect = lastIcon.getBoundingClientRect();
+            } else {
+                // default it to the top-center of the screen if all else fails
+                avatarIconElementRect = avatarIconContainer.getBoundingClientRect();
+            }
+        }
         let linkStartPos = [avatarIconElementRect.x + avatarIconElementRect.width / 2, avatarIconElementRect.y + avatarIconElementRect.height / 2];
-        let camWorldPos = new THREE.Vector3();
-        realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
-        let linkStartZ = camWorldPos;
-        let linkEndZ = endWorldPosition;
-        let linkDistance = linkStartZ.sub(linkEndZ).length();
-        // console.log(linkDistance);
-        let ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
-        // console.log(ratio);
-        let endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        
+        // for laser beams coming from other devices, draw to the worldPosition
+        // for laser beams from this device, draw to the (screenX, screenY) where the user touches
+        let endScreenXY = null;
+        let ratio = 1;
+        if (endWorldPosition) {
+            let camWorldPos = new THREE.Vector3();
+            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camWorldPos);
+            let linkStartZ = camWorldPos;
+            let linkEndZ = endWorldPosition;
+            let linkDistance = linkStartZ.sub(linkEndZ).length();
+            ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
+            endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
+        } else if (screenX && screenY) {
+            endScreenXY = {
+                x: screenX,
+                y: screenY
+            };
+            let linkDistance = Math.sqrt(Math.pow((screenX - linkStartPos[0]), 2) + Math.pow((screenY - linkStartPos[1]), 2));
+            ratio = quadraticRemap(linkDistance, 0, 10000, 0.05, 1);
+        } else {
+            return;
+        }
+        
         let linkEndPos = [endScreenXY.x, endScreenXY.y];
-        realityEditor.avatar.clearLinkCanvas();
         let colorArr = HSLStrToRGBArr(color);
         let lightColorArr = HSLStrToRGBArr(lightColor);
+
+        if (typeof linkObjects[objectKey] === 'undefined') {
+            linkObjects[objectKey] = { ballAnimationCount: 0 };
+        }
+
         if (realityEditor.avatar.isDesktop()) {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkObjects[objectKey], timeCorrection, lightColorArr, colorArr, 1, 1, 1);
         } else {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkCanvasInfo.linkObject, timeCorrection, lightColorArr, colorArr, 1, 1, 1);
+            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkObjects[objectKey], timeCorrection, lightColorArr, colorArr, 1, 1, 1);
         }
     }
     
@@ -615,6 +678,7 @@ createNameSpace("realityEditor.avatar.draw");
     }
 
     exports.renderOtherAvatars = renderOtherAvatars;
+    exports.renderMyAvatar = renderMyAvatar;
     exports.updateAvatarName = updateAvatarName;
     exports.renderAvatarIconList = renderAvatarIconList;
     exports.renderCursorOverlay = renderCursorOverlay;

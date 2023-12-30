@@ -7,29 +7,24 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
-import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
+import { ViewFrustum, MAX_VIEW_FRUSTUMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
+import { Renderer3D } from "./Renderer3D.js"; 
+import { Camera3D } from "./Camera3D.js";
+import { GltfObjectFactory } from "./GLTFObjectFactory.js";
+import { CustomMaterials } from "./CustomMaterials.js";
+import { GroundPlane } from "./GroundPlane.js";
+import { AnchoredGroup } from "./AnchoredGroup.js"
 
 (function(exports) {
-
-    var camera, scene, renderer;
-    var rendererWidth = window.innerWidth;
-    var rendererHeight = window.innerHeight;
-    var aspectRatio = rendererWidth / rendererHeight;
-    var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlaneCollider;
-    let raycaster;
-    let mouse;
+    let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
@@ -42,48 +37,49 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let customMaterials;
     let materialCullingFrustums = {}; // used in remote operator to cut out points underneath the point-clouds
 
-    let areaTargetMaterials = [];
-
-    // for now, this contains everything not attached to a specific world object
+    /** 
+     * for now, this contains everything not attached to a specific world object
+     * @type {AnchoredGroup}
+     */
     var threejsContainerObj;
+
+    /**
+     * @type {Renderer3D}
+     */
+    let renderer3D = null;
+
+    /**
+     * @type {Camera3D}
+     */
+    let camera3D = null;
+
+    /**
+     * @type {GroundPlane}
+     */
+    let groundPlane = null;
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
-        renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(rendererWidth, rendererHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.autoClear = false;
 
-        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
-        camera.matrixAutoUpdate = false;
-        scene = new THREE.Scene();
-        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
-
-        realityEditor.device.layout.onWindowResized(({width, height}) => {
-            renderer.setSize(width, height);
-        });
+        renderer3D = new Renderer3D(domElement);
+        const renderSize = renderer3D.getSize(); 
+        camera3D = new Camera3D(renderSize.width, renderSize.height);
+        renderer3D.setCamera(camera3D);
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainerObj = new THREE.Object3D();
-        threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-        scene.add(threejsContainerObj);
-
-        setupLighting();
+        threejsContainerObj = new AnchoredGroup("threejsContainerObj");
+        renderer3D.add(threejsContainerObj.getInternalObject());
 
         customMaterials = new CustomMaterials();
         let _mapShaderUI = new MapShaderSettingsUI();
 
+        camera3D.addCameraMatrixListener((matrix) => {customMaterials.onCameraMatrixChanged(matrix);});
+
         // Add the BVH optimized raycast function from three-mesh-bvh.module.js
         // Assumes the BVH is available on the `boundsTree` variable
         THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -97,12 +93,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         // mesh.position.setZ(150);
 
         addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
-
-        let pmremGenerator = new THREE.PMREMGenerator(renderer);
-        pmremGenerator.compileEquirectangularShader();
-
-        let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-        scene.environment = neutralEnvironment;
 
         // this triggers with a requestAnimationFrame on remote operator,
         // or at frequency of Vuforia updates on mobile
@@ -133,74 +123,77 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         document.body.appendChild(css3dCanvas);
     }
 
-    // light the scene with a combination of ambient and directional white light
-    function setupLighting() {
-        // This doesn't seem to work with the area target model material, but adding it for everything else
-        let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambLight);
-
-        // attempts to light the scene evenly with directional lights from each side, but mostly from the top
-        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLightTopDown.position.set(0, 1, 0); // top-down
-        dirLightTopDown.lookAt(0, 0, 0);
-        scene.add(dirLightTopDown);
-
-        // let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXLeft.position.set(1, 0, 0);
-        // scene.add(dirLightXLeft);
-
-        // let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXRight.position.set(-1, 0, 0);
-        // scene.add(dirLightXRight);
-
-        // let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZLeft.position.set(0, 0, 1);
-        // scene.add(dirLightZLeft);
-
-        // let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZRight.position.set(0, 0, -1);
-        // scene.add(dirLightZRight);
-    }
-
-    // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
+    /**
+     * use this helper function to update the camera matrix using the camera matrix from the sceneGraph
+     * @param {Float32Array} matrix camera matrix, milimeter scale 
+     */
     function setCameraPosition(matrix) {
-        setMatrixFromArray(camera.matrix, matrix);
-        camera.updateMatrixWorld(true);
-        if (customMaterials) {
-            let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
-            customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
-        }
+        camera3D.setCameraMatrix(matrix);
     }
 
     // adds an invisible plane to the ground that you can raycast against to fill in holes in the area target
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
-        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide} );
-        const plane = new THREE.Mesh( geometry, material );
-        plane.rotateX(Math.PI/2);
-        plane.visible = false;
-        addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneCollider';
-        groundPlaneCollider = plane;
+        groundPlane = new GroundPlane(sceneSizeInMeters / renderer3D.getSceneScale());
+        addToScene(groundPlane.getInternalObject(), {occluded: true});
+
+        let areaTargetNavmesh = null;
+        realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
+            areaTargetNavmesh = navmesh;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        let areaTargetMesh = null;
+        realityEditor.avatar.network.onLoadOcclusionObject((_cachedWorldObject, cachedOcclusionObject) => {
+            areaTargetMesh = cachedOcclusionObject;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        const tryUpdatingGroundPlanePosition = () => {
+            if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
+
+            groundPlane.getInternalObject().parent.remove(groundPlane.getInternalObject());
+            areaTargetMesh.add(groundPlane.getInternalObject());
+            let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
+            let floorOffset = (areaTargetNavmesh.floorOffset / renderer3D.getSceneScale()) / areaTargetMeshScale;
+            groundPlane.getInternalObject().position.set(0, floorOffset, 0);
+            groundPlane.getInternalObject().updateMatrix();
+            groundPlane.getInternalObject().updateMatrixWorld(true);
+            console.log(groundPlane.getInternalObject().matrixWorld);
+
+            // update the groundPlane sceneNode to match the position of the new groundplane collider
+            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlane.getInternalObject().position.clone());
+            let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
+            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
+
+            isGroundPlanePositionSet = true;
+        }
     }
 
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
-        cssRenderer.render(scene, camera);
+        if (renderer3D.isInWebXRMode()) {
+            if (renderer3D.getDeviceScale() !== 1) {
+                renderer3D.setDeviceScale(1);
+            }
+        } else {
+            if (renderer3D.getDeviceScale() !== 1000) {
+                renderer3D.setDeviceScale(1000);
+            }
+        }
+
+        cssRenderer.render(renderer3D.getInternalScene(), camera3D.getInternalObject());
         
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
             callback(deltaTime);
         });
 
-        if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
-            setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
-            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
-            isProjectionMatrixSet = true;
+         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
+            camera3D.setProjectionMatrix(globalStates.realProjectionMatrix);
         }
 
         const worldObjectIds = realityEditor.worldObjects.getWorldObjectKeys();
@@ -210,7 +203,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-                scene.add(group);
+                renderer3D.add(group);
 
                 // Helps visualize world object origin point for debugging
                 if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId() && !realityEditor.device.environment.variables.hideOriginCube) {
@@ -257,31 +250,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         // the main three.js container object has its origin set to the ground plane origin
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            threejsContainerObj.setMatrix(rootMatrix);
         }
 
         customMaterials.update();
 
-        // only render the scene if the projection matrix is initialized
-        if (isProjectionMatrixSet) {
-            renderer.clear();
-            // render the ground plane visualizer first
-            camera.layers.set(2);
-            renderer.render(scene, camera);
-            renderer.clearDepth();
-            if (hasGltfScene) {
-                // Set rendered layer to 1: only the background, i.e. the
-                // static gltf mesh
-                camera.layers.set(1);
-                renderer.render(scene, camera);
-                // Leaves only the color from the render, discarding depth and
-                // stencil
-                renderer.clear(false, true, true);
-            }
-            // Set layer to 0: everything but the background
-            camera.layers.set(0);
-            renderer.render(scene, camera);
-        }
+        renderer3D.render();
     }
 
     function toggleDisplayOriginBoxes(newValue) {
@@ -290,6 +264,11 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         });
     }
 
+    /**
+     * 
+     * @param {THREE.Object3D} obj 
+     * @param {*} parameters 
+     */
     function addToScene(obj, parameters) {
         if (!parameters) {
             parameters = {};
@@ -298,8 +277,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
-        const layer = parameters.layer;
         if (occluded) {
+            // set renderOrder to 2 recursive
             const queue = [obj];
             while (queue.length > 0) {
                 const currentObj = queue.pop();
@@ -309,25 +288,25 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         if (parentToCamera) {
             if (attach) {
-                camera.attach(obj);
+                console.log("warning: camera.attach does not comply with meter conversion");
+                camera3D.attach(obj);
             } else {
-                camera.add(obj);
+                camera3D.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
+                console.log("warning: worldObjectGroups.attach does not comply with meter conversion");
                 worldObjectGroups[worldObjectId].attach(obj);
             } else {
                 worldObjectGroups[worldObjectId].add(obj);
             }
         } else {
             if (attach) {
+                console.log("warning: threejsContainerObj.attach does not comply with meter conversion");
                 threejsContainerObj.attach(obj);
             } else {
                 threejsContainerObj.add(obj);
             }
-        }
-        if (layer) {
-            obj.layers.set(layer);
         }
     }
 
@@ -355,8 +334,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             return; // Don't try creating multiple occlusion objects for the same world object
         }
 
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load(pathToGltf, function(gltf) {
+        GltfObjectFactory.getInstance().createObject(pathToGltf, function(gltf) {
             const geometries = [];
             gltf.scene.traverse(obj => {
                 if (obj.geometry) {
@@ -391,13 +369,13 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             const group = new THREE.Group(); // mesh needs to be in group so scale doesn't get overriden by model view matrix
             group.add(mesh);
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
-            scene.add(group);
+            renderer3D.add(group);
             worldOcclusionObjects[objectId] = group;
         });
     }
 
     function getObjectForWorldRaycasts(objectId) {
-        return worldOcclusionObjects[objectId] || scene.getObjectByName('areaTargetMesh');
+        return worldOcclusionObjects[objectId] || renderer3D.getObjectByName('areaTargetMesh');
     }
 
     function isOcclusionActive(objectId) {
@@ -422,8 +400,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         maxHeight = 2.3 // use to slice off the ceiling above this height (meters)
      */
     function addGltfToScene(pathToGltf, map, steepnessMap, heightMap, originOffset, originRotation, maxHeight, ceilingAndFloor, center, callback) {
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load(pathToGltf, function(gltf) {
+        GltfObjectFactory.getInstance().createObject(pathToGltf, function(gltf) {
             let wireMesh;
             let wireMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(new THREE.MeshStandardMaterial({
                 wireframe: true,
@@ -434,7 +411,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 animateOnLoad: true,
                 inverted: true,
                 useFrustumCulling: false
-            });
+            }, Object.keys(materialCullingFrustums).length > 0);
 
             if (gltf.scene.geometry) {
                 allMeshes.push(gltf.scene);
@@ -443,23 +420,23 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         console.warn('no material', gltf.scene);
                     } else {
                         // cache the original gltf material on mobile browsers, to improve performance
-                        // if (!realityEditor.device.environment.isDesktop()) {
-                            gltf.scene.originalMaterial = gltf.scene.material.clone();
-                        // }
-                        // gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
-                        //     maxHeight: maxHeight,
-                        //     center: center,
-                        //     animateOnLoad: true,
-                        //     inverted: false,
-                        //     useFrustumCulling: true
-                        // });
-                        gltf.scene.material = gltf.scene.originalMaterial;
+                        gltf.scene.originalMaterial = gltf.scene.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            gltf.scene.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(gltf.scene.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            }, Object.keys(materialCullingFrustums).length > 0);
+                        }
                     }
                 }
                 gltf.scene.geometry.computeVertexNormals();
                 gltf.scene.geometry.computeBoundingBox();
                 gltf.scene.heightMaterial = customMaterials.heightMapMaterial(gltf.scene.material, {ceilingAndFloor: ceilingAndFloor});
                 gltf.scene.gradientMaterial = customMaterials.gradientMapMaterial(gltf.scene.material);
+                gltf.scene.material = gltf.scene.colorMaterial || gltf.scene.originalMaterial;
 
                 // Add the BVH to the boundsTree variable so that the acceleratedRaycast can work
                 gltf.scene.geometry.boundsTree = new MeshBVH( gltf.scene.geometry );
@@ -469,7 +446,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
-                        if (child.name && child.name.toLocaleLowerCase() === 'mesh_0') {
+                        if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
                             meshesToRemove.push(child);
                             return;
                         }
@@ -486,22 +463,22 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                         // TODO: to re-enable frustum culling on desktop, add this: if (!realityEditor.device.environment.isDesktop())
                         //  so that we don't swap to the original material on desktop. also need to update desktopRenderer.js
                         // cache the original gltf material on mobile browsers, to improve performance
-                        // if (!realityEditor.device.environment.isDesktop()) {
-                            child.originalMaterial = child.material.clone();
-                        // }
-                        // child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
-                        //     maxHeight: maxHeight,
-                        //     center: center,
-                        //     animateOnLoad: true,
-                        //     inverted: false,
-                        //     useFrustumCulling: true
-                        // });
-                        child.material = child.originalMaterial;
+                        child.originalMaterial = child.material.clone();
+                        if (realityEditor.device.environment.isDesktop()) {
+                            child.colorMaterial = customMaterials.areaTargetMaterialWithTextureAndHeight(child.material, {
+                                maxHeight: maxHeight,
+                                center: center,
+                                animateOnLoad: true,
+                                inverted: false,
+                                useFrustumCulling: false,
+                            }, Object.keys(materialCullingFrustums).length > 0);
+                        }
                     }
-                    
+
                     child.geometry.computeVertexNormals();
                     child.heightMaterial = customMaterials.heightMapMaterial(child.material, {ceilingAndFloor: ceilingAndFloor});
                     child.gradientMaterial = customMaterials.gradientMapMaterial(child.material);
+                    child.material = child.colorMaterial || child.originalMaterial;
 
                     // the attributes must be non-indexed in order to add a barycentric coordinate buffer
                     child.geometry = child.geometry.toNonIndexed();
@@ -557,15 +534,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
-            wireMesh.layers.set(1);
-            gltf.scene.layers.set(1);
-            gltf.scene.traverse(child => {
-                if (child.layers) {
-                    child.layers.set(1);
-                }
-            });
-            hasGltfScene = true;
-
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
                 threejsContainerObj.remove(wireMesh);
@@ -594,7 +562,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 realityEditor.forEachFrameInAllObjects(postHeightMapChangeEventIntoIframes);
                 allMeshes.forEach((child) => {
                     child.material.dispose();
-                    child.material = child.originalMaterial;
+                    child.material = child.colorMaterial || child.originalMaterial;
                 });
                 break;
             case 'height':
@@ -654,24 +622,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     // NOTE: returns the coordinates in threejs scene world coordinates:
     //       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
     function getRaycastIntersects(clientX, clientY, objectsToCheck) {
-        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
-
-        //2. set the picking ray from the camera position and mouse coordinates
-        raycaster.setFromCamera( mouse, camera );
-
-        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
-
-        //3. compute intersections
-        // add object layer to raycast layer mask
-        objectsToCheck.forEach(obj => {
-            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
-        });
-        let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
-        results.forEach(intersection => {
-            intersection.rayDirection = raycaster.ray.direction;
-        });
-        return results;
+        return renderer3D.getRaycastIntersects(clientX, clientY, objectsToCheck);
     }
 
     /**
@@ -687,28 +638,27 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.unproject(camera3D.getInternalObject());
         distanceRaycastVector.normalize();
         distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
         return distanceRaycastResultPosition;
     }
 
     function getObjectByName(name) {
-        return scene.getObjectByName(name);
+        return renderer3D.getObjectByName(name);
     }
     
     // return all objects with the name
     function getObjectsByName(name) {
-        if (name === undefined) return;
-        const objects = [];
-        scene.traverse((object) => {
-            if (object.name === name) objects.push(object);
-        })
-        return objects;
+        return renderer3D.getObjectsByNameRecursive(name);
     }
 
+    /**
+     * 
+     * @returns {GroundPlane}
+     */
     function getGroundPlaneCollider() {
-        return groundPlaneCollider;
+        return groundPlane;
     }
 
     function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
@@ -795,9 +745,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      * @returns {ViewFrustum}
      */
     const createCullingFrustum = function() {
-        areaTargetMaterials.forEach(material => {
-            material.transparent = true;
-        });
+        customMaterials.setAreaTargetMaterialsTransparent(true);
 
         // TODO: get these camera parameters dynamically?
         const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
@@ -874,222 +822,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         let numFrustums = Object.keys(materialCullingFrustums).length;
 
-        areaTargetMaterials.forEach(material => {
-            material.uniforms[UNIFORMS.numFrustums].value = Math.min(numFrustums, MAX_VIEW_FRUSTUMS);
-            if (numFrustums === 0) {
-                material.transparent = false; // optimize by turning off transparency when no virtualizers are connected
-            }
-        });
-    }
-
-    class CustomMaterials {
-        constructor() {
-            this.materialsToAnimate = [];
-            this.heightMapMaterials = [];
-            this.gradientMapMaterials = [];
-            this.lastUpdate = -1;
-        }
-        areaTargetVertexShader({useFrustumCulling, useLoadingAnimation, center}) {
-            if (!useLoadingAnimation && !useFrustumCulling) return THREE.ShaderChunk.meshphysical_vert;
-            if (useLoadingAnimation && !useFrustumCulling) {
-                return this.loadingAnimationVertexShader(center);
-            }
-            return frustumVertexShader({useLoadingAnimation: useLoadingAnimation, center: center});
-        }
-        areaTargetFragmentShader({useFrustumCulling, useLoadingAnimation, inverted}) {
-            if (!useLoadingAnimation && !useFrustumCulling) return THREE.ShaderChunk.meshphysical_frag;
-            if (useLoadingAnimation && !useFrustumCulling) {
-                return this.loadingAnimationFragmentShader(inverted);
-            }
-            return frustumFragmentShader({useLoadingAnimation: useLoadingAnimation, inverted: inverted});
-        }
-        loadingAnimationVertexShader(center) {
-            return THREE.ShaderChunk.meshphysical_vert
-                .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
-    len = length(position - vec3(${center.x}, ${center.y}, ${center.z}));
-    `).replace('#include <common>', `#include <common>
-    varying float len;
-    `);
-        }
-        loadingAnimationFragmentShader(inverted) {
-            let condition = 'if (len > maxHeight) discard;';
-            if (inverted) {
-                // condition = 'if (len < maxHeight || len > (maxHeight + 8.0) / 2.0) discard;';
-                condition = 'if (len < maxHeight) discard;';
-            }
-            return THREE.ShaderChunk.meshphysical_frag
-                .replace('#include <clipping_planes_fragment>', `
-                         ${condition}
-                         #include <clipping_planes_fragment>`)
-                .replace(`#include <common>`, `
-                         #include <common>
-                         varying float len;
-                         uniform float maxHeight;
-                         `);
-        }
-        buildDefaultFrustums(numFrustums) {
-            let frustums = [];
-            for (let i = 0; i < numFrustums; i++) {
-                frustums.push({
-                    normal1: {x: 1, y: 0, z: 0},
-                    normal2: {x: 1, y: 0, z: 0},
-                    normal3: {x: 1, y: 0, z: 0},
-                    normal4: {x: 1, y: 0, z: 0},
-                    normal5: {x: 1, y: 0, z: 0},
-                    normal6: {x: 1, y: 0, z: 0},
-                    D1: 0,
-                    D2: 0,
-                    D3: 0,
-                    D4: 0,
-                    D5: 0,
-                    D6: 0,
-                    viewAngleSimilarity: 0
-                })
-            }
-            return frustums;
-        }
-        updateCameraDirection(cameraDirection) {
-            areaTargetMaterials.forEach(material => {
-                for (let i = 0; i < material.uniforms[UNIFORMS.numFrustums].value; i++) {
-                    let thisFrustum = material.uniforms[UNIFORMS.frustums].value[i];
-                    let frustumDir = [thisFrustum.normal6.x, thisFrustum.normal6.y, thisFrustum.normal6.z];
-                    let viewingDir = [cameraDirection.x, cameraDirection.y, cameraDirection.z];
-                    // set to 1 if parallel, 0 if perpendicular. lower bound clamped to 0 instead of going to -1 if antiparallel
-                    thisFrustum.viewAngleSimilarity = Math.max(0, realityEditor.gui.ar.utilities.dotProduct(frustumDir, viewingDir));
-                }
-            });
-        }
-        heightMapMaterial(sourceMaterial, {ceilingAndFloor}) {
-            let material = sourceMaterial.clone();
-
-            material.uniforms = THREE.UniformsUtils.merge([
-                THREE.ShaderLib.physical.uniforms,
-                {
-                    heightMap_maxY: {value: ceilingAndFloor.ceiling},
-                    heightMap_minY: {value: ceilingAndFloor.floor},
-                    distanceToCamera: {value: 0} // todo Steve; later in the code, need to set gltf.scene.material.uniforms['....'] to desired value
-                }
-            ]);
-
-            material.vertexShader = realityEditor.gui.shaders.heightMapVertexShader();
-            
-            material.fragmentShader = realityEditor.gui.shaders.heightMapFragmentShader();
-
-            material.type = 'verycoolheightmapmaterial';
-
-            material.needsUpdate = true;
-            
-            this.heightMapMaterials.push(material);
-
-            return material;
-        }
-        gradientMapMaterial(sourceMaterial) {
-            let material = sourceMaterial.clone();
-
-            material.uniforms = THREE.UniformsUtils.merge([
-                THREE.ShaderLib.physical.uniforms,
-                {
-                    gradientMap_minAngle: {value: 0},
-                    gradientMap_maxAngle: {value: 25},
-                    gradientMap_outOfRangeAreaOriginalColor: {value: false},
-                    distanceToCamera: {value: 0}
-                }
-            ]);
-
-            material.vertexShader = realityEditor.gui.shaders.gradientMapVertexShader();
-
-            material.fragmentShader = realityEditor.gui.shaders.gradientMapFragmentShader();
-
-            material.type = 'verycoolgradientmapmaterial';
-
-            material.needsUpdate = true;
-
-            this.gradientMapMaterials.push(material);
-
-            return material;
-        }
-        highlightWalkableArea(isOn) {
-            this.gradientMapMaterials.forEach((material) => {
-                material.uniforms['gradientMap_outOfRangeAreaOriginalColor'].value = isOn;
-            });
-        }
-        updateGradientMapThreshold(minAngle, maxAngle) {
-            this.gradientMapMaterials.forEach((material) => {
-                material.uniforms['gradientMap_minAngle'].value = minAngle;
-                material.uniforms['gradientMap_maxAngle'].value = maxAngle;
-            });
-        }
-        areaTargetMaterialWithTextureAndHeight(sourceMaterial, {maxHeight, center, animateOnLoad, inverted, useFrustumCulling}) {
-            let material = sourceMaterial.clone();
-            
-            // for the shader to work, we must fully populate the frustums uniform array
-            // with placeholder data (e.g. normals and constants for all 5 frustums),
-            // but as long as numFrustums is 0 then it won't have any effect
-            let defaultFrustums = this.buildDefaultFrustums(MAX_VIEW_FRUSTUMS);
-            
-            material.uniforms = THREE.UniformsUtils.merge([
-                THREE.ShaderLib.physical.uniforms,
-                {
-                    maxHeight: {value: maxHeight},
-                    numFrustums: {value: 0},
-                    frustums: {value: defaultFrustums}
-                }
-            ]);
-
-            material.vertexShader = this.areaTargetVertexShader({
-                useFrustumCulling: useFrustumCulling,
-                useLoadingAnimation: animateOnLoad,
-                center: center
-            });
-            material.fragmentShader = this.areaTargetFragmentShader({
-                useFrustumCulling: useFrustumCulling,
-                useLoadingAnimation: animateOnLoad,
-                inverted: inverted
-            });
-
-            material.transparent = (Object.keys(materialCullingFrustums).length > 0);
-            areaTargetMaterials.push(material);
-
-            if (animateOnLoad) {
-                this.materialsToAnimate.push({
-                    material: material,
-                    currentHeight: -15, // -maxHeight,
-                    maxHeight: maxHeight * 4,
-                    animationSpeed: 0.02 / 2
-                });
-            }
-
-            material.type = 'thecoolermeshstandardmaterial';
-
-            material.needsUpdate = true;
-
-            return material;
-        }
-        update() {
-            if (this.materialsToAnimate.length === 0) { return; }
-
-            let now = window.performance.now();
-            if (this.lastUpdate < 0) {
-                this.lastUpdate = now;
-            }
-            let dt = now - this.lastUpdate;
-            this.lastUpdate = now;
-
-            let indicesToRemove = [];
-            this.materialsToAnimate.forEach(function(entry, index) {
-                let material = entry.material;
-                if (entry.currentHeight < entry.maxHeight) {
-                    entry.currentHeight += entry.animationSpeed * dt;
-                    material.uniforms['maxHeight'].value = entry.currentHeight;
-                } else {
-                    indicesToRemove.push(index);
-                }
-            });
-
-            for (let i = indicesToRemove.length-1; i > 0; i--) {
-                let matIndex = indicesToRemove[i];
-                this.materialsToAnimate.splice(matIndex, 1);
-            }
+        customMaterials.setAreaTargetMaterialsFrustumCount(Math.min(numFrustums, MAX_VIEW_FRUSTUMS));
+        if (numFrustums === 0) {
+            customMaterials.setAreaTargetMaterialsTransparent(false); // optimize by turning off transparency when no virtualizers are connected
         }
     }
 
@@ -1101,7 +836,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(camera, renderer.domElement);
+        let transformControls = new TransformControls(camera3D.getInternalObject(), renderer3D.getCanvasElement());
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1115,7 +850,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             transformControls.size = options.size;
         }
         transformControls.attach(object);
-        scene.add(transformControls);
+        renderer3D.add(transformControls);
 
         if (typeof onChange === 'function') {
             transformControls.addEventListener('change', onChange);
@@ -1126,20 +861,16 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         return transformControls;
     }
 
-    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
-    }
-
     // source: https://github.com/mrdoob/three.js/issues/78
     exports.getScreenXY = function(meshPosition) {
         let pos = meshPosition.clone();
         let projScreenMat = new THREE.Matrix4();
-        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        projScreenMat.multiplyMatrices(camera3D.getInternalObject().projectionMatrix, camera3D.getInternalObject().matrixWorldInverse);
         pos.applyMatrix4(projScreenMat);
         
         // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
         let meshPosWrtCamera = meshPosition.clone();
-        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
+        meshPosWrtCamera.applyMatrix4(camera3D.getInternalObject().matrixWorldInverse);
         if (meshPosWrtCamera.z > 0) {
             pos.negate();
         }
@@ -1154,7 +885,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.isPointOnScreen = function(pointPosition) {
         let frustum = new THREE.Frustum();
         let matrix = new THREE.Matrix4();
-        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        matrix.multiplyMatrices(camera3D.getInternalObject().projectionMatrix, camera3D.getInternalObject().matrixWorldInverse);
         frustum.setFromProjectionMatrix(matrix);
         if (frustum.containsPoint(pointPosition)) {
             return true;
@@ -1184,18 +915,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     }
 
     /**
-     * @return {{
-           camera: THREE.PerspectiveCamera,
-           renderer: THREE.WebGLRenderer,
-           scene: THREE.Scene,
-       }} Various internal objects necessary for advanced (hacky) functions
+     * @return {Camera3D, Renderer3D} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
-        return {
-            camera,
-            renderer,
-            scene,
-        };
+        return {camera3D, renderer3D};
     };
 
     exports.initService = initService;
@@ -1212,6 +935,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.getObjectByName = getObjectByName;
     exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
+    exports.isGroundPlanePositionSet = () => { return isGroundPlanePositionSet; };
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;
