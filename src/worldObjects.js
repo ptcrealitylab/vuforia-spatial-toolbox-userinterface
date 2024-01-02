@@ -162,10 +162,10 @@ createNameSpace("realityEditor.worldObjects");
             return;
         }
 
-        return; // this is here for the webxr version
+        //return; // this is here for the webxr version
         
         // REST endpoint for for downloading the world object for that server
-        var urlEndpoint = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object.port), '/worldObject/');
+        var urlEndpoint = realityEditor.network.getURL(object.ip, realityEditor.network.getPort(object), '/worldObject/');
         realityEditor.network.getData(null, null, null, urlEndpoint, function (objectKey, frameKey, nodeKey, msg) {
             if (msg && Object.keys(msg).length > 0) {
                 initializeWorldObject(msg);
