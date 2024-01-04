@@ -70,6 +70,9 @@ function Objects() {
     this.objectId = null;
     // The name for the object used for interfaces.
     this.name = "";
+    // The UUID used internally by Vuforia for tracking
+    this.targetId = null;
+
     // The IP address for the object is relevant to point the Reality Editor to the right server.
     // It will be used for the UDP broadcasts.
     this.ip = "localhost";

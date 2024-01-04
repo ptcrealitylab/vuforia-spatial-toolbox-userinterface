@@ -49,13 +49,6 @@ createNameSpace('realityEditor.app.callbacks');
 
 (function(exports) {
 
-    // these determine if visible object matrices are sent in alone or with status property (status needed for extended tracking)
-    let matrixFormatCalculated = false;
-    let isMatrixFormatNew; // true if visible objects has the format {objectKey: {matrix:[], status:""}} instead of {objectKey: []}
-
-    // debug variable to speed up app by completely disabling possibility for extended tracking
-    let DISABLE_ALL_EXTENDED_TRACKING = false;
-
     // save this matrix in a local scope for faster retrieval
     realityEditor.app.callbacks.rotationXMatrix = rotationXMatrix;
 
@@ -224,9 +217,9 @@ createNameSpace('realityEditor.app.callbacks');
      * Callback for realityEditor.app.getMatrixStream
      * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
      * Stores those matrices in the draw module to be rendered in the next draw frame
-     * @param {Object.<string, Array.<number>>} visibleObjects
+     * @param {Object.<string, Array.<number>>} visibleTargets
      */
-    function receiveMatricesFromAR(visibleObjects) {
+    function receiveMatricesFromAR(visibleTargets) {
         if (!realityEditor.worldObjects) {
             return;
         } // prevents tons of error messages while app is loading but Vuforia has started
@@ -234,18 +227,27 @@ createNameSpace('realityEditor.app.callbacks');
         // If viewing the VR map instead of the AR view, don't update objects/tools based on Vuforia
         if (!realityEditor.device.modeTransition.isARMode()) return;
 
-        // this first section makes the app work with extended or non-extended tracking while being backwards compatible
-
-        if (!matrixFormatCalculated) {
-            // for speed, only calculates this one time
-            calculateMatrixFormat(visibleObjects);
-        }
-
-        // ignore this step if using old app version that ignores EXTENDED_TRACKED objects entirely
-        if (isMatrixFormatNew) {
-            // extract status into separate data structure and and format matrices into a backwards-compatible object
-            // if extended tracking is turned off, discard EXTENDED_TRACKED objects
-            convertNewMatrixFormatToOld(visibleObjects);
+        // in older versions, visibleTargets maps objectIds directly to a matrix
+        // in newer versions, visibleTargets maps targetIds to { matrix: [], targetName: "" }
+        // resolves incompatible app/server/object versions by finding the object that matches either the objectId,
+        // targetName, or whose targetId matches the targetId
+        let visibleObjects = {};
+        for (let key in visibleTargets) {
+            if (Array.isArray(visibleTargets[key])) {
+                // backwards compatible with old app versions -> the key is the objectId, and it directly holds the matrix
+                visibleObjects[key] = visibleTargets[key];
+            } else {
+                // find the object whose targetId matches the key, and store the .matrix under the objectId key
+                let matchingObjectId = Object.keys(objects).find(objectKey => {
+                    return objects[objectKey].targetId === key;
+                });
+                if (matchingObjectId) {
+                    visibleObjects[matchingObjectId] = visibleTargets[key].matrix;
+                } else {
+                    // for old objects that weren't generated with a targetId, try to find them by targetName
+                    visibleObjects[visibleTargets[key].targetName] = visibleTargets[key].matrix;
+                }
+            }
         }
 
         // we still need to ignore this default object in case the app provides it, to be backwards compatible with older app versions
@@ -434,42 +436,6 @@ createNameSpace('realityEditor.app.callbacks');
             while (listeners.onTrackingStarted.length > 0) {
                 let callback = listeners.onTrackingStarted.pop();
                 callback();
-            }
-        }
-    }
-
-    /**
-     * Looks at the visibleObjects and sees if it uses the old format or the new, so that we can convert to backwards-compatible
-     * New format of visibleObject  = {objectKey: {matrix:[], status:""}}
-     * Old format of visibleObjects = {objectKey: []}
-     * @param visibleObjects
-     */
-    function calculateMatrixFormat(visibleObjects) {
-        if (typeof isMatrixFormatNew === 'undefined') {
-            for (var key in visibleObjects) {
-                isMatrixFormatNew = (typeof visibleObjects[key].status !== 'undefined');
-                matrixFormatCalculated = true;
-                break; // only needs to look at one object to determine format that this vuforia app uses
-            }
-        }
-    }
-
-    /**
-     * Takes new matrix format and extracts each object's tracking status into visibleObjectsStatus
-     * And puts each object's matrix directly back into the visibleObjects so that it matches the old format
-     * Also deletes EXTENDED_TRACKED objects from structure if not in extendedTracking mode, to match old behavior
-     * @param {Object.<{objectKey: {matrix:Array.<number>, status: string}}>} visibleObjects
-     */
-    function convertNewMatrixFormatToOld(visibleObjects) {
-        realityEditor.gui.ar.draw.visibleObjectsStatus = {};
-        for (var key in visibleObjects) {
-            realityEditor.gui.ar.draw.visibleObjectsStatus[key] = visibleObjects[key].status;
-            if ((!DISABLE_ALL_EXTENDED_TRACKING && realityEditor.gui.settings.toggleStates.extendedTracking) || visibleObjects[key].status === 'TRACKED') {
-                visibleObjects[key] = visibleObjects[key].matrix;
-            } else {
-                if (visibleObjects[key].status === 'EXTENDED_TRACKED') {
-                    delete visibleObjects[key];
-                }
             }
         }
     }
