@@ -25,6 +25,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let groundPlaneCollider;
     let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
+    let isWorldMeshLoadedAndProcessed = false;
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
@@ -188,6 +189,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         plane.name = 'groundPlaneCollider';
         groundPlaneCollider = plane;
 
+        isGroundPlanePositionSet = true;
+
         let areaTargetNavmesh = null;
         realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
             areaTargetNavmesh = navmesh;
@@ -202,6 +205,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         const tryUpdatingGroundPlanePosition = () => {
             if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
+            isWorldMeshLoadedAndProcessed = true;
 
             groundPlaneCollider.parent.remove(groundPlaneCollider);
             areaTargetMesh.add(groundPlaneCollider);
@@ -1249,6 +1253,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.isGroundPlanePositionSet = () => { return isGroundPlanePositionSet; };
+    exports.isWorldMeshLoadedAndProcessed = () => { return isWorldMeshLoadedAndProcessed; }
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;

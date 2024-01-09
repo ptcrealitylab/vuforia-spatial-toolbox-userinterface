@@ -335,6 +335,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 toggleDisplaySpatialCursor(true);
             }
         });
+
+        realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
+            if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) {
+                return;
+            }
+
+            if (DEFAULT_SPATIAL_CURSOR_ON) {
+                toggleDisplaySpatialCursor(true);
+            }
+        });
         
         addSpatialCursor();
         addTestSpatialCursor();
@@ -904,7 +914,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
         //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
         // }
-        if (includeGroundPlane && realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+        if (includeGroundPlane && (realityEditor.gui.threejsScene.isGroundPlanePositionSet() || !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
             objectsToCheck.push(groundPlane);

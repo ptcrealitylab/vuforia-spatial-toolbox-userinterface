@@ -48,7 +48,7 @@ createNameSpace("realityEditor.worldObjects");
         // when an object is detected, check if we need to add a world object for its server
         realityEditor.network.addObjectDiscoveredCallback(function(object, objectKey) {
             
-            if (object.isWorldObject) {
+            if (object.isWorldObject || object.type === 'world') {
                 // add to the internal world objects
                 if (typeof worldObjects[objectKey] === 'undefined') {
                     worldObjects[objectKey] = object;
@@ -59,8 +59,14 @@ createNameSpace("realityEditor.worldObjects");
                 }
 
                 // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                if (object.objectId === getLocalWorldId()) {
+                // if (object.objectId === getLocalWorldId()) {
+                // All world objects initialize when first detected, because they act as placeholders until target data is uploaded
                     initializeWorldObject(object);
+                // }
+
+                if (object.objectId !== getLocalWorldId()) {
+                    const renderingFlagName = 'loadingWorldMesh';
+                    realityEditor.device.environment.clearSuppressedObjectRenderingFlag(renderingFlagName); // hide tools until the model is loaded
                 }
             }
 
@@ -192,9 +198,10 @@ createNameSpace("realityEditor.worldObjects");
             realityEditor.network.onNewObjectAdded(object.objectId);
         }
 
-        if (object.objectId === localWorldObjectKey) {
+        // if (object.objectId === localWorldObjectKey) {
+        // always initialize at identity origin - will be updated to the target position when target is added/downloaded/localized
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
-        }
+        // }
 
         updateOriginOffsetIfNecessary(object, null);
         setTimeout(function() { updateOriginOffsetIfNecessary(object, null); }, 100);
@@ -364,8 +371,8 @@ createNameSpace("realityEditor.worldObjects");
     function setOrigin(objectKey, originMatrix) {
         if (typeof worldCorrections[objectKey] !== 'undefined') {
             
-            if (worldCorrections[objectKey] === null) {
-                localizedWithinWorldCallbacks.forEach(function(callback) {
+            if (worldCorrections[objectKey] === null || realityEditor.gui.ar.utilities.isIdentityMatrix(worldCorrections[objectKey])) {
+                localizedWithinWorldCallbacks.forEach(function(callback) { // TODO: should localizedWithinWorldCallbacks be able to trigger twice? once when placeholder detected, once when target detected
                     callback(objectKey);
                 });
                 worldUsedForCorrection = objectKey;
