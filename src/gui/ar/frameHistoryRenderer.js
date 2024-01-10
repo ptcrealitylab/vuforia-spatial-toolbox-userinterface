@@ -453,10 +453,10 @@ createNameSpace("realityEditor.gui.ar.frameHistoryRenderer");
      * @param {string|null} nodeKey - if null, renders a frame ghost, otherwise renders the node ghost
      * @param {Frame} ghostFrame
      * @param {Node|null} ghostNode
-     * @param {Array.<number>} markerMatrix - the visibleObjects[objectKey] matrix
+     * @param {Array.<number>} targetMatrix - the visibleObjects[objectKey] matrix
      * @param {boolean} wasFrameDeleted
      */
-    function renderGhost(objectKey, frameKey, nodeKey, ghostFrame, ghostNode, markerMatrix, wasFrameDeleted) {
+    function renderGhost(objectKey, frameKey, nodeKey, ghostFrame, ghostNode, targetMatrix, wasFrameDeleted) {
         
         // some logic lets us customize the same function to render ghosts for frames and nodes
         var isNode = !!nodeKey;
