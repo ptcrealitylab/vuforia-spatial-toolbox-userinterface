@@ -457,6 +457,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // tool added at screen coordinates
     function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
 
+        // TODO: what happens if you drop tool into the sky, looking up – make it drop close in front of you
         let spatialCursorMatrix = null;
         if (moveToCursor) {
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
@@ -952,7 +953,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function getCursorRelativeToWorldObject() {
-        if (!cachedWorldObject || !cachedOcclusionObject) { return null; }
+        if ((!cachedWorldObject || !cachedOcclusionObject) && !realityEditor.gui.threejsScene.isGroundPlanePositionSet()) { return null; }
 
         let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
