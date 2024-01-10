@@ -217,7 +217,15 @@ createNameSpace('realityEditor.app.callbacks');
      * Callback for realityEditor.app.getMatrixStream
      * Gets triggered ~60FPS when the AR SDK sends us a new set of modelView matrices for currently visible objects
      * Stores those matrices in the draw module to be rendered in the next draw frame
-     * @param {Object.<string, Array.<number>>} visibleTargets
+     * @param {Object.<string, {matrix: number[], targetName: string}>} visibleTargets.current - (App versions starting 2024)
+     *   - Each key is a unique target ID, used internally by Vuforia. The value is an object with:
+     *   - `matrix`: Length-16 transformation matrix representing the target relative to Vuforia's (0,0,0)
+     *   - `targetName`: The name of the target. In old versions, this is the objectId. In current versions it can be anything.
+     * @param {Object.<string, number[]>} visibleTargets.deprecated - (Deprecated app versions - prior to 2024)
+     *   - Each key is the target name, not the target ID, and the value is the matrix (array of 16 numbers)
+     *   - In this version, the target must be generated using the corresponding objectId as its target name
+     *
+     * Note: The deprecated format is maintained for backward compatibility.
      */
     function receiveMatricesFromAR(visibleTargets) {
         if (!realityEditor.worldObjects) {
@@ -227,10 +235,7 @@ createNameSpace('realityEditor.app.callbacks');
         // If viewing the VR map instead of the AR view, don't update objects/tools based on Vuforia
         if (!realityEditor.device.modeTransition.isARMode()) return;
 
-        // in older versions, visibleTargets maps objectIds directly to a matrix
-        // in newer versions, visibleTargets maps targetIds to { matrix: [], targetName: "" }
-        // resolves incompatible app/server/object versions by finding the object that matches either the objectId,
-        // targetName, or whose targetId matches the targetId
+        // determines which format (current or deprecated) is used for visibleTargets, and extracts the correct info
         let visibleObjects = {};
         for (let key in visibleTargets) {
             if (Array.isArray(visibleTargets[key])) {
