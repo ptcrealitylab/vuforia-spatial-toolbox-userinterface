@@ -1,5 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
+import { VRButton } from "../../thirdPartyCode/three/VRButton.module.js";
 
 /**
  @typedef {number} PixelCount 
@@ -75,6 +76,8 @@ class Renderer3D {
 
         /** @type {[(deviceScale: UnitsPerMeter, sceneScale: MetersPerUnit) => void]} */
         this.scaleListeners = [];
+
+        document.body.appendChild(VRButton.createButton(this.renderer));
     }
 
     /**
