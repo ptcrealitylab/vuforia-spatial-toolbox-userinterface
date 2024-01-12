@@ -536,7 +536,7 @@ realityEditor.gui.ar.positioning.getScreenPosition = function(objectKey, frameKe
     var utils = realityEditor.gui.ar.utilities;
     var draw = realityEditor.gui.ar.draw;
     
-    // 1. recompute the ModelViewProjection matrix for the marker
+    // 1. recompute the ModelViewProjection matrix for the target
     var activeObjectMatrix = [];
     utils.multiplyMatrix(draw.visibleObjects[objectKey], globalStates.projectionMatrix, activeObjectMatrix);
     
