@@ -130,7 +130,7 @@ realityEditor.network.getURL = function(server, identifier, route){
     let secret = null;
 
     if (parseInt(Number(identifier))) {
-        protocol = "http"
+        protocol = "https"
         url = server;
         port = identifier;
     } else {
