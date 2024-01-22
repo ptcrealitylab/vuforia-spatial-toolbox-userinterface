@@ -282,7 +282,7 @@ realityEditor.app.sendUDPMessage = function(message) {
 /**
  * Boolean response if a file exists in the local filesystem.
  * You can pass in the same fileName as from where you downloaded the file
- * (e.g. datAddress = 'http://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat')
+ * (e.g. datAddress = 'https://' + objectHeartbeat.ip + ':' + httpPort + '/obj/' + objectName + '/target/target.dat')
  * It will automatically convert that to the location on the local filesystem where that download would end up.
  * @param {string} fileName
  * @param {FunctionName} callBack
@@ -294,7 +294,7 @@ realityEditor.app.getFileExists = function(fileName, callBack) {
 /**
  * Downloads a file. The callback is an error or success, and the filename for reference.
  * The filename url is converted into a temp file path (works as a black box), so that file can be located again using the original filename url
- * @param {string} fileName - the url that you are downloading, e.g. "http://10.0.0.225:8080/obj/stonesScreen/target/target.xml"
+ * @param {string} fileName - the url that you are downloading, e.g. "https://10.0.0.225:8080/obj/stonesScreen/target/target.xml"
  * @param {FunctionName} callBack
  */
 realityEditor.app.downloadFile = function(fileName, callBack) {
