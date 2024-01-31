@@ -72,6 +72,7 @@ createNameSpace("realityEditor.gui.modal");
      * @param {string} submitButtonText
      * @param {function} onCancelCallback
      * @param {function} onSubmitCallback
+     * @param {boolean} useSmallerVersion
      */
     function openClassicModal(headerText, descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion) {
         // create the instance of the modal
@@ -98,6 +99,50 @@ createNameSpace("realityEditor.gui.modal");
             event.stopPropagation();
         });
         
+        // present on the DOM
+        document.body.appendChild(domElements.fade);
+        document.body.appendChild(domElements.container);
+    }
+
+    function openInputModal({ headerText, descriptionText, inputPlaceholderText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion }) {
+        // create the instance of the modal
+        // instantiate / modify the DOM elements
+        var domElements = createClassicModalDOM(useSmallerVersion);
+        domElements.header.innerHTML = headerText;
+        domElements.description.innerHTML = descriptionText;
+        domElements.cancelButton.innerHTML = cancelButtonText || 'Cancel';
+        domElements.submitButton.innerHTML = submitButtonText || 'Submit';
+        let inputField = document.createElement('input');
+        inputField.setAttribute('type', 'text');
+        if (inputPlaceholderText) {
+            inputField.setAttribute('placeholder', inputPlaceholderText);
+        }
+        inputField.classList.add('classicModalTextInput');
+        domElements.container.insertBefore(inputField, domElements.cancelButton);
+
+        realityEditor.device.keyboardEvents.openKeyboard(); // mark the keyboard as in-use until the modal disappears, so keyboard shortcuts are disabled
+        // realityEditor.device.environment.addSuppressedObjectRenderingFlag('inputModal'); // hide tools while modal is open
+
+        // attach callbacks to button pointer events + delete/hide when done
+        domElements.cancelButton.addEventListener('pointerup', function(event) {
+            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
+            // realityEditor.device.environment.clearSuppressedObjectRenderingFlag('inputModal');
+            onCancelCallback(event);
+            hideModal(domElements);
+        });
+        domElements.submitButton.addEventListener('pointerup', function(event) {
+            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
+            // realityEditor.device.environment.clearSuppressedObjectRenderingFlag('inputModal');
+            onSubmitCallback(event, inputField.value);
+            hideModal(domElements);
+        });
+
+        // disable touch actions elsewhere on the screen
+        // todo does this happen automatically from the fade element?
+        domElements.fade.addEventListener('pointerevent', function(event) {
+            event.stopPropagation();
+        });
+
         // present on the DOM
         document.body.appendChild(domElements.fade);
         document.body.appendChild(domElements.container);
@@ -136,7 +181,7 @@ createNameSpace("realityEditor.gui.modal");
 
     /**
      * Constructs the DOM and returns references to its elements
-     * @return {{fade: HTMLDivElement, container: HTMLDivElement, description: HTMLDivElement, cancelButton: HTMLDivElement, submitButton: HTMLDivElement}}
+     * @return {{fade: HTMLDivElement, container: HTMLDivElement, header: HTMLDivElement, description: HTMLDivElement, cancelButton: HTMLDivElement, submitButton: HTMLDivElement}}
      */
     function createClassicModalDOM(useSmallerCenteredVersion) {
         var fade = document.createElement('div'); // darkens/blurs the background
@@ -290,6 +335,7 @@ createNameSpace("realityEditor.gui.modal");
 
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
+    exports.openInputModal = openInputModal;
     exports.showSimpleNotification = showSimpleNotification;
     exports.showScreenTopNotification = showScreenTopNotification;
     

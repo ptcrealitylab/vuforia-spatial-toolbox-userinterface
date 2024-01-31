@@ -50,7 +50,7 @@ createNameSpace("realityEditor.avatar.draw");
 
             // it only makes sense to draw the laser beam on our own screen if at least one other user is connected
             let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
-            if (numConnectedAvatars < 2) return;
+            if (numConnectedAvatars < 1) return;
 
             drawLaserBeam(myAvatarObject.objectId, null, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject), myAvatarTouchState.screenX, myAvatarTouchState.screenY);
         } catch (e) {
@@ -68,8 +68,8 @@ createNameSpace("realityEditor.avatar.draw");
             iconContainer.removeChild(iconContainer.lastChild);
         }
 
-        if (Object.keys(connectedAvatars).length < 2) {
-            return; // don't show my icon unless there is at least one other user connected
+        if (Object.keys(connectedAvatars).length < 1) {
+            return; // don't show unless there is at least one avatar
         }
 
         let sortedKeys = realityEditor.avatar.utils.sortAvatarList(connectedAvatars);
@@ -113,6 +113,34 @@ createNameSpace("realityEditor.avatar.draw");
             ['pointerout', 'pointercancel', 'pointerup'].forEach((eventName) => {
                 iconDiv.addEventListener(eventName, hideFullNameTooltip);
             });
+
+            if (isMyIcon) {
+                iconDiv.addEventListener('pointerup', (e) => {
+                    console.log('clicked on my icon - option to rename avatar?');
+                    // show a modal that lets you type in a name
+                    realityEditor.gui.modal.openInputModal({
+                        headerText: 'Edit Avatar Name',
+                        descriptionText: 'Specify the name that other users will see.',
+                        inputPlaceholderText: 'Your username here',
+                        // cancelButtonText: 'Cancel',
+                        // submitButtonText: 'Submit',
+                        onCancelCallback: (e) => {
+                            console.log('cancel edit name', e);
+                        },
+                        onSubmitCallback: (e, userName) => {
+                            console.log('submitted', userName);
+                            if (userName && typeof userName === 'string' && userName.length > 0) {
+                                console.log(`manually entered username myUserName ${userName}`);
+                                realityEditor.avatar.setMyUsername(userName);
+                                realityEditor.avatar.writeUsername(userName);
+                                // write to window.localStorage and use instead of anonymous in the future in this browser
+                                window.localStorage.setItem('manuallyEnteredUsername', userName);
+                            }
+                        },
+                        useSmallerVersion: true
+                    });
+                });
+            }
         });
 
         let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) - ICON_GAP;
@@ -140,6 +168,10 @@ createNameSpace("realityEditor.avatar.draw");
         let iconImg = document.createElement('img');
         iconImg.classList.add('avatarListIconImage');
         iconDiv.appendChild(iconImg);
+
+        if (isMyIcon) {
+            iconDiv.classList.add('avatarListIconMyAvatar');
+        }
 
         if (initials) {
             iconImg.src = 'svg/avatar-initials-background-dark.svg';
@@ -201,7 +233,7 @@ createNameSpace("realityEditor.avatar.draw");
         if (name) {
             nameDiv.innerText = isMyAvatar ? name + ' (you)' : name;
         } else {
-            nameDiv.innerText = isMyAvatar ? 'You (Anonymous)' : 'Anonymous';
+            nameDiv.innerText = isMyAvatar ? 'You (click to edit)' : 'Anonymous';
         }
         let width = Math.max(120, (nameDiv.innerText.length) * 12);
         nameDiv.style.width = width + 'px';

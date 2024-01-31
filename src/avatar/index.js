@@ -38,7 +38,8 @@ createNameSpace("realityEditor.avatar");
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let isUsernameActive = false;
-    let myUsername = null;
+    let myUsername = window.localStorage.getItem('manuallyEnteredUsername') || null;
+    console.log(`myUsername = ${myUsername}`);
     let myProviderId = '';
 
     // these are used for raycasting against the environment when sending laser beams
@@ -74,9 +75,13 @@ createNameSpace("realityEditor.avatar");
         draw = realityEditor.avatar.draw;
         utils = realityEditor.avatar.utils;
 
+        console.log(`initService myUsername = ${myUsername}`);
+
         // begin creating our own avatar object when we localize within a world object
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
+
+            console.log(`initService myUsername = ${myUsername}`);
 
             // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
             //       migrate our existing avatar to the server hosting the current world object that we're looking at
@@ -522,11 +527,14 @@ createNameSpace("realityEditor.avatar");
     // you can set this even before the avatar has been created
     function setMyUsername(name) {
         myUsername = name;
+        console.log(`setMyUsername myUsername = ${name}`);
     }
 
     // name is one property within the avatar node's userProfile public data
     // avatar has to exist before calling this
     function writeUsername(name) {
+        console.log(`writeUsername myUsername = ${name}`);
+
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
         draw.updateAvatarName(myAvatarId, name);
@@ -699,7 +707,8 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
-    exports.setMyUsername = setMyUsername;
+    exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
+    exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};

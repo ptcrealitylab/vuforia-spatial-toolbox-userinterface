@@ -1803,6 +1803,10 @@ Logic Interface CSS
     height: 30px;
 }
 
+.avatarListIconMyAvatar {
+    cursor: pointer;
+}
+
 .avatarListIconImage {
     position: absolute;
     left: 0;
