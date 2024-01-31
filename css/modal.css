@@ -165,17 +165,6 @@
 
 /* Styles for 2D modal with grey background, header, description, and buttons */
 /* blurs the background behind the modal */
-/*#modalFadeClassic {*/
-/*    position: absolute;*/
-/*    top: 0;*/
-/*    left: 0;*/
-/*    width: 100vw;*/
-/*    height: 100vh;*/
-/*    background-color: rgba(0,0,0,0.2);*/
-/*    -webkit-backdrop-filter: blur(40px);*/
-/*    -webkit-transform: translateZ(8990px)*/
-/*}*/
-
 #modalFadeClassic {
     position: absolute;
     top: 0;
@@ -213,7 +202,6 @@
     border-radius: 5px;
     background-color: rgba(255,255,255,0.7);
     -webkit-transform: translateZ(8995px);
-    z-index: 8995;
     color: black;
 }
 #modalHeaderClassic {

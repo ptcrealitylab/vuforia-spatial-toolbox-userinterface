@@ -149,13 +149,17 @@ createNameSpace("realityEditor.gui.modal");
         [cancel, fade].forEach(elt => {
             elt.addEventListener('pointerup', function(event) {
                 hideModal();
-                onCancelCallback(event);
+                if (onCancelCallback) {
+                    onCancelCallback(event);
+                }
             });
         });
         // tapping on the submit button sends the text input to the callback function
         submit.addEventListener('pointerup', function(event) {
             hideModal();
-            onSubmitCallback(event, inputField.value);
+            if (onSubmitCallback) {
+                onSubmitCallback(event, inputField.value);
+            }
         });
     }
     

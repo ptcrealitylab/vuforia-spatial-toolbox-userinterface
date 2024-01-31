@@ -122,15 +122,8 @@ createNameSpace("realityEditor.avatar.draw");
                         headerText: 'Edit Avatar Name',
                         descriptionText: 'Specify the name that other users will see.',
                         inputPlaceholderText: 'Your username here',
-                        // cancelButtonText: 'Cancel',
-                        // submitButtonText: 'Submit',
-                        onCancelCallback: (e) => {
-                            console.log('cancel edit name', e);
-                        },
                         onSubmitCallback: (e, userName) => {
-                            console.log('submitted', userName);
                             if (userName && typeof userName === 'string' && userName.length > 0) {
-                                console.log(`manually entered username myUserName ${userName}`);
                                 realityEditor.avatar.setMyUsername(userName);
                                 realityEditor.avatar.writeUsername(userName);
                                 // write to window.localStorage and use instead of anonymous in the future in this browser
