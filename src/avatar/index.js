@@ -189,21 +189,6 @@ createNameSpace("realityEditor.avatar");
             network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
         });
 
-        const description = 'toggle on to show name to other users';
-        const propertyName = 'myUserName';
-        const iconSrc = '../../../svg/object.svg';
-        const defaultValue = false;
-        const placeholderText = '';
-        realityEditor.gui.settings.addToggleWithText('User Name', description, propertyName, iconSrc, defaultValue, placeholderText, (isToggled) => {
-            isUsernameActive = isToggled;
-            writeUsername(isToggled ? myUsername : null);
-        }, (text) => {
-            myUsername = text;
-            if (isUsernameActive) {
-                writeUsername(myUsername);
-            }
-        });
-
         setInterval(() => {
             if (myAvatarId && myAvatarObject) {
                 network.keepObjectAlive(myAvatarId);

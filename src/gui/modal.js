@@ -105,47 +105,58 @@ createNameSpace("realityEditor.gui.modal");
     }
 
     function openInputModal({ headerText, descriptionText, inputPlaceholderText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion }) {
-        // create the instance of the modal
-        // instantiate / modify the DOM elements
-        var domElements = createClassicModalDOM(useSmallerVersion);
-        domElements.header.innerHTML = headerText;
-        domElements.description.innerHTML = descriptionText;
-        domElements.cancelButton.innerHTML = cancelButtonText || 'Cancel';
-        domElements.submitButton.innerHTML = submitButtonText || 'Submit';
+        // Add a blurry background that can be tapped on to cancel the modal
+        let fade = document.createElement('div'); // darkens/blurs the background
+        fade.id = 'modalFadeClassic';
+        fade.classList.add('modalVisibleFadeIn');
+        document.body.appendChild(fade);
+
+        // create the container with the header, description, a text input, and a submit and cancel button
+        let container = document.createElement('div');
+        container.classList.add('inputModalCard');
+        // container.classList.add('viewCard', 'center', 'popUpModal');
+        let text = document.createElement('div');
+        text.classList.add('inputModalCardText');
+        text.innerHTML = `<h3>${headerText}</h3>
+        <p>${descriptionText}</p>`;
         let inputField = document.createElement('input');
+        inputField.classList.add('inputModalCardInput');
         inputField.setAttribute('type', 'text');
         if (inputPlaceholderText) {
             inputField.setAttribute('placeholder', inputPlaceholderText);
         }
-        inputField.classList.add('classicModalTextInput');
-        domElements.container.insertBefore(inputField, domElements.cancelButton);
-
+        let submit = document.createElement('div');
+        submit.innerText = submitButtonText || 'Submit';
+        submit.classList.add('inputModalCardButton');
+        let cancel = document.createElement('div');
+        cancel.innerText = cancelButtonText || 'Cancel';
+        cancel.classList.add('inputModalCardButton', 'buttonLight');
+        cancel.style.marginBottom = '0';
+        container.appendChild(text);
+        container.appendChild(inputField);
+        container.appendChild(submit);
+        container.appendChild(cancel);
+        document.body.appendChild(container);
         realityEditor.device.keyboardEvents.openKeyboard(); // mark the keyboard as in-use until the modal disappears, so keyboard shortcuts are disabled
-        // realityEditor.device.environment.addSuppressedObjectRenderingFlag('inputModal'); // hide tools while modal is open
+
+        const hideModal = () => {
+            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
+            container.parentElement.removeChild(container);
+            fade.parentElement.removeChild(fade);
+        };
 
         // attach callbacks to button pointer events + delete/hide when done
-        domElements.cancelButton.addEventListener('pointerup', function(event) {
-            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
-            // realityEditor.device.environment.clearSuppressedObjectRenderingFlag('inputModal');
-            onCancelCallback(event);
-            hideModal(domElements);
+        [cancel, fade].forEach(elt => {
+            elt.addEventListener('pointerup', function(event) {
+                hideModal();
+                onCancelCallback(event);
+            });
         });
-        domElements.submitButton.addEventListener('pointerup', function(event) {
-            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
-            // realityEditor.device.environment.clearSuppressedObjectRenderingFlag('inputModal');
+        // tapping on the submit button sends the text input to the callback function
+        submit.addEventListener('pointerup', function(event) {
+            hideModal();
             onSubmitCallback(event, inputField.value);
-            hideModal(domElements);
         });
-
-        // disable touch actions elsewhere on the screen
-        // todo does this happen automatically from the fade element?
-        domElements.fade.addEventListener('pointerevent', function(event) {
-            event.stopPropagation();
-        });
-
-        // present on the DOM
-        document.body.appendChild(domElements.fade);
-        document.body.appendChild(domElements.container);
     }
     
     /**

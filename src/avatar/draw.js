@@ -231,9 +231,9 @@ createNameSpace("realityEditor.avatar.draw");
         }
 
         if (name) {
-            nameDiv.innerText = isMyAvatar ? name + ' (you)' : name;
+            nameDiv.innerText = isMyAvatar ? name + ' (click to edit your name)' : name;
         } else {
-            nameDiv.innerText = isMyAvatar ? 'You (click to edit)' : 'Anonymous';
+            nameDiv.innerText = isMyAvatar ? 'You (click to edit your name)' : 'Anonymous';
         }
         let width = Math.max(120, (nameDiv.innerText.length) * 12);
         nameDiv.style.width = width + 'px';
