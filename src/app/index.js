@@ -210,16 +210,26 @@ realityEditor.app.get3dSnapshot = function(callBack) {
 
 /**
  * Pauses the tracker (freezes the background)
+ * @param {FunctionName|null} callBack - optional, returns success when done pausing
  */
-realityEditor.app.setPause = function() {
-    this.appFunctionCall('setPause', null, null);
+realityEditor.app.setPause = function(callBack = null) {
+    if (callBack) {
+        this.appFunctionCall('setPause', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    } else {
+        this.appFunctionCall('setPause', null, null);
+    }
 };
 
 /**
  * Resumes the tracker (unfreezes the background)
+ * @param {FunctionName|null} callBack - optional, returns success when done resuming
  */
-realityEditor.app.setResume = function() {
-    this.appFunctionCall('setResume', null, null);
+realityEditor.app.setResume = function(callBack = null) {
+    if (callBack) {
+        this.appFunctionCall('setResume', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    } else {
+        this.appFunctionCall('setResume', null, null);
+    }
 };
 
 /**
