@@ -104,7 +104,7 @@ createNameSpace("realityEditor.gui.modal");
         document.body.appendChild(domElements.container);
     }
 
-    function openInputModal({ headerText, descriptionText, inputPlaceholderText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion }) {
+    function openInputModal({ headerText, descriptionText, inputPlaceholderText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback }) {
         // Add a blurry background that can be tapped on to cancel the modal
         let fade = document.createElement('div'); // darkens/blurs the background
         fade.id = 'modalFadeClassic';
@@ -116,28 +116,45 @@ createNameSpace("realityEditor.gui.modal");
         container.classList.add('inputModalCard');
         // container.classList.add('viewCard', 'center', 'popUpModal');
         let text = document.createElement('div');
+        let header = document.createElement('h3');
+        header.innerText = headerText;
+        text.appendChild(header);
+        let description = document.createElement('p');
+        description.innerText = descriptionText;
+        text.appendChild(description);
         text.classList.add('inputModalCardText');
-        text.innerHTML = `<h3>${headerText}</h3>
-        <p>${descriptionText}</p>`;
+
         let inputField = document.createElement('input');
         inputField.classList.add('inputModalCardInput');
         inputField.setAttribute('type', 'text');
         if (inputPlaceholderText) {
             inputField.setAttribute('placeholder', inputPlaceholderText);
         }
-        let submit = document.createElement('div');
-        submit.innerText = submitButtonText || 'Submit';
-        submit.classList.add('inputModalCardButton');
-        let cancel = document.createElement('div');
-        cancel.innerText = cancelButtonText || 'Cancel';
-        cancel.classList.add('inputModalCardButton', 'buttonLight');
-        cancel.style.marginBottom = '0';
+        inputField.addEventListener('keydown', (downEvent) => {
+            if (downEvent.key === 'Enter') {
+                hideModal();
+                if (onSubmitCallback) {
+                    onSubmitCallback(downEvent, inputField.value);
+                }
+            }
+        });
+
+        let submitButton = document.createElement('div');
+        submitButton.innerText = submitButtonText || 'Submit';
+        submitButton.classList.add('inputModalCardButton');
+        let cancelButton = document.createElement('div');
+        cancelButton.innerText = cancelButtonText || 'Cancel';
+        cancelButton.classList.add('inputModalCardButton', 'buttonLight');
+        cancelButton.style.marginBottom = '0';
+
         container.appendChild(text);
         container.appendChild(inputField);
-        container.appendChild(submit);
-        container.appendChild(cancel);
+        container.appendChild(submitButton);
+        container.appendChild(cancelButton);
         document.body.appendChild(container);
+
         realityEditor.device.keyboardEvents.openKeyboard(); // mark the keyboard as in-use until the modal disappears, so keyboard shortcuts are disabled
+        inputField.focus();
 
         const hideModal = () => {
             realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
@@ -146,7 +163,7 @@ createNameSpace("realityEditor.gui.modal");
         };
 
         // attach callbacks to button pointer events + delete/hide when done
-        [cancel, fade].forEach(elt => {
+        [cancelButton, fade].forEach(elt => {
             elt.addEventListener('pointerup', function(event) {
                 hideModal();
                 if (onCancelCallback) {
@@ -154,8 +171,8 @@ createNameSpace("realityEditor.gui.modal");
                 }
             });
         });
-        // tapping on the submit button sends the text input to the callback function
-        submit.addEventListener('pointerup', function(event) {
+        // tapping on the submitButton button sends the text input to the callback function
+        submitButton.addEventListener('pointerup', function(event) {
             hideModal();
             if (onSubmitCallback) {
                 onSubmitCallback(event, inputField.value);

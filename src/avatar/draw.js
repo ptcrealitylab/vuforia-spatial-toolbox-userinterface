@@ -115,7 +115,7 @@ createNameSpace("realityEditor.avatar.draw");
             });
 
             if (isMyIcon) {
-                iconDiv.addEventListener('pointerup', (e) => {
+                iconDiv.addEventListener('pointerup', (_e) => {
                     console.log('clicked on my icon - option to rename avatar?');
                     // show a modal that lets you type in a name
                     realityEditor.gui.modal.openInputModal({
@@ -129,8 +129,7 @@ createNameSpace("realityEditor.avatar.draw");
                                 // write to window.localStorage and use instead of anonymous in the future in this browser
                                 window.localStorage.setItem('manuallyEnteredUsername', userName);
                             }
-                        },
-                        useSmallerVersion: true
+                        }
                     });
                 });
             }

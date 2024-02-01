@@ -37,7 +37,6 @@ createNameSpace("realityEditor.avatar");
     let lastBeamOnTimestamp = null;
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
-    let isUsernameActive = false;
     let myUsername = window.localStorage.getItem('manuallyEnteredUsername') || null;
     let myProviderId = '';
 
