@@ -46,6 +46,15 @@
     top: 26.5vh;
 }
 
+.classicModalTextInput {
+    position: absolute;
+    bottom: 200px;
+    left: 10%;
+    width: 80%;
+    line-height: 48px;
+    font-size: 1.2rem;
+}
+
 #modalCancel {
     left: 5vw;
     width: 15vw;
@@ -162,10 +171,12 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0,0,0,0.2);
-    -webkit-backdrop-filter: blur(40px);
-    -webkit-transform: translateZ(8990px)
+    background-color: rgba(103, 103, 103, 0.4);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    z-index: 100;
 }
+
 /* container for the modal */
 #modalContainerClassic {
     position: absolute;
