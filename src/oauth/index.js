@@ -25,7 +25,7 @@ import { loadToken } from './tokens.js';
                 return Object.keys(obj.frames).includes(frame);
             });
             // The edge server that will handle the processing of the auth code to receive an auth token
-            const edgeServer = isCloud(window.location) ? window.location.origin + getToolboxEdgeBasePath() : `http://${object.ip}:${object.port}`;
+            const edgeServer = isCloud(window.location) ? window.location.origin + getToolboxEdgeBasePath() : `https://${object.ip}:${object.port}`;
 
             let frameName = realityEditor.getFrame(object.objectId,frame).src;
             loadToken(frameName, authorizationUrl, clientId, edgeServer).then(token => {

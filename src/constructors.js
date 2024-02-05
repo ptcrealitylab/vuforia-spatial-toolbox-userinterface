@@ -70,6 +70,9 @@ function Objects() {
     this.objectId = null;
     // The name for the object used for interfaces.
     this.name = "";
+    // The UUID used internally by Vuforia for tracking
+    this.targetId = null;
+
     // The IP address for the object is relevant to point the Reality Editor to the right server.
     // It will be used for the UDP broadcasts.
     this.ip = "localhost";
@@ -126,9 +129,9 @@ function Frame() {
     this.visualization = "ar";
     // position data for the ar visualization mode
     this.ar = {
-        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Target origin.
         x : 0,
-        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Target origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
         scale : 0.5,
@@ -142,9 +145,9 @@ function Frame() {
     };
     // position data for the screen visualization mode
     this.screen = {
-        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+        // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Target origin.
         x : 0,
-        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+        // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Target origin.
         y : 0,
         // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
         scale : 0.5
@@ -227,9 +230,9 @@ function Node() {
     this.frameId = null;
     // the actual data of the node
     this.data = new Data(); // todo maybe value
-    // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+    // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Target origin.
     this.x = 0;
-    // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+    // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Target origin.
     this.y = 0;
     // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
     this.scale = 0.5;
@@ -265,9 +268,9 @@ function Logic() {
     this.name = "";
     // data for logic blocks. depending on the blockSize which one is used.
     this.data = new Data();
-    // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Marker origin.
+    // Reality Editor: This is used to position the UI element within its x axis in 3D Space. Relative to Target origin.
     this.x = 0;
-    // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Marker origin.
+    // Reality Editor: This is used to position the UI element within its y axis in 3D Space. Relative to Target origin.
     this.y = 0;
     // Reality Editor: This is used to scale the UI element in 3D Space. Default scale is 1.
     this.scale = 0.5;
