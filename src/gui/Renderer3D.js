@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
-import { VRButton } from "../../thirdPartyCode/three/VRButton.module.js";
+import { VRButton } from '../../thirdPartyCode/three/VRButton.module.js';
 
 /**
  @typedef {number} PixelCount 
@@ -33,6 +33,7 @@ class Renderer3D {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         // enable webxr
         this.renderer.xr.enabled = true;
+        document.body.appendChild( VRButton.createButton( this.renderer ) );
 
         /** @type {THREE.Scene} */
         this.scene = new THREE.Scene();
@@ -143,6 +144,9 @@ class Renderer3D {
      * @param {boolean} hasGltfScene 
      */
     render() {
+        if (this.isInWebXRMode()) {
+            console.log(this.renderer.xr.getCamera().rotation);
+        }
         // only render the scene if the camera is initialized
         if (this.camera.isInitialized()) {
             this.renderer.render(this.scene, this.camera.getInternalObject());
