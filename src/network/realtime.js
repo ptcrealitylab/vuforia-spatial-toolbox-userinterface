@@ -9,7 +9,7 @@ createNameSpace("realityEditor.network.realtime");
  */
 
 (function(exports) {
-    const DEBUG = true;
+    const DEBUG = false;
 
     const BATCHED_UPDATE_FRAMERATE = updateFramerate;
 
