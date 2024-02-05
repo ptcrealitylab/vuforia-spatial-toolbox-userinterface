@@ -77,6 +77,8 @@ class Renderer3D {
 
         /** @type {[(deviceScale: UnitsPerMeter, sceneScale: MetersPerUnit) => void]} */
         this.scaleListeners = [];
+
+        document.body.appendChild(VRButton.createButton(this.renderer));
     }
 
     /**
@@ -231,7 +233,7 @@ class Renderer3D {
             this.remove(this.camera.getInternalObject());
         }
         this.camera = camera;
-        this.add(this.camera.getInternalObject()); // Normally not needed, but needed in order to add child objects relative to camera
+        this.scene.add(this.camera.getInternalObject()); // Normally not needed, but needed in order to add child objects relative to camera
     }
 
     /**
