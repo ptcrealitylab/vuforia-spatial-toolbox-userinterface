@@ -165,6 +165,13 @@ const ShaderMode = {
 class VideoPlayer extends Followable {
     static count = 0;
 
+    /**
+     * @param {string} id
+     * @param {object} urls - Expected to contain keys `color` and `rvl` with
+     *  urls pointing to color and depth data, respectively
+     * @param {string|undefined} frameKey - option frame that wants to be
+     *  notified about the video playback's state changes
+     */
     constructor(id, urls, frameKey) {
         // first we must set up the Followable so that the remote operator
         // camera system will be able to follow this video...
@@ -252,7 +259,9 @@ class VideoPlayer extends Followable {
                 this.pause();
             }
             this.videoLength = this.rvl.getDuration();
-            realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoMetadata: {videoLength: this.rvl.getDuration()}, id: this.id});
+            if (this.frameKey) {
+                realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoMetadata: {videoLength: this.rvl.getDuration()}, id: this.id});
+            }
         });
 
         this.onAnimationFrame = () => this.render();
@@ -328,14 +337,18 @@ class VideoPlayer extends Followable {
     
     play() {
         this.state = VideoPlayerStates.PLAYING;
-        realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
+        if (this.frameKey) {
+            realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
+        }
         this.pointCloud.visible = true;
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
     }
     
     pause() {
         this.state = VideoPlayerStates.PAUSED;
-        realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
+        if (this.frameKey) {
+            realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
+        }
         this.colorVideo.pause();
     }
 
