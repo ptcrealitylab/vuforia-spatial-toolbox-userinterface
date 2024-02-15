@@ -568,6 +568,16 @@ realityEditor.app.getProviderId = function(callBack) {
     this.appFunctionCall('getProviderId', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
 };
 
+/**
+ * Gets the latitude and longitude if the permissions have been granted
+ * NOTE: it is possible to access through navigator.geolocation web APIs,
+ * but the app presents a cleaner and more controllable set of permissions
+ * dialogs and settings if we handle location access natively in swift
+ * @param {FunctionName} callBack
+ */
+realityEditor.app.getGeoCoordinates = function (callBack) {
+    this.appFunctionCall('getGeoCoordinates', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+};
 
 /**
  **************UTILITIES****************
