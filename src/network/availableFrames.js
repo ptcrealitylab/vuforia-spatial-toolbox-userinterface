@@ -53,8 +53,6 @@ createNameSpace("realityEditor.network.availableFrames");
                     downloadFramePocketAssets(serverIP); // preload the icons
                 }, 5000);
                 triggerServerFramesInfoUpdatedCallbacks(); // this can be detected to update the pocket if it is already open
-            } else {
-                console.log('skipping downloading the icon.gif files for each tool, as the pocket UI is overridden');
             }
         });
     }
