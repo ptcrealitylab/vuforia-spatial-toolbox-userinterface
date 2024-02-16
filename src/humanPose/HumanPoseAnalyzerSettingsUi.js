@@ -28,6 +28,10 @@ export class HumanPoseAnalyzerSettingsUi {
                             <div class="hpa-settings-section-row-label">View auxiliary poses</div>
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-child-human-poses">
                         </div>
+                        <div class="hpa-settings-section-row">
+                            <div class="hpa-settings-section-row-label">Set joint confidence</div>
+                            <input type="text" id="hpa-settings-set-joint-confidence">
+                        </div>
                     </div>
                 </div>
                 <div class="hpa-settings-section hidden" id="hpa-live-settings">
@@ -146,6 +150,24 @@ export class HumanPoseAnalyzerSettingsUi {
 
         this.root.querySelector('#hpa-settings-select-lens').addEventListener('change', (event) => {
             this.humanPoseAnalyzer.setActiveLensByName(event.target.value);
+        });
+       
+        this.root.querySelector('#hpa-settings-set-joint-confidence').addEventListener('keydown', (event) => {
+            event.stopPropagation();
+        });
+
+        this.root.querySelector('#hpa-settings-set-joint-confidence').addEventListener('change', (event) => {
+            let num = parseFloat(event.target.value);
+            if(!isNaN(num)) {
+                if (num < 0.0) {
+                    num = 0.0;
+                }
+                if (num > 1.0) {
+                    num = 1.0;
+                }
+                this.humanPoseAnalyzer.setJointConfidenceThreshold(num);
+                this.setJointConfidenceThreshold(num);
+            }
         });
         
         this.root.querySelector('#hpa-settings-select-joint').addEventListener('change', (event) => {
@@ -302,6 +324,10 @@ export class HumanPoseAnalyzerSettingsUi {
 
     setActiveJointByName(_jointName) {
         // this.root.querySelector('#hpa-settings-select-joint').value = jointName; // TODO: re-add once implemented
+    }
+
+    setJointConfidenceThreshold(confidence) {
+        this.root.querySelector('#hpa-settings-set-joint-confidence').value = confidence;
     }
     
     markLive() {

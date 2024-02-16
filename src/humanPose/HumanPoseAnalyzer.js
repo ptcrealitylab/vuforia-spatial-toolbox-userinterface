@@ -65,6 +65,8 @@ export class HumanPoseAnalyzer {
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
 
+        this.jointConfidenceThreshold = 0.0;
+
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
             historical: {},
@@ -192,6 +194,7 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
         this.settingsUi.setChildHumanPosesVisible(this.childHumanObjectsVisible);
+        this.settingsUi.setJointConfidenceThreshold(this.jointConfidenceThreshold);
     }
 
     /**
@@ -543,17 +546,25 @@ export class HumanPoseAnalyzer {
      * Reprocesses the given lens, applying it to poses and spaghetti lines
      * @param {MotionStudyLens} lens - the lens to reprocess
      */
-    reprocessLens(lens) {
+    reprocessLens(lens, forceChange = false) {
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             const posesChanged = lens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
-                if (wasChanged) { // Only update colors if the pose data was modified
+                if (forceChange || wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
                     relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
         this.reprocessSpaghettiForLens(lens);
+    }
+
+    setJointConfidenceThreshold(confidence) {
+        this.jointConfidenceThreshold = confidence;
+        this.poseObjectIdLens.setJointConfidenceThreshold(confidence);
+        console.info('jointConfidenceThreshold=', confidence);
+        this.reprocessLens(this.activeLens, true);
+        //this.applyCurrentLensToHistory(true); 
     }
 
     /**
@@ -802,11 +813,11 @@ export class HumanPoseAnalyzer {
     /**
      * Applies the current lens to the history, updating the clones' colors if needed
      */
-    applyCurrentLensToHistory() {
+    applyCurrentLensToHistory(forceChange = false) {
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             const posesChanged = this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
-                if (wasChanged) { // Only update colors if the pose data was modified
+                if (forceChange || wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
                 }
             });
