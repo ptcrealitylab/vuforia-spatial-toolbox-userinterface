@@ -335,6 +335,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 toggleDisplaySpatialCursor(true);
             }
         });
+
+        realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
+            if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) {
+                return;
+            }
+
+            if (DEFAULT_SPATIAL_CURSOR_ON) {
+                toggleDisplaySpatialCursor(true);
+            }
+        });
         
         addSpatialCursor();
         addTestSpatialCursor();
@@ -447,6 +457,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // tool added at screen coordinates
     function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
 
+        // TODO: what happens if you drop tool into the sky, looking up – make it drop close in front of you
         let spatialCursorMatrix = null;
         if (moveToCursor) {
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
@@ -904,7 +915,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
         //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
         // }
-        if (includeGroundPlane && realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+        if (includeGroundPlane && (realityEditor.gui.threejsScene.isGroundPlanePositionSet() || !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
             objectsToCheck.push(groundPlane);
@@ -942,7 +953,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function getCursorRelativeToWorldObject() {
-        if (!cachedWorldObject || !cachedOcclusionObject) { return null; }
+        if ((!cachedWorldObject || !cachedOcclusionObject) && !realityEditor.gui.threejsScene.isGroundPlanePositionSet()) { return null; }
 
         let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
