@@ -98,25 +98,25 @@ realityEditor.app.doesDeviceHaveDepthSensor = function(callBack) {
 };
 
 /**
- * Adds a new marker and fires a callback with error or success
- * and the markerName for reference
- * @param {string} markerName
+ * Adds a new target and fires a callback with error or success
+ * and the targetName for reference
+ * @param {string} targetName
  * @param {FunctionName} callBack
  */
-realityEditor.app.addNewMarker = function(markerName, callBack) {
-    this.appFunctionCall('addNewMarker', {markerName: markerName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+realityEditor.app.addNewTarget = function(targetName, callBack) {
+    this.appFunctionCall('addNewTarget', {targetName: targetName}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
- * Adds a new marker using a JPG image and fires a callback with error or success
- * and the markerName for reference
- * @param {string} markerName
+ * Adds a new target using a JPG image and fires a callback with error or success
+ * and the targetName for reference
+ * @param {string} targetName
  * @param {string} objectID
  * @param {number} targetWidthMeters
  * @param {FunctionName} callBack
  */
-realityEditor.app.addNewMarkerJPG = function(markerName, objectID, targetWidthMeters, callBack) {
-    this.appFunctionCall('addNewMarkerJPG', {markerName: markerName, objectID: objectID, targetWidthMeters: targetWidthMeters}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
+realityEditor.app.addNewTargetJPG = function(targetName, objectID, targetWidthMeters, callBack) {
+    this.appFunctionCall('addNewTargetJPG', {targetName: targetName, objectID: objectID, targetWidthMeters: targetWidthMeters}, 'realityEditor.app.callBack('+callBack+', [__ARG1__, __ARG2__])');
 };
 
 /**
@@ -129,7 +129,7 @@ realityEditor.app.getProjectionMatrix = function(callBack) {
 };
 
 /**
- * Sets up a callback for the model matrices of all markers that are found, that will get called every frame.
+ * Sets up a callback for the model matrices of all targets that are found, that will get called every frame.
  * Callback will have a set of objectId mapped to matrix for each visibleObjects.
  * @param {FunctionName} callBack
  */
@@ -210,16 +210,26 @@ realityEditor.app.get3dSnapshot = function(callBack) {
 
 /**
  * Pauses the tracker (freezes the background)
+ * @param {FunctionName|null} callBack - optional, returns success when done pausing
  */
-realityEditor.app.setPause = function() {
-    this.appFunctionCall('setPause', null, null);
+realityEditor.app.setPause = function(callBack = null) {
+    if (callBack) {
+        this.appFunctionCall('setPause', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    } else {
+        this.appFunctionCall('setPause', null, null);
+    }
 };
 
 /**
  * Resumes the tracker (unfreezes the background)
+ * @param {FunctionName|null} callBack - optional, returns success when done resuming
  */
-realityEditor.app.setResume = function() {
-    this.appFunctionCall('setResume', null, null);
+realityEditor.app.setResume = function(callBack = null) {
+    if (callBack) {
+        this.appFunctionCall('setResume', null, 'realityEditor.app.callBack('+callBack+', [__ARG1__])');
+    } else {
+        this.appFunctionCall('setResume', null, null);
+    }
 };
 
 /**

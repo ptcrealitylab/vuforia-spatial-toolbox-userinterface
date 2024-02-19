@@ -1,10 +1,10 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 /**
- * A collection of colors used often in the analytics system.
+ * A collection of colors used often in the motion study system.
  * They are created here to ensure that they are only created once.
  */
-export const AnalyticsColors = {
+export const MotionStudyColors = {
     undefined: new THREE.Color(1, 0, 1),
     base: new THREE.Color(0, 0.5, 1),
     red: new THREE.Color(1, 0, 0),

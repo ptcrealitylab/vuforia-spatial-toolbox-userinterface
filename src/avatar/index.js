@@ -37,8 +37,7 @@ createNameSpace("realityEditor.avatar");
     let lastBeamOnTimestamp = null;
 
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
-    let isUsernameActive = false;
-    let myUsername = null;
+    let myUsername = window.localStorage.getItem('manuallyEnteredUsername') || null;
     let myProviderId = '';
 
     // these are used for raycasting against the environment when sending laser beams
@@ -182,21 +181,6 @@ createNameSpace("realityEditor.avatar");
 
             // we have a cachedWorldObject here, so it's also a good point to check pending subscriptions for that world
             network.processPendingAvatarInitializations(connectionStatus, cachedWorldObject, onOtherAvatarInitialized);
-        });
-
-        const description = 'toggle on to show name to other users';
-        const propertyName = 'myUserName';
-        const iconSrc = '../../../svg/object.svg';
-        const defaultValue = false;
-        const placeholderText = '';
-        realityEditor.gui.settings.addToggleWithText('User Name', description, propertyName, iconSrc, defaultValue, placeholderText, (isToggled) => {
-            isUsernameActive = isToggled;
-            writeUsername(isToggled ? myUsername : null);
-        }, (text) => {
-            myUsername = text;
-            if (isUsernameActive) {
-                writeUsername(myUsername);
-            }
         });
 
         setInterval(() => {
@@ -372,6 +356,7 @@ createNameSpace("realityEditor.avatar");
         let cursorState = {
             matrix: spatialCursorMatrix,
             colorHSL: utils.getColor(myAvatarObject),
+            isColored: realityEditor.spatialCursor.isSpatialCursorOnGroundPlane(),
             worldId: worldId
         }
 
@@ -698,7 +683,8 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
-    exports.setMyUsername = setMyUsername;
+    exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
+    exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};

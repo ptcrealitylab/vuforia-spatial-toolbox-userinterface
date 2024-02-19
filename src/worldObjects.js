@@ -9,7 +9,8 @@ createNameSpace("realityEditor.worldObjects");
  */
 
 (function(exports) {
-    
+    const PROXY = !window.location.port || window.location.port === "443";
+
     var worldObjects = {}; // world objects are stored in the regular global "objects" variable, but also in here
     var worldObjectKeys = [];
     var discoveredServerIPs = [];
@@ -73,7 +74,9 @@ createNameSpace("realityEditor.worldObjects");
             handleServerDiscovered(object);
         });
 
-        tryLoadingLocalWorldObject();
+        if (!PROXY) {
+            tryLoadingLocalWorldObject();
+        }
 
         // when an explicit worldObject message is detected, check if we still need to add that world object
         realityEditor.network.addUDPMessageHandler('worldObject', function(message) {

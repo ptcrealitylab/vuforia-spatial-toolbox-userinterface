@@ -195,7 +195,7 @@ realityEditor.gui.ar.draw.registerCallback = function(functionName, callback) {
 
 /**
  * The most recently received set of matrices for the currently visible objects.
- * A set of {objectId: matrix} pairs, one per recognized marker
+ * A set of {objectId: matrix} pairs, one per recognized target
  * @type {Object.<string, Array.<number>>}
  */
 realityEditor.gui.ar.draw.visibleObjectsCopy = {};
@@ -248,9 +248,9 @@ realityEditor.gui.ar.draw.frameNeedsToBeRendered = true;
 realityEditor.gui.ar.draw.prevSuppressedRendering = false;
 
 /**
- * Previously triggered directly by the native app when the AR engine updates with a new set of recognized markers,
+ * Previously triggered directly by the native app when the AR engine updates with a new set of recognized targets,
  * But now gets called 60FPS regardless of the AR engine, and just uses the most recent set of matrices.
- * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized marker
+ * @param {Object.<string, Array.<number>>} visibleObjects - set of {objectId: matrix} pairs, one per recognized target
  */
 realityEditor.gui.ar.draw.update = function (visibleObjects) {
     if (realityEditor.device.environment.isObjectRenderingSuppressed()) {
@@ -1108,7 +1108,7 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             }
 
             // set initial position of frames and nodes placed in from pocket
-            // 1. drop directly onto marker plane if in freeze state (or quick-tapped the frame)
+            // 1. drop directly onto target plane if in freeze state (or quick-tapped the frame)
             // 2. otherwise float in unconstrained slightly in front of the editor camera
             // 3. animate so it looks like it is being pushed from pocket
             if (activePocketNodeWaiting && typeof activeVehicle.mostRecentFinalMatrix !== 'undefined') {
@@ -1174,27 +1174,32 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
             finalMatrix = utilities.copyMatrix(realityEditor.sceneGraph.getCSSMatrix(activeKey));
 
             if (activeVehicle.alwaysFaceCamera === true) {
+                // this gives a pretty good billboard effect, as long as you aren't looking from top-down
                 let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeKey, 'CAMERA');
                 let modelViewMatrix = [];
                 utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
-                utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+
+                // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
+                if (realityEditor.device.environment.isARMode()) {
+                    utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                } else {
+                    // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+                    // so let's correct the scale and remove the rotation – this works on desktop because camera up = scene up
+                    let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
+                    let constructedModelViewMatrix = [
+                        scale, 0, 0, 0,
+                        0, -scale, 0, 0,
+                        0, 0, scale, 0,
+                        modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+                    ];
+                    utilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+                }
             }
 
             // TODO ben: sceneGraph probably gives better data for z-depth relative to camera
             activeVehicle.screenZ = finalMatrix[14]; // but save pre-processed z position to use later to calculate screenLinearZ
 
-            var activeElementZIncrease = thisIsBeingEdited ? 100 : 0;
-            
-            finalMatrix[14] = 200 + activeElementZIncrease + 1000000 / Math.max(10, activeVehicle.screenZ);
-            // on devices that make elements visible from further away, make sure the z value increases proportionally so it is > 0
-            if (realityEditor.device.environment.variables.distanceScaleFactor > 1) {
-                finalMatrix[14] += realityEditor.device.environment.variables.distanceScaleFactor * 1000;
-            }
-            
-            // put frames all the way in the back if you are in node view
-            if (shouldRenderFramesInNodeView) {
-                finalMatrix[14] = 100;
-            }
+            finalMatrix[14] = realityEditor.gui.ar.positioning.getFinalMatrixScreenZ(finalMatrix[14], thisIsBeingEdited, shouldRenderFramesInNodeView);
             
             activeVehicle.mostRecentFinalMatrix = finalMatrix; // TODO ben: remove mostRecentFinalMatrix
             
@@ -1209,6 +1214,13 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     normalizedMatrix[7] = 0;
                     normalizedMatrix[11] = 0;
                     activeElt.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
+
+                    // if tool is rendering while it should be behind the camera, visually hide it (for now)
+                    if (normalizedMatrix[14] < 0) {
+                        activeElt.classList.add('elementBehindCamera');
+                    } else {
+                        activeElt.classList.remove('elementBehindCamera');
+                    }
                 } else if (!activeElt.classList.contains('outsideOfViewport')) {
                     activeElt.classList.add('outsideOfViewport');
                 }
@@ -1313,8 +1325,8 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                     if (activeVehicle.sendMatrix === true) {
                         // TODO ben: send translation iff not three.js fullscreen
                         if (activeVehicle.alwaysFaceCamera) {
-                            // thisMsg.modelViewMatrix = realityEditor.sceneGraph.getModelViewMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
                             let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(activeVehicle.uuid, 'CAMERA');
+                            // TODO: fixup the scale and rotation similar to the other alwaysFaceCamera conditional
                             let modelViewMatrix = [];
                             utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
                             thisMsg.modelViewMatrix = modelViewMatrix;
@@ -1499,9 +1511,9 @@ realityEditor.gui.ar.draw.debugDrawVehicle = function(activeVehicle, finalMatrix
 };
 
 /**
- * Temporarily disabled function that will snap the frame to the marker plane
+ * Temporarily disabled function that will snap the frame to the target plane
  * (by removing its rotation components) if the amount of rotation is very small
- * @todo: only do this if it is also close to the marker plane in the Z direction
+ * @todo: only do this if it is also close to the target plane in the Z direction
  * @param {Frame|Node} activeVehicle
  * @param {string} activeKey
  */

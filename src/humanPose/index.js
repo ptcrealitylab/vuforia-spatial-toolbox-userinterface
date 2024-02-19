@@ -5,7 +5,7 @@ createNameSpace("realityEditor.humanPose");
 import * as network from './network.js'
 import * as draw from './draw.js'
 import * as utils from './utils.js'
-import {JOINTS, JOINTS_V1_COUNT, JOINTS_PER_POSE} from "./constants.js";
+import {JOINTS, JOINTS_V1_COUNT, JOINTS_V2_COUNT, JOINTS_PER_POSE} from "./constants.js";
 import {Pose} from "./Pose.js";
 
 (function(exports) {
@@ -122,12 +122,12 @@ import {Pose} from "./Pose.js";
 
     /**
      * @param {TimeRegion} historyRegion
-     * @param {Analytics} analytics
+     * @param {MotionStudy} motionStudy
      */
-    async function loadHistory(historyRegion, analytics) {
+    async function loadHistory(historyRegion, motionStudy) {
         if (!realityEditor.sceneGraph || !realityEditor.sceneGraph.getWorldId() || !realityEditor.device || !realityEditor.device.environment) {
             setTimeout(() => {
-                loadHistory(historyRegion, analytics);
+                loadHistory(historyRegion, motionStudy);
             }, 500);
             return;
         }
@@ -177,16 +177,16 @@ import {Pose} from "./Pose.js";
                 }
             }
             if (log) {
-                await replayHistory(log, analytics);
+                await replayHistory(log, motionStudy);
             } else {
                 console.error('Unable to load history log after retries', `${historyLogsUrl}/${logName}`);
             }
         }
 
-        analytics.humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
+        motionStudy.humanPoseAnalyzer.markHistoricalColorNeedsUpdate();
     }
 
-    async function replayHistory(history, analytics) {
+    async function replayHistory(history, motionStudy) {
         inHistoryPlayback = true;
         const timeObjects = {};
         const timestampStrings = Object.keys(history);
@@ -243,6 +243,9 @@ import {Pose} from "./Pose.js";
                     if (length == JOINTS_V1_COUNT) {
                         utils.convertFromJointsV1(jointPositions, jointConfidences);
                     }
+                    else if (length == JOINTS_V2_COUNT) {
+                        utils.convertFromJointsV2(jointPositions, jointConfidences);
+                    }
                     else {
                         console.error('Unknown joint schema of a recorded pose.');
                         return;
@@ -259,7 +262,7 @@ import {Pose} from "./Pose.js";
                 poses.push(pose);
             }
         });
-        analytics.bulkRenderHistoricalPoses(poses);
+        motionStudy.bulkRenderHistoricalPoses(poses);
         inHistoryPlayback = false;
     }
 

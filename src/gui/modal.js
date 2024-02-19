@@ -72,6 +72,7 @@ createNameSpace("realityEditor.gui.modal");
      * @param {string} submitButtonText
      * @param {function} onCancelCallback
      * @param {function} onSubmitCallback
+     * @param {boolean} useSmallerVersion
      */
     function openClassicModal(headerText, descriptionText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback, useSmallerVersion) {
         // create the instance of the modal
@@ -101,6 +102,82 @@ createNameSpace("realityEditor.gui.modal");
         // present on the DOM
         document.body.appendChild(domElements.fade);
         document.body.appendChild(domElements.container);
+    }
+
+    function openInputModal({ headerText, descriptionText, inputPlaceholderText, cancelButtonText, submitButtonText, onCancelCallback, onSubmitCallback }) {
+        // Add a blurry background that can be tapped on to cancel the modal
+        let fade = document.createElement('div'); // darkens/blurs the background
+        fade.id = 'modalFadeClassic';
+        fade.classList.add('modalVisibleFadeIn');
+        document.body.appendChild(fade);
+
+        // create the container with the header, description, a text input, and a submit and cancel button
+        let container = document.createElement('div');
+        container.classList.add('inputModalCard');
+        // container.classList.add('viewCard', 'center', 'popUpModal');
+        let text = document.createElement('div');
+        let header = document.createElement('h3');
+        header.innerText = headerText;
+        text.appendChild(header);
+        let description = document.createElement('p');
+        description.innerText = descriptionText;
+        text.appendChild(description);
+        text.classList.add('inputModalCardText');
+
+        let inputField = document.createElement('input');
+        inputField.classList.add('inputModalCardInput');
+        inputField.setAttribute('type', 'text');
+        if (inputPlaceholderText) {
+            inputField.setAttribute('placeholder', inputPlaceholderText);
+        }
+        inputField.addEventListener('keydown', (downEvent) => {
+            if (downEvent.key === 'Enter') {
+                hideModal();
+                if (onSubmitCallback) {
+                    onSubmitCallback(downEvent, inputField.value);
+                }
+            }
+        });
+
+        let submitButton = document.createElement('div');
+        submitButton.innerText = submitButtonText || 'Submit';
+        submitButton.classList.add('inputModalCardButton');
+        let cancelButton = document.createElement('div');
+        cancelButton.innerText = cancelButtonText || 'Cancel';
+        cancelButton.classList.add('inputModalCardButton', 'buttonLight');
+        cancelButton.style.marginBottom = '0';
+
+        container.appendChild(text);
+        container.appendChild(inputField);
+        container.appendChild(submitButton);
+        container.appendChild(cancelButton);
+        document.body.appendChild(container);
+
+        realityEditor.device.keyboardEvents.openKeyboard(); // mark the keyboard as in-use until the modal disappears, so keyboard shortcuts are disabled
+        inputField.focus();
+
+        const hideModal = () => {
+            realityEditor.device.keyboardEvents.closeKeyboard(); // release control of the keyboard
+            container.parentElement.removeChild(container);
+            fade.parentElement.removeChild(fade);
+        };
+
+        // attach callbacks to button pointer events + delete/hide when done
+        [cancelButton, fade].forEach(elt => {
+            elt.addEventListener('pointerup', function(event) {
+                hideModal();
+                if (onCancelCallback) {
+                    onCancelCallback(event);
+                }
+            });
+        });
+        // tapping on the submitButton button sends the text input to the callback function
+        submitButton.addEventListener('pointerup', function(event) {
+            hideModal();
+            if (onSubmitCallback) {
+                onSubmitCallback(event, inputField.value);
+            }
+        });
     }
     
     /**
@@ -136,7 +213,7 @@ createNameSpace("realityEditor.gui.modal");
 
     /**
      * Constructs the DOM and returns references to its elements
-     * @return {{fade: HTMLDivElement, container: HTMLDivElement, description: HTMLDivElement, cancelButton: HTMLDivElement, submitButton: HTMLDivElement}}
+     * @return {{fade: HTMLDivElement, container: HTMLDivElement, header: HTMLDivElement, description: HTMLDivElement, cancelButton: HTMLDivElement, submitButton: HTMLDivElement}}
      */
     function createClassicModalDOM(useSmallerCenteredVersion) {
         var fade = document.createElement('div'); // darkens/blurs the background
@@ -290,6 +367,7 @@ createNameSpace("realityEditor.gui.modal");
 
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
+    exports.openInputModal = openInputModal;
     exports.showSimpleNotification = showSimpleNotification;
     exports.showScreenTopNotification = showScreenTopNotification;
     

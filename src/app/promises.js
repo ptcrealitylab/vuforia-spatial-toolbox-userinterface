@@ -5,7 +5,7 @@ createNameSpace("realityEditor.app.promises");
  * Provides a simpler interface to some APIs defined in app/index.js, by wrapping them in a Promise
  * APIs that return a single value vs those that return multiple values should be accessed like:
  * getDeviceReady().then(deviceName => {})
- * addNewMarker('target.xml').then(({success, fileName}) => {})
+ * addNewTarget('target.xml').then(({success, fileName}) => {})
  * APIs for subscriptions, such as the matrix stream, should still be accessed directly using app/index.js
  */
 (function(exports) {
@@ -22,10 +22,15 @@ createNameSpace("realityEditor.app.promises");
     //resolves to baseURL: string
     exports.getManagerBaseURL = makeAPI(app.getManagerBaseURL.bind(app));
 
-    // params: [markerName], resolves to: {success: boolean, fileName: string]}
-    exports.addNewMarker = makeAPI(app.addNewMarker.bind(app), ['success', 'fileName']);
-    // params: [markerName, objectID, targetWidthMeters], resolves to: {success: boolean, fileName: string]}
-    exports.addNewMarkerJPG = makeAPI(app.addNewMarkerJPG.bind(app), ['success', 'fileName']);
+    // params: [targetName], resolves to: {success: boolean, fileName: string]}
+    exports.addNewTarget = makeAPI(app.addNewTarget.bind(app), ['success', 'fileName']);
+    // params: [targetName, objectID, targetWidthMeters], resolves to: {success: boolean, fileName: string]}
+    exports.addNewTargetJPG = makeAPI(app.addNewTargetJPG.bind(app), ['success', 'fileName']);
+
+    // resolves to success: boolean
+    exports.setPause = makeAPI(app.setPause.bind(app));
+    // resolves to success: boolean
+    exports.setResume = makeAPI(app.setResume.bind(app));
 
     // resolves to providerId: string
     exports.getProviderId = makeAPI(app.getProviderId.bind(app));
