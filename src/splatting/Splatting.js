@@ -731,12 +731,15 @@ let defaultViewMatrix = [
     0.03, 6.55, 1,
 ];
 let viewMatrix = defaultViewMatrix;
-async function main() {
+let publicFunctions = {};
+async function main(initialFilePath) {
     try {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
         carousel = false;
     } catch (err) {}
-    const url = new URL("https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat");
+
+    // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target.splat');
+    const url = new URL(initialFilePath || "https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat");
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
         credentials: "omit", // include, *same-origin, omit
@@ -1308,6 +1311,12 @@ async function main() {
             fr.readAsArrayBuffer(file);
         }
     };
+    
+    // publicFunctions.selectFile = selectFile;
+    //
+    // if (initialFile) {
+    //     selectFile(initialFile);
+    // }
 
     // TODO: avoid using hash in toolbox
     window.addEventListener("hashchange", () => {
@@ -1378,8 +1387,38 @@ window.addEventListener("keydown", e => {
     }
 });
 
+// function setSplatFilePath(filePath) {
+//     if (publicFunctions.selectFile) {
+//         let file = filePath;
+//         publicFunctions.selectFile(filePath);
+//     }
+// }
+
+function showSplatRenderer(filePath) {
+    if (!gsInitialized) {
+        gsInitialized = true;
+        gsContainer = document.querySelector('#gsContainer');
+        main(filePath).catch((err) => {
+            document.getElementById("gsSpinner").style.display = "none";
+            document.getElementById("gsMessage").innerText = err.toString();
+        });
+    }
+    // gsContainer.classList.toggle('hidden');
+    // gsActive = !gsContainer.classList.contains('hidden');
+    gsContainer.classList.remove('hidden');
+    gsActive = true;
+    carousel = false;
+}
+
+function hideSplatRenderer() {
+    gsContainer.classList.add('hidden');
+    gsActive = false;
+}
+
 export default {
     setMatrix(matrix) {
         viewMatrix = matrix;
-    }
+    },
+    hideSplatRenderer,
+    showSplatRenderer,
 }
