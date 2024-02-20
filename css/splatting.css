@@ -6,7 +6,7 @@
     height: 100vh;
     width: 100vw;
     text-shadow: 0 0 3px black;
-    z-index: 10000;
+    /*z-index: 10000;*/
     background-color: black;
 }
 #gsContainer a, body {
@@ -15,7 +15,7 @@
 #gsInfo {
     z-index: 100;
     position: absolute;
-    top: 10px;
+    top: 25px;
     left: 15px;
 }
 #gsContainer h3 {

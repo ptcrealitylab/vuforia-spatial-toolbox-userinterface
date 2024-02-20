@@ -942,11 +942,17 @@ window.addEventListener("keydown", e => {
         { 
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = false;
             realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+            callbacks.onSplatShown.forEach(cb => {
+                cb();
+            });
         }
         else
         {
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = true;
             realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+            callbacks.onSplatHidden.forEach(cb => {
+                cb();
+            });
         }
     }
 });
@@ -972,10 +978,21 @@ function hideSplatRenderer() {
     gsActive = false;
 }
 
+let callbacks = {
+    onSplatShown: [],
+    onSplatHidden: []
+}
+
 export default {
     setMatrix(matrix) {
         viewMatrix = matrix;
     },
     hideSplatRenderer,
     showSplatRenderer,
+    onSplatShown(callback) {
+        callbacks.onSplatShown.push(callback);
+    },
+    onSplatHidden(callback) {
+        callbacks.onSplatHidden.push(callback);
+    }
 }
