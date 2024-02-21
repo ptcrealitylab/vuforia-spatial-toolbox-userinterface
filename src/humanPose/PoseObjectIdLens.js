@@ -14,7 +14,6 @@ export class PoseObjectIdLens extends MotionStudyLens {
 
         this.poseObjectIds = [];
         this.numeratorsForDenominator = {};
-        this.jointConfidenceThreshold = 0.0;
     }
 
 
@@ -109,15 +108,8 @@ export class PoseObjectIdLens extends MotionStudyLens {
     getColorForJoint(joint) {
         const baseColor = this.getColorFromId(joint.poseObjectId);
         let baseColorHSL = baseColor.getHSL({});
-        let color;
-        if (joint.confidence >= this.jointConfidenceThreshold) {
-            baseColorHSL.l = baseColorHSL.l * joint.confidence;
-            color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
-        }
-        else {
-            color = MotionStudyColors.gray;
-        }
-        return color;
+        baseColorHSL.l = baseColorHSL.l * joint.confidence;
+        return new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
     }
 
     getColorForBone(bone) {
@@ -129,7 +121,4 @@ export class PoseObjectIdLens extends MotionStudyLens {
         return MotionStudyColors.fade(this.getColorFromId(pose.metadata.poseObjectId));
     }
 
-    setJointConfidenceThreshold(confidence) { 
-        this.jointConfidenceThreshold = confidence;
-    }
 }

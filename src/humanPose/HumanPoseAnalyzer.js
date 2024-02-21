@@ -65,7 +65,7 @@ export class HumanPoseAnalyzer {
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
 
-        this.jointConfidenceThreshold = 0.0;
+        this.jointConfidenceThreshold = 0.2;
 
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
@@ -311,6 +311,14 @@ export class HumanPoseAnalyzer {
         this.bulkUpdateSpaghetti(poses, true);
     }
 
+    markValidBodyParts(pose) {
+        // TODO: limit to limbs
+        // TODO: add adjacent bones
+        pose.forEachJoint(joint => {
+            joint.valid = (joint.confidence >= this.jointConfidenceThreshold);
+        });
+    }
+
     /**
      * Creates a new clone from a pose and adds it to the analyzer
      * @param {Pose} pose - the pose to clone
@@ -330,6 +338,7 @@ export class HumanPoseAnalyzer {
         } else {
             this.clones.live.push(poseRenderInstance);
         }
+        this.markValidBodyParts(pose)
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
@@ -561,7 +570,6 @@ export class HumanPoseAnalyzer {
 
     setJointConfidenceThreshold(confidence) {
         this.jointConfidenceThreshold = confidence;
-        this.poseObjectIdLens.setJointConfidenceThreshold(confidence);
         console.info('jointConfidenceThreshold=', confidence);
         this.reprocessLens(this.activeLens, true);
         //this.applyCurrentLensToHistory(true); 

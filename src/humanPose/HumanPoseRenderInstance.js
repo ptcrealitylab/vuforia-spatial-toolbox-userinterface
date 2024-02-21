@@ -214,7 +214,12 @@ export class HumanPoseRenderInstance {
         });
         if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
             this.pose.forEachJoint(joint => {
-                this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
+                if (joint.valid) {
+                    this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
+                }
+                else {
+                    this.setJointColor(joint.name, MotionStudyColors.undefined);
+                }
             });
             this.pose.forEachBone(bone => {
                 this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
