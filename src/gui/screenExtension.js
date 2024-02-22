@@ -544,7 +544,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             realityEditor.device.resetEditingState();
 
             // update position on server
-            // var urlEndpoint = 'https://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
+            // var urlEndpoint = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
             // var content = thisFrame.ar;
             // content.lastEditor = globalStates.tempUuid;
             // realityEditor.network.postData(urlEndpoint, content);

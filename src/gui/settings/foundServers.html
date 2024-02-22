@@ -277,7 +277,7 @@
       var button = node.parentElement.querySelector('.addObjectButton');
       button.innerText = "Adding Object...";
 
-      var postUrl = 'https://' + node.dataset.ip + ':' + node.dataset.port + '/';
+      var postUrl = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + node.dataset.ip + ':' + node.dataset.port + '/';
       var params = new URLSearchParams({action: 'new', name: objectName, isWorld: null});
       fetch(postUrl, {
           method: 'POST',

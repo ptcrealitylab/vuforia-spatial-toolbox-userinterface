@@ -130,7 +130,7 @@ realityEditor.device.onload = async function () {
         // console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
-    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'https://...', function(newValue, textValue) {
+    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, (realityEditor.network.useHTTPS ? 'https' : 'http') + '://...', function(newValue, textValue) {
 
         if (newValue && textValue.length > 0) {
             // we still need to save this to native device storage to be backwards-compatible with how the interface is loaded
@@ -151,7 +151,7 @@ realityEditor.device.onload = async function () {
 
     }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1') && !window.location.href.includes('localhost')); // default value is based on the current source
 
-    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'https://...', function(newValue, textValue) {
+    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, (realityEditor.network.useHTTPS ? 'https' : 'http') + '://...', function(newValue, textValue) {
         if (newValue) {
             setTimeout(function() {
                 realityEditor.network.discoverObjectsFromServer(textValue);
@@ -254,7 +254,7 @@ realityEditor.device.onload = async function () {
         setInterval(async () => {
             let settings;
             try {
-                let res = await fetch(`https://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+                let res = await fetch((realityEditor.network.useHTTPS ? 'https' : 'http') + `://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
                 settings = await res.json();
             } catch (_e) {
                 return;

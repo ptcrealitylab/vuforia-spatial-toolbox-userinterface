@@ -18,7 +18,7 @@ createNameSpace("realityEditor.network.search");
     //    
     //     // download the object data from its server
     //     let port = 8080;
-    //     let baseUrl = 'https://' + ip + ':' + port + '/spatial/searchFrames' + stringifyQueryParams(queryParams);
+    //     let baseUrl = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + ip + ':' + port + '/spatial/searchFrames' + stringifyQueryParams(queryParams);
     //    
     //     realityEditor.network.getData(null,  null, null, baseUrl, function (objectKey, frameKey, nodeKey, msg) {
     //         if (msg && msg.validAddresses) {

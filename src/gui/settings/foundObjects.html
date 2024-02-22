@@ -381,7 +381,7 @@
       // Set up the request.
       var xhr = new XMLHttpRequest();
 
-      var postUrl = 'https://' + node.dataset.ip + ':' + node.dataset.port + '/content/' + node.dataset.name; // set to target upload endpoint on server
+      var postUrl = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + node.dataset.ip + ':' + node.dataset.port + '/content/' + node.dataset.name; // set to target upload endpoint on server
 
       // Open the connection.
       xhr.open('POST', postUrl, true);

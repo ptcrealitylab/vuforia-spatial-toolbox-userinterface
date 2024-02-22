@@ -54,7 +54,7 @@ realityEditor.network.state = {
     proxyUrl : null,
     proxyPort : null,
     proxyNetwork : null,
-    proxySecret : null
+    proxySecret : null,
 }
 
 realityEditor.network.desktopURLSchema = {
@@ -101,6 +101,8 @@ realityEditor.network.qrSchema = {
     }
 }
 
+realityEditor.network.useHTTPS = location.protocol === "https:";
+
 /**
  * @type {Array.<{messageName: string, callback: function}>}
  */
@@ -130,7 +132,7 @@ realityEditor.network.getURL = function(server, identifier, route){
     let secret = null;
 
     if (parseInt(Number(identifier))) {
-        protocol = "https"
+        protocol = realityEditor.network.useHTTPS ? "https": "http";
         url = server;
         port = identifier;
     } else {
@@ -875,7 +877,7 @@ realityEditor.network.onAction = function (action) {
             this.getData(thisAction.reloadLink.object, thisAction.reloadLink.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // });
-            // this.getData('https://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame, thisAction.reloadLink.object, function (req, thisKey, frameKey) {
+            // this.getData((realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[thisAction.reloadLink.object].ip + ':' + httpPort + '/object/' + thisAction.reloadLink.object + '/frame/' +thisAction.reloadLink.frame, thisAction.reloadLink.object, function (req, thisKey, frameKey) {
 
                 var thisFrame = realityEditor.getFrame(objectKey, frameKey);
                 if (objects[objectKey].integerVersion < 170) {
@@ -972,7 +974,7 @@ realityEditor.network.onAction = function (action) {
             this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, thisAction.reloadObject.node, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
 
             // this.getData(
-                // 'https://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/", thisAction.reloadNode.object, function (req, objectKey, frameKey, nodeKey) {
+                // (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[thisAction.reloadNode.object].ip + ':' + httpPort + '/object/' + thisAction.reloadNode.object + "/node/" + thisAction.reloadNode.node + "/", thisAction.reloadNode.object, function (req, objectKey, frameKey, nodeKey) {
 
                     var thisFrame = realityEditor.getFrame(objectKey, frameKey);
 
@@ -1120,11 +1122,11 @@ realityEditor.network.onAction = function (action) {
         //
         //
         //
-        //     var urlEndpoint = 'https://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
+        //     var urlEndpoint = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object;
         //     this.getData(thisAction.reloadObject.object, thisAction.reloadObject.frame, null, urlEndpoint, function (objectKey, frameKey, nodeKey, res) {
         //
         //         // }
-        //         // this.getData('https://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
+        //         // this.getData((realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[thisAction.reloadObject.object].ip + ':' + httpPort + '/object/' + thisAction.reloadObject.object, thisAction.reloadObject.object, function (req, thisKey) {
         //
         //         if (objects[objectKey].integerVersion < 170) {
         //             if (typeof res.objectValues !== "undefined") {
@@ -2491,7 +2493,7 @@ realityEditor.network.onFoundObjectButtonMessage = function(msgContent) {
  * @param {string} serverUrl - url for the reality server to download objects from, e.g. 10.10.10.20:8080
  */
 realityEditor.network.discoverObjectsFromServer = function(serverUrl) {
-    var prefix = (serverUrl.indexOf('https://') === -1) ? ('https://') : ('');
+    var prefix = (serverUrl.indexOf('https://') === -1) ? ('https://') : ((serverUrl.indexOf('http://') === -1) ? ('http://') : (''));
     var portSuffix = (/(:[0-9]+)$/.test(serverUrl)) ? ('') : (':' + defaultHttpPort);
     var url = prefix + serverUrl + portSuffix + '/allObjects/';
     realityEditor.network.getData(null, null, null, url, function(_nullObj, _nullFrame, _nullNode, msg) {
@@ -3285,8 +3287,8 @@ realityEditor.network.postNewLockToLink = function (ip, objectKey, frameKey, lin
 // generate action for all links to be reloaded after upload
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" + frameKey + "/link/" + linkKey + "/addLock/"), content, function () {
     });
-    // postData('https://' +ip+ ':' + httpPort+"/", content);
-    //console.log('post --- ' + 'https://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey);
+    // postData((realityEditor.network.useHTTPS ? 'https' : 'http') + '://' +ip+ ':' + httpPort+"/", content);
+    //console.log('post --- ' + (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + ip + ':' + httpPort + '/object/' + thisObjectKey + "/link/lock/" + thisLinkKey);
 
 };
 

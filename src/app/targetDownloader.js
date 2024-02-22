@@ -692,7 +692,7 @@ createNameSpace("realityEditor.app.targetDownloader");
 
     /**
      * Uses a combination of IP address and object name to locate the ID.
-     * e.g. "https://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
+     * e.g. "http(s)://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
      * @param {string} fileName
      */
 
