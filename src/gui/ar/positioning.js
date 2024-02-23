@@ -425,7 +425,7 @@ realityEditor.gui.ar.positioning.getMostRecentTouchPosition = function() {
         touchX = translate3d[0];
         touchY = translate3d[1];
     } catch (e) {
-        console.log('no touches on screen yet, so defaulting to center');
+        // no touches on screen yet, so defaulting to center
     }
     
     return {

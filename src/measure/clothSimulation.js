@@ -19,7 +19,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         if (cachedOcclusionObject === null || cachedOcclusionObject === undefined || inverseGroundPlaneMatrix === null || inverseGroundPlaneMatrix === undefined) {
             intervalId = setInterval(() => {
                 if (cachedOcclusionObject !== null && cachedOcclusionObject !== undefined && inverseGroundPlaneMatrix !== null && inverseGroundPlaneMatrix !== undefined) {
-                    console.log(cachedOcclusionObject);
                     if (realityEditor.device.environment.isDesktop()) {
                         isOnDesktop = true;
                         raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
