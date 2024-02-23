@@ -25,6 +25,8 @@ let cameras = [
     
 ];
 
+const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
+
 let camera = cameras[0];
 
 function getProjectionMatrix(fx, fy, width, height) {
@@ -591,13 +593,17 @@ async function main(initialFilePath) {
 
     const fps = document.getElementById("gsFps");
 
-    let projectionMatrix = getProjectionMatrix(
+    let old_projectionMatrix = getProjectionMatrix(
         camera.fx / downsample,
         camera.fy / downsample,
         canvas.width,
         canvas.height,
     );
     
+    let projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, canvas.width / canvas.height, 10, 300000);
+    console.log('projection matrices', old_projectionMatrix, projectionMatrix);
+    // console.log('projection matrices', projectionMatrix, toolboxProjectionMatrix);
+
     const gl = canvas.getContext("webgl2", {
         antialias: false,
     });
@@ -667,12 +673,19 @@ async function main(initialFilePath) {
     const resize = () => {
         gl.uniform2fv(u_focal, new Float32Array([camera.fx, camera.fy]));
 
-        projectionMatrix = getProjectionMatrix(
+        old_projectionMatrix = getProjectionMatrix(
         camera.fx,
         camera.fy,
         innerWidth,
         innerHeight,
         );
+
+        let projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, innerWidth / innerHeight, 10, 300000);
+        // console.log('projection matrices', projectionMatrix, toolboxProjectionMatrix);
+        console.log('projection matrices', old_projectionMatrix, projectionMatrix);
+        
+        let focalLengths = calculateFocalLengths(iPhoneVerticalFOV);
+        console.log(focalLengths);
 
         gl.uniform2fv(u_viewport, new Float32Array([innerWidth, innerHeight]));
 
@@ -832,12 +845,16 @@ async function main(initialFilePath) {
             fr.onload = () => {
                 cameras = JSON.parse(fr.result);
                 viewMatrix = getViewMatrix(cameras[0]);
-                projectionMatrix = getProjectionMatrix(
+                old_projectionMatrix = getProjectionMatrix(
                     camera.fx / downsample, 
                     camera.fy / downsample, 
                     canvas.width, 
                     canvas.height,
                 );
+                projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, canvas.width / canvas.height, 10, 300000);
+                // console.log('projection matrices', projectionMatrix, toolboxProjectionMatrix);
+                console.log('projection matrices', old_projectionMatrix, projectionMatrix);
+
                 gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
             
                 console.log("Loaded Cameras");
@@ -974,6 +991,7 @@ function showSplatRenderer(filePath) {
 }
 
 function hideSplatRenderer() {
+    if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
 }
@@ -981,6 +999,68 @@ function hideSplatRenderer() {
 let callbacks = {
     onSplatShown: [],
     onSplatHidden: []
+}
+
+/**
+ * Builds a projection matrix from field of view, aspect ratio, and near and far planes
+ */
+function projectionMatrixFrom(vFOV, aspect, near, far) {
+    var top = near * Math.tan((Math.PI / 180) * 0.5 * vFOV );
+    var height = 2 * top;
+    var width = aspect * height;
+    var left = -0.5 * width;
+    // return makePerspective( left, left + width, top, top - height, near, far );
+    
+    // flip y and z
+    let mat = makePerspective( left, left + width, top, top - height, near, far );
+    // inverted, perhaps from vFOV to hFOV conversion
+    mat[5] *= -1;
+    mat[10] *= -1;
+    mat[11] *= -1;
+    // mm to meter conversion?
+    mat[12] *= 0.001;
+    mat[13] *= 0.001;
+    mat[14] *= 0.001;
+    return mat;
+}
+
+/**
+ * Helper function for creating a projection matrix
+ */
+function makePerspective ( left, right, top, bottom, near, far ) {
+
+    var te = [];
+    var x = 2 * near / ( right - left );
+    var y = 2 * near / ( top - bottom );
+
+    var a = ( right + left ) / ( right - left );
+    var b = ( top + bottom ) / ( top - bottom );
+    var c = - ( far + near ) / ( far - near );
+    var d = - 2 * far * near / ( far - near );
+
+    te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
+    te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13] = 0;
+    te[ 2 ] = 0;    te[ 6 ] = 0;    te[ 10 ] = c;   te[ 14 ] = d;
+    te[ 3 ] = 0;    te[ 7 ] = 0;    te[ 11 ] = - 1; te[ 15 ] = 0;
+
+    return te;
+
+}
+
+function calculateFocalLengths(fov) {
+    // FOV is expected in degrees
+    const aspectRatio = window.innerWidth / window.innerHeight;
+
+    // Convert FOV from degrees to radians for the calculation
+    const fovRad = fov * (Math.PI / 180);
+
+    // Calculate the focal length in pixels for the x-axis
+    const fx = window.innerWidth / (2 * Math.tan(fovRad / 2));
+
+    // Calculate the focal length in pixels for the y-axis, maintaining the aspect ratio
+    const fy = fx / aspectRatio;
+
+    return { fx, fy };
 }
 
 export default {

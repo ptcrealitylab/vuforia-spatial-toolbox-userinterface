@@ -17,6 +17,7 @@
     position: absolute;
     top: 25px;
     left: 15px;
+    display: none;
 }
 #gsContainer h3 {
     margin: 5px 0;
