@@ -27,6 +27,11 @@ createNameSpace("realityEditor.app.promises");
     // params: [targetName, objectID, targetWidthMeters], resolves to: {success: boolean, fileName: string]}
     exports.addNewTargetJPG = makeAPI(app.addNewTargetJPG.bind(app), ['success', 'fileName']);
 
+    // resolves to success: boolean
+    exports.setPause = makeAPI(app.setPause.bind(app));
+    // resolves to success: boolean
+    exports.setResume = makeAPI(app.setResume.bind(app));
+
     // resolves to providerId: string
     exports.getProviderId = makeAPI(app.getProviderId.bind(app));
     

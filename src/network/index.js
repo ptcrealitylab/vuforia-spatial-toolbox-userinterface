@@ -52,6 +52,8 @@ createNameSpace("realityEditor.network");
 realityEditor.network.state = {
     proxyProtocol : null,
     proxyUrl : null,
+    proxyHost : null,
+    proxyHostname: null,
     proxyPort : null,
     proxyNetwork : null,
     proxySecret : null,
@@ -138,9 +140,9 @@ realityEditor.network.getURL = function(server, identifier, route){
     } else {
         let s = realityEditor.network.state;
 
-        if(s.proxyProtocol && s.proxyUrl && s.proxyPort) {
+        if(s.proxyProtocol && s.proxyHostname && s.proxyPort) {
             protocol = s.proxyProtocol;
-            url = s.proxyUrl;
+            url = s.proxyHostname;
             port = s.proxyPort;
         }
 

@@ -210,7 +210,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             groundPlaneCollider.position.set(0, floorOffset, 0);
             groundPlaneCollider.updateMatrix();
             groundPlaneCollider.updateMatrixWorld(true);
-            console.log(groundPlaneCollider.matrixWorld);
 
             // update the groundPlane sceneNode to match the position of the new groundplane collider
             let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());

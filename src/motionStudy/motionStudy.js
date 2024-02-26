@@ -387,8 +387,8 @@ export class MotionStudy {
     getStepLabel() {
         const i = this.nextStepNumber;
         let label = 'Step ' + i;
-        if (i < this.stepLabels.length) {
-            label = this.stepLabels[i];
+        if (i <= this.stepLabels.length) {
+            label = this.stepLabels[i - 1];
         }
         return label;
     }
@@ -605,7 +605,7 @@ export class MotionStudy {
                 regionCard.graphSummaryValues['Accel'].maximum,
             ]);
         }
-        let dataUrl = 'data:text/plain;base64,' + btoa(lines.map(line => {
+        let dataUrl = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(lines.map(line => {
             return line.join(',');
         }).join('\n'));
 
