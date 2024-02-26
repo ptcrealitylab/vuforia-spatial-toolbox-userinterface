@@ -56,7 +56,7 @@ realityEditor.network.state = {
     proxyHostname: null,
     proxyPort : null,
     proxyNetwork : null,
-    proxySecret : null,
+    proxySecret : null
 }
 
 realityEditor.network.desktopURLSchema = {
@@ -103,6 +103,9 @@ realityEditor.network.qrSchema = {
     }
 }
 
+/**
+ * if the main site is opened with https, we will assume that the main server is running https
+ */
 realityEditor.network.useHTTPS = location.protocol === "https:";
 
 /**
