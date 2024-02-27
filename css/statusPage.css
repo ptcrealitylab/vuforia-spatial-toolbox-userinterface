@@ -1,13 +1,18 @@
 .status-page-container {
-    margin: 2em auto;
+    margin: 4em auto;
     max-width: 1000px;
     width: 90vw;
     height: 90vh;
     background-color: white;
     color: black;
     z-index: 100000;
-    position: relative;
+    position: absolute;
+    box-sizing: border-box;
     padding: 2em;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow-y: scroll;
     font-size: 0.75em;
 }
