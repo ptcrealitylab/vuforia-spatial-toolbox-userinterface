@@ -248,41 +248,48 @@ realityEditor.device.onload = async function () {
 
     let cachedSettings = {};
     const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
+
+    function processNewSettings(settings) {
+        let anyChanged = Math.random() < 0.1;
+        if (cachedSettings.isConnected !== settings.isConnected) {
+            toggleCloudUrl.onToggleCallback(settings.isConnected);
+            anyChanged = true;
+        }
+        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+            (cachedSettings.networkUUID !== settings.networkUUID) ||
+            (cachedSettings.networkSecret !== settings.networkSecret)) {
+            anyChanged = true;
+            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                `/n/${settings.networkUUID}` +
+                `/s/${settings.networkSecret}`);
+            toggleNewNetworkId.onTextCallback(settings.networkUUID);
+            toggleNewSecret.onTextCallback(settings.networkSecret);
+        }
+        cachedSettings = settings;
+        if (anyChanged) {
+            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+            }), "*");
+        }
+    }
+
     // If we're viewing this on localhost we can connect to and read settings
     // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
-        setInterval(async () => {
-            let settings;
-            try {
-                let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
-                settings = await res.json();
-            } catch (_e) {
-                return;
-            }
-            let anyChanged = Math.random() < 0.1;
-            if (cachedSettings.isConnected !== settings.isConnected) {
-                toggleCloudUrl.onToggleCallback(settings.isConnected);
-                anyChanged = true;
-            }
-            if ((cachedSettings.serverUrl !== settings.serverUrl) ||
-                (cachedSettings.networkUUID !== settings.networkUUID) ||
-                (cachedSettings.networkSecret !== settings.networkSecret)) {
-                anyChanged = true;
-                toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
-                                              `/n/${settings.networkUUID}` +
-                                              `/s/${settings.networkSecret}`);
-                toggleNewNetworkId.onTextCallback(settings.networkUUID);
-                toggleNewSecret.onTextCallback(settings.networkSecret);
-            }
-            cachedSettings = settings;
-            if (anyChanged) {
-                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-                    getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
-                    getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-                }), "*");
-            }
-        }, 1000);
+        let settings;
+        try {
+            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
+            settings = await res.json();
+            processNewSettings(settings);
+        } catch (_e) {
+            return;
+        }
     }
+    // Update settings when changed
+    realityEditor.network.realtime.subscribeToInterfaceSettings('edgeAgent', settings => {
+        processNewSettings(settings);
+    });
 
     // Check whether we're offline by adding a cache-busting search parameter
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
