@@ -1,0 +1,99 @@
+.status-page-container {
+    margin: 2em auto;
+    max-width: 1000px;
+    width: 90vw;
+    height: 90vh;
+    background-color: white;
+    color: black;
+    z-index: 100000;
+    position: relative;
+    padding: 2em;
+    overflow-y: scroll;
+    font-size: 0.75em;
+}
+
+.status-page-header {
+    margin-bottom: 1em;
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+    align-items: center;
+}
+
+.status-page-title {
+    font-size: 3em;
+    font-weight: bold;
+}
+
+.status-page-button {
+    border: 1px solid black;
+    border-radius: 2px;
+    padding: 4px 8px;
+    background-color: #F0F0F0;
+    display: inline-block;
+    cursor: pointer;
+    
+    &:hover {
+        background-color: #C0C0C0;
+    }
+}
+
+.status-page-entry {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+.status-page-data-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.status-page-data {
+    max-width: 80vw;
+    overflow-wrap: anywhere;
+    &.status-page-failed {
+        color: red;
+    }
+    .status-page-hide-data & {
+        display: none;
+    }
+}
+
+.status-page-indicator {
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 100%;
+    border: 1px solid black;
+    flex-shrink: 0;
+    &.status-page-in-progress {
+        width: 0.2em;
+        height: 0.2em;
+        border: 4px dotted orange;
+        animation: status-page-rotate 4s linear infinite;
+    }
+    &.status-page-passed {
+        background-color: green;
+    }
+    &.status-page-failed {
+        background-color: red;
+    }
+}
+
+.status-page-name {
+    font-weight: bold;
+}
+
+.status-page-duration {
+    font-weight: normal;
+}
+
+@keyframes status-page-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
