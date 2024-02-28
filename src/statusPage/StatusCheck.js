@@ -1,7 +1,7 @@
 let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
 const isCloud = !!getDesktopLinkData;
 
-function getBasePath() {
+function _getBasePath() {
     if (window.location.href.includes('/n/')) {
         const slashParts = window.location.href.split('/');
         const toRemoveIndex = 3; // stable, etc.
@@ -15,12 +15,11 @@ function getBasePath() {
 }
 
 function getBaseEdgePath() {
-    const url = getBasePath();
-    if (url.href.includes('/n/')) {
-        return url;
+    const worldObject = realityEditor.worldObjects.getBestWorldObject();
+    if (!worldObject) {
+        return new URL('http://localhost:8080'); // Default to this if world object unavailable
     }
-    url.port = '8080'; // TODO: actually get port, don't hardcode
-    return url;
+    return new URL(realityEditor.network.getURL(worldObject.ip, realityEditor.network.getPort(worldObject), '/'));
 }
 
 function jsonFetch(endpoint) {
