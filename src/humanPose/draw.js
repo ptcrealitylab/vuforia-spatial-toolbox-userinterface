@@ -140,6 +140,8 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.objectId, poseHasParent: poseHasParent});
     pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
     mostRecentPoseByObjectId[poseObject.objectId] = pose;
+    // setBodyPartValidity() needs to be called before applyLensToPose(pose) and setPose(pose)
+    pose.setBodyPartValidity(liveHumanPoseAnalyzer.getJointConfidenceThreshold());
     liveHumanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(liveHumanPoseAnalyzer.activeLens);

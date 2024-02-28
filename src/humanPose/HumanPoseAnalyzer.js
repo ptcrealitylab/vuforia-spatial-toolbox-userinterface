@@ -583,6 +583,10 @@ export class HumanPoseAnalyzer {
         });        
     }
 
+    getJointConfidenceThreshold() {
+        return this.jointConfidenceThreshold;
+    }
+
     /**
      * Sets the active lens
      * @param {MotionStudyLens} lens - the lens to set as active
