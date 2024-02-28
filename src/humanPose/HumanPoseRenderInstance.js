@@ -6,7 +6,8 @@ import {
     RENDER_CONFIDENCE_COLOR,
     HIDDEN_JOINTS,
     HIDDEN_BONES,
-    DISPLAY_HIDDEN_ELEMENTS
+    DISPLAY_HIDDEN_ELEMENTS,
+    DISPLAY_INVALID_ELEMENTS
 } from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
 
@@ -93,7 +94,8 @@ export class HumanPoseRenderInstance {
             return;
         }
         this.pose.forEachJoint(joint => {
-            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_JOINTS.includes(joint.name);
+            let visible = (DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_JOINTS.includes(joint.name)) && 
+                          (DISPLAY_INVALID_ELEMENTS || joint.valid);
             this.setJointPosition(joint.name, joint.position, visible);
         });
     }
@@ -144,12 +146,23 @@ export class HumanPoseRenderInstance {
         });
     }
 
+    updateBodyPartValidity(jointConfidenceThreshold) {
+        // TODO: limit to limbs
+        // TODO: add adjacent bones
+        this.pose.forEachJoint(joint => {
+            joint.valid = (joint.confidence >= jointConfidenceThreshold);
+        });
+    }
+
     /**
      * Updates the pose displayed by the pose renderer
      * @param {Pose} pose The pose to display
      */
-    setPose(pose) {
+    setPose(pose, jointConfidenceThreshold = 0.0) {
         this.pose = pose;
+
+        // needs to be called before other updates becasue it generates data they use
+        this.updateBodyPartValidity(jointConfidenceThreshold); 
 
         this.updateJointPositions();
         this.updateBonePositions();
@@ -208,18 +221,18 @@ export class HumanPoseRenderInstance {
         }
         this.pose.forEachJoint(joint => {
             this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = lens.getColorForJoint(joint);
+            if (!joint.valid) {
+                this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = MotionStudyColors.undefined;
+            }
         });
         this.pose.forEachBone(bone => {
             this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = lens.getColorForBone(bone);
         });
+        // MK - why this condition (lens === this.lens)? When switching lens this is not true and this is not applied. 
+        // Extra code needs to call this again after this.lens is updated to new lens.  
         if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
             this.pose.forEachJoint(joint => {
-                if (joint.valid) {
-                    this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
-                }
-                else {
-                    this.setJointColor(joint.name, MotionStudyColors.undefined);
-                }
+                this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
             });
             this.pose.forEachBone(bone => {
                 this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
@@ -279,7 +292,8 @@ export class HumanPoseRenderInstance {
      * Copy all elements of the other pose render instance
      * @param {HumanPoseRenderInstance} other - the instance to copy from
      */
-    copy(other) {
+    copy(other, jointConfidenceThreshold = 0) {
+        console.info('Copy ts=', other.pose.timestamp);
         this.lens = other.lens;
         this.lensColors = {};
         Object.keys(other.lensColors).forEach(lensName => {
@@ -288,7 +302,7 @@ export class HumanPoseRenderInstance {
                 bones: other.lensColors[lensName].bones.slice(),
             };
         });
-        this.setPose(other.pose);
+        this.setPose(other.pose, jointConfidenceThreshold);
         return this;
     }
 

@@ -213,6 +213,8 @@ export const JOINT_CONNECTIONS = {
 export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
 
+export const DISPLAY_INVALID_ELEMENTS = false;
+
 // Flag for switching on/off an experimental feature of hand tracking
 export const TRACK_HANDS = true;
 

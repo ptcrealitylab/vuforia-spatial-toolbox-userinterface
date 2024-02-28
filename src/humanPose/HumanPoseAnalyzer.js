@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS} from './constants.js';
+import {DISPLAY_INVALID_ELEMENTS, JOINTS} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
@@ -311,14 +311,6 @@ export class HumanPoseAnalyzer {
         this.bulkUpdateSpaghetti(poses, true);
     }
 
-    markValidBodyParts(pose) {
-        // TODO: limit to limbs
-        // TODO: add adjacent bones
-        pose.forEachJoint(joint => {
-            joint.valid = (joint.confidence >= this.jointConfidenceThreshold);
-        });
-    }
-
     /**
      * Creates a new clone from a pose and adds it to the analyzer
      * @param {Pose} pose - the pose to clone
@@ -338,8 +330,7 @@ export class HumanPoseAnalyzer {
         } else {
             this.clones.live.push(poseRenderInstance);
         }
-        this.markValidBodyParts(pose)
-        poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
+        poseRenderInstance.setPose(pose, this.jointConfidenceThreshold); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
             poseRenderInstance.setVisible(canBeVisible);
@@ -555,12 +546,12 @@ export class HumanPoseAnalyzer {
      * Reprocesses the given lens, applying it to poses and spaghetti lines
      * @param {MotionStudyLens} lens - the lens to reprocess
      */
-    reprocessLens(lens, forceChange = false) {
+    reprocessLens(lens) {
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             const posesChanged = lens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
-                if (forceChange || wasChanged) { // Only update colors if the pose data was modified
-                    relevantClones[index].updateColorBuffers(this.activeLens);
+                if (wasChanged) { // Only update colors if the pose data was modified
+                    relevantClones[index].updateColorBuffers(lens);
                     relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
@@ -571,8 +562,25 @@ export class HumanPoseAnalyzer {
     setJointConfidenceThreshold(confidence) {
         this.jointConfidenceThreshold = confidence;
         console.info('jointConfidenceThreshold=', confidence);
-        this.reprocessLens(this.activeLens, true);
+        //this.reprocessLens(this.activeLens, true);
         //this.applyCurrentLensToHistory(true); 
+
+        // TODO: what about other lenses?
+        [this.clones.live, this.clones.historical].forEach(relevantClones => {
+            relevantClones.forEach(clone => clone.updateBodyPartValidity(this.jointConfidenceThreshold));
+            // TODO: enable when lens also use valid attribute
+            // const posesChanged = this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
+            relevantClones.forEach(clone => {
+                if (clone.visible) {
+                    clone.updateJointPositions();
+                    clone.updateBonePositions();
+                    clone.renderer.markMatrixNeedsUpdate();
+                }
+                clone.updateColorBuffers(this.activeLens);
+                clone.renderer.markColorNeedsUpdate();
+            });
+            
+        });        
     }
 
     /**
@@ -586,6 +594,7 @@ export class HumanPoseAnalyzer {
         this.applyCurrentLensToHistory();
 
         // Swap hpri colors
+        // Sets lens to individual render instances
         this.clones.all.forEach(clone => {
             clone.setLens(lens);
             clone.renderer.markColorNeedsUpdate();
@@ -821,12 +830,13 @@ export class HumanPoseAnalyzer {
     /**
      * Applies the current lens to the history, updating the clones' colors if needed
      */
-    applyCurrentLensToHistory(forceChange = false) {
+    applyCurrentLensToHistory() {
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             const posesChanged = this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
-                if (forceChange || wasChanged) { // Only update colors if the pose data was modified
+                if (wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
@@ -967,13 +977,13 @@ export class HumanPoseAnalyzer {
             this.setCloneVisibleInInterval(true, start, end);
             const startClone = this.getCloneByTimestamp(start);
             if (startClone) {
-                this.selectionMarkPoseRenderInstances.start.copy(startClone);
+                this.selectionMarkPoseRenderInstances.start.copy(startClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.start.setVisible(true);
                 this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
             }
             const endClone = this.getCloneByTimestamp(end);
             if (endClone) {
-                this.selectionMarkPoseRenderInstances.end.copy(endClone);
+                this.selectionMarkPoseRenderInstances.end.copy(endClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.end.setVisible(true);
                 this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
             }
@@ -1118,12 +1128,14 @@ export class HumanPoseAnalyzer {
 
         clonesToHide.forEach(clone => {
             clone.setVisible(false);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
         clonesToShow.forEach(clone => {
             const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             clone.setVisible(canBeVisible);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
 
         this.lastDisplayedClones = bestClones;
