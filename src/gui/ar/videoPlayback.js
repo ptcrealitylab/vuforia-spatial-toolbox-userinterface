@@ -227,10 +227,13 @@ class VideoPlayer extends Followable {
         this.colorVideo = document.createElement('video');
         this.colorVideo.width = 256;
         this.colorVideo.loop = true;
+        // this.colorVideo.controls = true;
         this.colorVideo.playsInline = true;
+        this.colorVideo.muted = true;
         this.colorVideo.crossOrigin = 'Anonymous';
-        this.colorVideo.style.position = 'absolute';
-        this.colorVideo.style.top = '0';
+        // this.colorVideo.style.position = 'absolute';
+        // this.colorVideo.style.top = '50%';
+        // this.colorVideo.style.left = '0';
         this.colorVideo.style.display = 'none';
         // document.body.appendChild(this.colorVideo);
         const source = document.createElement('source');
@@ -366,6 +369,9 @@ class VideoPlayer extends Followable {
 
         const rvlPayload = this.decoder.decode(rvlFrame.payload);
         this.applyMatricesMessage(rvlPayload);
+        if (window.motionStudy) {
+            window.motionStudy.fromVideo(this.lastRenderTime);
+        }
 
         if (!this.pointCloud) {
             this.loadPointCloud();

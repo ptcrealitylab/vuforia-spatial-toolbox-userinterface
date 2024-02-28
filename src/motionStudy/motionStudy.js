@@ -55,6 +55,8 @@ export class MotionStudy {
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
 
+        this.videoPlayer = null;
+
         this.draw = this.draw.bind(this);
 
         requestAnimationFrame(this.draw);
@@ -270,13 +272,21 @@ export class MotionStudy {
     }
 
     /**
-     * @param {{startTime: number, endTime: number}} highlightRegion
+     * @param {number} time - absolute time within timeline
      * @param {boolean} fromSpaghetti - prevents infinite recursion from
      *                  modifying human pose spaghetti which calls this function
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         this.humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
+        /*
+        if (this.videoPlayer) {
+            // Convert from absolute time (ms) to relative time (s)
+            this.videoPlayer.currentTime = (time - this.videoStartTime) / 1000;
+            this.videoPlayer.colorVideo.muted = true;
+            this.videoPlayer.play();
+        }
+        */
     }
 
     /**
@@ -438,6 +448,9 @@ export class MotionStudy {
         console.error('setAllClonesVisible unimplemented', allClonesVisible);
     }
 
+    fromVideo(time) {
+        this.setCursorTime(time * 1000 + this.videoStartTime);
+    }
 
     hydrateMotionStudy(data) {
         if (this.loadingHistory) {
@@ -446,7 +459,18 @@ export class MotionStudy {
             }, 100);
             return;
         }
-        
+
+        if (!this.videoPlayer && data.videoUrls) {
+            this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('uh id', data.videoUrls);
+            let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
+            if (matches && matches[1]) {
+                this.videoStartTime = parseFloat(matches[1]);
+            }
+
+            window.videoPlayer = this.videoPlayer;
+            window.motionStudy = this;
+        }
+
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
             this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
