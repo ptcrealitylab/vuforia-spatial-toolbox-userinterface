@@ -146,23 +146,12 @@ export class HumanPoseRenderInstance {
         });
     }
 
-    updateBodyPartValidity(jointConfidenceThreshold) {
-        // TODO: limit to limbs
-        // TODO: add adjacent bones
-        this.pose.forEachJoint(joint => {
-            joint.valid = (joint.confidence >= jointConfidenceThreshold);
-        });
-    }
-
     /**
      * Updates the pose displayed by the pose renderer
      * @param {Pose} pose The pose to display
      */
-    setPose(pose, jointConfidenceThreshold = 0.0) {
+    setPose(pose) {
         this.pose = pose;
-
-        // needs to be called before other updates becasue it generates data they use
-        this.updateBodyPartValidity(jointConfidenceThreshold); 
 
         this.updateJointPositions();
         this.updateBonePositions();
@@ -292,7 +281,7 @@ export class HumanPoseRenderInstance {
      * Copy all elements of the other pose render instance
      * @param {HumanPoseRenderInstance} other - the instance to copy from
      */
-    copy(other, jointConfidenceThreshold = 0) {
+    copy(other) {
         console.info('Copy ts=', other.pose.timestamp);
         this.lens = other.lens;
         this.lensColors = {};
@@ -302,7 +291,7 @@ export class HumanPoseRenderInstance {
                 bones: other.lensColors[lensName].bones.slice(),
             };
         });
-        this.setPose(other.pose, jointConfidenceThreshold);
+        this.setPose(other.pose);
         return this;
     }
 

@@ -19,7 +19,8 @@ export class Pose {
             this.joints[jointName] = {
                 position: jointPositions[jointName],
                 confidence: jointConfidences[jointName],
-                name: jointName
+                name: jointName,
+                valid: true
             }
         });
         this.bones = {}; // Maps bone names to bone data
@@ -29,7 +30,8 @@ export class Pose {
                 this.bones[boneName] = {
                     joint0: this.joints[joint0],
                     joint1: this.joints[joint1],
-                    name: boneName
+                    name: boneName,
+                    valid: true 
                 };
             }
         });
@@ -72,4 +74,13 @@ export class Pose {
             callback(this.bones[boneName], index);
         });
     }
+
+    setBodyPartValidity(jointConfidenceThreshold) {
+        // TODO: limit to limbs
+        // TODO: add adjacent bones
+        this.forEachJoint(joint => {
+            joint.valid = (joint.confidence >= jointConfidenceThreshold);
+        });
+    }
+
 }

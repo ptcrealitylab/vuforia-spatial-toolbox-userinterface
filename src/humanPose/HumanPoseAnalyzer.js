@@ -330,7 +330,9 @@ export class HumanPoseAnalyzer {
         } else {
             this.clones.live.push(poseRenderInstance);
         }
-        poseRenderInstance.setPose(pose, this.jointConfidenceThreshold); // Needs to be set before visible is set, setting a pose always makes visible at the moment
+        
+        pose.setBodyPartValidity(this.jointConfidenceThreshold); // Needs to be called before setPose(), because it sets internal attributes needed by setPose() 
+        poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
             poseRenderInstance.setVisible(canBeVisible);
@@ -562,12 +564,10 @@ export class HumanPoseAnalyzer {
     setJointConfidenceThreshold(confidence) {
         this.jointConfidenceThreshold = confidence;
         console.info('jointConfidenceThreshold=', confidence);
-        //this.reprocessLens(this.activeLens, true);
-        //this.applyCurrentLensToHistory(true); 
 
         // TODO: what about other lenses?
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
-            relevantClones.forEach(clone => clone.updateBodyPartValidity(this.jointConfidenceThreshold));
+            relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
             // TODO: enable when lens also use valid attribute
             // const posesChanged = this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             relevantClones.forEach(clone => {
