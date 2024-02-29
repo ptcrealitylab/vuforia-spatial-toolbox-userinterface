@@ -85,7 +85,7 @@ function getViewMatrix(camera) {
 */
 
 
-
+/** Multiplication (a * b) of matrices stored column-by-column */
 function multiply4(a, b) {
     return [
         b[0] * a[0] + b[1] * a[4] + b[2] * a[8] + b[3] * a[12],
@@ -755,15 +755,6 @@ async function main(initialFilePath) {
         }
     };
 
-    const sourceMatrix =   
-        [1, 0, 0, 0,
-         0,-1, 0, 0,
-         0, 0,-1, 0,
-         0, 0, 0, 1];
-
-    let transformationMatrix = new THREE.Matrix4();
-    transformationMatrix.fromArray(sourceMatrix);
-
     let vertexCount = 0;
     let lastFrame = 0;
     let avgFps = 0;
@@ -771,48 +762,36 @@ async function main(initialFilePath) {
 
     const frame = (now) => {
 
-        //start YC testing
+        // obtain camera pose from Toolbox scene graph 
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
         let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
         if (!gpNode) {
             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
         }
+        // transformation from camera CS to ground plane CS
         let newCamMatrix = cameraNode.getMatrixRelativeTo(gpNode);
 
-        const SCALE = 1 / 1000;
-        const scaleF = 1.0  
-        const offset_x = 0;
+        const scaleF = 1.0;  // extra scaling factor in target CS
+        const offset_x = 0;  // extra offset in target CS (in meter units)
         const offset_y = 0;
         const offset_z = 0;
-        const floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset() // in my example, it returns -1344.81
-        newCamMatrix[12] = (newCamMatrix[12]*SCALE + offset_x)*scaleF;
+
+        const SCALE = 1 / 1000; // conversion from mm (Toolbox) to meters (GS renderer) 
+        const floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset() // in mm units
+        // update translation vector (camera wrt. world CS)
+        newCamMatrix[12] = (newCamMatrix[12]*SCALE + offset_x) * scaleF;
         newCamMatrix[13] = ((newCamMatrix[13] + floorOffset)*SCALE + offset_y)*scaleF;
         newCamMatrix[14] = (newCamMatrix[14]*SCALE + offset_z)*scaleF;
 
-        function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
-        {
-            let resultMatrix = new Array(16).fill(0);
+        // flip the y, z axes (OpenGL to Colmap camera CS)
+        const flipMatrix =   
+            [1, 0, 0, 0,
+             0,-1, 0, 0,
+             0, 0,-1, 0,
+             0, 0, 0, 1];
 
-            for(let row = 0; row < 4; row++) {
-                for(let col = 0; col < 4; col++) {
-                    let sum = 0; // Initialize sum for each element
-                    for(let k = 0; k < 4; k++) {
-                        sum += sourceMatrix[row * 4 + k] * transMatrix[k * 4 + col];
-                    }
-                    resultMatrix[row * 4 + col] = sum; // Assign the calculated value
-                }
-            }
-    
-            resultMatrix[12] = resultMatrix[12] * scaleF;
-            resultMatrix[13] = resultMatrix[13] * scaleF;
-            resultMatrix[14] = resultMatrix[14] * scaleF;
-
-            return resultMatrix
-        }
-
-        // needed transformation : flip the x,y axis, then invert the matrix
-        let transformMatrix1D = transformationMatrix.elements;
-        let resultMatrix_1 = ApplyTransMatrix(transformMatrix1D, newCamMatrix, scaleF)
+        let resultMatrix_1 = multiply4(newCamMatrix, flipMatrix);
+        // inversion is needed
         let actualViewMatrix = invert4(resultMatrix_1);
 
         const viewProj = multiply4(projectionMatrix, actualViewMatrix);
