@@ -570,14 +570,14 @@ async function main(initialFilePath) {
     if (req.status != 200) {
         throw new Error(req.status + " Unable to load " + req.url);
     }
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    
     const reader = req.body.getReader();
+    // calculate number of splats in the scene 
+    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
     let splatData = new Uint8Array(req.headers.get("content-length"));
+    let splatCount = splatData.length / rowLength
 
-    const downsample = splatData.length / rowLength > 500000 ? 1 : 1 / devicePixelRatio;
-        // const downsample = 1 / devicePixelRatio;
-        // const downsample = 1;
-        // console.log(splatData.length / rowLength, downsample);
+    const downsample = splatCount > 500000 ? 1 : 1 / devicePixelRatio;
 
     const worker = new Worker(
         URL.createObjectURL(
@@ -671,7 +671,7 @@ async function main(initialFilePath) {
     gl.vertexAttribDivisor(a_index, 1);
 
     const resize = () => {
-        gl.uniform2fv(u_focal, new Float32Array([camera.fx, camera.fy]));
+        
 
         old_projectionMatrix = getProjectionMatrix(
         camera.fx,
@@ -686,6 +686,13 @@ async function main(initialFilePath) {
         
         let focalLengths = calculateFocalLengths(iPhoneVerticalFOV);
         console.log(focalLengths);
+
+        const fx = projectionMatrix[0] * innerWidth / 2.0;
+        const fy = projectionMatrix[5] * -innerHeight / 2.0;
+
+        //console.log(fx, fy);
+
+        gl.uniform2fv(u_focal, new Float32Array([fx, fy]));
 
         gl.uniform2fv(u_viewport, new Float32Array([innerWidth, innerHeight]));
 
@@ -834,7 +841,7 @@ async function main(initialFilePath) {
         }
         fps.innerText = Math.round(avgFps) + " fps";
         lastFrame = now;
-        requestAnimationFrame(frame);
+        window.requestAnimationFrame(frame);
     };
 
     frame();
