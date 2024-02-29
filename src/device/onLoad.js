@@ -277,14 +277,9 @@ realityEditor.device.onload = async function () {
     // If we're viewing this on localhost we can connect to and read settings
     // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
-        let settings;
-        try {
-            let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
-            settings = await res.json();
+        fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
             processNewSettings(settings);
-        } catch (_e) {
-            return;
-        }
+        });
     }
     // Update settings when changed
     realityEditor.network.realtime.subscribeToInterfaceSettings('edgeAgent', settings => {
