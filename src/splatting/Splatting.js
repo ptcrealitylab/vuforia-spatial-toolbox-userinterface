@@ -757,6 +757,7 @@ async function main(initialFilePath) {
     let vertexCount = 0;
     let lastFrame = 0;
     let avgFps = 0;
+    let start = 0;
 
     const frame = (now) => {
 
