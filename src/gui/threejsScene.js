@@ -38,6 +38,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
+    let callbacks = {
+        onGltfDownloadProgress: [],
+        onGltfLoaded: [],
+    }
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -622,6 +626,16 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             if (callback) {
               callback(gltf.scene, wireMesh);
             }
+
+            callbacks.onGltfLoaded.forEach((cb) => {
+                cb(pathToGltf);
+            });
+        }, (xhr) => {
+            // on progress
+            // console.log(`${(xhr.loaded / xhr.total * 100)}% loaded`);
+            callbacks.onGltfDownloadProgress.forEach((cb) => {
+                cb(pathToGltf, xhr.loaded, xhr.total);
+            });
         });
     }
     
@@ -1267,4 +1281,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
+    exports.onGltfDownloadProgress = (cb) => {
+        callbacks.onGltfDownloadProgress.push(cb);
+    }
+    exports.onGltfLoaded = (cb) => {
+        callbacks.onGltfLoaded.push(cb);
+    }
 })(realityEditor.gui.threejsScene);
