@@ -130,23 +130,20 @@ realityEditor.network.nodeAddedCallbacks = {};
 
 realityEditor.network.getURL = function(server, identifier, route){
     let protocol = null;
-    let url = null;
-    let port = null;
+    let host = null;
     let network = null;
     let destinationIdentifier = null;
     let secret = null;
 
     if (parseInt(Number(identifier))) {
         protocol = realityEditor.network.useHTTPS ? "https": "http";
-        url = server;
-        port = identifier;
+        host = `${server}:${identifier}`;
     } else {
         let s = realityEditor.network.state;
 
-        if(s.proxyProtocol && s.proxyHostname && s.proxyPort) {
+        if(s.proxyProtocol && s.proxyHost) {
             protocol = s.proxyProtocol;
-            url = s.proxyHostname;
-            port = s.proxyPort;
+            host = s.proxyHost;
         }
 
         if(s.proxyNetwork) network = s.proxyNetwork;
@@ -155,7 +152,7 @@ realityEditor.network.getURL = function(server, identifier, route){
     }
 
     // concatenate URL
-    let returnUrl = protocol + '://' + url + ':' + port;
+    let returnUrl = protocol + '://' + host;
     if(network) returnUrl += '/n/' + network;
     if(destinationIdentifier) returnUrl += '/i/' + destinationIdentifier;
     if(secret) returnUrl += '/s/' + secret;
