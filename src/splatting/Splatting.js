@@ -1,4 +1,3 @@
-import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 let gsInitialized = false;
 let gsActive = false;
@@ -758,7 +757,6 @@ async function main(initialFilePath) {
     let vertexCount = 0;
     let lastFrame = 0;
     let avgFps = 0;
-    let start = 0;
 
     const frame = (now) => {
 
