@@ -581,7 +581,7 @@ void main () {
 async function main(initialFilePath) {
 
     // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target.splat');
-    const url = new URL(initialFilePath || "https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat");
+    const url = new URL(initialFilePath);
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
         credentials: "omit", // include, *same-origin, omit
@@ -823,6 +823,8 @@ async function main(initialFilePath) {
 
     frame();
 
+    /** Loads GS file dropped into the window. */
+    /*
     const selectFile = (file) => {
         const fr = new FileReader();
         stopLoading = true;
@@ -842,6 +844,7 @@ async function main(initialFilePath) {
         };
         fr.readAsArrayBuffer(file);
     };
+    */
 
     const preventDefault = (e) => {
         e.preventDefault();
@@ -850,10 +853,11 @@ async function main(initialFilePath) {
     gsContainer.addEventListener("dragenter", preventDefault);
     gsContainer.addEventListener("dragover", preventDefault);
     gsContainer.addEventListener("dragleave", preventDefault);
+    /*
     gsContainer.addEventListener("drop", (e) => {
         preventDefault(e);
         selectFile(e.dataTransfer.files[0]);
-    });
+    }); */
 
     let bytesRead = 0;
     let lastVertexCount = -1;
