@@ -554,7 +554,7 @@ let defaultViewMatrix = [
     0.03, 6.55, 1,
 ];
 let viewMatrix = defaultViewMatrix;
-let publicFunctions = {};
+
 async function main(initialFilePath) {
     try {
         viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
@@ -588,8 +588,8 @@ async function main(initialFilePath) {
     );
 
     const canvas = document.getElementById("gsCanvas");
-    canvas.width = innerWidth / downsample;
-    canvas.height = innerHeight / downsample;
+    canvas.width = window.innerWidth / downsample;
+    canvas.height = window.innerHeight / downsample;
 
     const fps = document.getElementById("gsFps");
 
@@ -672,32 +672,35 @@ async function main(initialFilePath) {
 
     const resize = () => {
         
+        const canvas = document.getElementById("gsCanvas");
+        canvas.width = window.innerWidth / downsample;
+        canvas.height = window.innerHeight / downsample;
 
         old_projectionMatrix = getProjectionMatrix(
         camera.fx,
         camera.fy,
-        innerWidth,
-        innerHeight,
+        window.innerWidth,
+        window.innerHeight,
         );
 
-        let projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, innerWidth / innerHeight, 10, 300000);
+        let projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, window.innerWidth / window.innerHeight, 10, 300000);
         // console.log('projection matrices', projectionMatrix, toolboxProjectionMatrix);
         console.log('projection matrices', old_projectionMatrix, projectionMatrix);
         
         let focalLengths = calculateFocalLengths(iPhoneVerticalFOV);
         console.log(focalLengths);
 
-        const fx = projectionMatrix[0] * innerWidth / 2.0;
-        const fy = projectionMatrix[5] * -innerHeight / 2.0;
+        const fx = projectionMatrix[0] * window.innerWidth / 2.0;
+        const fy = projectionMatrix[5] * -window.innerHeight / 2.0;
 
         //console.log(fx, fy);
 
         gl.uniform2fv(u_focal, new Float32Array([fx, fy]));
 
-        gl.uniform2fv(u_viewport, new Float32Array([innerWidth, innerHeight]));
+        gl.uniform2fv(u_viewport, new Float32Array([window.innerWidth, window.innerHeight]));
 
-        gl.canvas.width = Math.round(innerWidth / downsample);
-        gl.canvas.height = Math.round(innerHeight / downsample);
+        gl.canvas.width = Math.round(window.innerWidth / downsample);
+        gl.canvas.height = Math.round(window.innerHeight / downsample);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
@@ -833,7 +836,7 @@ async function main(initialFilePath) {
             document.getElementById("gsSpinner").style.display = "";
             start = Date.now() + 2000;
         }
-        const progress = (100 * vertexCount) / (splatData.length / rowLength);
+        const progress = (100 * vertexCount) / splatCount;
         if (progress < 100) {
             document.getElementById("gsProgress").style.width = progress + "%";
         } else {
@@ -871,7 +874,7 @@ async function main(initialFilePath) {
             stopLoading = true;
             fr.onload = () => {
                 splatData = new Uint8Array(fr.result);
-                console.log("Loaded", Math.floor(splatData.length / rowLength));
+                console.log("Loaded", Math.floor(splatCount));
             
                 if (splatData[0] === 112 && splatData[1] === 108 && splatData[2] === 121 && splatData[3] === 10) {
                     // ply file magic header means it should be handled differently
@@ -879,7 +882,7 @@ async function main(initialFilePath) {
                 } else {
                     worker.postMessage({
                         buffer: splatData.buffer,
-                        vertexCount: Math.floor(splatData.length / rowLength),
+                        vertexCount: Math.floor(splatCount),
                     });
                 }
             };
@@ -905,12 +908,6 @@ async function main(initialFilePath) {
     gsContainer.addEventListener("drop", (e) => {
         preventDefault(e);
         selectFile(e.dataTransfer.files[0]);
-    });
-
-    window.addEventListener('resize', () => {
-        const canvas = document.getElementById("gsCanvas");
-        canvas.width = innerWidth / downsample;
-        canvas.height = innerHeight / downsample;
     });
 
     let bytesRead = 0;
@@ -1071,9 +1068,6 @@ function calculateFocalLengths(fov) {
 }
 
 export default {
-    setMatrix(matrix) {
-        viewMatrix = matrix;
-    },
     hideSplatRenderer,
     showSplatRenderer,
     onSplatShown(callback) {
