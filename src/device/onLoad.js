@@ -250,7 +250,7 @@ realityEditor.device.onload = async function () {
     const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
 
     function processNewSettings(settings) {
-        let anyChanged = Math.random() < 0.1;
+        let anyChanged = false;
         if (cachedSettings.isConnected !== settings.isConnected) {
             toggleCloudUrl.onToggleCallback(settings.isConnected);
             anyChanged = true;
