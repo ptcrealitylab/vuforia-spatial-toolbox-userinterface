@@ -3,7 +3,7 @@
  * It keeps track of the positions of each joint in the pose.
  * It also keeps track of the timestamp of when the pose was recorded.
  */
-import {JOINT_CONNECTIONS} from "./constants.js";
+import {JOINT_CONNECTIONS, JOINTS, LEFT_HAND_JOINTS, RIGHT_HAND_JOINTS} from "./constants.js";
 
 export class Pose {
     /**
@@ -76,11 +76,51 @@ export class Pose {
     }
 
     setBodyPartValidity(jointConfidenceThreshold) {
-        // TODO: limit to limbs
-        // TODO: add adjacent bones
-        this.forEachJoint(joint => {
-            joint.valid = (joint.confidence >= jointConfidenceThreshold);
+
+        // compute validity only for limbs (head and torso are valid by default)
+        const limbJoints = [JOINTS.LEFT_ANKLE, JOINTS.LEFT_KNEE, 
+                      JOINTS.RIGHT_ANKLE, JOINTS.RIGHT_KNEE,
+                      JOINTS.LEFT_ELBOW, JOINTS.LEFT_WRIST, ...LEFT_HAND_JOINTS,
+                      JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST, ...RIGHT_HAND_JOINTS
+                     ];
+
+        limbJoints.forEach((jointName) => {
+            this.joints[jointName].valid = (this.joints[jointName].confidence >= jointConfidenceThreshold);
         });
+
+        // when knees are not valid, whole legs are invalid including ankles
+        if (!this.joints[JOINTS.LEFT_KNEE].valid) {
+            this.joints[JOINTS.LEFT_ANKLE].valid = false;
+        }
+        if (!this.joints[JOINTS.RIGHT_KNEE].valid) {
+            this.joints[JOINTS.RIGHT_ANKLE].valid = false;
+        }
+        // when wrists are not valid, whole hands are invalid
+        if (!this.joints[JOINTS.LEFT_WRIST].valid) {
+            LEFT_HAND_JOINTS.forEach((jointName) => {
+                this.joints[jointName].valid = false;
+            });
+        }
+        if (!this.joints[JOINTS.RIGHT_WRIST].valid) {
+            RIGHT_HAND_JOINTS.forEach((jointName) => {
+                this.joints[jointName].valid = false;
+            });
+        }
+        // when the hand and elbow are not valid, the wrist is invalid as well
+        if (!this.joints[JOINTS.LEFT_ELBOW].valid && !this.joints[JOINTS.LEFT_THUMB_CMC].valid) {
+            this.joints[JOINTS.LEFT_WRIST].valid = false;
+        }
+        if (!this.joints[JOINTS.RIGHT_ELBOW].valid && !this.joints[JOINTS.RIGHT_THUMB_CMC].valid) {
+            this.joints[JOINTS.RIGHT_WRIST].valid = false;
+        }
+
+        // make invalid the bones adjacent to invalid joints
+        Object.keys(this.bones).forEach((boneName) => {
+            const jointName0 = this.bones[boneName].joint0.name;
+            const jointName1 = this.bones[boneName].joint1.name;
+            this.bones[boneName].valid = this.joints[jointName0].valid && this.joints[jointName1].valid;
+        });
+
     }
 
 }

@@ -141,7 +141,8 @@ export class HumanPoseRenderInstance {
 
         this.pose.forEachBone(bone => {
             // hides hands in general at the moment. But one could use this also for hiding joints based on their low confidence.
-            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_BONES.includes(bone.name);
+            let visible = (DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_BONES.includes(bone.name)) && 
+                          (DISPLAY_INVALID_ELEMENTS || bone.valid);
             this.updateBonePosition(bone, visible);
         });
     }
@@ -216,6 +217,9 @@ export class HumanPoseRenderInstance {
         });
         this.pose.forEachBone(bone => {
             this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = lens.getColorForBone(bone);
+            if (!bone.valid) {
+                this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = MotionStudyColors.undefined;
+            }
         });
         // MK - why this condition (lens === this.lens)? When switching lens this is not true and this is not applied. 
         // Extra code needs to call this again after this.lens is updated to new lens.  
@@ -282,7 +286,6 @@ export class HumanPoseRenderInstance {
      * @param {HumanPoseRenderInstance} other - the instance to copy from
      */
     copy(other) {
-        console.info('Copy ts=', other.pose.timestamp);
         this.lens = other.lens;
         this.lensColors = {};
         Object.keys(other.lensColors).forEach(lensName => {

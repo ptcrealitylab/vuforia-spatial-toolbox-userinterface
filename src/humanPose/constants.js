@@ -213,15 +213,18 @@ export const JOINT_CONNECTIONS = {
 export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
 
+// Option to hide joints (+ adjacent bones) which have low confidence (thus considered poorly tracked)
+// This affects dynamic visualisation based on a given pose.
 export const DISPLAY_INVALID_ELEMENTS = false;
 
 // Flag for switching on/off an experimental feature of hand tracking
 export const TRACK_HANDS = true;
 
-// Option to hide joint/bones which are for example considered poorly tracked in general or redundant for a use case
+// Option to hide joints/bones which are for example considered poorly tracked in general or redundant for a use case
+// This affects visualisation of all poses the same way. 
 // Currently, defined according to debug switch TRACK_HANDS
 export const DISPLAY_HIDDEN_ELEMENTS = TRACK_HANDS;
-export const HIDDEN_JOINTS = [
+export const LEFT_HAND_JOINTS = [
     JOINTS.LEFT_THUMB_CMC,
     JOINTS.LEFT_THUMB_MCP,
     JOINTS.LEFT_THUMB_IP,
@@ -241,7 +244,9 @@ export const HIDDEN_JOINTS = [
     JOINTS.LEFT_PINKY_MCP,
     JOINTS.LEFT_PINKY_PIP,
     JOINTS.LEFT_PINKY_DIP,
-    JOINTS.LEFT_PINKY_TIP,
+    JOINTS.LEFT_PINKY_TIP
+];
+export const RIGHT_HAND_JOINTS = [
     JOINTS.RIGHT_THUMB_CMC,
     JOINTS.RIGHT_THUMB_MCP,
     JOINTS.RIGHT_THUMB_IP,
@@ -263,6 +268,8 @@ export const HIDDEN_JOINTS = [
     JOINTS.RIGHT_PINKY_DIP,
     JOINTS.RIGHT_PINKY_TIP
 ];
+export const HIDDEN_JOINTS = [...LEFT_HAND_JOINTS, ...RIGHT_HAND_JOINTS];
+
 export const HIDDEN_BONES = [
     getBoneName(JOINT_CONNECTIONS.thumb1Left),
     getBoneName(JOINT_CONNECTIONS.thumb2Left),
