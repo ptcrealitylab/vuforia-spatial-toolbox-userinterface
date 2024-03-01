@@ -590,25 +590,7 @@
     <div id="pocketTargetObjectLabel">Adding Tools to:</div>
 </div>
 
-<canvas class="canvas-main-threejs" id="mainThreejsCanvas"></canvas>
-<canvas class="Canvas canvas-node-connections" id="canvas"></canvas>
-<div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div>
-<canvas id="glcanvas" class="canvas-webgl-proxy"></canvas>
-<svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupLassoSVG" class="groupSVGElement">
-    <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>
-</svg>
-<svg xmlns="http://www.w3.org/2000/svg"
-     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupSVG" class="groupSVGElement">
-</svg>
-<div class='Interfaces touch-overlay-circle' id="overlay"></div>
-<div class='Interfaces touch-overlay-circle' id="overlay2"></div>
-
-<iframe src="src/gui/settings/index.html" id="settingsIframe" frameborder="0" style="display: none;" ></iframe>
-
-<div id= "searchDiv" style="position: absolute; left: 0px; bottom: 0px; right: 65px; height: 121px; -webkit-transform: translateZ(9px); display: none; border: solid #01fffc 2px"></div>
-
-<!-- Gaussian Splatting -->
+<!-- Gaussian Splatting - render behind the mainThreejsCanvas -->
 <div id="gsContainer" class="hidden">
     <div id="gsInfo">
         <h3 class="nohf">WebGL 3D Gaussian Splat Viewer</h3>
@@ -640,6 +622,23 @@
     </div>
 </div>
 
+<canvas class="canvas-main-threejs" id="mainThreejsCanvas"></canvas>
+<canvas class="Canvas canvas-node-connections" id="canvas"></canvas>
+<div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div>
+<canvas id="glcanvas" class="canvas-webgl-proxy"></canvas>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupLassoSVG" class="groupSVGElement">
+    <polyline id="lasso" stroke-width="5" stroke-linejoin="round" stroke-dasharray="10 4" style="-webkit-user-select: none; -webkit-touch-callout: none;"></polyline>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" id="groupSVG" class="groupSVGElement">
+</svg>
+<div class='Interfaces touch-overlay-circle' id="overlay"></div>
+<div class='Interfaces touch-overlay-circle' id="overlay2"></div>
+
+<iframe src="src/gui/settings/index.html" id="settingsIframe" frameborder="0" style="display: none;" ></iframe>
+
+<div id= "searchDiv" style="position: absolute; left: 0px; bottom: 0px; right: 65px; height: 121px; -webkit-transform: translateZ(9px); display: none; border: solid #01fffc 2px"></div>
 
 </body>
 </html>

@@ -939,12 +939,16 @@ function showSplatRenderer(filePath) {
     // gsActive = !gsContainer.classList.contains('hidden');
     gsContainer.classList.remove('hidden');
     gsActive = true;
+    // tell the mainThreejsScene to hide the mesh model
+    realityEditor.gui.threejsScene.enableExternalSceneRendering();
 }
 
 function hideSplatRenderer() {
     if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
+    // tell the mainThreejsScene to show the mesh model
+    realityEditor.gui.threejsScene.disableExternalSceneRendering();
 }
 
 let callbacks = {

@@ -1251,6 +1251,24 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         };
     };
 
+    /**
+     * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology
+     */
+    function enableExternalSceneRendering() {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        if (areaMesh) areaMesh.visible = false;
+        realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+    }
+
+    /**
+     * Restores mesh rendering when external rendering canvas is removed
+     */
+    function disableExternalSceneRendering() {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        if (areaMesh) areaMesh.visible = true;
+        realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+    }
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -1287,4 +1305,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.onGltfLoaded = (cb) => {
         callbacks.onGltfLoaded.push(cb);
     }
+    exports.enableExternalSceneRendering = enableExternalSceneRendering;
+    exports.disableExternalSceneRendering = disableExternalSceneRendering;
 })(realityEditor.gui.threejsScene);
