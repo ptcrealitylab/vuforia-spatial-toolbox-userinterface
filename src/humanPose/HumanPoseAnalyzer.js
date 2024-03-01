@@ -565,11 +565,10 @@ export class HumanPoseAnalyzer {
         this.jointConfidenceThreshold = confidence;
         console.info('jointConfidenceThreshold=', confidence);
 
-        // TODO: what about other lenses?
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
-            // TODO: enable when lens also use valid attribute
-            // const posesChanged = this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
+            // results from current lens need to be updated based on changed valid attribute of joints
+            this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             relevantClones.forEach(clone => {
                 if (clone.visible) {
                     clone.updateJointPositions();

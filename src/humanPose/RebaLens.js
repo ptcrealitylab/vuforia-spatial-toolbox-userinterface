@@ -15,9 +15,10 @@ export class RebaLens extends MotionStudyLens {
     }
     
     applyLensToPose(pose) {
+        /*
         if (Object.values(pose.joints).every(joint => joint.rebaScore)) {
             return false;
-        }
+        } */
         const rebaData = Reba.calculateForPose(pose);
         pose.forEachJoint(joint => {
             joint.rebaScore = rebaData.scores[joint.name];
