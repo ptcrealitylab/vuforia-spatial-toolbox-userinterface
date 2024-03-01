@@ -69,6 +69,20 @@ createNameSpace("realityEditor.network.realtime");
 
     function createDesktopSocket() {
         desktopSocket = io.connect();
+        const subscribe = () => {
+            let identifier = 'unused';
+            const worldObject = realityEditor.worldObjects.getBestWorldObject();
+            if (worldObject) {
+                identifier = worldObject.port;
+            } else {
+                setTimeout(() => {
+                    subscribe();
+                }, 1000);
+                return;
+            }
+            desktopSocket.emit(realityEditor.network.getIoTitle(identifier, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+        }
+        subscribe();
     }
 
     function getDesktopSocket() {
@@ -461,6 +475,26 @@ createNameSpace("realityEditor.network.realtime");
         batchedUpdates[objectKey].push(newUpdate);
     }
 
+    function subscribeToInterfaceSettings(interfaceName, callback) {
+        const worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!worldObject) {
+            setTimeout(() => {
+                subscribeToInterfaceSettings(interfaceName, callback);
+            }, 1000);
+            return;
+        }
+        const serverSocket = getServerSocketForObject(worldObject.objectId);
+        const subscribeTitle = realityEditor.network.getIoTitle(worldObject.port, '/subscribe/interfaceSettings');
+        const responseTitle = realityEditor.network.getIoTitle(worldObject.port, 'interfaceSettings');
+        serverSocket.emit(subscribeTitle, JSON.stringify({interfaceName}));
+        serverSocket.on(responseTitle, msg => {
+            const msgData = JSON.parse(msg);
+            if (msgData.interfaceName === interfaceName) {
+                callback(msgData.currentSettings);
+            }
+        });
+    }
+
     function subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback) {
         if (DEBUG) {
             console.log('subscribe to public data for node ' + nodeKey);
@@ -624,7 +658,7 @@ createNameSpace("realityEditor.network.realtime");
             var possibleSocketIPs = getSocketIPsForSet('realityServers');
             var foundSocket = null;
             possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
-                if (socketIP.indexOf(serverIP) > -1) {
+                if (socketIP.indexOf(serverIP) > -1 || (object.network && socketIP.includes(object.network))) {
                     foundSocket = socketIP;
                 }
             });
@@ -740,6 +774,8 @@ createNameSpace("realityEditor.network.realtime");
 
     exports.sendCameraMatrix = sendCameraMatrix;
     exports.subscribeToCameraMatrices = subscribeToCameraMatrices;
+
+    exports.subscribeToInterfaceSettings = subscribeToInterfaceSettings;
 
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
