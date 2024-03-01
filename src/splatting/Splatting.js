@@ -757,7 +757,7 @@ async function main(initialFilePath) {
     let vertexCount = 0;
     let lastFrame = 0;
     let avgFps = 0;
-    let start = 0;
+    // let start = 0;
 
     const frame = (now) => {
 
@@ -807,7 +807,7 @@ async function main(initialFilePath) {
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("gsSpinner").style.display = "";
-            start = Date.now() + 2000;
+            // start = Date.now() + 2000;
         }
         const progress = (100 * vertexCount) / splatCount;
         if (progress < 100) {
@@ -862,6 +862,7 @@ async function main(initialFilePath) {
     let lastVertexCount = -1;
     let stopLoading = false;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         const { done, value } = await reader.read();
         if (done || stopLoading) break;
