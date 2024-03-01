@@ -200,7 +200,7 @@ function legsReba(rebaData) {
     let rightLegColor = MotionStudyColors.undefined;
     
     // Height difference for leg raise is not specified in REBA standard (we picked 10cm)
-    const footDifferenceCutoff = 0.1; // TODO: measure this to find a good cutoff
+    const footDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
 
     /* left leg */
     // check if all needed joints have a valid position
@@ -320,7 +320,7 @@ function upperArmReba(rebaData) {
     
     // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture.
     const down = new THREE.Vector3(0, -1, 0);
-    const shoulderDifferenceCutoff = 0.1;  // TODO: measure this to find a good cutoff
+    const shoulderDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
     
     /* left uppper arm */
     // check if all needed joints have a valid position
