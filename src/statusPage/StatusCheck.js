@@ -86,6 +86,10 @@ class Check {
         this.duration = 0;
         this.result = null;
     }
+    
+    get text() {
+        return `# ${this.name}\n- ${this.status}\n${this.result}`;
+    }
 
     reset() {
         this.status = CheckStatus.NOT_STARTED;
@@ -113,6 +117,10 @@ class Checklist {
     constructor(checks) {
         this.checks = [...checks];
         this._runNumber = 0;
+    }
+    
+    get text() {
+        return this.checks.map(check => check.text).join('\n\n');
     }
 
     reset() {
@@ -150,11 +158,15 @@ entriesDiv.className = 'status-page-entries';
 const runButton = document.createElement('div');
 runButton.className = 'status-page-button';
 runButton.innerText = 'Run tests';
+const copyButton = document.createElement('div');
+copyButton.className = 'status-page-button';
+copyButton.innerText = 'Copy to clipboard';
 const closeButton = document.createElement('div');
 closeButton.className = 'status-page-button';
 closeButton.innerText = 'Close menu';
 headerDiv.appendChild(title);
 headerDiv.appendChild(runButton);
+headerDiv.appendChild(copyButton);
 headerDiv.appendChild(closeButton);
 containerDiv.appendChild(headerDiv);
 containerDiv.appendChild(entriesDiv);
@@ -224,7 +236,7 @@ const checklist = new Checklist([
     new Check('HTTP API', () => {
         const url = new URL('availableFrames', getBaseEdgePath());
         return jsonFetch(url).then(frames => {
-            return `${Object.keys(frames).length} frames found\nframes\n${JSON.stringify(frames)}`;
+            return `${Object.keys(frames).length} frames found\nframes\n${JSON.stringify(Object.keys(frames))}`;
         }).catch(() => {
             throw `Failed to get available frames from ${url}`;
         });
@@ -407,6 +419,16 @@ runButton.addEventListener('click', () => {
     checklist.checks.forEach(check => {
         updateCheckElements(check);
     });
+});
+
+copyButton.addEventListener('click', () => {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(checklist.text).then(() => {
+            console.log('Wrote status check data to clipboard');
+        });
+    } else {
+        console.error('Clipboard access not available');
+    }
 });
 
 closeButton.addEventListener('click', () => {

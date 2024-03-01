@@ -3,11 +3,12 @@
     max-width: 1000px;
     width: 90vw;
     height: 90vh;
-    background-color: white;
-    color: black;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
     z-index: 100000;
     position: absolute;
     box-sizing: border-box;
+    border-radius: 1em;
     padding: 2em;
     top: 0;
     left: 0;
@@ -31,15 +32,15 @@
 }
 
 .status-page-button {
-    border: 1px solid black;
+    padding: 6px 12px;
+    background-color: #1F1F1F;
+    border: 1px solid white;
     border-radius: 2px;
-    padding: 4px 8px;
-    background-color: #F0F0F0;
     display: inline-block;
     cursor: pointer;
     
     &:hover {
-        background-color: #C0C0C0;
+        background-color: #3F3F3F;
     }
 }
 
@@ -58,8 +59,9 @@
 .status-page-data {
     max-width: 80vw;
     overflow-wrap: anywhere;
+    color: #AAAAAA;
     &.status-page-failed {
-        color: red;
+        color: #EE0000;
     }
     .status-page-hide-data & {
         display: none;
@@ -70,7 +72,7 @@
     width: 0.6em;
     height: 0.6em;
     border-radius: 100%;
-    border: 1px solid black;
+    border: 1px solid white;
     flex-shrink: 0;
     &.status-page-in-progress {
         width: 0.2em;
@@ -79,9 +81,11 @@
         animation: status-page-rotate 4s linear infinite;
     }
     &.status-page-passed {
+        border-color: black;
         background-color: green;
     }
     &.status-page-failed {
+        border-color: black;
         background-color: red;
     }
 }
@@ -92,6 +96,7 @@
 
 .status-page-duration {
     font-weight: normal;
+    color: #AAAAAA;
 }
 
 @keyframes status-page-rotate {
