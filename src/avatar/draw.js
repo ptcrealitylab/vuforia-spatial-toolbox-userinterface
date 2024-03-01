@@ -21,6 +21,10 @@ createNameSpace("realityEditor.avatar.draw");
     const ICON_WIDTH = 30; // layout information for circular icons
     const ICON_GAP = 10;
 
+    let callbacks = {
+        onAvatarIconClicked: [],
+    }
+
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
     function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
         try {
@@ -114,8 +118,8 @@ createNameSpace("realityEditor.avatar.draw");
                 iconDiv.addEventListener(eventName, hideFullNameTooltip);
             });
 
-            if (isMyIcon) {
-                iconDiv.addEventListener('pointerup', (_e) => {
+            iconDiv.addEventListener('pointerup', (e) => {
+                if (isMyIcon) {
                     console.log('clicked on my icon - option to rename avatar?');
                     // show a modal that lets you type in a name
                     realityEditor.gui.modal.openInputModal({
@@ -123,7 +127,11 @@ createNameSpace("realityEditor.avatar.draw");
                         descriptionText: 'Specify the name that other users will see.',
                         inputPlaceholderText: 'Your username here',
                         onSubmitCallback: (e, userName) => {
-                            if (userName && typeof userName === 'string' && userName.length > 0) {
+                            if (userName && typeof userName === 'string') {
+                                userName = userName.trim();
+                                if (userName.length === 0) {
+                                    userName = 'Anonymous';
+                                }
                                 realityEditor.avatar.setMyUsername(userName);
                                 realityEditor.avatar.writeUsername(userName);
                                 // write to window.localStorage and use instead of anonymous in the future in this browser
@@ -131,12 +139,28 @@ createNameSpace("realityEditor.avatar.draw");
                             }
                         }
                     });
-                });
-            }
+                }
+                callbacks.onAvatarIconClicked.forEach((cb) => {
+                    cb({
+                        avatarObjectId: objectKey,
+                        avatarProfile: info,
+                        userInitials: initials,
+                        isMyIcon: isMyIcon,
+                        pointerEvent: e
+                    });
+                })
+            });
         });
 
         let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) - ICON_GAP;
         iconContainer.style.width = iconsWidth + 'px';
+    }
+
+    /**
+     * @param {function} callback
+     */
+    function registerAvatarIconClickEvent(callback) {
+        callbacks.onAvatarIconClicked.push(callback);
     }
 
     // create the container that all the avatar icon list elements will get added to
@@ -709,5 +733,6 @@ createNameSpace("realityEditor.avatar.draw");
     exports.renderConnectionFeedback = renderConnectionFeedback;
     exports.renderConnectionDebugInfo = renderConnectionDebugInfo;
     exports.deleteAvatarMeshes = deleteAvatarMeshes;
+    exports.registerAvatarIconClickEvent = registerAvatarIconClickEvent;
 
 }(realityEditor.avatar.draw));
