@@ -567,8 +567,12 @@ export class HumanPoseAnalyzer {
 
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
-            // results from current lens need to be updated based on changed valid attribute of joints
-            this.activeLens.applyLensToHistory(relevantClones.map(clone => clone.pose));
+            // lens calculations need to be updated based on changed valid attribute of joints
+            let poses = relevantClones.map(clone => clone.pose);
+            this.lenses.forEach(lens => {
+                // need to upate whole history, although it takes a bit of time
+                lens.applyLensToHistory(poses, true /* force */); 
+            });
             relevantClones.forEach(clone => {
                 if (clone.visible) {
                     clone.updateJointPositions();

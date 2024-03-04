@@ -14,8 +14,8 @@ export class OverallRebaLens extends MotionStudyLens {
         super("REBA Ergonomics (Overall)");
     }
     
-    applyLensToPose(pose) {
-        if (Object.values(pose.joints).every(joint => joint.overallRebaScore)) {
+    applyLensToPose(pose, force = false) {
+        if (!force && Object.values(pose.joints).every(joint => joint.overallRebaScore)) {
             return false;
         }
         const rebaData = Reba.calculateForPose(pose);
@@ -30,16 +30,16 @@ export class OverallRebaLens extends MotionStudyLens {
         return true;
     }
 
-    applyLensToHistoryMinimally(poseHistory) {
-        const modified = this.applyLensToPose(poseHistory[poseHistory.length - 1]);
+    applyLensToHistoryMinimally(poseHistory, force = false) {
+        const modified = this.applyLensToPose(poseHistory[poseHistory.length - 1], force);
         const modifiedArray = poseHistory.map(() => false);
         modifiedArray[modifiedArray.length - 1] = modified;
         return modifiedArray;
     }
 
-    applyLensToHistory(poseHistory) {
+    applyLensToHistory(poseHistory, force = false) {
         return poseHistory.map(pose => {
-            return this.applyLensToPose(pose);
+            return this.applyLensToPose(pose, force);
         });
     }
 
