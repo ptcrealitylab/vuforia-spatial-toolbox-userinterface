@@ -914,10 +914,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
         }
-        // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
-        //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
-        // }
-        if (includeGroundPlane && (realityEditor.gui.threejsScene.isGroundPlanePositionSet() || !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
+        if (includeGroundPlane && (realityEditor.gui.threejsScene.isGroundPlanePositionSet() ||
+            !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
             objectsToCheck.push(groundPlane);

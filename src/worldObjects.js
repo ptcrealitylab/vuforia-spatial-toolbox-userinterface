@@ -58,15 +58,12 @@ createNameSpace("realityEditor.worldObjects");
                     worldObjectKeys.push(objectKey);
                 }
 
-                // compatible with new servers - the local world object gets discovered normally, just needs to finish initializing
-                // if (object.objectId === getLocalWorldId()) {
                 // All world objects initialize when first detected, because they act as placeholders until target data is uploaded
-                    initializeWorldObject(object);
-                // }
+                initializeWorldObject(object);
 
                 if (object.objectId !== getLocalWorldId()) {
                     const renderingFlagName = 'loadingWorldMesh';
-                    realityEditor.device.environment.clearSuppressedObjectRenderingFlag(renderingFlagName); // hide tools until the model is loaded
+                    realityEditor.device.environment.clearSuppressedObjectRenderingFlag(renderingFlagName); // ensure that tools aren't hidden
                 }
             }
 
@@ -203,10 +200,8 @@ createNameSpace("realityEditor.worldObjects");
             realityEditor.network.onNewObjectAdded(object.objectId);
         }
 
-        // if (object.objectId === localWorldObjectKey) {
         // always initialize at identity origin - will be updated to the target position when target is added/downloaded/localized
-            realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
-        // }
+        realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
 
         updateOriginOffsetIfNecessary(object, null);
         setTimeout(function() { updateOriginOffsetIfNecessary(object, null); }, 100);
@@ -377,7 +372,8 @@ createNameSpace("realityEditor.worldObjects");
         if (typeof worldCorrections[objectKey] !== 'undefined') {
             
             if (worldCorrections[objectKey] === null || realityEditor.gui.ar.utilities.isIdentityMatrix(worldCorrections[objectKey])) {
-                localizedWithinWorldCallbacks.forEach(function(callback) { // TODO: should localizedWithinWorldCallbacks be able to trigger twice? once when placeholder detected, once when target detected
+                // TODO: should localizedWithinWorldCallbacks be able to trigger twice? once when placeholder detected, once when target detected
+                localizedWithinWorldCallbacks.forEach(function(callback) {
                     callback(objectKey);
                 });
                 worldUsedForCorrection = objectKey;

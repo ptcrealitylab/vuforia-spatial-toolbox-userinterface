@@ -935,8 +935,6 @@ function showSplatRenderer(filePath) {
             document.getElementById("gsMessage").innerText = err.toString();
         });
     }
-    // gsContainer.classList.toggle('hidden');
-    // gsActive = !gsContainer.classList.contains('hidden');
     gsContainer.classList.remove('hidden');
     gsActive = true;
     // tell the mainThreejsScene to hide the mesh model
