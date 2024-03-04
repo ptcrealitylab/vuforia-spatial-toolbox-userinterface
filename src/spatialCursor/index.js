@@ -341,6 +341,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 return;
             }
 
+            // initialize the spatial cursor as soon as any world object is detected,
+            // since it can move along groundplane even before mesh finishes loading
             if (DEFAULT_SPATIAL_CURSOR_ON) {
                 toggleDisplaySpatialCursor(true);
             }

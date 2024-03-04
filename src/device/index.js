@@ -336,6 +336,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
     if ((this.cachedWorldObject && this.cachedOcclusionObject) || realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
         let objectsToCheck = [];
         if (this.cachedOcclusionObject) objectsToCheck.push(this.cachedOcclusionObject);
+        // pass correct coordinate into tools even if there's no world mesh, if we raycast against the groundplane
         if (realityEditor.gui.threejsScene.isGroundPlanePositionSet()) objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
 
         let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, objectsToCheck);

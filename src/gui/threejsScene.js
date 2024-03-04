@@ -512,10 +512,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
-                        // if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
-                        //     meshesToRemove.push(child);
-                        //     return;
-                        // }
+                        if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
+                            meshesToRemove.push(child);
+                            return;
+                        }
                         allMeshes.push(child);
                     }
                 });
@@ -631,8 +631,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 cb(pathToGltf);
             });
         }, (xhr) => {
-            // on progress
-            // console.log(`${(xhr.loaded / xhr.total * 100)}% loaded`);
+            // display download progress, useful if loading large gltf files on slow networks
             callbacks.onGltfDownloadProgress.forEach((cb) => {
                 cb(pathToGltf, xhr.loaded, xhr.total);
             });
