@@ -93,8 +93,22 @@ createNameSpace("realityEditor.avatar.draw");
                 initials = '+' + numTooMany;
             }
 
+            let usersFollowingMe = realityEditor.avatar.utils.getUsersFollowingUser(objectKey, connectedAvatars);
+            let userIsFollowing = info.lockOnMode;
+
             let isMyIcon = objectKey.includes(realityEditor.avatar.utils.getAvatarName());
             let iconDiv = createAvatarIcon(iconContainer, objectKey, initials, index, isMyIcon, isEllipsis);
+
+            // TODO: show who you are following, and who is following you
+            // if (isMyIcon) {
+                if (usersFollowingMe.length > 0) {
+                    // add a notification bubble showing the number of users following me
+                    let bubble = document.createElement('div');
+                    bubble.classList.add('avatarListIconFollowingBubble');
+                    bubble.textContent = `${usersFollowingMe.length}`;
+                    iconDiv.appendChild(bubble);
+                }
+            // }
 
             // show full name when hovering over the icon
             let tooltipText = info.name;
@@ -152,7 +166,7 @@ createNameSpace("realityEditor.avatar.draw");
             });
         });
 
-        let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) - ICON_GAP;
+        let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) + ICON_GAP;
         iconContainer.style.width = iconsWidth + 'px';
     }
 
@@ -178,7 +192,7 @@ createNameSpace("realityEditor.avatar.draw");
         let iconDiv = document.createElement('div');
         iconDiv.id = 'avatarIcon' + objectKey;
         iconDiv.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
-        iconDiv.style.left = ((ICON_WIDTH + ICON_GAP) * index) + 'px';
+        iconDiv.style.left = (ICON_GAP + (ICON_WIDTH + ICON_GAP) * index) + 'px';
         parent.appendChild(iconDiv);
 
         let iconImg = document.createElement('img');
@@ -245,13 +259,12 @@ createNameSpace("realityEditor.avatar.draw");
             tooltipArrow.src = 'svg/tooltip-arrow-up.svg';
             container.appendChild(tooltipArrow);
         }
-
-        if (name) {
-            nameDiv.innerText = isMyAvatar ? name + ' (click to edit your name)' : name;
-        } else {
-            nameDiv.innerText = isMyAvatar ? 'You (click to edit your name)' : 'Anonymous';
-        }
-        let width = Math.max(120, (nameDiv.innerText.length) * 12);
+        
+        const clickActionText = isMyAvatar ? 'click to edit your name' : 'click to follow';
+        const nameText = isMyAvatar ? (name ? `${name} (You)` : 'You') : (name || 'Anonymous');
+        nameDiv.innerText = `${nameText} (${clickActionText})`;
+        let clickActionTextWidth = 8 * clickActionText.length;
+        let width = Math.max(120, ((nameDiv.innerText.length - clickActionText.length)) * 12 + clickActionTextWidth);
         nameDiv.style.width = width + 'px';
         container.style.width = width + 'px;'
 
