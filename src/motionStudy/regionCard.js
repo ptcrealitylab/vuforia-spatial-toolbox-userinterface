@@ -48,6 +48,7 @@ export class RegionCard {
         this.displayActive = false;
         this.onPointerOver = this.onPointerOver.bind(this);
         this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerOut = this.onPointerOut.bind(this);
         this.onClickPin = this.onClickPin.bind(this);
         this.onClickShow = this.onClickShow.bind(this);
@@ -62,6 +63,7 @@ export class RegionCard {
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
+        this.element.addEventListener('pointermove', this.onPointerMove);
         this.element.addEventListener('pointerout', this.onPointerOut);
         this.container.appendChild(this.element);
     }
@@ -80,7 +82,12 @@ export class RegionCard {
         this.element.classList.add('minimized');
     }
 
-    onPointerDown() {
+    onPointerDown(e) {
+        e.stopPropagation();
+    }
+
+    onPointerMove(e) {
+        e.stopPropagation();
     }
 
     onClickPin() {
