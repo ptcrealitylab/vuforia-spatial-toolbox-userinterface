@@ -11,7 +11,8 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
-import GroundPlane from "./scene/GroundPlane.js"
+import GroundPlane from "./scene/GroundPlane.js";
+import AnchoredGroup from "./scene/AnchoredGroup.js";
 
 (function(exports) {
 
@@ -49,8 +50,11 @@ import GroundPlane from "./scene/GroundPlane.js"
 
     let areaTargetMaterials = [];
 
-    // for now, this contains everything not attached to a specific world object
-    var threejsContainerObj;
+    /**
+     * for now, this contains everything not attached to a specific world object
+     * @type {AnchoredGroup}
+     */ 
+    var threejsContainer;
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
@@ -74,9 +78,8 @@ import GroundPlane from "./scene/GroundPlane.js"
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainerObj = new THREE.Object3D();
-        threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-        scene.add(threejsContainerObj);
+        threejsContainer = new AnchoredGroup();
+        scene.add(threejsContainer.getInternalObject());
 
         setupLighting();
 
@@ -277,7 +280,7 @@ import GroundPlane from "./scene/GroundPlane.js"
         // the main three.js container object has its origin set to the ground plane origin
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            threejsContainer.setMatrixFromArray(rootMatrix);
         }
 
         customMaterials.update();
@@ -342,9 +345,9 @@ import GroundPlane from "./scene/GroundPlane.js"
             }
         } else {
             if (attach) {
-                threejsContainerObj.attach(obj);
+                threejsContainer.attach(obj);
             } else {
-                threejsContainerObj.add(obj);
+                threejsContainer.add(obj);
             }
         }
         if (layer) {
@@ -587,11 +590,11 @@ import GroundPlane from "./scene/GroundPlane.js"
             });
             hasGltfScene = true;
 
-            threejsContainerObj.add( wireMesh );
+            threejsContainer.add( wireMesh );
             setTimeout(() => {
-                threejsContainerObj.remove(wireMesh);
+                threejsContainer.remove(wireMesh);
             }, 5000);
-            threejsContainerObj.add( gltf.scene );
+            threejsContainer.add( gltf.scene );
 
             realityEditor.network.addPostMessageHandler('getAreaTargetMesh', (_, fullMessageData) => {
                 realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
