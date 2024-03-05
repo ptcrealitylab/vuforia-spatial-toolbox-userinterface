@@ -92,5 +92,25 @@ createNameSpace("realityEditor.avatar.utils");
         keys.sort(function(x,y){ return x.includes(first) ? -1 : y.includes(first) ? 1 : 0; });
         return keys;
     }
+    
+    exports.getUsersFollowingUser = function (avatarObjectId, connectedAvatars) {
+        return Object.keys(connectedAvatars).filter(objectId => {
+            return connectedAvatars[objectId].lockOnMode === avatarObjectId;
+        });
+    }
+    
+    class UserProfile {
+        /**
+         * @param {string|null} name
+         * @param {string} providerId
+         * @param {string|null} lockOnMode
+         */
+        constructor(name, providerId, lockOnMode) {
+            this.name = name; // username
+            this.providerId = providerId; // id of the phone virtualizer ('' for remote operators)
+            this.lockOnMode = lockOnMode; // id of which other avatar this avatar's perspective is locked onto (null if not locked on)
+        }
+    }
+    exports.UserProfile = UserProfile;
 
 }(realityEditor.avatar.utils));

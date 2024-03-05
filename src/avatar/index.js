@@ -302,10 +302,11 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        connectedAvatarUserProfiles[objectKey] = {
-            name: null,
-            providerId: '',
-        };
+        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
+        // {
+        //     name: null,
+        //     providerId: '',
+        // };
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -391,7 +392,7 @@ createNameSpace("realityEditor.avatar");
             const userProfile = msgContent.publicData.userProfile;
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
-                connectedAvatarUserProfiles[msgContent.object] = {};
+                connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null); // {};
             }
 
             // Copy over any present keys
@@ -518,7 +519,19 @@ createNameSpace("realityEditor.avatar");
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            network.sendUserProfile(info, name, myProviderId);
+            network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
+        }
+    }
+    
+    function writeMyLockOnMode(objectId) {
+        if (!myAvatarObject) { return; }
+        connectedAvatarUserProfiles[myAvatarId].lockOnMode = objectId;
+        // draw.updateAvatarName(myAvatarId, name);
+        // draw.renderAvatarIconList(connectedAvatarUserProfiles);
+
+        let info = utils.getAvatarNodeInfo(myAvatarObject);
+        if (info) {
+            network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
         }
     }
 
@@ -685,6 +698,7 @@ createNameSpace("realityEditor.avatar");
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
+    exports.writeMyLockOnMode = writeMyLockOnMode;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};

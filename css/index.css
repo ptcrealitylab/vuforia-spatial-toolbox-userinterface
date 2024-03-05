@@ -1795,16 +1795,20 @@ Logic Interface CSS
     position: absolute;
     left: 50vw;
     transform: translateX(-50%);
+    background-color: rgba(0,0,0,0.5);
+    height: 50px;
+    border-radius: 25px;
 }
 
 .avatarListIcon {
     position: absolute;
     width: 30px;
     height: 30px;
+    cursor: pointer;
 }
 
 .avatarListIconMyAvatar {
-    cursor: pointer;
+    /*cursor: pointer;*/
 }
 
 .avatarListIconImage {
@@ -1824,6 +1828,21 @@ Logic Interface CSS
     line-height: 30px;
     vertical-align: middle;
     pointer-events: none;
+}
+
+.avatarListIconFollowingBubble {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    text-align: center;
+    line-height: 15px; /* slightly less than div height looks better */
+    vertical-align: middle;
+    pointer-events: none;
+    background-color: black;
+    font-size: 12px;
 }
 
 #avatarListHoverName {
