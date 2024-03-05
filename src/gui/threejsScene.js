@@ -11,6 +11,7 @@ import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelpe
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
+import GroundPlane from "./scene/GroundPlane.js"
 
 (function(exports) {
 
@@ -23,7 +24,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlaneCollider;
+    /**
+     * @type {GroundPlane}
+     */
+    let groundPlane;
     let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
     let raycaster;
     let mouse;
@@ -177,16 +181,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
-        const geometry = new THREE.PlaneGeometry(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        geometry.rotateX(Math.PI / 2); // directly set the geometry's rotation to get the desired visual rotation & raycast direction. Otherwise setting mesh's rotation & run updateWorldMatrix(true, false) looks correct, but has wrong raycast direction
-        const material = new THREE.MeshBasicMaterial({color: 0x88ffff, side: THREE.DoubleSide, wireframe: true});
-        const plane = new THREE.Mesh(geometry, material);
-        // plane.rotateX(Math.PI/2);
-        plane.visible = false;
-        // plane.position.set(0, -10, 0); // todo Steve: figure out a way to raycast on mesh first & if no results, raycast on ground plane next. Figure out a way to do it in one go (possibly using depth tests & stuff), instead of using 2 raycasts, to improve performance
-        addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneCollider';
-        groundPlaneCollider = plane;
+
+        groundPlane = new GroundPlane(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        addToScene(groundPlane.getInternalObject(), {occluded: true});
 
         let areaTargetNavmesh = null;
         realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
@@ -203,18 +200,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const tryUpdatingGroundPlanePosition = () => {
             if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
 
-            groundPlaneCollider.parent.remove(groundPlaneCollider);
-            areaTargetMesh.add(groundPlaneCollider);
-            let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
-            let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
-            groundPlaneCollider.position.set(0, floorOffset, 0);
-            groundPlaneCollider.updateMatrix();
-            groundPlaneCollider.updateMatrixWorld(true);
-
-            // update the groundPlane sceneNode to match the position of the new groundplane collider
-            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());
-            let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
-            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
+            groundPlane.tryUpdatingGroundPlanePosition(areaTargetMesh, areaTargetNavmesh);
 
             isGroundPlanePositionSet = true;
         }
@@ -743,7 +729,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     }
 
     function getGroundPlaneCollider() {
-        return groundPlaneCollider;
+        return groundPlane;
     }
 
     function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {

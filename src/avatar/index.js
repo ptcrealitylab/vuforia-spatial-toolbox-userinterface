@@ -440,7 +440,7 @@ createNameSpace("realityEditor.avatar");
             // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
                 let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane]);
+                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObect()]);
                 groundPlane.updateWorldMatrix(true, false);
                 if (raycastIntersects.length > 0) {
                     worldIntersectPoint = raycastIntersects[0].point;
