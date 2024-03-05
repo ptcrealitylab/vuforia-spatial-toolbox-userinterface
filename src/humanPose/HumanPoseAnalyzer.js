@@ -398,7 +398,7 @@ export class HumanPoseAnalyzer {
             const timestamp = pose.timestamp;
             const id = pose.metadata.poseObjectId;
             let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
-            currentPoint.y += 400;
+            currentPoint.y += 400; // mm
             if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
                 this.createSpaghetti(lens, id, historical);
             }
@@ -565,6 +565,7 @@ export class HumanPoseAnalyzer {
         this.jointConfidenceThreshold = confidence;
         console.info('jointConfidenceThreshold=', confidence);
 
+        // update all poses and derived clones for visualisation
         [this.clones.live, this.clones.historical].forEach(relevantClones => {
             relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
             // lens calculations need to be updated based on changed valid attribute of joints
@@ -583,7 +584,13 @@ export class HumanPoseAnalyzer {
                 clone.renderer.markColorNeedsUpdate();
             });
             
-        });        
+        }); 
+        
+        // update all spaghetti lines
+        this.lenses.forEach(lens => {
+           this.reprocessSpaghettiForLens(lens);
+        });
+
     }
 
     getJointConfidenceThreshold() {
