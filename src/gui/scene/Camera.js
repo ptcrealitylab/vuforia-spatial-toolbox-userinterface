@@ -40,6 +40,69 @@ class Camera {
 
     /**
      * 
+     * @param {THREE.Object3D} object 
+     */
+    attach(object) {
+        this.#camera.attach(object);
+    }
+
+    /**
+     * 
+     * @param {THREE.Object3D} object 
+     */
+    add(object) {
+        this.#camera.add(object);
+    }
+
+    /**
+     * source: https://github.com/mrdoob/three.js/issues/78
+     * @param {THREE.Vector3} meshPosition
+     */ 
+    getScreenXY = function(meshPosition) {
+        let pos = meshPosition.clone();
+        let projScreenMat = new THREE.Matrix4();
+        projScreenMat.multiplyMatrices(this.#camera.projectionMatrix, this.#camera.matrixWorldInverse);
+        pos.applyMatrix4(projScreenMat);
+        
+        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
+        let meshPosWrtCamera = meshPosition.clone();
+        meshPosWrtCamera.applyMatrix4(this.#camera.matrixWorldInverse);
+        if (meshPosWrtCamera.z > 0) {
+            pos.negate();
+        }
+
+        return {
+            x: ( pos.x + 1 ) * window.innerWidth / 2,
+            y: ( -pos.y + 1) * window.innerHeight / 2
+        };
+    };
+
+    /**
+     * source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
+     * @param {THREE.Vector3} pointPosition
+     */ 
+    isPointOnScreen = function(pointPosition) {
+        let frustum = new THREE.Frustum();
+        let matrix = new THREE.Matrix4();
+        matrix.multiplyMatrices(this.#camera.projectionMatrix, this.#camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(matrix);
+        if (frustum.containsPoint(pointPosition)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @param {THREE.Vector3}
+     * @returns {THREE.Vector3}
+     */
+    getWorldDirection(cameraDirection) {
+        this.#camera.getWorldDirection(cameraDirection);
+    }
+
+    /**
+     * 
      * @returns {THREE.Camera}
      */
     getInternalObject() {

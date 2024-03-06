@@ -74,7 +74,7 @@ import Camera from "./scene/Camera.js";
         scene = new THREE.Scene();
 
         mainCamera = new Camera(mainCamera, aspectRatio);
-        scene.add(mainCamera.getIntenralObject); // Normally not needed, but needed in order to add child objects relative to camera
+        scene.add(mainCamera.getInternalObject()); // Normally not needed, but needed in order to add child objects relative to camera
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             renderer.setSize(width, height);
@@ -293,7 +293,7 @@ import Camera from "./scene/Camera.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.render(scene, camera);
+            renderer.render(scene, mainCamera.getInternalObject());
         }
     }
 
@@ -321,9 +321,9 @@ import Camera from "./scene/Camera.js";
         }
         if (parentToCamera) {
             if (attach) {
-                camera.attach(obj);
+                mainCamera.attach(obj);
             } else {
-                camera.add(obj);
+                mainCamera.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
@@ -657,7 +657,7 @@ import Camera from "./scene/Camera.js";
         mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
 
         //2. set the picking ray from the camera position and mouse coordinates
-        raycaster.setFromCamera( mouse, camera );
+        raycaster.setFromCamera( mouse, mainCamera.getInternalObject() );
 
         raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
 
@@ -686,7 +686,7 @@ import Camera from "./scene/Camera.js";
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.unproject(mainCamera.getInternalObject());
         distanceRaycastVector.normalize();
         distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
         return distanceRaycastResultPosition;
@@ -1100,7 +1100,7 @@ import Camera from "./scene/Camera.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(camera, renderer.domElement);
+        let transformControls = new TransformControls(mainCamera.getInternalObject(), renderer.domElement);
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1129,38 +1129,10 @@ import Camera from "./scene/Camera.js";
         return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
     }
 
-    // source: https://github.com/mrdoob/three.js/issues/78
-    exports.getScreenXY = function(meshPosition) {
-        let pos = meshPosition.clone();
-        let projScreenMat = new THREE.Matrix4();
-        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-        pos.applyMatrix4(projScreenMat);
-        
-        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
-        let meshPosWrtCamera = meshPosition.clone();
-        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
-        if (meshPosWrtCamera.z > 0) {
-            pos.negate();
-        }
+    exports.getScreenXY = (meshPosition) => mainCamera.getScreenXY(meshPosition);
 
-        return {
-            x: ( pos.x + 1 ) * window.innerWidth / 2,
-            y: ( -pos.y + 1) * window.innerHeight / 2
-        };
-    };
-
-    // source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
-    exports.isPointOnScreen = function(pointPosition) {
-        let frustum = new THREE.Frustum();
-        let matrix = new THREE.Matrix4();
-        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(matrix);
-        if (frustum.containsPoint(pointPosition)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    
+    exports.isPointOnScreen = (pointPosition) => mainCamera.isPointOnScreen(pointPosition);
 
     // gets the position relative to groundplane (common coord system for threejsScene)
     exports.getToolPosition = function(toolId) {
@@ -1191,7 +1163,7 @@ import Camera from "./scene/Camera.js";
      */
     exports.getInternals = function getInternals() {
         return {
-            camera,
+            mainCamera,
             renderer,
             scene,
         };
