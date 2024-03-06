@@ -90,7 +90,6 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
             gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
-            gridHelper.layers.set(2);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 

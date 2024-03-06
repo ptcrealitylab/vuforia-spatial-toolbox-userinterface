@@ -36,7 +36,6 @@ import Camera from "./scene/Camera.js";
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
@@ -294,23 +293,6 @@ import Camera from "./scene/Camera.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.clear();
-            // render the ground plane visualizer first
-            camera.layers.set(2);
-            renderer.render(scene, camera);
-            renderer.clearDepth();
-            if (hasGltfScene) {
-                // Set rendered layer to 1: only the background, i.e. the
-                // static gltf mesh
-                camera.layers.set(1);
-                renderer.render(scene, camera);
-                // Leaves only the color from the render, discarding depth and
-                // stencil
-                renderer.clear(false, true, true);
-            }
-            // Set layer to 0: everything but the background
-            camera.layers.set(0);
-            camera.layers.enable(10);
             renderer.render(scene, camera);
         }
     }
@@ -329,7 +311,6 @@ import Camera from "./scene/Camera.js";
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
-        const layer = parameters.layer;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -356,9 +337,6 @@ import Camera from "./scene/Camera.js";
             } else {
                 threejsContainer.add(obj);
             }
-        }
-        if (layer) {
-            obj.layers.set(layer);
         }
     }
 
@@ -572,7 +550,6 @@ import Camera from "./scene/Camera.js";
             // add in the navmesh
             // navmesh.scale.set(1000, 1000, 1000);
             // navmesh.position.set(gltfBoundingBox.min.x * 1000, 0, gltfBoundingBox.min.z * 1000);
-            // navmesh.layers.set(1);
             // navmesh.visible = false;
             // threejsContainerObj.add(navmesh);
 
@@ -587,15 +564,6 @@ import Camera from "./scene/Camera.js";
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
-
-            wireMesh.layers.set(1);
-            gltf.scene.layers.set(1);
-            gltf.scene.traverse(child => {
-                if (child.layers) {
-                    child.layers.set(1);
-                }
-            });
-            hasGltfScene = true;
 
             threejsContainer.add( wireMesh );
             setTimeout(() => {
