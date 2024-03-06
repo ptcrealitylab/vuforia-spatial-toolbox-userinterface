@@ -2151,6 +2151,16 @@ Logic Interface CSS
     cursor: pointer;
 }
 
+.ru-focus {
+    width: 30px;
+    height: auto;
+    object-fit: contain;
+    /*margin: 1px 3px;*/
+    border: 1px solid rgba(0, 0, 0, 0);
+    border-radius: 9.6px;
+    cursor: pointer;
+}
+
 .ru-icon.ru-icon-active {
     border-color: white;
 }

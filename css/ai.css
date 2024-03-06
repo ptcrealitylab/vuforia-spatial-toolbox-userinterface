@@ -1,0 +1,116 @@
+body {
+    margin: 0;
+}
+
+#ai-chat-tool-container {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+
+    display: flex;
+    flex-direction: column;
+    /*width: calc(100vw - 20px - 20px);*/
+    width: calc(max(100px, min(400px, 100%)) - 20px - 20px);
+    max-height: calc(80% - 20px - 20px);
+    overflow: scroll;
+    
+    mask-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 1) 10%,
+        rgba(0, 0, 0, 1) 100%
+    );
+    border-radius: 10px;
+
+    font-size: 1rem;
+}
+
+@keyframes slideToLeft {
+    from {
+        transform: translateX(0);
+    }
+    /*to { transform: translateX( calc(-(max(100px, min(400px, 100%)) - 20px - 20px - 20px - 10px)) ); }*/
+    to {
+        transform: translateX( calc(-110%) );
+    }
+}
+@keyframes slideToRight {
+    from {
+        transform: translateX( calc(-110%) );
+    }
+    /*from { transform: translateX( calc(-(max(100px, min(400px, 100%)) - 20px - 20px - 20px - 10px)) ); }*/
+    to {
+        transform: translateX(0);
+    }
+}
+
+#ai-chat-tool-minimize-button {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 10px;
+}
+
+#ai-chat-tool-dialogue-container {
+    display: flex;
+    flex-direction: column;
+
+    margin: 5px 0 5px 0;
+
+    width: max(100px, min(400px, 100%));
+    /*max-height: calc(80% - 20px - 20px);*/
+    overflow: scroll;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+#ai-chat-tool-dialogue-container::-webkit-scrollbar {
+    display: none;
+}
+
+.ai-chat-tool-dialogue {
+    margin: 5px 0 5px 0;
+    padding: 5px;
+    border-radius: 10px;
+    
+    pointer-events: auto;
+    user-select: text;
+    -webkit-user-select: text;
+    /*-webkit-user-drag: auto;*/
+}
+
+.ai-chat-tool-dialogue-my {
+    position: relative;
+    align-self: flex-end;
+    background: #0D81FF;
+    color: white;
+}
+
+.ai-chat-tool-dialogue-ai {
+    position: relative;
+    align-self: flex-start;
+    background: #E9E9EB;
+    color: black;
+}
+
+.ai-chat-tool-dialogue-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 80%;
+}
+
+#searchTextArea {
+    flex-shrink: 0;
+    resize: none; /* Removes the resize handle */
+    border-radius: 10px; /* Rounded corners */
+    overflow: hidden; /* Prevents scroll bar from appearing initially */
+    /*height: 30px; !* Initial height for one row (adjust as needed) *!*/
+    /*width: max(100px, min(400px, 100%)); !* Full width *!*/
+    width: max(100px, min(400px, 100%)); /* Full width */
+    padding: 10px; /* Some padding inside the textarea */
+    box-sizing: border-box; /* Includes padding and border in the width and height */
+}
+
+#searchTextArea:focus {
+    overflow: auto; /* Allows scrolling when the field is focused */
+}

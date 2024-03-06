@@ -258,6 +258,7 @@ createNameSpace("realityEditor.envelopeManager");
 
         realityEditor.gui.recentlyUsedBar.onClose(envelope);
         realityEditor.gui.envelopeIconRenderer.onClose(envelope);
+        realityEditor.ai.onClose(envelope);
     }
 
     /**
@@ -301,6 +302,7 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.gui.envelopeIconRenderer.onFocus(knownEnvelopes[frameId]);
         // focusing an app also brings it to the front of the bar, same as opening it
         realityEditor.gui.recentlyUsedBar.onOpen(knownEnvelopes[frameId]);
+        realityEditor.ai.onOpen(knownEnvelopes[frameId]);
     }
 
     /**
@@ -330,6 +332,7 @@ createNameSpace("realityEditor.envelopeManager");
         updateExitButton();
 
         realityEditor.gui.envelopeIconRenderer.onBlur(knownEnvelopes[frameId]);
+        realityEditor.ai.onBlur(knownEnvelopes[frameId]);
     }
 
     function createExitButton() {
