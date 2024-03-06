@@ -30,7 +30,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
@@ -567,8 +566,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
-
-            hasGltfScene = true;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
