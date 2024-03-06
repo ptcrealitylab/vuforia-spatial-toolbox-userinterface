@@ -13,10 +13,11 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import GroundPlane from "./scene/GroundPlane.js";
 import AnchoredGroup from "./scene/AnchoredGroup.js";
+import Camera from "./scene/Camera.js";
 
 (function(exports) {
 
-    var camera, scene, renderer;
+    var scene, renderer;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
     var aspectRatio = rendererWidth / rendererHeight;
@@ -56,6 +57,11 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
      */ 
     var threejsContainer;
 
+    /**
+     * @type {Camera}
+     */
+    var mainCamera;
+
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
         const domElement = document.getElementById('mainThreejsCanvas');
@@ -67,18 +73,23 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.autoClear = false;
 
-        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
-        camera.matrixAutoUpdate = false;
+        
         scene = new THREE.Scene();
-        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
+
+        mainCamera = new Camera(mainCamera, aspectRatio);
+        scene.add(mainCamera.getIntenralObject); // Normally not needed, but needed in order to add child objects relative to camera
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             renderer.setSize(width, height);
+            rendererWidth = width;
+            rendererHeight = height;
+            aspectRatio = rendererWidth/rendererHeight;
+            mainCamera.setAspectRatio(aspectRatio);
         });
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainer = new AnchoredGroup();
+        threejsContainer = new AnchoredGroup("threejsContainer");
         scene.add(threejsContainer.getInternalObject());
 
         setupLighting();
@@ -172,8 +183,7 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
 
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
-        setMatrixFromArray(camera.matrix, matrix);
-        camera.updateMatrixWorld(true);
+        mainCamera.setCameraMatrixFromArray(matrix);
         if (customMaterials) {
             let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
             customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
@@ -213,7 +223,7 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
-        cssRenderer.render(scene, camera);
+        cssRenderer.render(scene, mainCamera.getInternalObject());
         
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
@@ -221,8 +231,7 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
         });
 
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
-            setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
-            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+            mainCamera.setProjectionMatrixFromArray(globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
 

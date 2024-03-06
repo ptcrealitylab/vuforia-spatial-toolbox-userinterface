@@ -10,9 +10,14 @@ class AnchoredGroup {
      */
     #group;
 
-    constructor() {
+    /**
+     * 
+     * @param {string} name 
+     */
+    constructor(name) {
         this.#group = new THREE.Group();
         this.#group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
+        this.#group.name = name;
     }
 
     /**
