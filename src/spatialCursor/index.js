@@ -904,9 +904,43 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             update(); // restart the update loop
         }
     }
+    
+    let gsActive = false;
+    function isGSActive() {
+        return gsActive;
+    }
+    function gsToggleActive(active) {
+        gsActive = active;
+    }
+    let gsPosition = null;
+    function gsSetPosition(position) {
+        gsPosition = position;
+    }
 
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
+        if (gsActive) {
+            if (gsPosition === null) {
+                return {};
+            }
+            let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
+            if (!gpNode) {
+                gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+            }
+            let newCamMatrix = cameraNode.getMatrixRelativeTo(gpNode);
+            let cInP = new THREE.Vector3(newCamMatrix[12], newCamMatrix[13], newCamMatrix[14]); // camera in ground plane coords
+            let offset = new THREE.Vector3().subVectors(cInP, gsPosition)
+            let n = offset.clone().normalize();
+            let d = offset.length();
+            let rd = n.clone().negate();
+            return {
+                point: gsPosition,
+                normalVector: n,
+                distance: d,
+                rayDirection: rd,
+            }
+        }
         let worldIntersectPoint = null;
         let objectsToCheck = [];
         if (cachedOcclusionObject) {
@@ -1088,6 +1122,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     exports.initService = initService;
     exports.getRaycastCoordinates = getRaycastCoordinates;
+    exports.isGSActive = isGSActive;
+    exports.gsToggleActive = gsToggleActive;
+    exports.gsSetPosition = gsSetPosition;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
