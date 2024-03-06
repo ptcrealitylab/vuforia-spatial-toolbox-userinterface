@@ -1253,10 +1253,20 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     /**
      * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology
      */
-    function enableExternalSceneRendering() {
+    function enableExternalSceneRendering(broadcastToOthers) {
         let areaMesh = getObjectByName('areaTargetMesh');
         if (areaMesh) areaMesh.visible = false;
         realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = 'ai';
+            if (!broadcastToOthers) return;
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
+                console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
     }
 
     /**
@@ -1266,6 +1276,15 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         let areaMesh = getObjectByName('areaTargetMesh');
         if (areaMesh) areaMesh.visible = true;
         realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = 'mesh';
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
+                console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
     }
 
     exports.initService = initService;

@@ -926,7 +926,7 @@ window.addEventListener("keydown", e => {
     }
 });
 
-function showSplatRenderer(filePath) {
+function showSplatRenderer(filePath, broadcastToOthers = false) {
     if (!gsInitialized) {
         gsInitialized = true;
         gsContainer = document.querySelector('#gsContainer');
@@ -938,7 +938,7 @@ function showSplatRenderer(filePath) {
     gsContainer.classList.remove('hidden');
     gsActive = true;
     // tell the mainThreejsScene to hide the mesh model
-    realityEditor.gui.threejsScene.enableExternalSceneRendering();
+    realityEditor.gui.threejsScene.enableExternalSceneRendering(broadcastToOthers);
 }
 
 function hideSplatRenderer() {
