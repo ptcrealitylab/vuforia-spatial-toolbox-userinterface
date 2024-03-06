@@ -65,6 +65,7 @@
     <link rel="stylesheet" type="text/css" href="css/humanPoseAnalyzerSettingsUi.css">
     <link rel="stylesheet" type="text/css" href="css/doubleSlider.css">
     <link rel="stylesheet" type="text/css" href="css/statusPage.css">
+    <link rel="stylesheet" type="text/css" href="css/ai.css">
 
     <!-- TODO: try to preload iFrames -->
     <!--<link rel="preload" href="nodes/node/index.html" as="document">-->
@@ -97,6 +98,8 @@
     <script src="src/worldObjects.js" type="module"></script>
     <script src="src/envelopeManager.js" type="module"></script>
 
+    <script src="src/ai/index.js" type="module"></script>
+    
     <script src="src/app/index.js" type="module"></script>
     <script src="src/app/callbacks.js" type="module"></script>
     <script src="src/app/promises.js" type="module"></script>
@@ -614,5 +617,20 @@
     gtag('config', 'UA-163665919-2');
 </script>
 -->
+<button id="ai-chat-tool-minimize-button"><br><br> < <br><br><br></button>
+<div id="ai-chat-tool-container">
+    <div id="ai-chat-tool-dialogue-container">
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-my">0 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-ai">1 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-my">2 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-ai">3 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-my"><a href="https://www.google.com" referrerpolicy="no-referrer" target="_blank">4 aweoifjwaeopifjawopeifjawopeifjaweofp</a></div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-my">4 2 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-ai">5 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-my">6 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+<!--        <div class="ai-chat-tool-dialogue ai-chat-tool-dialogue-ai">7 aweoifjwaeopifjawopeifjawopeifjaweofp</div>-->
+    </div>
+    <textarea id='searchTextArea' rows="1" placeholder="Ask a question"></textarea>
+</div>
 </body>
 </html>

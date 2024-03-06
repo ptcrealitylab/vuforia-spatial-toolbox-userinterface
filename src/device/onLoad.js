@@ -356,6 +356,7 @@ realityEditor.device.onload = async function () {
         realityEditor.gui.spatialArrow.initService();
         realityEditor.gui.recentlyUsedBar.initService();
         realityEditor.gui.envelopeIconRenderer.initService();
+        realityEditor.ai.initService();
     } catch (initError) {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
         console.error('error in initService functions, might lead to corrupted app state', initError);
