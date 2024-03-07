@@ -10,7 +10,7 @@ createNameSpace("realityEditor.avatar");
 
 (function(exports) {
 
-    let network, draw, utils; // shortcuts to access realityEditor.avatar._____
+    let network, draw, iconMenu, utils; // shortcuts to access realityEditor.avatar._____
 
     const KEEP_ALIVE_HEARTBEAT_INTERVAL = 3 * 1000; // should be a small fraction of the keep-alive timeout on the server (currently 15 seconds)
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
@@ -71,7 +71,10 @@ createNameSpace("realityEditor.avatar");
     function initService() {
         network = realityEditor.avatar.network;
         draw = realityEditor.avatar.draw;
+        iconMenu = realityEditor.avatar.iconMenu;
         utils = realityEditor.avatar.utils;
+
+        iconMenu.initService();
 
         // begin creating our own avatar object when we localize within a world object
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
@@ -116,7 +119,7 @@ createNameSpace("realityEditor.avatar");
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
         });
 
         network.onAvatarDeleted((objectKey) => {
@@ -126,7 +129,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarCursorStates[objectKey];
             delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             realityEditor.avatar.setLinkCanvasNeedsClear(true);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
@@ -399,7 +402,7 @@ createNameSpace("realityEditor.avatar");
             Object.assign(connectedAvatarUserProfiles[msgContent.object], userProfile);
 
             draw.updateAvatarName(msgContent.object, userProfile.name);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             debugDataReceived();
         };
 
@@ -515,7 +518,7 @@ createNameSpace("realityEditor.avatar");
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
         draw.updateAvatarName(myAvatarId, name);
-        draw.renderAvatarIconList(connectedAvatarUserProfiles);
+        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {

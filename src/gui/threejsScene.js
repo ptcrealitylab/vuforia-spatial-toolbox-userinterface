@@ -520,8 +520,15 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                     }
                 });
 
-                for (let mesh of meshesToRemove) {
-                    mesh.removeFromParent();
+                // make sure we don't remove ALL meshes, if certain scanning software (e.g. Polycam) names all children mesh_X
+                if (allMeshes.length > 0) {
+                    for (let mesh of meshesToRemove) {
+                        mesh.removeFromParent();
+                    }
+                } else {
+                    for (let mesh of meshesToRemove) {
+                        allMeshes.push(mesh);
+                    }
                 }
 
                 allMeshes.forEach(child => {
