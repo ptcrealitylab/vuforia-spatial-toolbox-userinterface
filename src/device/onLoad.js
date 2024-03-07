@@ -74,6 +74,12 @@ realityEditor.device.onload = async function () {
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
         globalStates.platform = false;
     }
+    
+    if (realityEditor.device.environment.isSafari()) {
+        globalStates.defaultFullscreenFrameZ = -10;
+    } else {
+        globalStates.defaultFullscreenFrameZ = 0;
+    }
 
     // Add-ons may need to modify globals or do other far-reaching changes that
     // other services will need to pick up in their initializations
