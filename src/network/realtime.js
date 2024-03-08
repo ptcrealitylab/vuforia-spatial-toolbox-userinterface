@@ -564,6 +564,9 @@ createNameSpace("realityEditor.network.realtime");
             return;
         }
 
+        if (publicDataKey === 'userProfile' && objectKey === realityEditor.avatar.getMyAvatarId()) {
+            console.log('updated userProfile', objectKey, msgData.publicData.userProfile);
+        }
         callbacks.forEach(cb => {
             cb(msg);
         });
