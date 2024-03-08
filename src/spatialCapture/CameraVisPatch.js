@@ -42,10 +42,6 @@ export class CameraVisPatch {
         this.maskMesh = mesh.clone();
         this.maskMesh.renderOrder = realityEditor.gui.threejsScene.RENDER_ORDER_DEPTH_REPLACEMENT;
         mesh.parent.add(this.maskMesh);
-        /**
-         * we will copy the original material/shader and disable the color part of the shader for speed, since we are only interested in writing depth
-         * @type {THREE.Material}
-         */
         this.mesh = mesh;
         this.phone = phoneMesh;
         this.material = this.mesh.material;
@@ -56,8 +52,15 @@ export class CameraVisPatch {
         this.loading = true;
     }
 
+    /**
+     * internal function that reapplies depth only material to the render mask
+     */
     #updateMaskMaterial() {
         if (this.maskMaterial) this.maskMaterial.dispose();
+          /**
+         * we will copy the original material/shader and disable the color part of the shader for speed, since we are only interested in writing depth
+         * @type {THREE.Material|undefined}
+         */
         this.maskMaterial = this.mesh.material.clone();
         this.maskMaterial.colorWrite = false;
         this.maskMaterial.depthFunc = THREE.AlwaysDepth;
