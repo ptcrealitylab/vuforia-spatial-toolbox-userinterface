@@ -7,6 +7,13 @@ let gsContainer;
 
 const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
 
+const USE_MANUAL_ALIGNMENT = false;
+const manualAlignmentMatrix =
+    [   -0.061740851923088896,  -1.605035129459561,     0.11744258386357077,    0,
+        -1.3163664239481947,    -0.01724431166120183,   -0.9276985133744583,    0,
+        0.9258023359257972,     -0.13155731456696773,   -1.3112304022856882,    0,
+        0.7588661310195932,     -0.3383481348010016,    0.697548483268128,      1];
+
 /**
  * Builds a projection matrix from field of view, aspect ratio, and near and far planes
  */
@@ -140,6 +147,26 @@ function invert4(a) {
         (a[13] * b01 - a[12] * b03 - a[14] * b00) / det,
         (a[8] * b03 - a[9] * b01 + a[10] * b00) / det,
     ];
+}
+
+function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
+{
+    let resultMatrix = new Array(16).fill(0);
+
+    for(let row = 0; row < 4; row++) {
+        for(let col = 0; col < 4; col++) {
+            let sum = 0; // Initialize sum for each element
+            for(let k = 0; k < 4; k++) {
+                sum += sourceMatrix[row * 4 + k] * transMatrix[k * 4 + col];
+            }
+            resultMatrix[row * 4 + col] = sum; // Assign the calculated value
+        }
+    }
+    resultMatrix[12] = resultMatrix[12] * scaleF;
+    resultMatrix[13] = resultMatrix[13] * scaleF;
+    resultMatrix[14] = resultMatrix[14] * scaleF;
+
+    return resultMatrix
 }
 
 function createWorker(self) {
@@ -792,6 +819,14 @@ async function main(initialFilePath) {
         let resultMatrix_1 = multiply4(newCamMatrix, flipMatrix);
         // inversion is needed
         let actualViewMatrix = invert4(resultMatrix_1);
+
+        if (USE_MANUAL_ALIGNMENT) {
+            // let resultMatrix_manualAlign = multiply4(resultMatrix_1, manualAlignmentMatrix);
+            // actualViewMatrix = invert4(resultMatrix_manualAlign);
+
+            let resultMatrix_manualAlign = ApplyTransMatrix(resultMatrix_1, manualAlignmentMatrix, scaleF);
+            actualViewMatrix = invert4(resultMatrix_manualAlign);
+        }
 
         const viewProj = multiply4(projectionMatrix, actualViewMatrix);
         worker.postMessage({ view: viewProj });
