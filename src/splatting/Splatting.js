@@ -7,12 +7,24 @@ let gsContainer;
 
 const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
 
-const USE_MANUAL_ALIGNMENT = false;
+let USE_MANUAL_ALIGNMENT_FOR_ALL = false;
+let USE_MANUAL_ALIGNMENT_FOR_SPECIFIED = true;
+let HARDCODED_SPLAT_COUNTS_ALIGNMENTS = {};
+
+// How to hard-code a splat's alignment:
+// 1. console.log the splatCount after adding a splat to toolbox
+// 2. add an entry to HARDCODED_SPLAT_COUNTS_ALIGNMENTS with the matrix that corresponds with that splat
+// 3. turn on USE_MANUAL_ALIGNMENT_FOR_ALL to apply manualAlignmentMatrix to everything, or
+//    USE_MANUAL_ALIGNMENT_FOR_SPECIFIED to pick the matrix from the SPLAT_COUNT_ALIGNMENTS
+// This assumes/hopes that multiple splat files don't by coincidence have the same number of splats
 const manualAlignmentMatrix =
     [   -0.061740851923088896,  -1.605035129459561,     0.11744258386357077,    0,
         -1.3163664239481947,    -0.01724431166120183,   -0.9276985133744583,    0,
         0.9258023359257972,     -0.13155731456696773,   -1.3112304022856882,    0,
         0.7588661310195932,     -0.3383481348010016,    0.697548483268128,      1];
+
+const manualAlignmentMatrix_ptcFurniture1 = manualAlignmentMatrix;
+HARDCODED_SPLAT_COUNTS_ALIGNMENTS[1682141] = manualAlignmentMatrix_ptcFurniture1;
 
 /**
  * Builds a projection matrix from field of view, aspect ratio, and near and far planes
@@ -820,11 +832,13 @@ async function main(initialFilePath) {
         // inversion is needed
         let actualViewMatrix = invert4(resultMatrix_1);
 
-        if (USE_MANUAL_ALIGNMENT) {
+        let useManualAlignment = USE_MANUAL_ALIGNMENT_FOR_ALL ||
+            (USE_MANUAL_ALIGNMENT_FOR_SPECIFIED && typeof HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] !== 'undefined');
+        if (useManualAlignment) {
             // let resultMatrix_manualAlign = multiply4(resultMatrix_1, manualAlignmentMatrix);
             // actualViewMatrix = invert4(resultMatrix_manualAlign);
-
-            let resultMatrix_manualAlign = ApplyTransMatrix(resultMatrix_1, manualAlignmentMatrix, scaleF);
+            let alignmentMatrix = HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] || manualAlignmentMatrix;
+            let resultMatrix_manualAlign = ApplyTransMatrix(resultMatrix_1, alignmentMatrix, scaleF);
             actualViewMatrix = invert4(resultMatrix_manualAlign);
         }
 
