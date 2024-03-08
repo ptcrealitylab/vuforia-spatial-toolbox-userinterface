@@ -14,6 +14,18 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
 (function(exports) {
 
+    /**
+     * this layer renders the grid first
+     */
+    const RENDER_ORDER_SCAN = -2;
+
+    /**
+     * this will rener the scanned scene second
+     */
+    const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
+
+    exports.RENDER_ORDER_SCAN = RENDER_ORDER_SCAN;
+
     var camera, scene, renderer;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
@@ -566,6 +578,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
+
+            wireMesh.renderOrder = RENDER_ORDER_SCAN;
+            gltf.scene.renderOrder = RENDER_ORDER_SCAN;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
