@@ -132,6 +132,11 @@ createNameSpace("realityEditor.worldObjects");
 
         numLocalWorldAttempts++;
 
+        if (numLocalWorldAttempts > 10) {
+            // Giving up on finding local world object, only used in mobile scan-less situations
+            return;
+        }
+
         setTimeout(function() {
             if (!realityEditor.worldObjects.getWorldObjectKeys().includes(localWorldObjectKey)) {
                 tryLoadingLocalWorldObject(); // keep repeating until we load it successfully
