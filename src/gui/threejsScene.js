@@ -20,7 +20,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     const RENDER_ORDER_SCAN = -2;
 
     /**
-     * this will rener the scanned scene second
+     * this will render the scanned scene second
      */
     const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
 
