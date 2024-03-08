@@ -24,7 +24,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      */
     const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
 
-    exports.RENDER_ORDER_SCAN = RENDER_ORDER_SCAN;
+    exports.RENDER_ORDER_DEPTH_REPLACEMENT = RENDER_ORDER_DEPTH_REPLACEMENT;
 
     var camera, scene, renderer;
     var rendererWidth = window.innerWidth;
