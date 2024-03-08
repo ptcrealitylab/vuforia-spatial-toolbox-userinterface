@@ -166,11 +166,11 @@ createNameSpace("realityEditor.avatar.iconMenu");
         container.id = 'avatarIconDropdown' + objectId;
         container.classList.add('avatarListIconDropdown', 'hiddenDropdown'); // hide, because toggle happens right after creation
         if (isMyIcon) {
-            addMenuItemToDropdown(container, 'Edit Name', objectId, userProfile, userInitials, isMyIcon);
-            addMenuItemToDropdown(container, 'All Follow Me', objectId, userProfile, userInitials, isMyIcon);
+            addMenuItemToDropdown(container, MENU_ITEMS.EditName, objectId, userProfile, userInitials, isMyIcon);
+            addMenuItemToDropdown(container, MENU_ITEMS.AllFollowMe, objectId, userProfile, userInitials, isMyIcon);
         } else {
-            addMenuItemToDropdown(container, 'Follow Them', objectId, userProfile, userInitials, isMyIcon);
-            addMenuItemToDropdown(container, 'Follow Me', objectId, userProfile, userInitials, isMyIcon);
+            addMenuItemToDropdown(container, MENU_ITEMS.FollowThem, objectId, userProfile, userInitials, isMyIcon);
+            addMenuItemToDropdown(container, MENU_ITEMS.FollowMe, objectId, userProfile, userInitials, isMyIcon);
         }
         parent.appendChild(container);
         return container;

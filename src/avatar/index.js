@@ -52,7 +52,7 @@ createNameSpace("realityEditor.avatar");
         isWorldOcclusionObjectAdded: false,
         didCreationFail: false,
         isConnectionAttemptInProgress: false
-    }
+    };
 
     // these are just used for debugging purposes
     let DEBUG_MODE = false; // can be toggled from remote operator's Develop menu
@@ -64,7 +64,11 @@ createNameSpace("realityEditor.avatar");
         didRecentlyReceive: false,
         didSendAnything: false,
         didRecentlySend: false
-    }
+    };
+
+    let callbacks = {
+        onMyAvatarInitialized: []
+    };
 
     let isDesktop = false;
 
@@ -505,6 +509,10 @@ createNameSpace("realityEditor.avatar");
             };
             lastPointerState.timestamp = Date.now();
         });
+        
+        callbacks.onMyAvatarInitialized.forEach(cb => {
+            cb(myAvatarObject);
+        });
     }
 
     // you can set this even before the avatar has been created
@@ -528,14 +536,44 @@ createNameSpace("realityEditor.avatar");
     
     function writeMyLockOnMode(objectId) {
         if (!myAvatarObject) { return; }
-        connectedAvatarUserProfiles[myAvatarId].lockOnMode = objectId;
-        // draw.updateAvatarName(myAvatarId, name);
-        // draw.renderAvatarIconList(connectedAvatarUserProfiles);
+        writeLockOnMode(myAvatarId, objectId);
+        // connectedAvatarUserProfiles[myAvatarId].lockOnMode = objectId;
+        // // draw.updateAvatarName(myAvatarId, name);
+        // // draw.renderAvatarIconList(connectedAvatarUserProfiles);
+        //
+        // let info = utils.getAvatarNodeInfo(myAvatarObject);
+        // if (info) {
+        //     network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
+        // }
+    }
+    
+    function writeLockOnToMe(otherAvatarId) {
+        if (!myAvatarId) { return; }
+        writeLockOnMode(otherAvatarId, myAvatarId);
+    }
 
-        let info = utils.getAvatarNodeInfo(myAvatarObject);
+    function writeLockOnMode(avatarId, targetAvatarId) {
+        let object = realityEditor.getObject(avatarId);
+        if (!object) { return; }
+        connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
+        let info = utils.getAvatarNodeInfo(object);
         if (info) {
-            network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
+            network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
         }
+    }
+
+    window.printKnownLockOnModes = () => {
+        console.log(`I am avatar ${myAvatarId}`);
+        realityEditor.forEachObject((object, objectKey) => {
+            if (!utils.isAvatarObject(object)) return;
+            let info = utils.getAvatarNodeInfo(object);
+            let node = realityEditor.getNode(info.objectKey, info.frameKey, info.nodeKey);
+            if (node.publicData.userProfile) {
+                console.log(`avatar ${objectKey} ${objectKey === myAvatarId ? ' (me)' : ''} is locked onto: ${node.publicData.userProfile.lockOnMode} ${node.publicData.userProfile.lockOnMode === myAvatarId ? '(me)' : ''}`);
+            } else {
+                console.log(`avatar ${objectKey} has no userProfile`);
+            }
+        });
     }
 
     // send touch intersect to other users via the public data node, and show visual feedback on your cursor
@@ -702,6 +740,8 @@ createNameSpace("realityEditor.avatar");
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.writeMyLockOnMode = writeMyLockOnMode;
+    exports.writeLockOnToMe = writeLockOnToMe;
+    // exports.writeLockOnMode = writeLockOnMode;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
@@ -710,6 +750,15 @@ createNameSpace("realityEditor.avatar");
     };
     exports.setLinkCanvasNeedsClear = (value) => {
         linkCanvasNeedsClear = value;
-    }
+    };
+    exports.registerOnMyAvatarInitializedCallback = (cb) => {
+        callbacks.onMyAvatarInitialized.push(cb);
+        if (myAvatarObject) {
+            cb(myAvatarObject);
+        }
+    };
+    exports.getMyAvatarId = () => {
+        return myAvatarId;
+    };
 
 }(realityEditor.avatar));
