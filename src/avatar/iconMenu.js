@@ -15,7 +15,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
     const MENU_ITEMS = Object.freeze({
         EditName: 'Edit Name',
         AllFollowMe: 'All Follow Me',
-        FollowThem: 'Follow Them',
+        FollowThem: 'Follow',
         FollowMe: 'Follow Me'
     });
 

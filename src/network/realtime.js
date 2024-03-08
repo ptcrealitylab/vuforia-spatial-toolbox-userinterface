@@ -19,7 +19,7 @@ createNameSpace("realityEditor.network.realtime");
     var hasBeenInitialized = false;
     let batchedUpdates = {};
 
-    let didSubscribeToPublicData = false;
+    let didSubscribeToPublicDataOnServer = {};
     let publicDataCallbacks = {};
     let cachedPublicData = {}; // check to only trigger callbacks for property keys with changes
 
@@ -111,7 +111,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} objectKey
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
-        
+
         // if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
         // Note that we still create a localhost socket even though we don't
         // subscribe to it since it will be used to send messages to the local
@@ -499,8 +499,15 @@ createNameSpace("realityEditor.network.realtime");
         if (DEBUG) {
             console.log('subscribe to public data for node ' + nodeKey);
         }
-
         let serverSocket = getServerSocketForObject(objectKey);
+        if (!serverSocket) {
+            console.log('no server socket... retry subscribeToData');
+            // retry this in 100ms
+            setTimeout(() => {
+                subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback);
+            }, 100);
+            return;
+        }
         let subscribeTitle = realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorPublicData');
         serverSocket.emit(subscribeTitle, JSON.stringify({
             object: objectKey,
@@ -522,56 +529,72 @@ createNameSpace("realityEditor.network.realtime");
         }
         publicDataCallbacks[objectKey][frameKey][publicDataKey].push(callback);
 
-        // only need to subscribe to this one time, because we are setting single listener per port which handles 
-        // public data of all nodes across all objects (as long as we set up the right callbacks by multiple calls of the code above)
-        if (!didSubscribeToPublicData) {
-            didSubscribeToPublicData = true;
-            let publicDataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object/publicData');
-            const listener = (msg) => {
-                let msgData = JSON.parse(msg);
-                Object.keys(msgData.publicData).forEach(dataKey => {
-                    // attempt triggering callbacks for all keys in the publicData.
-                    // only ones with registered callbacks will do anything
-                    handlePublicDataFromServer(msg, msgData.object, msgData.frame, dataKey);
-                });
-            };
-           
-            serverSocket.on(publicDataTitle, listener);  
-            if (publicDataTitle != 'object/publicData') {
-                serverSocket.on('object/publicData', listener);
-            } 
-        }
+        setupPublicDataSubscriptionOnServerIfNeeded(objectKey, frameKey, serverSocket);
     }
 
-    function handlePublicDataFromServer(msg, objectKey, frameKey, publicDataKey) {
-        let allCallbacks = publicDataCallbacks[objectKey];
-        if (!allCallbacks) { return; }
-        allCallbacks = allCallbacks[frameKey];
-        if (!allCallbacks) { return; }
-        let callbacks = allCallbacks[publicDataKey];
-        if (!callbacks) { return; }
-        
-        // skip messages originating from yourself
-        let msgData = JSON.parse(msg);
-        if (typeof msgData.sessionUuid !== 'undefined' && msgData.sessionUuid === globalStates.tempUuid) {
+    function setupPublicDataSubscriptionOnServerIfNeeded(objectId, frameId, serverSocket) {
+        if (!serverSocket || !objectId || !frameId) {
+            console.warn('skipping setupPublicDataSubscriptionOnServerIfNeeded (invalid args)', objectId, frameId, serverSocket);
             return;
         }
 
-        let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
-
-        // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
-        if (stringifiedData === cachedPublicData[objectKey][frameKey][publicDataKey]) {
+        let object = realityEditor.getObject(objectId);
+        if (!object) {
+            console.warn('skipping setupPublicDataSubscriptionOnServerIfNeeded (no object)', objectId);
             return;
         }
 
-        if (publicDataKey === 'userProfile' && objectKey === realityEditor.avatar.getMyAvatarId()) {
-            console.log('updated userProfile', objectKey, msgData.publicData.userProfile);
-        }
-        callbacks.forEach(cb => {
-            cb(msg);
-        });
+        // only need to subscribe to this one time, because we are setting single listener per port which handles 
+        // public data of all nodes across all objects (as long as we set up the right callbacks by multiple calls of the code above)
+        if (!didSubscribeToPublicDataOnServer[object.ip]) {
+            didSubscribeToPublicDataOnServer[object.ip] = true;
+            let publicDataTitle = realityEditor.network.getIoTitle(objects[object.objectId].port, 'object/publicData');
+            const listener = (msg) => {
+                let msgData = JSON.parse(msg);
 
-        cachedPublicData[objectKey][frameKey][publicDataKey] = stringifiedData;
+                // let isMyAvatar = msgData.object === realityEditor.avatar.getMyAvatarId();
+                // if (isMyAvatar) {
+                //     console.log('publicData listener triggered for my very own avatar!', msgData);
+                // }
+
+                Object.keys(msgData.publicData).forEach(publicDataKey => {
+                    // attempt triggering callbacks for all keys in the publicData.
+                    // only ones with registered callbacks will do anything
+                    let callbacks = publicDataCallbacks[msgData.object][msgData.frame][publicDataKey];
+                    if (!callbacks) return;
+                    // let prevDataState = cachedData[msgData.object][msgData.frame][publicDataKey] ? JSON.parse(cachedData[msgData.object][msgData.frame][publicDataKey]) : null;
+
+                    // handlePublicDataFromServer(msg, msgData.object, msgData.frame, publicDataKey);
+
+                    // skip messages originating from yourself
+                    if (typeof msgData.sessionUuid !== 'undefined' && msgData.sessionUuid === globalStates.tempUuid) {
+                        return;
+                    }
+
+                    let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
+
+                    // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
+                    if (stringifiedData === cachedPublicData[msgData.object][msgData.frame][publicDataKey]) {
+                        return;
+                    }
+
+                    // if (publicDataKey === 'userProfile' && msgData.object === realityEditor.avatar.getMyAvatarId()) {
+                    //     console.log('received updated userProfile for my avatar', msgData.object, msgData.publicData.userProfile);
+                    // }
+
+                    callbacks.forEach(cb => {
+                        cb(msg);
+                    });
+
+                    cachedPublicData[msgData.object][msgData.frame][publicDataKey] = stringifiedData;
+                });
+            };
+
+            serverSocket.on(publicDataTitle, listener);
+            if (publicDataTitle !== 'object/publicData') {
+                serverSocket.on('object/publicData', listener);
+            }
+        }
     }
 
     function writePublicData(objectKey, frameKey, nodeKey, publicDataKey, publicDataValue) {
@@ -589,6 +612,23 @@ createNameSpace("realityEditor.network.realtime");
         let serverSocket = getServerSocketForObject(objectKey);
         serverSocket.emit(ioTitle, JSON.stringify(messageBody));
 
+        // Important: update our internal cache with the value we sent, else we forget that we've updated the value
+        if (typeof publicDataCallbacks[objectKey] === 'undefined') {
+            publicDataCallbacks[objectKey] = {};
+            cachedPublicData[objectKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][frameKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey] = {};
+            cachedPublicData[objectKey][frameKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][frameKey][publicDataKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][publicDataKey] = [];
+            cachedPublicData[objectKey][frameKey][publicDataKey] = null;
+        }
+        cachedPublicData[objectKey][frameKey][publicDataKey] = JSON.stringify(node.publicData);
+        // console.log('set cachedPublicData to ', stringifiedData);
+
+        // NOTE: this publicDataCache is deprecated, the cachedPublicData is what we use now
         if (!publicDataCache.hasOwnProperty(frameKey)) {
             publicDataCache[frameKey] = {};
         }
@@ -782,7 +822,7 @@ createNameSpace("realityEditor.network.realtime");
 
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
-    
+
     exports.sendDisconnectMessage = sendDisconnectMessage;
     exports.getDesktopSocket = getDesktopSocket;
     exports.getServerSocketForObject = getServerSocketForObject;

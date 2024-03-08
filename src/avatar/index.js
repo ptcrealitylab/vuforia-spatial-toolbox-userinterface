@@ -556,6 +556,8 @@ createNameSpace("realityEditor.avatar");
         let object = realityEditor.getObject(avatarId);
         if (!object) { return; }
         connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
+        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
+
         let info = utils.getAvatarNodeInfo(object);
         if (info) {
             network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
