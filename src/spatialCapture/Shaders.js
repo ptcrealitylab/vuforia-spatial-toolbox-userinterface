@@ -1,4 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { MeshBVH } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 
 export const DEPTH_WIDTH = 256;
 export const DEPTH_HEIGHT = 144;
@@ -13,10 +14,8 @@ export const ShaderMode = {
     HIDDEN: 'HIDDEN',
 };
 
-const ZDEPTH = false;
 export const vertexShader = `
 uniform sampler2D map;
-uniform sampler2D mapDepth;
 
 uniform float width;
 uniform float height;
@@ -31,57 +30,23 @@ const float pointSizeBase = 0.0;
 
 varying vec2 vUv;
 varying vec4 pos;
+varying vec3 nor;
 
 void main() {
-vUv = vec2(position.x / width, position.y / height);
-
-vec4 color = texture2D(mapDepth, vUv);
-${(!ZDEPTH) ? `
-float depth = 5000.0 * (color.r + color.g / 255.0 + color.b / (255.0 * 255.0));
-` : `
-// color.rgb are all 0-1 when we want them to be 0-255 so we can shift out across depth (mm?)
-int r = int(color.r * 255.0);
-int g = int(color.g * 255.0);
-int b = int(color.b * 255.0);
-
-float depth = float((r & 1) |
-  ((g & 1) << 1) |
-  ((b & 1) << 2) |
-  ((r & (1 << 1)) << (3 - 1)) |
-  ((g & (1 << 1)) << (4 - 1)) |
-  ((b & (1 << 1)) << (5 - 1)) |
-  ((r & (1 << 2)) << (6 - 2)) |
-  ((g & (1 << 2)) << (7 - 2)) |
-  ((b & (1 << 2)) << (8 - 2)) |
-  ((r & (1 << 3)) << (9 - 3)) |
-  ((g & (1 << 3)) << (10 - 3)) |
-  ((b & (1 << 3)) << (11 - 3)) |
-  ((r & (1 << 4)) << (12 - 4)) |
-  ((g & (1 << 4)) << (13 - 4)) |
-  ((b & (1 << 4)) << (14 - 4)) |
-  ((r & (1 << 5)) << (15 - 5)) |
-  ((g & (1 << 5)) << (16 - 5)) |
-  ((b & (1 << 5)) << (17 - 5)) |
-  ((r & (1 << 6)) << (18 - 6)) |
-  ((g & (1 << 6)) << (19 - 6)) |
-  ((b & (1 << 6)) << (20 - 6)) |
-  ((r & (1 << 7)) << (21 - 7)) |
-  ((g & (1 << 7)) << (22 - 7)) |
-  ((b & (1 << 7)) << (23 - 7))) *
-  (5000.0 / float(1 << 24));
-`}
-float z = (depth - 1.0) * patchLoading;
+vUv = uv; // vec2(position.x / width, position.y / height);
+float z = position.z * patchLoading;
 
 // Projection code by @kcmic
 pos = vec4(
-(position.x - principalPoint.x) / focalLength.x * z,
-(position.y - principalPoint.y) / focalLength.y * z,
--z,
+position.x,
+position.y,
+z,
 1.0);
 
 gl_Position = projectionMatrix * modelViewMatrix * pos;
 // gl_PointSize = pointSizeBase + pointSize * depth * depthScale;
-gl_PointSize = pointSizeBase + pointSize * depth * depthScale + glPosScale / gl_Position.w;
+gl_PointSize = pointSizeBase + pointSize * z * depthScale + glPosScale / gl_Position.w;
+nor = normal;
 }`;
 
 export const pointFragmentShader = `
@@ -103,6 +68,7 @@ uniform float time;
 varying vec2 vUv;
 // Position of this pixel relative to the camera in proper (millimeter) coordinates
 varying vec4 pos;
+varying vec3 nor;
 
 void main() {
 // Depth in millimeters
@@ -118,7 +84,7 @@ float alphaHolo = clamp(round(sin(pos.y / 3.0 - 40.0 * time) - 0.3), 0.0, 1.0) *
 
 // Normal vector of the depth mesh based on pos
 // Necessary to calculate manually since we're messing with gl_Position in the vertex shader
-vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
+vec3 normal = nor; // normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
 
 // pos.xyz is the ray looking out from the camera to this pixel
 // dot of pos.xyz and the normal is to what extent this pixel is flat
@@ -148,6 +114,7 @@ uniform float viewPositionSimilarity;
 varying vec2 vUv;
 // Position of this pixel relative to the camera in proper (millimeter) coordinates
 varying vec4 pos;
+varying vec3 nor;
 uniform float depthMin;
 uniform float depthMax;
 uniform float patchLoading;
@@ -161,7 +128,7 @@ float alphaDepth = clamp(2.0 * (5.0 - depth / 1000.0), 0.0, 1.0);
 
 // Normal vector of the depth mesh based on pos
 // Necessary to calculate manually since we're messing with gl_Position in the vertex shader
-vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
+vec3 normal = nor; // normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
 
 // pos.xyz is the ray looking out from the camera to this pixel
 // dot of pos.xyz and the normal is to what extent this pixel is flat
@@ -171,7 +138,7 @@ vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
 // by ~78
 float alphaNorm = clamp(1.75 * abs(dot(normalize(pos.xyz), normal)) - 0.2, 0.0, 1.0);
 
-// we check how the current viewing angle and position compares to the 
+// we check how the current viewing angle and position compares to the
 // position and angle that the point cloud was captured at.
 // we don't use the alphaNorm if viewing from similar angle/position
 // this gives a "flatter"/fuller picture when viewing straight-on
@@ -207,6 +174,7 @@ if (alpha < 0.02) {
 gl_FragColor = (1.0 - border) * vec4(color.rgb, alpha) + border * vec4(borderColor.rgb, alpha);
 
 // gl_FragColor = vec4(alphaNorm, alphaNorm, alphaDepth, 1.0);
+// gl_FragColor = vec4(nor, 1.0);
 }`;
 
 export const firstPersonFragmentShader = `
@@ -225,13 +193,64 @@ vec4 color = texture2D(map, vUv);
 gl_FragColor = vec4(color.rgb, 1.0);
 }`;
 
+/**
+ * @param {THREE.Texture} textureDepth
+ * @return {Float32Array} rawDepth
+ */
+function textureDepthToRawDepth(textureDepth) {
+    const canvas = document.createElement('canvas');
+    canvas.width = DEPTH_WIDTH;
+    canvas.height = DEPTH_HEIGHT;
+    const context = canvas.getContext('2d');
+    context.drawImage(textureDepth.image, 0, 0);
+    const imageData = context.getImageData(0, 0, DEPTH_WIDTH, DEPTH_HEIGHT);
+
+    let rawDepth = new Float32Array(DEPTH_WIDTH * DEPTH_HEIGHT);
+
+    for (let i = 0; i < DEPTH_WIDTH * DEPTH_HEIGHT; i++) {
+        const r = imageData.data[4 * i + 0];
+        const g = imageData.data[4 * i + 1];
+        const b = imageData.data[4 * i + 2];
+
+        let depth = 5000.0 * (r + g / 255.0 + b / (255.0 * 255.0)) / 255.0;
+        rawDepth[i] = depth;
+    }
+    return rawDepth;
+}
+
+/**
+ * @param {THREE.Texture} texture
+ * @param {THREE.Texture} textureDepth
+ * @param {ShaderMode} shaderMode
+ * @param {THREE.Color?} borderColor
+ */
 export function createPointCloud(texture, textureDepth, shaderMode, borderColor) {
     const width = 640, height = 360;
 
+    let rawDepth = textureDepthToRawDepth(textureDepth);
+
     let geometry;
+
     if (shaderMode !== ShaderMode.POINT) {
-        geometry = new THREE.PlaneBufferGeometry(width, height, DEPTH_WIDTH / 2, DEPTH_HEIGHT / 2);
+        // Creates one vertex for each of the depth image's pixels
+        geometry = new THREE.PlaneBufferGeometry(width, height, DEPTH_WIDTH - 1, DEPTH_HEIGHT - 1);
         geometry.translate(width / 2, height / 2);
+        let position = geometry.attributes.position;
+
+        // Defaults taken from iPhone 13 Pro Max
+        const focalLength = new THREE.Vector2(1393.48523 / 1920 * width, 1393.48523 / 1080 * height);
+        // convert principal point from image Y-axis bottom-to-top in Vuforia to top-to-bottom in OpenGL
+        const principalPoint = new THREE.Vector2(959.169433 / 1920 * width, (1080 - 539.411926) / 1080 * height);
+
+        for (let i = 0; i < position.count; i++) {
+            let depth = rawDepth[i];
+            position.array[i * 3 + 0] = (position.array[i * 3 + 0] - principalPoint.x) / focalLength.x * depth;
+            position.array[i * 3 + 1] = (position.array[i * 3 + 1] - principalPoint.y) / focalLength.y * depth;
+            position.array[i * 3 + 2] = -depth;
+        }
+        geometry.setAttribute('position', position);
+        geometry.computeVertexNormals();
+        geometry.boundsTree = new MeshBVH(geometry);
     } else {
         geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(width * height * 3);
@@ -244,7 +263,7 @@ export function createPointCloud(texture, textureDepth, shaderMode, borderColor)
         geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     }
 
-    const material = createPointCloudMaterial(texture, textureDepth, shaderMode, borderColor);
+    const material = createPointCloudMaterial(texture, shaderMode, borderColor);
 
     let mesh;
     if (shaderMode !== ShaderMode.POINT) {
@@ -259,7 +278,7 @@ export function createPointCloud(texture, textureDepth, shaderMode, borderColor)
     return mesh;
 }
 
-export function createPointCloudMaterial(texture, textureDepth, shaderMode, borderColor) {
+export function createPointCloudMaterial(texture, shaderMode, borderColor) {
     const width = 640, height = 360;
 
     let borderEnabled = 1;
@@ -292,7 +311,6 @@ export function createPointCloudMaterial(texture, textureDepth, shaderMode, bord
             depthMax: {value: 5000},
             time: {value: window.performance.now()},
             map: {value: texture},
-            mapDepth: {value: textureDepth},
             width: {value: width},
             height: {value: height},
             depthScale: {value: 0.15 / 256}, // roughly 1 / 1920
