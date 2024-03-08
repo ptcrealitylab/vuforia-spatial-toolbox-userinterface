@@ -523,11 +523,15 @@ createNameSpace("realityEditor.network.realtime");
             publicDataCallbacks[objectKey][frameKey] = {};
             cachedPublicData[objectKey][frameKey] = {};
         }
-        if (typeof publicDataCallbacks[objectKey][frameKey][publicDataKey] === 'undefined') {
-            publicDataCallbacks[objectKey][frameKey][publicDataKey] = [];
-            cachedPublicData[objectKey][frameKey][publicDataKey] = null;
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey] = {};
+            cachedPublicData[objectKey][frameKey][nodeKey] = {};
         }
-        publicDataCallbacks[objectKey][frameKey][publicDataKey].push(callback);
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] = [];
+            cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = null;
+        }
+        publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey].push(callback);
 
         setupPublicDataSubscriptionOnServerIfNeeded(objectKey, frameKey, serverSocket);
     }
@@ -557,10 +561,12 @@ createNameSpace("realityEditor.network.realtime");
                 //     console.log('publicData listener triggered for my very own avatar!', msgData);
                 // }
 
+                let node = realityEditor.getNode(msgData.object, msgData.frame, msgData.node);
+
                 Object.keys(msgData.publicData).forEach(publicDataKey => {
                     // attempt triggering callbacks for all keys in the publicData.
                     // only ones with registered callbacks will do anything
-                    let callbacks = publicDataCallbacks[msgData.object][msgData.frame][publicDataKey];
+                    let callbacks = publicDataCallbacks[msgData.object][msgData.frame][msgData.node][publicDataKey];
                     if (!callbacks) return;
                     // let prevDataState = cachedData[msgData.object][msgData.frame][publicDataKey] ? JSON.parse(cachedData[msgData.object][msgData.frame][publicDataKey]) : null;
 
@@ -574,8 +580,12 @@ createNameSpace("realityEditor.network.realtime");
                     let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
 
                     // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
-                    if (stringifiedData === cachedPublicData[msgData.object][msgData.frame][publicDataKey]) {
+                    if (stringifiedData === cachedPublicData[msgData.object][msgData.frame][msgData.node][publicDataKey]) {
                         return;
+                    }
+
+                    if (node) {
+                        node.publicData[publicDataKey] = msgData.publicData[publicDataKey];
                     }
 
                     // if (publicDataKey === 'userProfile' && msgData.object === realityEditor.avatar.getMyAvatarId()) {
@@ -586,7 +596,7 @@ createNameSpace("realityEditor.network.realtime");
                         cb(msg);
                     });
 
-                    cachedPublicData[msgData.object][msgData.frame][publicDataKey] = stringifiedData;
+                    cachedPublicData[msgData.object][msgData.frame][msgData.node][publicDataKey] = stringifiedData;
                 });
             };
 
@@ -621,11 +631,15 @@ createNameSpace("realityEditor.network.realtime");
             publicDataCallbacks[objectKey][frameKey] = {};
             cachedPublicData[objectKey][frameKey] = {};
         }
-        if (typeof publicDataCallbacks[objectKey][frameKey][publicDataKey] === 'undefined') {
-            publicDataCallbacks[objectKey][frameKey][publicDataKey] = [];
-            cachedPublicData[objectKey][frameKey][publicDataKey] = null;
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey] = {};
+            cachedPublicData[objectKey][frameKey][nodeKey] = {};
         }
-        cachedPublicData[objectKey][frameKey][publicDataKey] = JSON.stringify(node.publicData);
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] = [];
+            cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = null;
+        }
+        cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = JSON.stringify(node.publicData);
         // console.log('set cachedPublicData to ', stringifiedData);
 
         // NOTE: this publicDataCache is deprecated, the cachedPublicData is what we use now
