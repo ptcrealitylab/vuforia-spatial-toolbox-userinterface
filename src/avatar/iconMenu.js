@@ -266,13 +266,16 @@ createNameSpace("realityEditor.avatar.iconMenu");
         return iconDiv;
     }
 
+    function areAnyDropdownsShown() {
+        return Array.from(document.querySelectorAll('.avatarListIconDropdown')).some(dropdown => {
+            return dropdown && dropdown.classList && !dropdown.classList.contains('hiddenDropdown');
+        });
+    }
+
     // shows a tooltip that either says the name, or "You" or "Anonymous" if no name is provided, or a list of extra names
     function showFullNameTooltip(element, name, isMyAvatar) {
         // only show it if there aren't any dropdown menus shown
-        let anyDropdownsShown = Array.from(document.querySelectorAll('.avatarListIconDropdown')).some(dropdown => {
-            return !dropdown.classList.includes('hiddenDropdown');
-        });
-        if (anyDropdownsShown) {
+        if (areAnyDropdownsShown()) {
             return;
         }
 
@@ -281,8 +284,8 @@ createNameSpace("realityEditor.avatar.iconMenu");
             container = document.createElement('div');
             container.id = 'avatarListHoverName';
             // container.classList.add('avatarListTooltipVerticalAdjustment'); // lets us position differently in portrait app
-            element.parentElement.appendChild(container);
         }
+        element.parentElement.appendChild(container);
 
         let nameDiv = document.getElementById('avatarListHoverNameText');
         if (!nameDiv) {
@@ -306,12 +309,12 @@ createNameSpace("realityEditor.avatar.iconMenu");
         let clickActionTextWidth = 8 * clickActionText.length;
         let width = Math.max(120, ((nameDiv.innerText.length - clickActionText.length)) * 12 + clickActionTextWidth);
         nameDiv.style.width = width + 'px';
-        container.style.width = width + 'px;'
+        // container.style.width = width + 'px;'
 
         // center the tooltip on the icon
-        let iconRelativeLeft = element.getBoundingClientRect().left - element.parentElement.getBoundingClientRect().left;
-        let iconHalfWidth = element.getBoundingClientRect().width / 2;
-        container.style.left = (iconRelativeLeft + iconHalfWidth) + 'px';
+        // let iconRelativeLeft = element.getBoundingClientRect().left - element.parentElement.getBoundingClientRect().left;
+        // let iconHalfWidth = element.getBoundingClientRect().width / 2;
+        // container.style.left = (iconRelativeLeft + iconHalfWidth) + 'px';
         container.style.display = '';
     }
 
