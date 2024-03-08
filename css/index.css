@@ -2007,14 +2007,11 @@ Logic Interface CSS
     padding: 13px;
 }
 
-.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
+.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle, .analytics-region-card-button-container) {
     display: none;
 }
 
 .analytics-region-card.minimized:not(.pinned) {
-    padding: 14px;
-    height: 28px;
-    width: max-content;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -2099,6 +2096,8 @@ Logic Interface CSS
     flex-direction: row;
     justify-content: space-between;
     align-items: baseline;
+    height: 22px;
+    line-height: 22px;
 }
 
 .analytics-region-card-button {
