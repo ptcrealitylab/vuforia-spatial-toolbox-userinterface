@@ -25,6 +25,6 @@
   },
   "homepage": "https://github.com/PTCInc/RE-userinterface#readme",
   "dependencies": {
-    "@microsoft/teams-js": "^2.20.0"
+    "@microsoft/teams-js": "^2.21.0"
   }
 }
