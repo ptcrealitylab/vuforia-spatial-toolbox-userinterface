@@ -19,7 +19,7 @@ createNameSpace("realityEditor.network.realtime");
     var hasBeenInitialized = false;
     let batchedUpdates = {};
 
-    let didSubscribeToPublicData = false;
+    let didSubscribeToPublicDataOnServer = {};
     let publicDataCallbacks = {};
     let cachedPublicData = {}; // check to only trigger callbacks for property keys with changes
 
@@ -69,6 +69,20 @@ createNameSpace("realityEditor.network.realtime");
 
     function createDesktopSocket() {
         desktopSocket = io.connect();
+        const subscribe = () => {
+            let identifier = 'unused';
+            const worldObject = realityEditor.worldObjects.getBestWorldObject();
+            if (worldObject) {
+                identifier = worldObject.port;
+            } else {
+                setTimeout(() => {
+                    subscribe();
+                }, 1000);
+                return;
+            }
+            desktopSocket.emit(realityEditor.network.getIoTitle(identifier, '/subscribe/realityEditorUpdates'), JSON.stringify({editorId: globalStates.tempUuid}));
+        }
+        subscribe();
     }
 
     function getDesktopSocket() {
@@ -97,7 +111,7 @@ createNameSpace("realityEditor.network.realtime");
      * @param {string} objectKey
      */
     function addServerForObjectIfNeeded(object, _objectKey) {
-        
+
         // if (object.ip === '127.0.0.1') { return; } // ignore localhost, no need for realtime because only one client
         // Note that we still create a localhost socket even though we don't
         // subscribe to it since it will be used to send messages to the local
@@ -461,12 +475,39 @@ createNameSpace("realityEditor.network.realtime");
         batchedUpdates[objectKey].push(newUpdate);
     }
 
+    function subscribeToInterfaceSettings(interfaceName, callback) {
+        const worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (!worldObject) {
+            setTimeout(() => {
+                subscribeToInterfaceSettings(interfaceName, callback);
+            }, 1000);
+            return;
+        }
+        const serverSocket = getServerSocketForObject(worldObject.objectId);
+        const subscribeTitle = realityEditor.network.getIoTitle(worldObject.port, '/subscribe/interfaceSettings');
+        const responseTitle = realityEditor.network.getIoTitle(worldObject.port, 'interfaceSettings');
+        serverSocket.emit(subscribeTitle, JSON.stringify({interfaceName}));
+        serverSocket.on(responseTitle, msg => {
+            const msgData = JSON.parse(msg);
+            if (msgData.interfaceName === interfaceName) {
+                callback(msgData.currentSettings);
+            }
+        });
+    }
+
     function subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback) {
         if (DEBUG) {
             console.log('subscribe to public data for node ' + nodeKey);
         }
-
         let serverSocket = getServerSocketForObject(objectKey);
+        if (!serverSocket) {
+            console.log('no server socket... retry subscribeToData');
+            // retry this in 100ms
+            setTimeout(() => {
+                subscribeToPublicData(objectKey, frameKey, nodeKey, publicDataKey, callback);
+            }, 100);
+            return;
+        }
         let subscribeTitle = realityEditor.network.getIoTitle(objects[objectKey].port, '/subscribe/realityEditorPublicData');
         serverSocket.emit(subscribeTitle, JSON.stringify({
             object: objectKey,
@@ -482,59 +523,88 @@ createNameSpace("realityEditor.network.realtime");
             publicDataCallbacks[objectKey][frameKey] = {};
             cachedPublicData[objectKey][frameKey] = {};
         }
-        if (typeof publicDataCallbacks[objectKey][frameKey][publicDataKey] === 'undefined') {
-            publicDataCallbacks[objectKey][frameKey][publicDataKey] = [];
-            cachedPublicData[objectKey][frameKey][publicDataKey] = null;
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey] = {};
+            cachedPublicData[objectKey][frameKey][nodeKey] = {};
         }
-        publicDataCallbacks[objectKey][frameKey][publicDataKey].push(callback);
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] = [];
+            cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = null;
+        }
+        publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey].push(callback);
+
+        setupPublicDataSubscriptionOnServerIfNeeded(objectKey, frameKey, serverSocket);
+    }
+
+    function setupPublicDataSubscriptionOnServerIfNeeded(objectId, frameId, serverSocket) {
+        if (!serverSocket || !objectId || !frameId) {
+            console.warn('skipping setupPublicDataSubscriptionOnServerIfNeeded (invalid args)', objectId, frameId, serverSocket);
+            return;
+        }
+
+        let object = realityEditor.getObject(objectId);
+        if (!object) {
+            console.warn('skipping setupPublicDataSubscriptionOnServerIfNeeded (no object)', objectId);
+            return;
+        }
 
         // only need to subscribe to this one time, because we are setting single listener per port which handles 
         // public data of all nodes across all objects (as long as we set up the right callbacks by multiple calls of the code above)
-        if (!didSubscribeToPublicData) {
-            didSubscribeToPublicData = true;
-            let publicDataTitle = realityEditor.network.getIoTitle(objects[objectKey].port, 'object/publicData');
+        if (!didSubscribeToPublicDataOnServer[object.ip]) {
+            didSubscribeToPublicDataOnServer[object.ip] = true;
+            let publicDataTitle = realityEditor.network.getIoTitle(objects[object.objectId].port, 'object/publicData');
             const listener = (msg) => {
                 let msgData = JSON.parse(msg);
-                Object.keys(msgData.publicData).forEach(dataKey => {
+
+                // let isMyAvatar = msgData.object === realityEditor.avatar.getMyAvatarId();
+                // if (isMyAvatar) {
+                //     console.log('publicData listener triggered for my very own avatar!', msgData);
+                // }
+
+                let node = realityEditor.getNode(msgData.object, msgData.frame, msgData.node);
+
+                Object.keys(msgData.publicData).forEach(publicDataKey => {
                     // attempt triggering callbacks for all keys in the publicData.
                     // only ones with registered callbacks will do anything
-                    handlePublicDataFromServer(msg, msgData.object, msgData.frame, dataKey);
+                    let callbacks = publicDataCallbacks[msgData.object][msgData.frame][msgData.node][publicDataKey];
+                    if (!callbacks) return;
+                    // let prevDataState = cachedData[msgData.object][msgData.frame][publicDataKey] ? JSON.parse(cachedData[msgData.object][msgData.frame][publicDataKey]) : null;
+
+                    // handlePublicDataFromServer(msg, msgData.object, msgData.frame, publicDataKey);
+
+                    // skip messages originating from yourself
+                    if (typeof msgData.sessionUuid !== 'undefined' && msgData.sessionUuid === globalStates.tempUuid) {
+                        return;
+                    }
+
+                    let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
+
+                    // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
+                    if (stringifiedData === cachedPublicData[msgData.object][msgData.frame][msgData.node][publicDataKey]) {
+                        return;
+                    }
+
+                    if (node) {
+                        node.publicData[publicDataKey] = msgData.publicData[publicDataKey];
+                    }
+
+                    // if (publicDataKey === 'userProfile' && msgData.object === realityEditor.avatar.getMyAvatarId()) {
+                    //     console.log('received updated userProfile for my avatar', msgData.object, msgData.publicData.userProfile);
+                    // }
+
+                    callbacks.forEach(cb => {
+                        cb(msg);
+                    });
+
+                    cachedPublicData[msgData.object][msgData.frame][msgData.node][publicDataKey] = stringifiedData;
                 });
             };
-           
-            serverSocket.on(publicDataTitle, listener);  
-            if (publicDataTitle != 'object/publicData') {
+
+            serverSocket.on(publicDataTitle, listener);
+            if (publicDataTitle !== 'object/publicData') {
                 serverSocket.on('object/publicData', listener);
-            } 
+            }
         }
-    }
-
-    function handlePublicDataFromServer(msg, objectKey, frameKey, publicDataKey) {
-        let allCallbacks = publicDataCallbacks[objectKey];
-        if (!allCallbacks) { return; }
-        allCallbacks = allCallbacks[frameKey];
-        if (!allCallbacks) { return; }
-        let callbacks = allCallbacks[publicDataKey];
-        if (!callbacks) { return; }
-        
-        // skip messages originating from yourself
-        let msgData = JSON.parse(msg);
-        if (typeof msgData.sessionUuid !== 'undefined' && msgData.sessionUuid === globalStates.tempUuid) {
-            return;
-        }
-
-        let stringifiedData = JSON.stringify(msgData.publicData[publicDataKey]);
-
-        // if the publicDataNode has more than one key, don't trigger any other keys' callbacks except for the one that changed
-        if (stringifiedData === cachedPublicData[objectKey][frameKey][publicDataKey]) {
-            return;
-        }
-
-        callbacks.forEach(cb => {
-            cb(msg);
-        });
-
-        cachedPublicData[objectKey][frameKey][publicDataKey] = stringifiedData;
     }
 
     function writePublicData(objectKey, frameKey, nodeKey, publicDataKey, publicDataValue) {
@@ -552,6 +622,27 @@ createNameSpace("realityEditor.network.realtime");
         let serverSocket = getServerSocketForObject(objectKey);
         serverSocket.emit(ioTitle, JSON.stringify(messageBody));
 
+        // Important: update our internal cache with the value we sent, else we forget that we've updated the value
+        if (typeof publicDataCallbacks[objectKey] === 'undefined') {
+            publicDataCallbacks[objectKey] = {};
+            cachedPublicData[objectKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][frameKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey] = {};
+            cachedPublicData[objectKey][frameKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey] = {};
+            cachedPublicData[objectKey][frameKey][nodeKey] = {};
+        }
+        if (typeof publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] === 'undefined') {
+            publicDataCallbacks[objectKey][frameKey][nodeKey][publicDataKey] = [];
+            cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = null;
+        }
+        cachedPublicData[objectKey][frameKey][nodeKey][publicDataKey] = JSON.stringify(node.publicData);
+        // console.log('set cachedPublicData to ', stringifiedData);
+
+        // NOTE: this publicDataCache is deprecated, the cachedPublicData is what we use now
         if (!publicDataCache.hasOwnProperty(frameKey)) {
             publicDataCache[frameKey] = {};
         }
@@ -624,7 +715,7 @@ createNameSpace("realityEditor.network.realtime");
             var possibleSocketIPs = getSocketIPsForSet('realityServers');
             var foundSocket = null;
             possibleSocketIPs.forEach(function(socketIP) { // TODO: speedup by cache-ing a map from serverIP -> socketIP
-                if (socketIP.indexOf(serverIP) > -1) {
+                if (socketIP.indexOf(serverIP) > -1 || (object.network && socketIP.includes(object.network))) {
                     foundSocket = socketIP;
                 }
             });
@@ -741,9 +832,11 @@ createNameSpace("realityEditor.network.realtime");
     exports.sendCameraMatrix = sendCameraMatrix;
     exports.subscribeToCameraMatrices = subscribeToCameraMatrices;
 
+    exports.subscribeToInterfaceSettings = subscribeToInterfaceSettings;
+
     exports.writePublicData = writePublicData;
     exports.subscribeToPublicData = subscribeToPublicData;
-    
+
     exports.sendDisconnectMessage = sendDisconnectMessage;
     exports.getDesktopSocket = getDesktopSocket;
     exports.getServerSocketForObject = getServerSocketForObject;

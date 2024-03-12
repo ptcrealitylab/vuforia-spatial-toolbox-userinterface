@@ -1674,6 +1674,7 @@ Logic Interface CSS
 }
 
 .statusBar {
+    pointer-events: none;
     position: absolute;
     left: 80px;
     top: 0;
@@ -1795,6 +1796,9 @@ Logic Interface CSS
     position: absolute;
     left: 50vw;
     transform: translateX(-50%);
+    background-color: rgba(0,0,0,0.5);
+    height: 50px;
+    border-radius: 25px;
 }
 
 .avatarListIcon {
@@ -1804,14 +1808,15 @@ Logic Interface CSS
 }
 
 .avatarListIconMyAvatar {
-    cursor: pointer;
+    /*cursor: pointer;*/
 }
 
 .avatarListIconImage {
     position: absolute;
     left: 0;
     top: 0;
-    pointer-events: none;
+    cursor: pointer;
+    /*pointer-events: none;*/
 }
 
 .avatarListIconInitials {
@@ -1826,10 +1831,28 @@ Logic Interface CSS
     pointer-events: none;
 }
 
+.avatarListIconFollowingBubble {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    text-align: center;
+    line-height: 15px; /* slightly less than div height looks better */
+    vertical-align: middle;
+    pointer-events: none;
+    background-color: black;
+    font-size: 12px;
+}
+
 #avatarListHoverName {
     position: absolute;
-    left: 0;
-    top: 40px;
+    left: 50%;
+    top: 100%;
+    /*bottom: 0;*/
+    margin-top: 17px;
+    /*top: 40px;*/
     height: 30px;
     background-color: rgb(0, 0, 0);
     border-radius: 5px;
@@ -1847,6 +1870,37 @@ Logic Interface CSS
     transform: translateX(-50%) translateY(-100%);
     width: 16px;
     height: 8px;
+}
+
+.avatarListIconDropdown {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    margin-top: 20px;
+    /*width: 100px;*/
+    /*height: 30px;*/
+    background-color: rgba(0,0,0,0.9);
+    border-radius: 5px;
+    &.hiddenDropdown {
+        display: none;
+    }
+}
+
+.avatarListIconDropdownItem {
+    width: 160px;
+    height: 30px;
+    /*border: 2px solid white;*/
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 16px;
+    vertical-align: middle;
+    padding-left: 10px;
+    padding-top: 10px;
+    &:hover {
+        background-color: rgba(55,55,55,0.9);
+    }
+    border-radius: 5px;
 }
 
 #analytics-container {
@@ -1953,14 +2007,11 @@ Logic Interface CSS
     padding: 13px;
 }
 
-.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle) {
+.analytics-region-card.minimized:not(.pinned) > *:not(.analytics-region-card-title, .analytics-region-card-subtitle, .analytics-region-card-button-container) {
     display: none;
 }
 
 .analytics-region-card.minimized:not(.pinned) {
-    padding: 14px;
-    height: 28px;
-    width: max-content;
     line-height: 14px;
     white-space: nowrap;
 }
@@ -2045,6 +2096,8 @@ Logic Interface CSS
     flex-direction: row;
     justify-content: space-between;
     align-items: baseline;
+    height: 22px;
+    line-height: 22px;
 }
 
 .analytics-region-card-button {

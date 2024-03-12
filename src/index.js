@@ -154,10 +154,12 @@ window.realityEditor = {
             vertexShader: {},
         }
     },
+    statusPage: {},
     spatialCapture: {},
     avatar: {
         network: {},
         draw: {},
+        iconMenu: {},
         utils: {}
     },
     humanPose: {

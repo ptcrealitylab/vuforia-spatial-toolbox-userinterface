@@ -63,6 +63,7 @@
  * @desc This is the default constructor for the Hybrid Object.
  * It contains information about how to render the UI and how to process the internal data.
  * note - this constructor never gets used in the userinterface, just on the server
+ * @deprecated - not up to date with server's constructor, and not used recently in the code
  * @constructor
  */
 function Objects() {

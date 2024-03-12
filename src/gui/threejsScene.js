@@ -38,6 +38,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
+    let callbacks = {
+        onGltfDownloadProgress: [],
+        onGltfLoaded: [],
+    }
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -55,8 +59,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(rendererWidth, rendererHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.autoClear = false;
 
@@ -214,7 +216,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             groundPlaneCollider.position.set(0, floorOffset, 0);
             groundPlaneCollider.updateMatrix();
             groundPlaneCollider.updateMatrixWorld(true);
-            console.log(groundPlaneCollider.matrixWorld);
 
             // update the groundPlane sceneNode to match the position of the new groundplane collider
             let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());
@@ -509,16 +510,23 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
-                        // if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
-                        //     meshesToRemove.push(child);
-                        //     return;
-                        // }
+                        if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
+                            meshesToRemove.push(child);
+                            return;
+                        }
                         allMeshes.push(child);
                     }
                 });
 
-                for (let mesh of meshesToRemove) {
-                    mesh.removeFromParent();
+                // make sure we don't remove ALL meshes, if certain scanning software (e.g. Polycam) names all children mesh_X
+                if (allMeshes.length > 0) {
+                    for (let mesh of meshesToRemove) {
+                        mesh.removeFromParent();
+                    }
+                } else {
+                    for (let mesh of meshesToRemove) {
+                        allMeshes.push(mesh);
+                    }
                 }
 
                 allMeshes.forEach(child => {
@@ -623,6 +631,15 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             if (callback) {
               callback(gltf.scene, wireMesh);
             }
+
+            callbacks.onGltfLoaded.forEach((cb) => {
+                cb(pathToGltf);
+            });
+        }, (xhr) => {
+            // display download progress, useful if loading large gltf files on slow networks
+            callbacks.onGltfDownloadProgress.forEach((cb) => {
+                cb(pathToGltf, xhr.loaded, xhr.total);
+            });
         });
     }
     
@@ -1238,6 +1255,43 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         };
     };
 
+    /**
+     * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology
+     */
+    function enableExternalSceneRendering(broadcastToOthers) {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        if (areaMesh) areaMesh.visible = false;
+        realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = 'ai';
+            if (!broadcastToOthers) return;
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
+                console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
+    }
+
+    /**
+     * Restores mesh rendering when external rendering canvas is removed
+     */
+    function disableExternalSceneRendering() {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        if (areaMesh) areaMesh.visible = true;
+        realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = 'mesh';
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
+                console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
+    }
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -1268,4 +1322,12 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
+    exports.onGltfDownloadProgress = (cb) => {
+        callbacks.onGltfDownloadProgress.push(cb);
+    }
+    exports.onGltfLoaded = (cb) => {
+        callbacks.onGltfLoaded.push(cb);
+    }
+    exports.enableExternalSceneRendering = enableExternalSceneRendering;
+    exports.disableExternalSceneRendering = disableExternalSceneRendering;
 })(realityEditor.gui.threejsScene);

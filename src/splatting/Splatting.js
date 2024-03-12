@@ -4,30 +4,77 @@ import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 let gsInitialized = false;
 let gsActive = false;
 let gsContainer;
-let carousel = true;
 
-let cameras = [
-    {
-        id: 0,
-        img_name: "00001",
-        width: window.innerWidth,
-        height: window.innerHeight,
-        position: [
-            0, 0, 0,
-        ],
-        rotation: [
-            [0, 0, 0],
-            [0, 0, 0],
-            [0, 0, 0],
-        ],
-        fy: 1253,
-        fx: 1253,
-    },
+/** iPhoneVerticalFOV, projectionMatrixFrom(), makePerspective() come from desktopAdapter in remote operator addon. */
+
+const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
+
+let USE_MANUAL_ALIGNMENT_FOR_ALL = false;
+let USE_MANUAL_ALIGNMENT_FOR_SPECIFIED = true;
+let HARDCODED_SPLAT_COUNTS_ALIGNMENTS = {};
+
+// How to hard-code a splat's alignment:
+// 1. console.log the splatCount after adding a splat to toolbox
+// 2. add an entry to HARDCODED_SPLAT_COUNTS_ALIGNMENTS with the matrix that corresponds with that splat
+// 3. turn on USE_MANUAL_ALIGNMENT_FOR_ALL to apply manualAlignmentMatrix to everything, or
+//    USE_MANUAL_ALIGNMENT_FOR_SPECIFIED to pick the matrix from the SPLAT_COUNT_ALIGNMENTS
+// This assumes/hopes that multiple splat files don't by coincidence have the same number of splats
+const manualAlignmentMatrix =
+    [   -0.061740851923088896,  -1.605035129459561,     0.11744258386357077,    0,
+        -1.3163664239481947,    -0.01724431166120183,   -0.9276985133744583,    0,
+        0.9258023359257972,     -0.13155731456696773,   -1.3112304022856882,    0,
+        0.7588661310195932,     -0.3383481348010016,    0.697548483268128,      1];
+
+const manualAlignmentMatrix_ptcFurniture1 = manualAlignmentMatrix;
+HARDCODED_SPLAT_COUNTS_ALIGNMENTS[1682141] = manualAlignmentMatrix_ptcFurniture1;
+
+/**
+ * Builds a projection matrix from field of view, aspect ratio, and near and far planes
+ */
+function projectionMatrixFrom(vFOV, aspect, near, far) {
+    var top = near * Math.tan((Math.PI / 180) * 0.5 * vFOV );
+    var height = 2 * top;
+    var width = aspect * height;
+    var left = -0.5 * width;
+    // return makePerspective( left, left + width, top, top - height, near, far );
     
-];
+    // conversion to the convention used in GS rendering here
+    let mat = makePerspective( left, left + width, top, top - height, near, far );
+   
+    // flip y and z axes
+    mat[4] *= -1; mat[5] *= -1; mat[6] *= -1; mat[7] *= -1;
+    mat[8] *= -1; mat[9] *= -1; mat[10] *= -1; mat[11] *= -1;
+    // mm to meter units
+    mat[14] *= 0.001;
+    
+    return mat;
+}
 
-let camera = cameras[0];
+/**
+ * Helper function for creating a projection matrix
+ */
+function makePerspective ( left, right, top, bottom, near, far ) {
 
+    var te = [];
+    var x = 2 * near / ( right - left );
+    var y = 2 * near / ( top - bottom );
+
+    var a = ( right + left ) / ( right - left );
+    var b = ( top + bottom ) / ( top - bottom );
+    var c = - ( far + near ) / ( far - near );
+    var d = - 2 * far * near / ( far - near );
+
+    te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
+    te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13] = 0;
+    te[ 2 ] = 0;    te[ 6 ] = 0;    te[ 10 ] = c;   te[ 14 ] = d;
+    te[ 3 ] = 0;    te[ 7 ] = 0;    te[ 11 ] = - 1; te[ 15 ] = 0;
+
+    return te;
+
+}
+
+/** Original calculation of projection and view matrices (left for reference) */
+/* 
 function getProjectionMatrix(fx, fy, width, height) {
     const znear = 0.2;
     const zfar = 200;
@@ -55,7 +102,10 @@ function getViewMatrix(camera) {
     ].flat();
     return camToWorld;
 }
+*/
 
+
+/** Multiplication (a * b) of matrices stored column-by-column */
 function multiply4(a, b) {
     return [
         b[0] * a[0] + b[1] * a[4] + b[2] * a[8] + b[3] * a[12],
@@ -111,6 +161,26 @@ function invert4(a) {
         (a[13] * b01 - a[12] * b03 - a[14] * b00) / det,
         (a[8] * b03 - a[9] * b01 + a[10] * b00) / det,
     ];
+}
+
+function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
+{
+    let resultMatrix = new Array(16).fill(0);
+
+    for(let row = 0; row < 4; row++) {
+        for(let col = 0; col < 4; col++) {
+            let sum = 0; // Initialize sum for each element
+            for(let k = 0; k < 4; k++) {
+                sum += sourceMatrix[row * 4 + k] * transMatrix[k * 4 + col];
+            }
+            resultMatrix[row * 4 + col] = sum; // Assign the calculated value
+        }
+    }
+    resultMatrix[12] = resultMatrix[12] * scaleF;
+    resultMatrix[13] = resultMatrix[13] * scaleF;
+    resultMatrix[14] = resultMatrix[14] * scaleF;
+
+    return resultMatrix
 }
 
 function createWorker(self) {
@@ -238,7 +308,7 @@ function createWorker(self) {
     function runSort(viewProj) {
         if (!buffer) return;
         const f_buffer = new Float32Array(buffer);
-        if (lastVertexCount == vertexCount) {
+        if (lastVertexCount === vertexCount) {
             let dot =
                 lastProj[2] * viewProj[2] +
                 lastProj[6] * viewProj[6] +
@@ -680,20 +750,10 @@ void main () {
 
 `.trim();
 
-let defaultViewMatrix = [
-    0.47, 0.04, 0.88, 0, -0.11, 0.99, 0.02, 0, -0.88, -0.11, 0.47, 0, 0.07,
-    0.03, 6.55, 1,
-];
-let viewMatrix = defaultViewMatrix;
-let publicFunctions = {};
 async function main(initialFilePath) {
-    try {
-        viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-        carousel = false;
-    } catch (err) {}
 
     // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target.splat');
-    const url = new URL(initialFilePath || "https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat");
+    const url = new URL(initialFilePath);
     const req = await fetch(url, {
         mode: "cors", // no-cors, *cors, same-origin
         credentials: "omit", // include, *same-origin, omit
@@ -701,14 +761,14 @@ async function main(initialFilePath) {
     if (req.status != 200) {
         throw new Error(req.status + " Unable to load " + req.url);
     }
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    
     const reader = req.body.getReader();
+    // calculate number of splats in the scene 
+    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
     let splatData = new Uint8Array(req.headers.get("content-length"));
+    let splatCount = splatData.length / rowLength
 
-    const downsample = splatData.length / rowLength > 500000 ? 1 : 1 / devicePixelRatio;
-        // const downsample = 1 / devicePixelRatio;
-        // const downsample = 1;
-        // console.log(splatData.length / rowLength, downsample);
+    let downsample = splatCount > 500000 ? 1 : 1 / window.devicePixelRatio;
 
     const worker = new Worker(
         URL.createObjectURL(
@@ -718,19 +778,9 @@ async function main(initialFilePath) {
         ),
     );
 
+    const fps = document.getElementById("gsFps");   
     const canvas = document.getElementById("gsCanvas");
-    canvas.width = innerWidth / downsample;
-    canvas.height = innerHeight / downsample;
 
-    const fps = document.getElementById("gsFps");
-
-    let projectionMatrix = getProjectionMatrix(
-        camera.fx / downsample,
-        camera.fy / downsample,
-        canvas.width,
-        canvas.height,
-    );
-    
     const gl = canvas.getContext("webgl2", {
         antialias: false,
     });
@@ -813,6 +863,8 @@ async function main(initialFilePath) {
     gl.vertexAttribIPointer(a_index, 1, gl.INT, false, 0, 0);
     gl.vertexAttribDivisor(a_index, 1);
 
+    let projectionMatrix;
+
     // set up an off-screen frame buffer object texture
     const offscreenTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, offscreenTexture);
@@ -836,26 +888,26 @@ async function main(initialFilePath) {
         console.log(gl.checkFramebufferStatus(gl.FRAMEBUFFER));
         return;
     }
-    
-    // todo Steve: set up an off-screen frame buffer object for index picking
-    // const indexTexture = gl.createTexture();
-    // gl.bindTexture(gl.TEXTURE_2D, indexTexture);
-    // gl.texImage2D(gl.TEXTURE_2D, 0, )
 
     const resize = () => {
-        gl.uniform2fv(u_focal, new Float32Array([camera.fx, camera.fy]));
+        
+        const canvas = document.getElementById("gsCanvas");
+        canvas.width = window.innerWidth / downsample;
+        canvas.height = window.innerHeight / downsample;
 
-        projectionMatrix = getProjectionMatrix(
-        camera.fx,
-        camera.fy,
-        innerWidth,
-        innerHeight,
-        );
+        // near and far plane defined in mm as in the rest of Toolbox
+        projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, window.innerWidth / window.innerHeight, 10, 300000);
 
-        gl.uniform2fv(u_viewport, new Float32Array([innerWidth, innerHeight]));
+        // compute horizontal and vertical focal length in pixels from projection matrix. This is needed in shaders.
+        const fx = projectionMatrix[0] * window.innerWidth / 2.0;
+        const fy = projectionMatrix[5] * -window.innerHeight / 2.0;
 
-        gl.canvas.width = Math.round(innerWidth / downsample);
-        gl.canvas.height = Math.round(innerHeight / downsample);
+        gl.uniform2fv(u_focal, new Float32Array([fx, fy]));
+
+        gl.uniform2fv(u_viewport, new Float32Array([window.innerWidth, window.innerHeight]));
+
+        gl.canvas.width = Math.round(window.innerWidth / downsample);
+        gl.canvas.height = Math.round(window.innerHeight / downsample);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
@@ -915,65 +967,54 @@ async function main(initialFilePath) {
         }
     };
 
-    const sourceMatrix =   
-        [1, 0, 0, 0,
-         0,-1, 0, 0,
-         0, 0,-1, 0,
-         0, 0, 0, 1];
-
-    let transformationMatrix = new THREE.Matrix4();
-    transformationMatrix.fromArray(sourceMatrix);
-
     let vertexCount = 0;
     let lastFrame = 0;
     let avgFps = 0;
-    let start = 0;
+    // let start = 0;
 
     const frame = (now) => {
 
-        //start YC testing
+        // obtain camera pose from Toolbox scene graph 
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
         let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
         if (!gpNode) {
             gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
         }
+        // transformation from camera CS to ground plane CS
         let newCamMatrix = cameraNode.getMatrixRelativeTo(gpNode);
 
-        const SCALE = 1 / 1000;
-        const scaleF = 1.0  
-        const offset_x = 0;
+        const scaleF = 1.0;  // extra scaling factor in target CS
+        const offset_x = 0;  // extra offset in target CS (in meter units)
         const offset_y = 0;
         const offset_z = 0;
-        const floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset() // in my example, it returns -1344.81
-        newCamMatrix[12] = (newCamMatrix[12]*SCALE + offset_x)*scaleF;
+
+        const SCALE = 1 / 1000; // conversion from mm (Toolbox) to meters (GS renderer) 
+        const floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset() // in mm units
+        // update translation vector (camera wrt. world CS)
+        newCamMatrix[12] = (newCamMatrix[12]*SCALE + offset_x) * scaleF;
         newCamMatrix[13] = ((newCamMatrix[13] + floorOffset)*SCALE + offset_y)*scaleF;
         newCamMatrix[14] = (newCamMatrix[14]*SCALE + offset_z)*scaleF;
 
-        function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
-        {
-            let resultMatrix = new Array(16).fill(0);
+        // flip the y, z axes (OpenGL to Colmap camera CS)
+        const flipMatrix =   
+            [1, 0, 0, 0,
+             0,-1, 0, 0,
+             0, 0,-1, 0,
+             0, 0, 0, 1];
 
-            for(let row = 0; row < 4; row++) {
-                for(let col = 0; col < 4; col++) {
-                    let sum = 0; // Initialize sum for each element
-                    for(let k = 0; k < 4; k++) {
-                        sum += sourceMatrix[row * 4 + k] * transMatrix[k * 4 + col];
-                    }
-                    resultMatrix[row * 4 + col] = sum; // Assign the calculated value
-                }
-            }
-    
-            resultMatrix[12] = resultMatrix[12] * scaleF;
-            resultMatrix[13] = resultMatrix[13] * scaleF;
-            resultMatrix[14] = resultMatrix[14] * scaleF;
-
-            return resultMatrix
-        }
-
-        // needed transformation : flip the x,y axis, then invert the matrix
-        let transformMatrix1D = transformationMatrix.elements;
-        let resultMatrix_1 = ApplyTransMatrix(transformMatrix1D, newCamMatrix, scaleF)
+        let resultMatrix_1 = multiply4(newCamMatrix, flipMatrix);
+        // inversion is needed
         let actualViewMatrix = invert4(resultMatrix_1);
+
+        let useManualAlignment = USE_MANUAL_ALIGNMENT_FOR_ALL ||
+            (USE_MANUAL_ALIGNMENT_FOR_SPECIFIED && typeof HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] !== 'undefined');
+        if (useManualAlignment) {
+            // let resultMatrix_manualAlign = multiply4(resultMatrix_1, manualAlignmentMatrix);
+            // actualViewMatrix = invert4(resultMatrix_manualAlign);
+            let alignmentMatrix = HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] || manualAlignmentMatrix;
+            let resultMatrix_manualAlign = ApplyTransMatrix(resultMatrix_1, alignmentMatrix, scaleF);
+            actualViewMatrix = invert4(resultMatrix_manualAlign);
+        }
 
         const viewProj = multiply4(projectionMatrix, actualViewMatrix);
         worker.postMessage({ view: viewProj });
@@ -1023,9 +1064,9 @@ async function main(initialFilePath) {
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("gsSpinner").style.display = "";
-            start = Date.now() + 2000;
+            // start = Date.now() + 2000;
         }
-        const progress = (100 * vertexCount) / (splatData.length / rowLength);
+        const progress = (100 * vertexCount) / splatCount;
         if (progress < 100) {
             document.getElementById("gsProgress").style.width = progress + "%";
         } else {
@@ -1033,7 +1074,7 @@ async function main(initialFilePath) {
         }
         fps.innerText = Math.round(avgFps) + " fps";
         lastFrame = now;
-        requestAnimationFrame(frame);
+        window.requestAnimationFrame(frame);
     };
 
     function addTestCube(pos) {
@@ -1046,42 +1087,28 @@ async function main(initialFilePath) {
 
     frame();
 
+    /** Loads GS file dropped into the window. */
+    /*
     const selectFile = (file) => {
         const fr = new FileReader();
-        if (/\.json$/i.test(file.name)) {
-            fr.onload = () => {
-                cameras = JSON.parse(fr.result);
-                viewMatrix = getViewMatrix(cameras[0]);
-                projectionMatrix = getProjectionMatrix(
-                    camera.fx / downsample, 
-                    camera.fy / downsample, 
-                    canvas.width, 
-                    canvas.height,
-                );
-                gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
-            
-                console.log("Loaded Cameras");
-            };
-            fr.readAsText(file);
-        } else {
-            stopLoading = true;
-            fr.onload = () => {
-                splatData = new Uint8Array(fr.result);
-                console.log("Loaded", Math.floor(splatData.length / rowLength));
-            
-                if (splatData[0] === 112 && splatData[1] === 108 && splatData[2] === 121 && splatData[3] === 10) {
-                    // ply file magic header means it should be handled differently
-                    worker.postMessage({ ply: splatData.buffer });
-                } else {
-                    worker.postMessage({
-                        buffer: splatData.buffer,
-                        vertexCount: Math.floor(splatData.length / rowLength),
-                    });
-                }
-            };
-            fr.readAsArrayBuffer(file);
-        }
+        stopLoading = true;
+        fr.onload = () => {
+            splatData = new Uint8Array(fr.result);
+            console.log("Loaded", Math.floor(splatCount));
+        
+            if (splatData[0] === 112 && splatData[1] === 108 && splatData[2] === 121 && splatData[3] === 10) {
+                // ply file magic header means it should be handled differently
+                worker.postMessage({ ply: splatData.buffer });
+            } else {
+                worker.postMessage({
+                    buffer: splatData.buffer,
+                    vertexCount: Math.floor(splatCount),
+                });
+            }
+        };
+        fr.readAsArrayBuffer(file);
     };
+    */
 
     let isDrawing = false;
     window.addEventListener("mousedown", (e) => {
@@ -1172,14 +1199,6 @@ async function main(initialFilePath) {
         folder2.close();
     }
 
-    // TODO: avoid using hash in toolbox
-    window.addEventListener("hashchange", () => {
-        try {
-            viewMatrix = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-            carousel = false;
-        } catch (err) {}
-    });
-
     const preventDefault = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1187,21 +1206,17 @@ async function main(initialFilePath) {
     gsContainer.addEventListener("dragenter", preventDefault);
     gsContainer.addEventListener("dragover", preventDefault);
     gsContainer.addEventListener("dragleave", preventDefault);
+    /*
     gsContainer.addEventListener("drop", (e) => {
         preventDefault(e);
         selectFile(e.dataTransfer.files[0]);
-    });
-
-    window.addEventListener('resize', () => {
-        const canvas = document.getElementById("gsCanvas");
-        canvas.width = innerWidth / downsample;
-        canvas.height = innerHeight / downsample;
-    });
+    }); */
 
     let bytesRead = 0;
     let lastVertexCount = -1;
     let stopLoading = false;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         const { done, value } = await reader.read();
         if (done || stopLoading) break;
@@ -1246,7 +1261,6 @@ window.addEventListener("keydown", e => {
         }
         gsContainer.classList.toggle('hidden');
         gsActive = !gsContainer.classList.contains('hidden');
-        carousel = false;
         if(gsActive)
         { 
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = false;
@@ -1268,7 +1282,7 @@ window.addEventListener("keydown", e => {
     }
 });
 
-function showSplatRenderer(filePath) {
+function showSplatRenderer(filePath, broadcastToOthers = false) {
     if (!gsInitialized) {
         gsInitialized = true;
         gsContainer = document.querySelector('#gsContainer');
@@ -1277,16 +1291,18 @@ function showSplatRenderer(filePath) {
             document.getElementById("gsMessage").innerText = err.toString();
         });
     }
-    // gsContainer.classList.toggle('hidden');
-    // gsActive = !gsContainer.classList.contains('hidden');
     gsContainer.classList.remove('hidden');
     gsActive = true;
-    carousel = false;
+    // tell the mainThreejsScene to hide the mesh model
+    realityEditor.gui.threejsScene.enableExternalSceneRendering(broadcastToOthers);
 }
 
 function hideSplatRenderer() {
+    if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
+    // tell the mainThreejsScene to show the mesh model
+    realityEditor.gui.threejsScene.disableExternalSceneRendering();
 }
 
 let callbacks = {
@@ -1295,9 +1311,6 @@ let callbacks = {
 }
 
 export default {
-    setMatrix(matrix) {
-        viewMatrix = matrix;
-    },
     hideSplatRenderer,
     showSplatRenderer,
     onSplatShown(callback) {

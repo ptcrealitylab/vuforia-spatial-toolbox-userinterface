@@ -10,7 +10,7 @@ createNameSpace("realityEditor.avatar");
 
 (function(exports) {
 
-    let network, draw, utils; // shortcuts to access realityEditor.avatar._____
+    let network, draw, iconMenu, utils; // shortcuts to access realityEditor.avatar._____
 
     const KEEP_ALIVE_HEARTBEAT_INTERVAL = 3 * 1000; // should be a small fraction of the keep-alive timeout on the server (currently 15 seconds)
     const AVATAR_CREATION_TIMEOUT_LENGTH = 10 * 1000; // handle if avatar takes longer than 10 seconds to load
@@ -52,7 +52,7 @@ createNameSpace("realityEditor.avatar");
         isWorldOcclusionObjectAdded: false,
         didCreationFail: false,
         isConnectionAttemptInProgress: false
-    }
+    };
 
     // these are just used for debugging purposes
     let DEBUG_MODE = false; // can be toggled from remote operator's Develop menu
@@ -64,14 +64,21 @@ createNameSpace("realityEditor.avatar");
         didRecentlyReceive: false,
         didSendAnything: false,
         didRecentlySend: false
-    }
+    };
+
+    let callbacks = {
+        onMyAvatarInitialized: []
+    };
 
     let isDesktop = false;
 
     function initService() {
         network = realityEditor.avatar.network;
         draw = realityEditor.avatar.draw;
+        iconMenu = realityEditor.avatar.iconMenu;
         utils = realityEditor.avatar.utils;
+
+        iconMenu.initService();
 
         // begin creating our own avatar object when we localize within a world object
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
@@ -116,7 +123,7 @@ createNameSpace("realityEditor.avatar");
 
         network.onAvatarDiscovered((object, objectKey) => {
             handleDiscoveredObject(object, objectKey);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
         });
 
         network.onAvatarDeleted((objectKey) => {
@@ -126,7 +133,7 @@ createNameSpace("realityEditor.avatar");
             delete avatarCursorStates[objectKey];
             delete avatarNames[objectKey];
             draw.deleteAvatarMeshes(objectKey);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             realityEditor.avatar.setLinkCanvasNeedsClear(true);
             realityEditor.spatialCursor.deleteOtherSpatialCursor(objectKey);
 
@@ -302,10 +309,11 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        connectedAvatarUserProfiles[objectKey] = {
-            name: null,
-            providerId: '',
-        };
+        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
+        // {
+        //     name: null,
+        //     providerId: '',
+        // };
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -391,14 +399,14 @@ createNameSpace("realityEditor.avatar");
             const userProfile = msgContent.publicData.userProfile;
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
-                connectedAvatarUserProfiles[msgContent.object] = {};
+                connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null); // {};
             }
 
             // Copy over any present keys
             Object.assign(connectedAvatarUserProfiles[msgContent.object], userProfile);
 
             draw.updateAvatarName(msgContent.object, userProfile.name);
-            draw.renderAvatarIconList(connectedAvatarUserProfiles);
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             debugDataReceived();
         };
 
@@ -501,6 +509,10 @@ createNameSpace("realityEditor.avatar");
             };
             lastPointerState.timestamp = Date.now();
         });
+        
+        callbacks.onMyAvatarInitialized.forEach(cb => {
+            cb(myAvatarObject);
+        });
     }
 
     // you can set this even before the avatar has been created
@@ -514,12 +526,56 @@ createNameSpace("realityEditor.avatar");
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
         draw.updateAvatarName(myAvatarId, name);
-        draw.renderAvatarIconList(connectedAvatarUserProfiles);
+        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
-            network.sendUserProfile(info, name, myProviderId);
+            network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
         }
+    }
+    
+    function writeMyLockOnMode(objectId) {
+        if (!myAvatarObject) { return; }
+        writeLockOnMode(myAvatarId, objectId);
+        // connectedAvatarUserProfiles[myAvatarId].lockOnMode = objectId;
+        // // draw.updateAvatarName(myAvatarId, name);
+        // // draw.renderAvatarIconList(connectedAvatarUserProfiles);
+        //
+        // let info = utils.getAvatarNodeInfo(myAvatarObject);
+        // if (info) {
+        //     network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
+        // }
+    }
+    
+    function writeLockOnToMe(otherAvatarId) {
+        if (!myAvatarId) { return; }
+        writeLockOnMode(otherAvatarId, myAvatarId);
+    }
+
+    function writeLockOnMode(avatarId, targetAvatarId) {
+        let object = realityEditor.getObject(avatarId);
+        if (!object) { return; }
+        connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
+        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
+
+        let info = utils.getAvatarNodeInfo(object);
+        if (info) {
+            network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
+        }
+    }
+
+    window.printKnownLockOnModes = () => {
+        console.log(`I am avatar ${myAvatarId}`);
+        realityEditor.forEachObject((object, objectKey) => {
+            if (!utils.isAvatarObject(object)) return;
+            let info = utils.getAvatarNodeInfo(object);
+            let node = realityEditor.getNode(info.objectKey, info.frameKey, info.nodeKey);
+            if (node.publicData.userProfile) {
+                console.log(`avatar ${objectKey} ${objectKey === myAvatarId ? ' (me)' : ''} is locked onto: ${node.publicData.userProfile.lockOnMode} ${node.publicData.userProfile.lockOnMode === myAvatarId ? '(me)' : ''}`);
+            } else {
+                console.log(`avatar ${objectKey} has no userProfile`);
+            }
+        });
     }
 
     // send touch intersect to other users via the public data node, and show visual feedback on your cursor
@@ -685,6 +741,9 @@ createNameSpace("realityEditor.avatar");
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
+    exports.writeMyLockOnMode = writeMyLockOnMode;
+    exports.writeLockOnToMe = writeLockOnToMe;
+    // exports.writeLockOnMode = writeLockOnMode;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
@@ -693,6 +752,15 @@ createNameSpace("realityEditor.avatar");
     };
     exports.setLinkCanvasNeedsClear = (value) => {
         linkCanvasNeedsClear = value;
-    }
+    };
+    exports.registerOnMyAvatarInitializedCallback = (cb) => {
+        callbacks.onMyAvatarInitialized.push(cb);
+        if (myAvatarObject) {
+            cb(myAvatarObject);
+        }
+    };
+    exports.getMyAvatarId = () => {
+        return myAvatarId;
+    };
 
 }(realityEditor.avatar));

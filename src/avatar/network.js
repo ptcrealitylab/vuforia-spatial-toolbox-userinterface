@@ -15,6 +15,7 @@ createNameSpace("realityEditor.avatar.network");
     let lastWritePublicDataTimestamp = Date.now();
     let lastWriteSpatialCursorTimestamp = Date.now();
     let pendingAvatarInitializations = {};
+    let lastSentCursorState = null;
 
     let callbacks = {
         onLoadOcclusionObject: [],
@@ -99,6 +100,32 @@ createNameSpace("realityEditor.avatar.network");
         }, 1000);
     }
 
+    function hasCursorStateChanged(currentState) {
+        if (lastSentCursorState === null) {
+            return currentState !== null;
+        }
+        if (currentState === null) {
+            return true;
+        }
+        const epsilon = 0.00001;
+        for (let i = 0; i < 16; i++) {
+            if (Math.abs(lastSentCursorState.matrix.elements[i] - currentState.matrix.elements[i]) > epsilon) {
+                // Matrix mismatch, have to check like this instead of matrix.equals(other) due to floating point errors
+                return true;
+            }
+        }
+        if (lastSentCursorState.colorHSL !== currentState.colorHSL) {
+            return true;
+        }
+        if (lastSentCursorState.isColored !== currentState.isColored) {
+            return true;
+        }
+        if (lastSentCursorState.worldId !== currentState.worldId) {
+            return true;
+        }
+        return false;
+    }
+
     // if the object has moved at all, and enough time has passed (FPS_LIMIT), realtime broadcast the new avatar matrix
     function realtimeSendAvatarPosition(avatarObject, matrix) {
         // only send a data update if the matrix has changed since last time
@@ -130,10 +157,11 @@ createNameSpace("realityEditor.avatar.network");
     
     // write the cursorState to the avatar object's storage node
     function sendSpatialCursorState(keys, cursorState, options) {
-        let sendData = !(options && options.limitToFps) || !isCursorStateFpsLimited();
+        let sendData = (!(options && options.limitToFps) || !isCursorStateFpsLimited()) && hasCursorStateChanged(cursorState);
         if (sendData) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.cursorState, cursorState);
             lastWriteSpatialCursorTimestamp = Date.now();
+            lastSentCursorState = cursorState;
         }
     }
 
@@ -153,13 +181,16 @@ createNameSpace("realityEditor.avatar.network");
     /**
      * write the user profile into the avatar object's storage node
      * @param {Object} keys - where to store avatar's data
-     * @param {string} name
-     * @param {string?} providerId - optional associated webrtc provider id
+     * @param {Object} userProfile - contains name, providerId, lockOnMode, etc.
+     // * @param {string} name
+     // * @param {string?} providerId - optional associated webrtc provider id
      */
-    function sendUserProfile(keys, name, providerId) {
+    function sendUserProfile(keys, userProfile) {
+        // console.log(`sending user profile for ${keys.objectKey}... ${JSON.stringify(userProfile)}`);
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
-            name: name,
-            providerId: providerId,
+            name: userProfile.name,
+            providerId: userProfile.providerId,
+            lockOnMode: userProfile.lockOnMode
         });
     }
 
