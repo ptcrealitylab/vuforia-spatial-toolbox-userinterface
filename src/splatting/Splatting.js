@@ -580,7 +580,6 @@ in int index;
 
 out vec4 vColor;
 out vec4 vFBOPosColor;
-out float vFBOIndex;
 out vec2 vPosition;
 out vec4 vDebug2;
 out float vShouldDisplay;
@@ -588,12 +587,6 @@ out float vIndex;
 
 void main () {
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
-    // if (uCollideIndex == index) { // todo Steve new 11: don't compare the index, try to compare the position and see if it works
-    //     vIndex = 1.;
-    // } else {
-    //     vIndex = 0.;
-    // }
-    vFBOIndex = float(index);
     
     vec4 vWorld = vec4(uintBitsToFloat(cen.xyz), 1.);
     
@@ -707,7 +700,6 @@ uniform bool uIsRenderingToFBO;
 
 in vec4 vColor;
 in vec4 vFBOPosColor;
-in float vFBOIndex;
 in vec2 vPosition;
 in float vShouldDisplay;
 in float vIndex;
@@ -824,7 +816,6 @@ async function main(initialFilePath) {
     const u_focal = gl.getUniformLocation(program, "focal");
     const u_view = gl.getUniformLocation(program, "view");
     const u_mouse = gl.getUniformLocation(program, "uMouse");
-    const u_collideIndex = gl.getUniformLocation(program, "uCollideIndex");
     const u_collidePosition = gl.getUniformLocation(program, "uCollidePosition");
     const u_shouldDraw = gl.getUniformLocation(program, "uShouldDraw");
 
@@ -1128,7 +1119,7 @@ async function main(initialFilePath) {
             "world high z": uWorldHighZ,
             "world low alpha": uWorldLowAlpha,
         }
-        let d0 = folder2.add(settings2, 'toggle boundary').onChange((value) => {
+        folder2.add(settings2, 'toggle boundary').onChange((value) => {
             uToggleBoundary = value;
             gl.uniform1f(u_toggleBoundary, uToggleBoundary ? 1 : 0);
         });
