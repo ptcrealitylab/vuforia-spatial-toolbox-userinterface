@@ -1022,7 +1022,7 @@ async function main(initialFilePath) {
         const currentFps = 1000 / (now - lastFrame) || 0;
         avgFps = avgFps * 0.9 + currentFps * 0.1;
 
-        if (vertexCount > 0) {
+        if (vertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
             document.getElementById("gsSpinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.uniform2fv(u_mouse, new Float32Array(uMouse));
@@ -1049,9 +1049,6 @@ async function main(initialFilePath) {
             if (pixelBuffer[3] !== 0) {
                 realityEditor.spatialCursor.gsSetPosition(vWorld);
             }
-            if (isDrawing) {
-                // addTestCube(vWorld);
-            }
             gl.uniform1i(u_uIsRenderingToFBO, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.viewport(0, 0, innerWidth, innerHeight);
@@ -1077,14 +1074,6 @@ async function main(initialFilePath) {
         window.requestAnimationFrame(frame);
     };
 
-    function addTestCube(pos) {
-        let geo = new THREE.BoxGeometry(20, 20, 20);
-        let mat = new THREE.MeshStandardMaterial({color: 0xff0000});
-        let cube = new THREE.Mesh(geo, mat);
-        cube.position.copy(pos);
-        realityEditor.gui.threejsScene.addToScene(cube);
-    }
-
     frame();
 
     /** Loads GS file dropped into the window. */
@@ -1109,16 +1098,6 @@ async function main(initialFilePath) {
         fr.readAsArrayBuffer(file);
     };
     */
-
-    let isDrawing = false;
-    window.addEventListener("mousedown", (e) => {
-        if (e.button !== 0) return;
-        isDrawing = true;
-    })
-    window.addEventListener("mouseup", (e) => {
-        if (e.button !== 0) return;
-        isDrawing = false;
-    })
 
     let uMouse = [0, 0];
     let uMouseScreen = [0, 0];
@@ -1262,7 +1241,7 @@ window.addEventListener("keydown", e => {
         gsContainer.classList.toggle('hidden');
         gsActive = !gsContainer.classList.contains('hidden');
         if(gsActive)
-        { 
+        {
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = false;
             realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
             realityEditor.spatialCursor.gsToggleActive(true);
