@@ -1090,14 +1090,29 @@ async function main(initialFilePath) {
     };
     */
 
+    let isFlying = false;
+    realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
+        isFlying = params.isFlying;
+    });
+    realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
+        isFlying = params.isFlying;
+    });
+
     let uMouse = [0, 0];
     let uMouseScreen = [0, 0];
     let vWorld = new THREE.Vector3();
     window.addEventListener("mousemove", (e) => {
-        uMouseScreen[0] = e.clientX;
-        uMouseScreen[1] = e.clientY;
-        uMouse[0] = ( e.clientX / innerWidth ) * 2 - 1;
-        uMouse[1] = - ( e.clientY / innerHeight ) * 2 + 1;
+        if (isFlying) {
+            uMouseScreen[0] = innerWidth / 2;
+            uMouseScreen[1] = innerHeight / 2;
+            uMouse[0] = 0;
+            uMouse[1] = 0;
+        } else {
+            uMouseScreen[0] = e.clientX;
+            uMouseScreen[1] = e.clientY;
+            uMouse[0] = (e.clientX / innerWidth) * 2 - 1;
+            uMouse[1] = -(e.clientY / innerHeight) * 2 + 1;
+        }
     })
 
     // lil GUI settings
