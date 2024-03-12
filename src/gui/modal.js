@@ -347,9 +347,6 @@ createNameSpace("realityEditor.gui.modal");
 
         let notificationTextContainer = document.createElement('div');
         notificationTextContainer.classList.add('statusBarText');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationTextContainer.classList.add('statusBarPortrait');
-        }
         notificationUI.appendChild(notificationTextContainer);
 
         // show and populate with message

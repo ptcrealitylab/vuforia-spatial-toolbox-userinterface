@@ -1680,15 +1680,11 @@ Logic Interface CSS
     justify-content: center;
     top: 130px;
     width: 100%;
+    margin: auto;
     font-family: "Open Sans", sans-serif;
     text-align: center;
     line-height: 30px;
     animation: dropIn 300ms ease-out;
-    transition: height 300ms ease-out;
-}
-
-.statusBarPortrait {
-    max-width: 90%; /* centers, including padding */
 }
 
 @keyframes dropIn {
@@ -2317,3 +2313,10 @@ Logic Interface CSS
     filter: brightness(0.8);
     -webkit-filter: brightness(0.8);
 }
+
+/* smaller screens: mobile phones and portrait tablets */
+@media only screen and (max-width: 768px) {
+    .statusBarText {
+        max-width: 80%;
+    }
+} 
