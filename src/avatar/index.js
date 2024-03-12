@@ -710,6 +710,7 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
+    exports.getAvatarNameFromSessionId = getAvatarNameFromSessionId;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.clearLinkCanvas = clearLinkCanvas;
