@@ -1090,30 +1090,33 @@ async function main(initialFilePath) {
     };
     */
 
+    let uMouse = [0, 0];
+    let uMouseScreen = [0, 0];
+    let uLastMouse = [0, 0];
+    let uLastMouseScreen = [0, 0];
+    let vWorld = new THREE.Vector3();
+    window.addEventListener("mousemove", (e) => {
+        if (isFlying) return;
+        uMouseScreen = [e.clientX, e.clientY];
+        uMouse = [(e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1];
+    })
+    // add fly mode support
     let isFlying = false;
     realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
         isFlying = params.isFlying;
+        let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        uLastMouseScreen = [mousePosition.x, mousePosition.y];
+        uLastMouse = [(mousePosition.x / innerWidth) * 2 - 1, -(mousePosition.y / innerHeight) * 2 + 1]
+        uMouseScreen = [innerWidth / 2, innerHeight / 2];
+        uMouse = [0, 0];
     });
     realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
         isFlying = params.isFlying;
+        uMouseScreen[0] = uLastMouseScreen[0];
+        uMouseScreen[1] = uLastMouseScreen[1];
+        uMouse[0] = uLastMouse[0];
+        uMouse[1] = uLastMouse[1];
     });
-
-    let uMouse = [0, 0];
-    let uMouseScreen = [0, 0];
-    let vWorld = new THREE.Vector3();
-    window.addEventListener("mousemove", (e) => {
-        if (isFlying) {
-            uMouseScreen[0] = innerWidth / 2;
-            uMouseScreen[1] = innerHeight / 2;
-            uMouse[0] = 0;
-            uMouse[1] = 0;
-        } else {
-            uMouseScreen[0] = e.clientX;
-            uMouseScreen[1] = e.clientY;
-            uMouse[0] = (e.clientX / innerWidth) * 2 - 1;
-            uMouse[1] = -(e.clientY / innerHeight) * 2 + 1;
-        }
-    })
 
     // lil GUI settings
     {
