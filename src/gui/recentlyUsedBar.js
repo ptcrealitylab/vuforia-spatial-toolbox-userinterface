@@ -362,8 +362,28 @@ class RecentlyUsedBar {
         }
     }
 
+    // we hide the ru-canvas in the AR app, to fix a very strange blend-mode bug noticed on iOS 17.4, iPhone 15 Pro Max
+    fixDeviceSpecificBlendModeBug() {
+        if (realityEditor.device.environment.isWithinToolboxApp()) {
+            if (!this.canvas.classList.contains('hidden')) {
+                this.canvas.classList.add('hidden');
+            }
+            return true;
+        }
+        if (this.canvas.classList.contains('hidden')) {
+            this.canvas.classList.remove('hidden');
+        }
+        return false;
+    }
+
     renderCanvas() {
         try {
+            if (this.fixDeviceSpecificBlendModeBug()) {
+                // don't render if the canvas is hidden - this will cancel the requestAnimationFrame loop
+                // once it's been detected once, which should be ok.
+                return;
+            }
+
             if (this.canvasHasContent) {
                 this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             }
