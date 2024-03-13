@@ -17,6 +17,18 @@ import Camera from "./scene/Camera.js";
 
 (function(exports) {
 
+    /**
+     * this layer renders the grid first
+     */
+    const RENDER_ORDER_SCAN = -2;
+
+    /**
+     * this will render the scanned scene second
+     */
+    const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
+
+    exports.RENDER_ORDER_DEPTH_REPLACEMENT = RENDER_ORDER_DEPTH_REPLACEMENT;
+
     var scene, renderer;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
@@ -564,6 +576,9 @@ import Camera from "./scene/Camera.js";
                 gltf.scene.rotation.set(originRotation.x, originRotation.y, originRotation.z);
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
+
+            wireMesh.renderOrder = RENDER_ORDER_SCAN;
+            gltf.scene.renderOrder = RENDER_ORDER_SCAN;
 
             threejsContainer.add( wireMesh );
             setTimeout(() => {

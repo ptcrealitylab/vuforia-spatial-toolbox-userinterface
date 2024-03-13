@@ -1675,29 +1675,21 @@ Logic Interface CSS
 
 .statusBar {
     position: absolute;
-    left: 80px;
-    top: 0;
-    width: calc(100vw - 220px);
-    height: 30px;
-    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 130px;
+    width: 100%;
+    margin: auto;
     font-family: "Open Sans", sans-serif;
-    background-color: rgba(0,0,0,0.7);
-    border-bottom-right-radius: 10px;
-    border-bottom-left-radius: 10px;
     text-align: center;
     line-height: 30px;
     animation: dropIn 300ms ease-out;
-    transition: height 300ms ease-out;
-}
-
-.statusBarPortrait {
-    left: 40px;
-    width: calc(100vw - 100px); /* centers, including padding */
 }
 
 @keyframes dropIn {
-    0% { top: -40px }
-    100% { top: 0 }
+    0% { opacity: 0 }
+    100% { opacity: 1 }
 }
 
 .statusBarHidden {
@@ -1706,8 +1698,14 @@ Logic Interface CSS
 }
 
 .statusBarText {
-    padding: 10px;
+    padding: 10px 16px;
     font-size: 14px;
+    color: white;
+    background-color: rgba(0,0,0,0.7);
+    margin: auto;
+    width: max-content;
+    border-radius: 10px;
+    word-wrap: normal;
 }
 
 .statusTextLong {
@@ -2315,3 +2313,10 @@ Logic Interface CSS
     filter: brightness(0.8);
     -webkit-filter: brightness(0.8);
 }
+
+/* smaller screens: mobile phones and portrait tablets */
+@media only screen and (max-width: 768px) {
+    .statusBarText {
+        max-width: 80%;
+    }
+} 
