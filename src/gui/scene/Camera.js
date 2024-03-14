@@ -98,7 +98,24 @@ class Camera {
      * @returns {THREE.Vector3}
      */
     getWorldDirection(cameraDirection) {
-        this.#camera.getWorldDirection(cameraDirection);
+        return this.#camera.getWorldDirection(cameraDirection);
+    }
+
+    /**
+     * 
+     * @param {THREE.Vector3} cameraPosition 
+     * @returns {THREE.Vector3}
+     */
+    getWorldPosition(cameraPosition) {
+        return this.#camera.getWorldPosition(cameraPosition);
+    }
+
+    getNear() {
+        return this.#camera.near;
+    }
+
+    getFar() {
+        return this.#camera.far;
     }
 
     /**

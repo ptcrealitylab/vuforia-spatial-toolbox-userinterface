@@ -436,7 +436,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             } else {
                 // when there is area target mesh at screen center
                 let worldCamPoint = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.threejsScene.getInternals().mainCamera.getWorldPosition(worldCamPoint);
                 realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
             }
         }
@@ -494,7 +494,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             } else {
                 // when there is area target mesh at screen center
                 let worldCamPoint = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.threejsScene.getInternals().mainCamera.getWorldPosition(worldCamPoint);
                 realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
             }
         }
@@ -956,7 +956,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             worldIntersectPoint.distance = 1000;
 
             let camPos = new THREE.Vector3();
-            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            realityEditor.gui.threejsScene.getInternals().mainCamera.getWorldPosition(camPos);
             let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
@@ -991,7 +991,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             worldIntersectPoint.distance = 1000;
 
             let camPos = new THREE.Vector3();
-            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            realityEditor.gui.threejsScene.getInternals().mainCamera.getWorldPosition(camPos);
             let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);

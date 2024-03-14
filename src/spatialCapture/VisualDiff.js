@@ -112,7 +112,7 @@ export class VisualDiff {
             realityEditor.gui.threejsScene.addToScene(cubeCamera);
             cubeCamera.position.set(-400, 250, -1000);
 
-            const camera = realityEditor.gui.threejsScene.getInternals().camera;
+            const camera = realityEditor.gui.threejsScene.getInternals().mainCamera;
 
             let matDiff = new THREE.ShaderMaterial({
                 uniforms: {
@@ -120,8 +120,8 @@ export class VisualDiff {
                     mapBaseDepth: {value: this.rtBase.depthTexture},
                     mapCamera: {value: this.rtCamera.texture},
                     mapCameraDepth: {value: this.rtCamera.depthTexture},
-                    cameraNear: {value: camera.near},
-                    cameraFar: {value: camera.far},
+                    cameraNear: {value: camera.getNear()},
+                    cameraFar: {value: camera.getFar()},
                 },
                 vertexShader,
                 fragmentShader: fragmentShaderDepth,
@@ -144,7 +144,7 @@ export class VisualDiff {
             this.init();
         }
 
-        const camera = realityEditor.gui.threejsScene.getInternals().camera;
+        const camera = realityEditor.gui.threejsScene.getInternals().mainCamera;
 
         let matDiff = material.clone();
         matDiff.fragmentShader = shaderMode === ShaderMode.DIFF ?
@@ -154,8 +154,8 @@ export class VisualDiff {
         matDiff.uniforms.mapBaseDepth =  {value: this.rtBase.depthTexture};
         matDiff.uniforms.mapCamera = {value: this.rtCamera.texture};
         matDiff.uniforms.mapCameraDepth =  {value: this.rtCamera.depthTexture};
-        matDiff.uniforms.cameraNear = {value: camera.near};
-        matDiff.uniforms.cameraFar = {value: camera.far};
+        matDiff.uniforms.cameraNear = {value: camera.getNear()};
+        matDiff.uniforms.cameraFar = {value: camera.getFar()};
         return matDiff;
     }
 
@@ -179,7 +179,8 @@ export class VisualDiff {
         // Set standard material to draw normally for visual difference
         mesh.material = matBase;
 
-        let {scene, camera, renderer} = realityEditor.gui.threejsScene.getInternals();
+        let {scene, mainCamera, renderer} = realityEditor.gui.threejsScene.getInternals();
+        let camera = mainCamera.getInternalObject();
 
         let originalCameraMatrix = camera.matrix.clone();
         realityEditor.sceneGraph.setCameraPosition(sceneNodeMatrix.elements);

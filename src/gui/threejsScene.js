@@ -93,7 +93,6 @@ import Camera from "./scene/Camera.js";
             rendererWidth = width;
             rendererHeight = height;
             aspectRatio = rendererWidth/rendererHeight;
-            mainCamera.setAspectRatio(aspectRatio);
         });
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
