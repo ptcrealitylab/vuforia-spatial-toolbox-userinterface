@@ -42,6 +42,11 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         onGltfDownloadProgress: [],
         onGltfLoaded: [],
     }
+    // values for the 'renderMode' property of objects
+    const RENDER_MODES = Object.freeze({
+        mesh: 'mesh',
+        ai: 'ai'
+    });
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -1264,10 +1269,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
-            worldObject.renderMode = 'ai';
+            worldObject.renderMode = RENDER_MODES.ai;
             if (!broadcastToOthers) return;
-            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
-                console.log('successfully sent renderMode to other clients via the server', response);
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(_response => {
+                // console.log('successfully sent renderMode to other clients via the server', response);
             }).catch(err => {
                 console.warn('error in postObjectRenderMode', err);
             });
@@ -1283,9 +1288,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
-            worldObject.renderMode = 'mesh';
-            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(response => {
-                console.log('successfully sent renderMode to other clients via the server', response);
+            worldObject.renderMode = RENDER_MODES.mesh;
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(_response => {
+                // console.log('successfully sent renderMode to other clients via the server', response);
             }).catch(err => {
                 console.warn('error in postObjectRenderMode', err);
             });
@@ -1330,4 +1335,5 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     }
     exports.enableExternalSceneRendering = enableExternalSceneRendering;
     exports.disableExternalSceneRendering = disableExternalSceneRendering;
+    exports.RENDER_MODES = RENDER_MODES;
 })(realityEditor.gui.threejsScene);

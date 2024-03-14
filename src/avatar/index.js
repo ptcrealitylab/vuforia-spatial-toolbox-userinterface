@@ -553,14 +553,18 @@ createNameSpace("realityEditor.avatar");
     }
 
     function writeLockOnMode(avatarId, targetAvatarId) {
-        let object = realityEditor.getObject(avatarId);
-        if (!object) { return; }
-        connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
-        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
+        try {
+            let object = realityEditor.getObject(avatarId);
+            if (!object) { return; }
+            connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
-        let info = utils.getAvatarNodeInfo(object);
-        if (info) {
-            network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
+            let info = utils.getAvatarNodeInfo(object);
+            if (info) {
+                network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
+            }
+        } catch (e) {
+            console.warn('error writing lockOnMode to avatar', e);
         }
     }
 
