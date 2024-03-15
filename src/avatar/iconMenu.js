@@ -1,8 +1,9 @@
 createNameSpace("realityEditor.avatar.iconMenu");
 
 /**
- * @fileOverview realityEditor.avatar.draw
- * Contains a variety of helper functions for avatar/index.js to render all visuals related to avatars
+ * @fileOverview realityEditor.avatar.iconMenu
+ * Renders the interactable UI component with the list of avatars connected to the scene
+ * Show their initials, and clicking on them allows you to rename yourself or follow other users' views
  */
 
 (function(exports) {
@@ -21,8 +22,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
 
     function initService() {
         registerAvatarIconClickEvent((params) => {
-            let {avatarObjectId, avatarProfile, userInitials, isMyIcon, pointerEvent, buttonText } = params;
-            if (!(isMyIcon && buttonText === realityEditor.avatar.iconMenu.MENU_ITEMS.EditName)) return;
+            if (!(params.isMyIcon && params.buttonText === realityEditor.avatar.iconMenu.MENU_ITEMS.EditName)) return;
 
             // show a modal that lets you type in a name
             realityEditor.gui.modal.openInputModal({
@@ -77,21 +77,17 @@ createNameSpace("realityEditor.avatar.iconMenu");
             }
 
             let usersFollowingMe = realityEditor.avatar.utils.getUsersFollowingUser(objectKey, connectedAvatars);
-            let userIsFollowing = info.lockOnMode;
-
             let isMyIcon = objectKey.includes(realityEditor.avatar.utils.getAvatarName());
             let iconDiv = createAvatarIcon(iconContainer, objectKey, initials, index, isMyIcon, isEllipsis);
 
-            // TODO: show who you are following, and who is following you
-            // if (isMyIcon) {
+            // TODO: show more details on who you are following, and who is following you
             if (usersFollowingMe.length > 0) {
-                // add a notification bubble showing the number of users following me
+                // currently just adds a notification bubble showing the number of users following me
                 let bubble = document.createElement('div');
                 bubble.classList.add('avatarListIconFollowingBubble');
                 bubble.textContent = `${usersFollowingMe.length}`;
                 iconDiv.appendChild(bubble);
             }
-            // }
 
             // show full name when hovering over the icon
             let tooltipText = info.name;
@@ -143,7 +139,6 @@ createNameSpace("realityEditor.avatar.iconMenu");
 
     function showDropdown(iconDropdown) {
         Array.from(document.querySelectorAll('.avatarListIconDropdown')).forEach(dropdown => {
-            // dropdown.classList.add('hiddenDropdown'); // ok to add to the clicked one too, because toggle happens next
             hideDropdown(dropdown);
         });
         iconDropdown.classList.remove('hiddenDropdown');
@@ -194,10 +189,6 @@ createNameSpace("realityEditor.avatar.iconMenu");
                 });
             });
             hideDropdown(parentDiv);
-            // // hide menu if showing
-            // if (!parentDiv.classList.contains('hiddenDropdown')) {
-            //     parentDiv.classList.add('hiddenDropdown');
-            // }
         });
     }
 
@@ -283,7 +274,6 @@ createNameSpace("realityEditor.avatar.iconMenu");
         if (!container) {
             container = document.createElement('div');
             container.id = 'avatarListHoverName';
-            // container.classList.add('avatarListTooltipVerticalAdjustment'); // lets us position differently in portrait app
         }
         element.parentElement.appendChild(container);
 
@@ -302,19 +292,12 @@ createNameSpace("realityEditor.avatar.iconMenu");
             container.appendChild(tooltipArrow);
         }
 
-        // const clickActionText = isMyAvatar ? 'click to edit your name' : 'click to follow';
         const clickActionText = 'click for options';
         const nameText = isMyAvatar ? (name ? `${name} (You)` : 'You') : (name || 'Anonymous');
         nameDiv.innerText = `${nameText} (${clickActionText})`;
         let clickActionTextWidth = 8 * clickActionText.length;
         let width = Math.max(120, ((nameDiv.innerText.length - clickActionText.length)) * 12 + clickActionTextWidth);
         nameDiv.style.width = width + 'px';
-        // container.style.width = width + 'px;'
-
-        // center the tooltip on the icon
-        // let iconRelativeLeft = element.getBoundingClientRect().left - element.parentElement.getBoundingClientRect().left;
-        // let iconHalfWidth = element.getBoundingClientRect().width / 2;
-        // container.style.left = (iconRelativeLeft + iconHalfWidth) + 'px';
         container.style.display = '';
     }
 
