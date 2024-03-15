@@ -14,6 +14,18 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
 (function(exports) {
 
+    /**
+     * this layer renders the grid first
+     */
+    const RENDER_ORDER_SCAN = -2;
+
+    /**
+     * this will render the scanned scene second
+     */
+    const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
+
+    exports.RENDER_ORDER_DEPTH_REPLACEMENT = RENDER_ORDER_DEPTH_REPLACEMENT;
+
     var camera, scene, renderer;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
@@ -31,7 +43,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
@@ -309,23 +320,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.clear();
-            // render the ground plane visualizer first
-            camera.layers.set(2);
-            renderer.render(scene, camera);
-            renderer.clearDepth();
-            if (hasGltfScene) {
-                // Set rendered layer to 1: only the background, i.e. the
-                // static gltf mesh
-                camera.layers.set(1);
-                renderer.render(scene, camera);
-                // Leaves only the color from the render, discarding depth and
-                // stencil
-                renderer.clear(false, true, true);
-            }
-            // Set layer to 0: everything but the background
-            camera.layers.set(0);
-            camera.layers.enable(10);
             renderer.render(scene, camera);
         }
     }
@@ -344,7 +338,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
-        const layer = parameters.layer;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -371,9 +364,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             } else {
                 threejsContainerObj.add(obj);
             }
-        }
-        if (layer) {
-            obj.layers.set(layer);
         }
     }
 
@@ -594,7 +584,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             // add in the navmesh
             // navmesh.scale.set(1000, 1000, 1000);
             // navmesh.position.set(gltfBoundingBox.min.x * 1000, 0, gltfBoundingBox.min.z * 1000);
-            // navmesh.layers.set(1);
             // navmesh.visible = false;
             // threejsContainerObj.add(navmesh);
 
@@ -610,14 +599,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
-            wireMesh.layers.set(1);
-            gltf.scene.layers.set(1);
-            gltf.scene.traverse(child => {
-                if (child.layers) {
-                    child.layers.set(1);
-                }
-            });
-            hasGltfScene = true;
+            wireMesh.renderOrder = RENDER_ORDER_SCAN;
+            gltf.scene.renderOrder = RENDER_ORDER_SCAN;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
