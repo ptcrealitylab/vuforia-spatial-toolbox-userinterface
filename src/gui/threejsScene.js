@@ -7,7 +7,7 @@ import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
+
 import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
@@ -1137,10 +1137,6 @@ import Camera from "./scene/Camera.js";
             transformControls.addEventListener('dragging-changed', onDraggingChanged)
         }
         return transformControls;
-    }
-
-    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
     }
 
     exports.getScreenXY = (meshPosition) => mainCamera.getScreenXY(meshPosition);
