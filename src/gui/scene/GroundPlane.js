@@ -27,7 +27,7 @@ class GroundPlane {
         this.#plane.remove(this.#plane);
         areaTargetMesh.add(this.#plane);
         let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
-        let floorOffset = (areaTargetNavmesh.floorOffset) / areaTargetMeshScale;
+        let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
         this.#plane.position.set(0, floorOffset, 0);
         this.#plane.updateMatrix();
         this.#plane.updateWorldMatrix(true);
