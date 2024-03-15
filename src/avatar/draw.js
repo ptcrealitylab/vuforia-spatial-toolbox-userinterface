@@ -450,7 +450,7 @@ createNameSpace("realityEditor.avatar.draw");
         let ratio = 1;
         if (endWorldPosition) {
             let camWorldPos = new THREE.Vector3();
-            realityEditor.gui.threejsScene.getInternals().mainCamera.getWorldPosition(camWorldPos);
+            realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(camWorldPos);
             let linkStartZ = camWorldPos;
             let linkEndZ = endWorldPosition;
             let linkDistance = linkStartZ.sub(linkEndZ).length();

@@ -4,6 +4,9 @@ import * as THREE from "../../../thirdPartyCode/three/three.module.js"
  * @typedef {number} Milimeters
  */
 
+/**
+ * Ground plane occlusion object, evrything placed on the ground should be attached to this
+ */
 class GroundPlane {
     /** @type {THREE.Mesh} */
     #plane;

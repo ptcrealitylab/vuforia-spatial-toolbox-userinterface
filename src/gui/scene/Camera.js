@@ -4,6 +4,9 @@ import * as THREE from "../../../thirdPartyCode/three/three.module.js"
  * @typedef {number[]} MatrixAsArray - a 4x4 matrix representated as an column-mayor array of 16 numbers 
  */
 
+/**
+ * Basic camera class
+ */
 class Camera {
     #camera;
 

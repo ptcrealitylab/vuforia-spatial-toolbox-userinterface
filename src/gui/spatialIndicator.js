@@ -318,7 +318,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
             colorLighter: new THREE.Color(colorLighter)
         };
         
-        camera = realityEditor.gui.threejsScene.getInternals().mainCamera;
+        camera = realityEditor.gui.threejsScene.getInternals().getCamera();
         
         update();
 

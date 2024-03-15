@@ -112,7 +112,7 @@ export class VisualDiff {
             realityEditor.gui.threejsScene.addToScene(cubeCamera);
             cubeCamera.position.set(-400, 250, -1000);
 
-            const camera = realityEditor.gui.threejsScene.getInternals().mainCamera;
+            const camera = realityEditor.gui.threejsScene.getInternals().getCamera();
 
             let matDiff = new THREE.ShaderMaterial({
                 uniforms: {
@@ -144,7 +144,7 @@ export class VisualDiff {
             this.init();
         }
 
-        const camera = realityEditor.gui.threejsScene.getInternals().mainCamera;
+        const camera = realityEditor.gui.threejsScene.getInternals().getCamera();
 
         let matDiff = material.clone();
         matDiff.fragmentShader = shaderMode === ShaderMode.DIFF ?
@@ -179,8 +179,10 @@ export class VisualDiff {
         // Set standard material to draw normally for visual difference
         mesh.material = matBase;
 
-        let {scene, mainCamera, renderer} = realityEditor.gui.threejsScene.getInternals();
-        let camera = mainCamera.getInternalObject();
+        let mainRenderer = realityEditor.gui.threejsScene.getInternals();
+        let camera = mainRenderer.getCamera().getInternalObject();
+        let renderer = mainRenderer.getInternalRenderer();
+        let scene = mainRenderer.getInternalScene();
 
         let originalCameraMatrix = camera.matrix.clone();
         realityEditor.sceneGraph.setCameraPosition(sceneNodeMatrix.elements);
