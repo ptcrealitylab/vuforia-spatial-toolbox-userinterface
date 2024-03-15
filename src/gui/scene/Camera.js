@@ -1,7 +1,8 @@
 import * as THREE from "../../../thirdPartyCode/three/three.module.js"
+import {setMatrixFromArray} from "./utils.js"
 
 /**
- * @typedef {number[]} MatrixAsArray - a 4x4 matrix representated as an column-mayor array of 16 numbers 
+ * @typedef {import("./utils.js").MatrixAsArray} MatrixAsArray  
  */
 
 /**
@@ -28,7 +29,7 @@ class Camera {
      * @param {MatrixAsArray} matrix 
      */
     setProjectionMatrixFromArray(matrix) {
-        Camera.setMatrixFromArray(this.#camera.projectionMatrix, matrix);
+        setMatrixFromArray(this.#camera.projectionMatrix, matrix);
         this.#camera.projectionMatrixInverse.copy(this.#camera.projectionMatrix).invert();
     }
 
@@ -37,7 +38,7 @@ class Camera {
      * @param {MatrixAsArray} matrix 
      */
     setCameraMatrixFromArray(matrix) {
-        Camera.setMatrixFromArray(this.#camera.matrix, matrix);
+        setMatrixFromArray(this.#camera.matrix, matrix);
         this.#camera.updateMatrixWorld(true);
     }
 
@@ -127,19 +128,6 @@ class Camera {
      */
     getInternalObject() {
         return this.#camera;
-    }
-
-    /**
-      * small helper function for setting three.js matrices from the custom format we use
-      * @param {THREE.Matrix} matrix
-      * @param {MatrixAsArray} array
-      */
-    static setMatrixFromArray(matrix, array) {
-        matrix.set( array[0], array[4], array[8], array[12],
-            array[1], array[5], array[9], array[13],
-            array[2], array[6], array[10], array[14],
-            array[3], array[7], array[11], array[15]
-        );
     }
 }
 

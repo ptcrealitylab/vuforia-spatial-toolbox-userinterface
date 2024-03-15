@@ -13,6 +13,7 @@ import GroundPlane from "./scene/GroundPlane.js";
 import AnchoredGroup from "./scene/AnchoredGroup.js";
 import Camera from "./scene/Camera.js";
 import Renderer from "./scene/Renderer.js";
+import {setMatrixFromArray} from "./scene/utils.js";
 
 (function(exports) {
 
@@ -603,15 +604,6 @@ import Renderer from "./scene/Renderer.js";
         }
     }
 
-    // small helper function for setting three.js matrices from the custom format we use
-    function setMatrixFromArray(matrix, array) {
-        matrix.set( array[0], array[4], array[8], array[12],
-            array[1], array[5], array[9], array[13],
-            array[2], array[6], array[10], array[14],
-            array[3], array[7], array[11], array[15]
-        );
-    }
-
     /**
      * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
      * @param {number} clientX - in screen pixels
@@ -1106,7 +1098,6 @@ import Renderer from "./scene/Renderer.js";
     exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
     exports.isGroundPlanePositionSet = () => { return isGroundPlanePositionSet; };
-    exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;
     exports.getToolSurfaceShadowMatrix = getToolSurfaceShadowMatrix;
@@ -1117,6 +1108,7 @@ import Renderer from "./scene/Renderer.js";
     exports.changeMeasureMapType = changeMeasureMapType;
     exports.highlightWalkableArea = highlightWalkableArea;
     exports.updateGradientMapThreshold = updateGradientMapThreshold;
+    exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
