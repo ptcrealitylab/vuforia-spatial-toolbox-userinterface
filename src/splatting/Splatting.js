@@ -976,6 +976,9 @@ window.addEventListener("keydown", e => {
 });
 
 function showSplatRenderer(filePath, broadcastToOthers = false) {
+    if (realityEditor.device.environment.isWithinToolboxApp()) {
+        return; // for now, disable the gaussian splat renderer within our AR app
+    }
     if (!gsInitialized) {
         gsInitialized = true;
         gsContainer = document.querySelector('#gsContainer');
@@ -991,6 +994,9 @@ function showSplatRenderer(filePath, broadcastToOthers = false) {
 }
 
 function hideSplatRenderer() {
+    if (realityEditor.device.environment.isWithinToolboxApp()) {
+        return; // for now, disable the gaussian splat renderer within our AR app
+    }
     if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
