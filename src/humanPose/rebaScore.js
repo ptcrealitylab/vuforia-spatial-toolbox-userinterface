@@ -221,11 +221,11 @@ function legsReba(rebaData) {
             }
         }
         
-        // Check for leg raising
-        const footHeightDifference = rebaData.joints[JOINTS.LEFT_ANKLE].y - rebaData.joints[JOINTS.RIGHT_ANKLE].y;
+        // Check for left leg bearing the body weight
+        const footHeightDifference = rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y;
         // console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
         if (rebaData.jointValidities[JOINTS.RIGHT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            leftLegScore++; // +1 for left leg raised
+            leftLegScore++; 
         }
         
         leftLegScore = clamp(leftLegScore, 1, 4);
@@ -254,10 +254,10 @@ function legsReba(rebaData) {
             }
         }
 
-        // Check for leg raising    
-        const footHeightDifference = rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y;
+        // Check for right leg bearing the body weight   
+        const footHeightDifference = rebaData.joints[JOINTS.LEFT_ANKLE].y - rebaData.joints[JOINTS.RIGHT_ANKLE].y;
         if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            rightLegScore++; // +1 for left leg raised    
+            rightLegScore++;   
         }
 
         rightLegScore = clamp(rightLegScore, 1, 4);
