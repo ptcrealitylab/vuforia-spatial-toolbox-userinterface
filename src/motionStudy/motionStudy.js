@@ -279,14 +279,6 @@ export class MotionStudy {
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         this.humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
-        /*
-        if (this.videoPlayer) {
-            // Convert from absolute time (ms) to relative time (s)
-            this.videoPlayer.currentTime = (time - this.videoStartTime) / 1000;
-            this.videoPlayer.colorVideo.muted = true;
-            this.videoPlayer.play();
-        }
-        */
     }
 
     /**
@@ -448,10 +440,6 @@ export class MotionStudy {
         console.error('setAllClonesVisible unimplemented', allClonesVisible);
     }
 
-    fromVideo(time) {
-        this.setCursorTime(time * 1000 + this.videoStartTime);
-    }
-
     hydrateMotionStudy(data) {
         if (this.loadingHistory) {
             setTimeout(() => {
@@ -461,14 +449,11 @@ export class MotionStudy {
         }
 
         if (!this.videoPlayer && data.videoUrls) {
-            this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('uh id', data.videoUrls);
+            this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
             let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
             if (matches && matches[1]) {
                 this.videoStartTime = parseFloat(matches[1]);
             }
-
-            window.videoPlayer = this.videoPlayer;
-            window.motionStudy = this;
         }
 
         if (data.valueAddWasteTime) {

@@ -223,7 +223,7 @@ class VideoPlayer extends Followable {
         this.depthCanvas.style.backgroundColor = '#FFFFFF';
         this.depthCanvas.style.display = 'none';
         this.depthCanvas.imageData = this.depthCanvas.getContext('2d').createImageData(256, 144);
-        
+
         this.colorVideo = document.createElement('video');
         this.colorVideo.width = 256;
         this.colorVideo.loop = true;
@@ -355,6 +355,14 @@ class VideoPlayer extends Followable {
         this.colorVideo.pause();
     }
 
+    show() {
+        this.pointCloud.visible = true;
+    }
+
+    hide() {
+        this.pointCloud.visible = false;
+    }
+
     render() {
         if (!this.colorVideo.loadSuccessful || !this.rvl) {
             return;
@@ -369,9 +377,6 @@ class VideoPlayer extends Followable {
 
         const rvlPayload = this.decoder.decode(rvlFrame.payload);
         this.applyMatricesMessage(rvlPayload);
-        if (window.motionStudy) {
-            window.motionStudy.fromVideo(this.lastRenderTime);
-        }
 
         if (!this.pointCloud) {
             this.loadPointCloud();
