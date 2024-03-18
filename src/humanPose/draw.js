@@ -9,7 +9,6 @@ import {JOINTS,JOINT_CONNECTIONS, JOINT_TO_INDEX} from './constants.js';
 import {Pose} from "./Pose.js";
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 
-
 /**
  * @typedef {string} AnimationMode
  */

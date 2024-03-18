@@ -11,28 +11,11 @@ import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
+import {AnimationMode} from './draw.js';
+import {Animation} from './Animation.js';
 
 const POSE_OPACITY_BASE = 1;
 const POSE_OPACITY_BACKGROUND = 0.2;
-
-/**
- * @typedef {string} AnimationMode
- */
-
-/**
- * Enum for the different clone rendering modes for the HumanPoseAnalyzer:
- * cursor: The single historical pose at the cursor time is visible,
- * region: A single historical pose within the highlight region is visible, it animates through the movements it made,
- * regionAll: Every historical pose within the highlight region is visible,
- * all: Every historical pose is visible
- * @type {{cursor: AnimationMode, region: AnimationMode, regionAll: AnimationMode, all: AnimationMode}}
- */
-export const AnimationMode = {
-    cursor: 'cursor',
-    region: 'region',
-    regionAll: 'regionAll',
-    all: 'all',
-};
 
 export class HumanPoseAnalyzer {
     /**
@@ -41,6 +24,8 @@ export class HumanPoseAnalyzer {
      */
     constructor(motionStudy, parent) {
         this.motionStudy = motionStudy;
+        this.animation = null;
+
         this.setupContainers(parent);
 
         this.rebaLens = new RebaLens();
@@ -94,13 +79,8 @@ export class HumanPoseAnalyzer {
         this.recordingClones = realityEditor.device.environment.isDesktop();
         this.lastDisplayedClones = [];
 
-        this.animationPlaying = true;
         this.prevAnimationState = null;
-        this.animationStart = -1;
-        this.animationEnd = -1;
-        this.animationPosition = -1;
         this.animationMode = AnimationMode.region;
-        this.lastAnimationTime = Date.now();
 
         const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
             MAX_POSE_INSTANCES :
@@ -670,8 +650,10 @@ export class HumanPoseAnalyzer {
      * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
-        // Reset animationPlaying so that we default to always playing
-        this.animationPlaying = true;
+        // Reset animation's playing so that we default to always playing
+        if (this.animation) {
+            this.animation.playing = true;
+        }
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
             if (!fromSpaghetti) {
@@ -682,6 +664,7 @@ export class HumanPoseAnalyzer {
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;
+            this.clearAnimation();
             return;
         }
         if (this.animationMode !== AnimationMode.region &&
@@ -911,14 +894,14 @@ export class HumanPoseAnalyzer {
             return;
         }
         // May have not set an animation state
-        if (this.animationStart < 0 || this.animationEnd < 0) {
+        if (!this.animation) {
             return;
         }
 
         this.prevAnimationState = {
             animationMode: this.animationMode,
-            animationStart: this.animationStart,
-            animationEnd: this.animationEnd,
+            animationStart: this.animation.startTime,
+            animationEnd: this.animation.endTime,
         };
     }
 
@@ -978,7 +961,9 @@ export class HumanPoseAnalyzer {
      * @param {number} end - end time of animation in ms
      */
     setAnimationRange(start, end) {
-        if (this.animationStart === start && this.animationEnd === end) {
+        if (this.animation &&
+            this.animation.startTime === start &&
+            this.animation.endTime === end) {
             return;
         }
 
@@ -1013,10 +998,13 @@ export class HumanPoseAnalyzer {
             break;
         }
 
-        this.animationStart = start;
-        this.animationEnd = end;
-        if (this.animationPosition < start || this.animationPosition > end) {
-            this.animationPosition = start;
+        let cursorTime = -1;
+        if (this.animation) {
+            cursorTime = this.animation.cursorTime;
+        }
+        this.animation = new Animation(this, this.motionStudy, start, end);
+        if (cursorTime > start && cursorTime < end) {
+            this.animation.cursorTime = cursorTime;
         }
     }
 
@@ -1024,38 +1012,22 @@ export class HumanPoseAnalyzer {
      * Plays the current frame of the animation
      */
     updateAnimation() {
-        const now = Date.now();
-        const dt = now - this.lastAnimationTime;
-        this.lastAnimationTime = now;
-        if (this.animationStart < 0 || this.animationEnd < 0) {
+        if (!this.animation || this.animation.startTime < 0 || this.animation.endTime < 0) {
             this.clearAnimation();
             return;
         }
-
-        if (this.animationPlaying) {
-            this.animationPosition += dt;
-        }
-        let progress = this.animationPosition - this.animationStart;
-        let animationDuration = this.animationEnd - this.animationStart;
-        let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
-        this.animationPosition = this.animationStart + progressClamped;
-
-        // As the active HPA we control the shared cursor
-        if (this.active) {
-            this.motionStudy.setCursorTime(this.animationPosition, true);
-        } else {
-            // Otherwise display the clone without interfering
-            this.displayClonesByTimestamp(this.animationPosition);
-        }
+        const now = Date.now();
+        this.animation.update(now);
     }
 
     /**
      * Resets the animation data and stops playback
      */
     clearAnimation() {
-        this.animationStart = -1;
-        this.animationEnd = -1;
-        this.animationPosition = -1;
+        if (this.animation) {
+            this.animation.stopVideoPlayback();
+            this.animation = null;
+        }
         this.hideLastDisplayedClones();
     }
 
