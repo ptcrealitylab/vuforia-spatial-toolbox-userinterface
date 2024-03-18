@@ -203,7 +203,7 @@ createNameSpace("realityEditor.worldObjects");
         // in the AR app, wait until the area target has been detected to "localize" within the world
         // (setOrigin will be updated to the target position when target is added/downloaded/localized)
         if (!realityEditor.device.environment.isWithinToolboxApp()) {
-            // but in the VR mode, always initialize at identity origin.
+            // but in the VR mode, always initialize at identity origin, so that an empty world counts as "localized"
             realityEditor.worldObjects.setOrigin(object.objectId, realityEditor.gui.ar.utilities.newIdentityMatrix());
         }
 
@@ -388,7 +388,6 @@ createNameSpace("realityEditor.worldObjects");
                 setTimeout(function() {
                     realityEditor.app.tap();
                 }, 200);
-                // TODO: add a temporary message log that displays this message for a moment
             }
             
             worldCorrections[objectKey] = originMatrix;

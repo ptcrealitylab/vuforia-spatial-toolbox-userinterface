@@ -11,6 +11,7 @@ let USE_MANUAL_ALIGNMENT_FOR_ALL = false;
 let USE_MANUAL_ALIGNMENT_FOR_SPECIFIED = true;
 let HARDCODED_SPLAT_COUNTS_ALIGNMENTS = {};
 
+// NOTE: this is a somewhat-fragile method included to support manually aligning particular splats.
 // How to hard-code a splat's alignment:
 // 1. console.log the splatCount after adding a splat to toolbox
 // 2. add an entry to HARDCODED_SPLAT_COUNTS_ALIGNMENTS with the matrix that corresponds with that splat
@@ -975,7 +976,7 @@ window.addEventListener("keydown", e => {
     }
 });
 
-function showSplatRenderer(filePath, broadcastToOthers = false) {
+function showSplatRenderer(filePath, options = { broadcastToOthers: false }) {
     if (realityEditor.device.environment.isWithinToolboxApp()) {
         return; // for now, disable the gaussian splat renderer within our AR app
     }
@@ -990,10 +991,10 @@ function showSplatRenderer(filePath, broadcastToOthers = false) {
     gsContainer.classList.remove('hidden');
     gsActive = true;
     // tell the mainThreejsScene to hide the mesh model
-    realityEditor.gui.threejsScene.enableExternalSceneRendering(broadcastToOthers);
+    realityEditor.gui.threejsScene.enableExternalSceneRendering(options.broadcastToOthers);
 }
 
-function hideSplatRenderer() {
+function hideSplatRenderer(options = { broadcastToOthers: false }) {
     if (realityEditor.device.environment.isWithinToolboxApp()) {
         return; // for now, disable the gaussian splat renderer within our AR app
     }
@@ -1001,7 +1002,7 @@ function hideSplatRenderer() {
     gsContainer.classList.add('hidden');
     gsActive = false;
     // tell the mainThreejsScene to show the mesh model
-    realityEditor.gui.threejsScene.disableExternalSceneRendering();
+    realityEditor.gui.threejsScene.disableExternalSceneRendering(options.broadcastToOthers);
 }
 
 let callbacks = {

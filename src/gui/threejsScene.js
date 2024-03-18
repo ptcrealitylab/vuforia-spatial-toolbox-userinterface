@@ -36,8 +36,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let groundPlaneCollider;
-    let isGroundPlanePositionSet = false; // gets updated when occlusion object and navmesh have been processed
-    let isWorldMeshLoadedAndProcessed = false;
+    let isGroundPlanePositionSet = false; // gets updated when the ground plane collider is added
+    let isWorldMeshLoadedAndProcessed = false;  // gets updated when area target mesh and navmesh have been processed
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
@@ -49,6 +49,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
+    // other modules can subscribe to these events
     let callbacks = {
         onGltfDownloadProgress: [],
         onGltfLoaded: [],
@@ -505,6 +506,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
+                        // meshes scanned with ATC have additional untextured mesh(es) with this naming convention
+                        // the scan may visually look better if they are removed. textured meshes are named "texture_N"
                         if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
                             meshesToRemove.push(child);
                             return;
@@ -620,11 +623,13 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
               callback(gltf.scene, wireMesh);
             }
 
+            // in addition to triggering the callback provided by the caller of this function,
+            // also trigger callbacks for any other modules listening for gltf loaded events
             callbacks.onGltfLoaded.forEach((cb) => {
                 cb(pathToGltf);
             });
         }, (xhr) => {
-            // display download progress, useful if loading large gltf files on slow networks
+            // can be used to display download progress, useful if loading large gltf files on slow networks
             callbacks.onGltfDownloadProgress.forEach((cb) => {
                 cb(pathToGltf, xhr.loaded, xhr.total);
             });
@@ -1244,12 +1249,19 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     };
 
     /**
-     * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology
+     * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology.
+     * This should most likely only be called on non-AR clients.
+     * @param {boolean} broadcastToOthers - if true, posts the updated renderMode to the server to notify other clients
      */
     function enableExternalSceneRendering(broadcastToOthers) {
         let areaMesh = getObjectByName('areaTargetMesh');
-        if (areaMesh) areaMesh.visible = false;
+        // hide the mesh
+        if (areaMesh) {
+            areaMesh.visible = false;
+        }
+        // hide the ground plane holodeck visualizer
         realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        // update the renderMode of the world object and broadcast to other clients
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
             worldObject.renderMode = RENDER_MODES.ai;
@@ -1264,14 +1276,19 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
     /**
      * Restores mesh rendering when external rendering canvas is removed
+     * This should most likely only be called on non-AR clients.
+     * @param {boolean} broadcastToOthers - if true, posts the updated renderMode to the server to notify other clients
      */
-    function disableExternalSceneRendering() {
+    function disableExternalSceneRendering(broadcastToOthers) {
         let areaMesh = getObjectByName('areaTargetMesh');
-        if (areaMesh) areaMesh.visible = true;
+        if (areaMesh) {
+            areaMesh.visible = true;
+        }
         realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
             worldObject.renderMode = RENDER_MODES.mesh;
+            if (!broadcastToOthers) return;
             realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(_response => {
                 // console.log('successfully sent renderMode to other clients via the server', response);
             }).catch(err => {

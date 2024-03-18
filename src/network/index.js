@@ -242,6 +242,7 @@ realityEditor.network.addObjectDiscoveredCallback = function(callback) {
 };
 
 /**
+ * Lists of renderMode callback functions, organized by objectId
  * @type {Object.<string, Array.<function>>}
  */
 realityEditor.network.renderModeUpdateCallbacks = {};
@@ -658,6 +659,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
         origin.matrix = remote.matrix;
     }
 
+    // triggers any renderModeUpdateCallbacks if the object's renderMode has changed
     if (origin.renderMode !== remote.renderMode) {
         origin.renderMode = remote.renderMode;
 
