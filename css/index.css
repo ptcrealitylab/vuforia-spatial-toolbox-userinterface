@@ -1869,8 +1869,6 @@ Logic Interface CSS
     transform: translateX(-50%);
     top: 100%;
     margin-top: 20px;
-    /*width: 100px;*/
-    /*height: 30px;*/
     background-color: rgba(0,0,0,0.9);
     border-radius: 5px;
     &.hiddenDropdown {
@@ -1881,7 +1879,6 @@ Logic Interface CSS
 .avatarListIconDropdownItem {
     width: 160px;
     height: 30px;
-    /*border: 2px solid white;*/
     cursor: pointer;
     font-size: 16px;
     line-height: 16px;
