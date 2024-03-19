@@ -28,7 +28,7 @@ createNameSpace("realityEditor.avatar.utils");
         let id = Math.abs(this.hashCode(editorId));
         return `hsl(${(id % Math.PI) * 360 / Math.PI}, 100%, 50%)`;
     }
-    
+
     exports.getColorLighter = function(avatarObject) {
         let defaultColor = this.getColor(avatarObject);
         if (defaultColor) {
@@ -92,18 +92,26 @@ createNameSpace("realityEditor.avatar.utils");
         keys.sort(function(x,y){ return x.includes(first) ? -1 : y.includes(first) ? 1 : 0; });
         return keys;
     }
-    
+
+    /**
+     * Get the avatarIds of any avatar whose userProfile lists the specified avatarObjectId as their lockOnMode
+     * @param {string} avatarObjectId
+     * @param {Object.<string, UserProfile>} connectedAvatars
+     * @returns {string[]}
+     */
     exports.getUsersFollowingUser = function (avatarObjectId, connectedAvatars) {
         return Object.keys(connectedAvatars).filter(objectId => {
             return connectedAvatars[objectId].lockOnMode === avatarObjectId;
         });
     }
-    
+    /**
+     * The avatar object's node's publicData stores a userProfile value, which is an instance of this class
+     */
     class UserProfile {
         /**
-         * @param {string|null} name
-         * @param {string} providerId
-         * @param {string|null} lockOnMode
+         * @param {string|null} name - the username (in theory, first name + last name... or however they identify)
+         * @param {string} providerId - string id of the virtualizer (point cloud provider) if it's an AR client, '' if not
+         * @param {string|null} lockOnMode - the objectId of an avatar they are following, if they're lock on to someone's view
          */
         constructor(name, providerId, lockOnMode) {
             this.name = name; // username

@@ -310,10 +310,6 @@ createNameSpace("realityEditor.avatar");
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
         connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
-        // {
-        //     name: null,
-        //     providerId: '',
-        // };
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -399,7 +395,7 @@ createNameSpace("realityEditor.avatar");
             const userProfile = msgContent.publicData.userProfile;
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
-                connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null); // {};
+                connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null);
             }
 
             // Copy over any present keys
@@ -514,14 +510,18 @@ createNameSpace("realityEditor.avatar");
             cb(myAvatarObject);
         });
     }
-
-    // you can set this even before the avatar has been created
+    /**
+     * Sets my username – you can set this even before the avatar has been created
+     * @param {string} name
+     */
     function setMyUsername(name) {
         myUsername = name;
     }
-
-    // name is one property within the avatar node's userProfile public data
-    // avatar has to exist before calling this
+    /**
+     * Note: Avatar has to exist before calling this (call setMyUsername before it exists, or both for safety)
+     * Stores the avatar's name as one property within the avatar node's userProfile public data
+     * @param name
+     */
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
         connectedAvatarUserProfiles[myAvatarId].name = name;
@@ -533,49 +533,41 @@ createNameSpace("realityEditor.avatar");
             network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
         }
     }
-    
+    /**
+     * Stores who myAvatar is following in publicData.userProfile.lockOnMode, and sends that data to all other clients
+     * @param {string} objectId
+     */
     function writeMyLockOnMode(objectId) {
         if (!myAvatarObject) { return; }
         writeLockOnMode(myAvatarId, objectId);
-        // connectedAvatarUserProfiles[myAvatarId].lockOnMode = objectId;
-        // // draw.updateAvatarName(myAvatarId, name);
-        // // draw.renderAvatarIconList(connectedAvatarUserProfiles);
-        //
-        // let info = utils.getAvatarNodeInfo(myAvatarObject);
-        // if (info) {
-        //     network.sendUserProfile(info, connectedAvatarUserProfiles[myAvatarId]); // name, myProviderId);
-        // }
     }
-    
+    /**
+     * Sends a message to otherAvatarId telling them that they are now following myAvatarId (via lockOnMode in publicData)
+     * @param {string} otherAvatarId
+     */
     function writeLockOnToMe(otherAvatarId) {
         if (!myAvatarId) { return; }
         writeLockOnMode(otherAvatarId, myAvatarId);
     }
 
+    /**
+     * Helper function used by writeMyLockOnMode and writeLockOnToMe, to actually write the data and refresh the UI
+     * @param {string} avatarId - the "follower" - whose userProfile to modify
+     * @param {string} targetAvatarId - the "leader" - the avatar that will be stored in that userProfile
+     */
     function writeLockOnMode(avatarId, targetAvatarId) {
-        let object = realityEditor.getObject(avatarId);
-        if (!object) { return; }
-        connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
-        iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
-
-        let info = utils.getAvatarNodeInfo(object);
-        if (info) {
-            network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]); // name, myProviderId);
-        }
-    }
-
-    window.printKnownLockOnModes = () => {
-        console.log(`I am avatar ${myAvatarId}`);
-        realityEditor.forEachObject((object, objectKey) => {
-            if (!utils.isAvatarObject(object)) return;
+        try {
+            let object = realityEditor.getObject(avatarId);
+            if (!object) { return; }
+            connectedAvatarUserProfiles[avatarId].lockOnMode = targetAvatarId;
+            iconMenu.renderAvatarIconList(connectedAvatarUserProfiles); // refresh the UI
             let info = utils.getAvatarNodeInfo(object);
-            let node = realityEditor.getNode(info.objectKey, info.frameKey, info.nodeKey);
-            if (node.publicData.userProfile) {
-                console.log(`avatar ${objectKey} ${objectKey === myAvatarId ? ' (me)' : ''} is locked onto: ${node.publicData.userProfile.lockOnMode} ${node.publicData.userProfile.lockOnMode === myAvatarId ? '(me)' : ''}`);
-            } else {
-                console.log(`avatar ${objectKey} has no userProfile`);
+            if (info) {
+                network.sendUserProfile(info, connectedAvatarUserProfiles[avatarId]);
             }
-        });
+        } catch (e) {
+            console.warn('error writing lockOnMode to avatar', e);
+        }
     }
 
     // send touch intersect to other users via the public data node, and show visual feedback on your cursor
@@ -732,8 +724,16 @@ createNameSpace("realityEditor.avatar");
             // linkObject: linkObject
         };
     }
+    
+    function registerOnMyAvatarInitializedCallback(callback) {
+        callbacks.onMyAvatarInitialized.push(callback);
+        if (myAvatarObject) {
+            callback(myAvatarObject);
+        }
+    }
 
     exports.initService = initService;
+    exports.registerOnMyAvatarInitializedCallback = registerOnMyAvatarInitializedCallback;
     exports.setBeamOn = setBeamOn;
     exports.setBeamOff = setBeamOff;
     exports.toggleDebugMode = toggleDebugMode;
@@ -743,24 +743,11 @@ createNameSpace("realityEditor.avatar");
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.writeMyLockOnMode = writeMyLockOnMode;
     exports.writeLockOnToMe = writeLockOnToMe;
-    // exports.writeLockOnMode = writeLockOnMode;
     exports.clearLinkCanvas = clearLinkCanvas;
     exports.getLinkCanvasInfo = getLinkCanvasInfo;
     exports.isDesktop = function() {return isDesktop};
-    exports.getConnectedAvatarList = () => {
-        return connectedAvatarUserProfiles;
-    };
-    exports.setLinkCanvasNeedsClear = (value) => {
-        linkCanvasNeedsClear = value;
-    };
-    exports.registerOnMyAvatarInitializedCallback = (cb) => {
-        callbacks.onMyAvatarInitialized.push(cb);
-        if (myAvatarObject) {
-            cb(myAvatarObject);
-        }
-    };
-    exports.getMyAvatarId = () => {
-        return myAvatarId;
-    };
+    exports.getConnectedAvatarList = () => { return connectedAvatarUserProfiles; };
+    exports.setLinkCanvasNeedsClear = (value) => { linkCanvasNeedsClear = value; };
+    exports.getMyAvatarId = () => {  return myAvatarId; };
 
 }(realityEditor.avatar));

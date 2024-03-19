@@ -29,6 +29,8 @@ uniform vec2 focalLength;
 uniform vec2 principalPoint;
 const float pointSizeBase = 0.0;
 
+uniform bool useFarDepth;
+
 varying vec2 vUv;
 varying vec4 pos;
 
@@ -80,6 +82,9 @@ pos = vec4(
 1.0);
 
 gl_Position = projectionMatrix * modelViewMatrix * pos;
+if (useFarDepth) {
+    gl_Position.z = gl_Position.w; // push depth to the background on the depth pre render to erase existing depth
+}
 // gl_PointSize = pointSizeBase + pointSize * depth * depthScale;
 gl_PointSize = pointSizeBase + pointSize * depth * depthScale + glPosScale / gl_Position.w;
 }`;
@@ -309,7 +314,9 @@ export function createPointCloudMaterial(texture, textureDepth, shaderMode, bord
             principalPoint: { value: new THREE.Vector2(959.169433 / 1920 * width, (1080 - 539.411926) / 1080 * height) },
             // can be used to lerp between shader properties based on if you're observing from same angle as recorded
             viewAngleSimilarity: { value: 0.0 },
-            viewPositionSimilarity: { value: 0.0 }
+            viewPositionSimilarity: { value: 0.0 },
+			// used to erase depth in the pre render
+            useFarDepth: {value: false}
         },
         vertexShader,
         fragmentShader,
