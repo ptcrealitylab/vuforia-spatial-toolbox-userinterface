@@ -307,7 +307,7 @@ function createWorker(self) {
     function runSort(viewProj) {
         if (!buffer) return;
         const f_buffer = new Float32Array(buffer);
-        if (lastVertexCount == vertexCount) {
+        if (lastVertexCount === vertexCount) {
             let dot =
                 lastProj[2] * viewProj[2] +
                 lastProj[6] * viewProj[6] +
@@ -849,7 +849,7 @@ async function main(initialFilePath) {
         const currentFps = 1000 / (now - lastFrame) || 0;
         avgFps = avgFps * 0.9 + currentFps * 0.1;
 
-        if (vertexCount > 0) {
+        if (vertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
             document.getElementById("gsSpinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -958,9 +958,10 @@ window.addEventListener("keydown", e => {
         gsContainer.classList.toggle('hidden');
         gsActive = !gsContainer.classList.contains('hidden');
         if(gsActive)
-        { 
+        {
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = false;
             realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+            realityEditor.spatialCursor.gsToggleActive(true);
             callbacks.onSplatShown.forEach(cb => {
                 cb();
             });
@@ -969,6 +970,7 @@ window.addEventListener("keydown", e => {
         {
             realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = true;
             realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+            realityEditor.spatialCursor.gsToggleActive(false);
             callbacks.onSplatHidden.forEach(cb => {
                 cb();
             });

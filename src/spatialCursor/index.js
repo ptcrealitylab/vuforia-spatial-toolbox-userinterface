@@ -908,6 +908,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             update(); // restart the update loop
         }
     }
+    
+    let gsActive = false;
+    function isGSActive() {
+        return gsActive;
+    }
+    function gsToggleActive(active) {
+        gsActive = active;
+    }
 
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
@@ -1094,6 +1102,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     exports.initService = initService;
     exports.getRaycastCoordinates = getRaycastCoordinates;
+    exports.isGSActive = isGSActive;
+    exports.gsToggleActive = gsToggleActive;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
