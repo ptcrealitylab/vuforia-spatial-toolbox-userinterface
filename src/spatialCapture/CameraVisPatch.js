@@ -33,13 +33,39 @@ export class CameraVisPatch {
      */
     constructor(container, mesh, phoneMesh, pendingShaderMode, creationTime) {
         this.container = container;
+        /** 
+         * this shallow copy will make sure the mesh is rendered twice, first we overwrite the background scan depth with the depth of this object.
+         * Because we disable depth checking for this object, we need to render it again with propper depth checking to make sure the front most pixel is rendered.
+         * This will automaticaly solve issues with multiple patches rendering on top of each other.
+         * @type {THREE.Object3D} 
+         */
+        this.maskMesh = mesh.clone();
+        this.maskMesh.renderOrder = realityEditor.gui.threejsScene.RENDER_ORDER_DEPTH_REPLACEMENT;
+        mesh.parent.add(this.maskMesh);
         this.mesh = mesh;
         this.phone = phoneMesh;
         this.material = this.mesh.material;
+        this.#updateMaskMaterial();
         this.shaderMode = ShaderMode.SOLID;
         this.pendingShaderMode = pendingShaderMode;
         this.creationTime = creationTime;
         this.loading = true;
+    }
+
+    /**
+     * internal function that reapplies depth only material to the render mask
+     */
+    #updateMaskMaterial() {
+        if (this.maskMaterial) this.maskMaterial.dispose();
+          /**
+         * we will copy the original material/shader and disable the color part of the shader for speed, since we are only interested in writing depth
+         * @type {THREE.Material|undefined}
+         */
+        this.maskMaterial = this.mesh.material.clone();
+        this.maskMaterial.colorWrite = false;
+        this.maskMaterial.depthFunc = THREE.AlwaysDepth;
+        this.maskMaterial.uniform.useFarDepth.value = true;
+        this.maskMesh.material = this.maskMaterial;
     }
 
     getSceneNodeMatrix() {
@@ -109,6 +135,7 @@ export class CameraVisPatch {
                 this.visualDiff.showCameraVisDiff(this);
             } else {
                 this.mesh.material = this.material;
+                this.#updateMaskMaterial();
             }
         }
     }
@@ -123,7 +150,7 @@ export class CameraVisPatch {
 
     add() {
         let worldObjectId = realityEditor.sceneGraph.getWorldId();
-        realityEditor.gui.threejsScene.addToScene(this.container, { worldObjectId: worldObjectId} );
+        realityEditor.gui.threejsScene.addToScene(this.container, { worldObjectId: worldObjectId } );
     }
 
     remove() {
@@ -239,6 +266,8 @@ export class CameraVisPatch {
                 mesh.material.uniforms.patchLoading.value = 1;
                 cvPatch.finalizeLoadingAnimation();
             }
+            cvPatch.maskMaterial.uniforms.patchLoading.value = mesh.material.uniforms.patchLoading.value;
+            
         }
         window.requestAnimationFrame(patchLoading);
 

@@ -160,6 +160,7 @@ window.realityEditor = {
     avatar: {
         network: {},
         draw: {},
+        iconMenu: {},
         utils: {}
     },
     humanPose: {

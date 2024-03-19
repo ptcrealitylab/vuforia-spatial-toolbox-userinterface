@@ -181,15 +181,14 @@ createNameSpace("realityEditor.avatar.network");
     /**
      * write the user profile into the avatar object's storage node
      * @param {Object} keys - where to store avatar's data
-     * @param {string} name
-     * @param {string?} providerId - optional associated webrtc provider id
-     * @param {string?} sessionId - optional associated session id that is unique for every user on every browser session
+     * @param {Object} userProfile - contains name, providerId, lockOnMode, sessionId, etc.
      */
-    function sendUserProfile(keys, name, providerId, sessionId) {
+    function sendUserProfile(keys, userProfile) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
-            name: name,
-            providerId: providerId,
-            sessionId: sessionId,
+            name: userProfile.name,
+            providerId: userProfile.providerId,
+            lockOnMode: userProfile.lockOnMode,
+            sessionId: userProfile.sessionId
         });
     }
 

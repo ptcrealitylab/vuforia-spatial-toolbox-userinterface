@@ -292,7 +292,7 @@ realityEditor.device.onload = async function () {
             return;
         }
 
-        let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
+        let message = 'Network Offline: Showing last known state. Most functionality is disabled.';
 
         realityEditor.gui.modal.showScreenTopNotification(message, -1);
     });

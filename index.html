@@ -64,6 +64,7 @@
     <link rel="stylesheet" type="text/css" href="css/dropdown.css">
     <link rel="stylesheet" type="text/css" href="css/humanPoseAnalyzerSettingsUi.css">
     <link rel="stylesheet" type="text/css" href="css/doubleSlider.css">
+    <link rel="stylesheet" type="text/css" href="css/splatting.css">
     <link rel="stylesheet" type="text/css" href="css/statusPage.css">
     <link rel="stylesheet" type="text/css" href="css/ai.css">
 
@@ -80,6 +81,7 @@
     <script src="thirdPartyCode/hull.js" type="module"></script>
     <script src="thirdPartyCode/stats.min.js" type="module"></script>
     <script src="thirdPartyCode/rvl/rvl.js" type="module"></script>
+    <script src="node_modules/@microsoft/teams-js/dist/MicrosoftTeams.min.js"></script>
 
     <!-- VITE_PRELOAD_THREE_HERE -->
 
@@ -111,6 +113,7 @@
     <script src="src/avatar/index.js" type="module"></script>
     <script src="src/avatar/network.js" type="module"></script>
     <script src="src/avatar/draw.js" type="module"></script>
+    <script src="src/avatar/iconMenu.js" type="module"></script>
     <script src="src/avatar/utils.js" type="module"></script>
 
     <script src="src/humanPose/index.js" type="module"></script>
@@ -206,6 +209,8 @@
     <script src="src/spatialCursor/shader/vertexShader.js" type="module"></script>
 
     <script src="src/spatialCapture/SpatialPatchCoordinator.js" type="module"></script>
+
+    <script src="src/splatting/Splatting.js" type="module"></script>
 
     <script src="src/statusPage/index.js" type="module"></script>
 
@@ -590,6 +595,38 @@
     <div id="pocketTargetObjectLabel">Adding Tools to:</div>
 </div>
 
+<!-- Gaussian Splatting - render behind the mainThreejsCanvas -->
+<div id="gsContainer" class="hidden">
+    <div id="gsInfo">
+        <h3 class="nohf">WebGL 3D Gaussian Splat Viewer</h3>
+        <p>
+            <small class="nohf">
+                By <a>PTC Reality Lab</a>.
+            </small>
+        </p>
+    </div>
+    <div id="gsProgress"></div>
+    <div id="gsMessage"></div>
+    <div class="scene" id="gsSpinner">
+        <div class="cube-wrapper">
+            <div class="cube">
+                <div class="cube-faces">
+                    <div class="cube-face bottom"></div>
+                    <div class="cube-face top"></div>
+                    <div class="cube-face left"></div>
+                    <div class="cube-face right"></div>
+                    <div class="cube-face back"></div>
+                    <div class="cube-face front"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <canvas id="gsCanvas"></canvas>
+    <div id="gsQuality">
+        <span id="gsFps"></span>
+    </div>
+</div>
+
 <canvas class="canvas-main-threejs" id="mainThreejsCanvas"></canvas>
 <canvas class="Canvas canvas-node-connections" id="canvas"></canvas>
 <div class="Canvas" id="p5WebGL" style="position: absolute; left: 0; top: 0;"></div>
@@ -607,16 +644,6 @@
 <iframe src="src/gui/settings/index.html" id="settingsIframe" frameborder="0" style="display: none;" ></iframe>
 
 <div id= "searchDiv" style="position: absolute; left: 0px; bottom: 0px; right: 65px; height: 121px; -webkit-transform: translateZ(9px); display: none; border: solid #01fffc 2px"></div>
-<!--
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-163665919-2"></script>
-<script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'UA-163665919-2');
-</script>
--->
 <button id="ai-chat-tool-minimize-button"><br><br> < <br><br><br></button>
 <div id="ai-chat-tool-container">
     <div id="ai-chat-tool-dialogue-container">
