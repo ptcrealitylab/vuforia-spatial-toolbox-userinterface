@@ -33,7 +33,7 @@ import {Pose} from "./Pose.js";
 
             if (typeof nameIdMap[poseObjectName] === 'undefined') {
                 //create new human object only if pose is detected
-                if (pose.joints.length > 0) {    
+                if (pose.joints.length > 0) {
                     tryCreatingObjectFromPose(poseObjectName);
                 }
             } else {
@@ -210,7 +210,7 @@ import {Pose} from "./Pose.js";
                     utils.setMatrixFromArray(objectRootMatrix, poseObject.matrix);
                     groundPlaneRelativeMatrix.multiply(objectRootMatrix);
                 }
-                
+
                 for (let jointId of Object.values(JOINTS)) {
                     let frame = poseObject.frames[poseObject.objectId + jointId];
                     if (!frame || !frame.ar.matrix) {
@@ -253,7 +253,8 @@ import {Pose} from "./Pose.js";
                 }
 
                 const identifier = `historical-${poseObject.objectId}`; // This is necessary to distinguish between data recorded live and by a tool at the same time
-                const pose = new Pose(jointPositions, jointConfidences, parseInt(timestampString), {
+                const timestamp = Math.round(poseObject.lastUpdateDataTS); // parseInt(timestampString)
+                const pose = new Pose(jointPositions, jointConfidences, timestamp, {
                     poseObjectId: identifier,
                     poseHasParent: poseObject.parent && (poseObject.parent !== 'none'),
                 });
@@ -299,15 +300,15 @@ import {Pose} from "./Pose.js";
         }
         return arr;
     }
-    
-    /** Extends original tracked set of joints with derived synthetic joints 
-     * @param {Object} pose - 23 real joints 
+
+    /** Extends original tracked set of joints with derived synthetic joints
+     * @param {Object} pose - 23 real joints
      */
     function addSyntheticJoints(pose) {
-        
+
         if (pose.joints.length <= 0) {
             // if no pose is detected, cannot add
-            return; 
+            return;
         }
 
         // head
@@ -320,7 +321,7 @@ import {Pose} from "./Pose.js";
             JOINTS.LEFT_SHOULDER,
             JOINTS.RIGHT_SHOULDER,
         ])));
-        // chest 
+        // chest
         pose.joints.push(averageJoints(extractJoints(pose.joints, [
             JOINTS.LEFT_SHOULDER,
             JOINTS.RIGHT_SHOULDER,
@@ -349,12 +350,12 @@ import {Pose} from "./Pose.js";
 
         if (pose.joints.length <= 0) {
             // if no pose is detected, don't update (even update timestamp)
-            return; 
+            return;
         }
 
         // store timestamp of update in the object (this is capture time of the image used to compute the pose in this update)
         humanPoseObject.lastUpdateDataTS = pose.timestamp;
-        
+
         // update overall object position (currently defined by 1. joint - nose)
         var objPosition = {
             x: pose.joints[0].x,
@@ -368,12 +369,12 @@ import {Pose} from "./Pose.js";
             0, 0, 1, 0,
             objPosition.x, objPosition.y, objPosition.z, 1
         ];
-        
+
         // updating scene graph with new pose
         let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(humanPoseObject.objectId);
         objectSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
         objectSceneNode.setLocalMatrix(humanPoseObject.matrix);
-        
+
         // update relative positions of all joints/frames wrt. object positions
         pose.joints.forEach((jointInfo, index) => {
             let jointName = Object.values(JOINTS)[index];
@@ -396,8 +397,8 @@ import {Pose} from "./Pose.js";
             // updating scene graph with new pose
             let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameId);
             frameSceneNode.dontBroadcastNext = true; // this will prevent broadcast of matrix to remote servers in the function call below
-            frameSceneNode.setLocalMatrix(positionMatrix); 
-            
+            frameSceneNode.setLocalMatrix(positionMatrix);
+
             // updating a node data of tool/frame of a joint
             let keys = utils.getJointNodeInfo(humanPoseObject, jointName);
             if (keys) {
@@ -411,16 +412,16 @@ import {Pose} from "./Pose.js";
     }
 
     function tryUpdatingPoseObject(pose, humanPoseObject) {
-        
+
         //console.log('try updating pose object', pose, humanPoseObject);
 
         addSyntheticJoints(pose);
 
-        // update local instance of HumanPoseObject with new pose data 
+        // update local instance of HumanPoseObject with new pose data
         updateObjectFromRawPose(humanPoseObject, pose);
 
-        // updating a 'transfer' node data of selected joint (the first one at the moment). 
-        // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers 
+        // updating a 'transfer' node data of selected joint (the first one at the moment).
+        // This public data contain the whole pose (joint 3D positions and confidences) to transfer in one go to servers
         let keys = utils.getJointNodeInfo(humanPoseObject, JOINTS.NOSE);
         if (keys) {
             realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, pose);
@@ -472,23 +473,23 @@ import {Pose} from "./Pose.js";
             let subscriptionCallback = (msgContent) => {
                 // update public data of node in local human pose object
                 let node = realityEditor.getNode(msgContent.object, msgContent.frame, msgContent.node);
-                if (!node) { 
+                if (!node) {
                     console.warn('couldn\'t find the node ' + msgContent.node + ' which stores whole pose data');
-                    return; 
+                    return;
                 }
                 // MK TODO: is it necessary to store all transfered data into the node of local object? on top of updateObjectFromRawPose below?
                 node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData] = msgContent.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData];
 
                 let object = realityEditor.getObject(msgContent.object)
-                if (!object) { 
+                if (!object) {
                     console.warn('couldn\'t find the human pose object ' + msgContent.object);
-                    return; 
+                    return;
                 }
 
                 // update local instance of HumanPoseObject with new pose data transferred through a selected node
                 updateObjectFromRawPose(object, node.publicData[utils.JOINT_PUBLIC_DATA_KEYS.transferData]);
             }
-        
+
             realityEditor.network.realtime.subscribeToPublicData(keys.objectKey, keys.frameKey, keys.nodeKey, utils.JOINT_PUBLIC_DATA_KEYS.transferData, (msg) => {
                 subscriptionCallback(JSON.parse(msg));
             });
@@ -497,7 +498,7 @@ import {Pose} from "./Pose.js";
 
     function deleteLocalHumanObjects() {
         myHumanPoseId = null;
-    
+
         for (let objectId of Object.values(nameIdMap)) {
             delete humanPoseObjects[objectId];
             delete realityEditor.objects[objectId];
