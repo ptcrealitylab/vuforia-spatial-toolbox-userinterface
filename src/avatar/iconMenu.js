@@ -80,9 +80,9 @@ createNameSpace("realityEditor.avatar.iconMenu");
 
         // build and add each of the icons to the container, and attach pointer event listeners to them
         sortedKeys.forEach((objectKey, index) => {
+            if (index >= MAX_ICONS) { return; } // after the ellipsis, we ignore the rest
             let isEllipsis = index === (MAX_ICONS - 1) && sortedKeys.length > MAX_ICONS; // last one turns into "+2", "+3", etc
             let numTooMany = sortedKeys.length - (MAX_ICONS - 1);
-            if (index >= MAX_ICONS) { return; } // after the ellipsis, we ignore the rest
 
             let info = connectedAvatars[objectKey];
             let initials = realityEditor.avatar.utils.getInitialsFromName(info.name) || '';
