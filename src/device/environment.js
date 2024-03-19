@@ -79,7 +79,7 @@ createNameSpace("realityEditor.device.environment");
         transformControlsSize: 1, // on remote operator, we can scale down the gizmo size for moving groundplane anchors
         localServerPort: 49369, // the port where a local vuforia-spatial-edge-server can be expected
         screenTopOffset: 0, // if there's a menubar on the top, increase this
-        maxAvatarIcons: 5, // limits the number of circular icons depicting how many avatars are currently connected
+        maxAvatarIcons: 7, // limits the number of circular icons depicting how many avatars are currently connected
         // matrices
         initialPocketToolRotation: null,
         supportsAreaTargetCapture: true,

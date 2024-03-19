@@ -335,6 +335,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 toggleDisplaySpatialCursor(true);
             }
         });
+
+        realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
+            if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) {
+                return;
+            }
+
+            // initialize the spatial cursor as soon as any world object is detected,
+            // since it can move along groundplane even before mesh finishes loading
+            if (DEFAULT_SPATIAL_CURSOR_ON) {
+                toggleDisplaySpatialCursor(true);
+            }
+        });
         
         addSpatialCursor();
         addTestSpatialCursor();
@@ -446,6 +458,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
     // tool added at screen coordinates
     function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
+
+        // TODO: what happens if you drop tool into the sky, looking up –> there's no cursor intersect point,
+        //  -> so make it drop close in front of you instead of infinitely far away
 
         let spatialCursorMatrix = null;
         if (moveToCursor) {
@@ -893,56 +908,66 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             update(); // restart the update loop
         }
     }
+    
+    let gsActive = false;
+    function isGSActive() {
+        return gsActive;
+    }
+    function gsToggleActive(active) {
+        gsActive = active;
+    }
 
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
         let worldIntersectPoint = null;
         let objectsToCheck = [];
+        // top priority is to raycast against the world mesh
         if (cachedOcclusionObject) {
             objectsToCheck.push(cachedOcclusionObject);
         }
-        // if (realityEditor.gui.threejsScene.getGroundPlaneCollider()) {
-        //     objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
-        // }
-        if (includeGroundPlane && realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+        // raycast against the groundplane too, unless the world mesh exists but the groundplane position hasn't been
+        // calculated from the navmesh yet (prevents an issue where for a few seconds the cursor floats in mid-air)
+        if (includeGroundPlane && (realityEditor.gui.threejsScene.isGroundPlanePositionSet() ||
+            !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
             objectsToCheck.push(groundPlane);
         }
-        if (cachedWorldObject && objectsToCheck.length > 0) {
-            // by default, three.js raycast returns coordinates in the top-level scene coordinate system
-            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
-            if (raycastIntersects.length > 0) {
-                // console.log(raycastIntersects[0].object.name);
-                projectedZ = raycastIntersects[0].distance;
-                let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
-                let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
-                inverseGroundPlaneMatrix.invert();
-                raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
-                let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
-                // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
-                let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
-                let cameraDirection = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldDirection(cameraDirection);
-                if (cameraDirection.dot(normalVector) > 0) {
-                    normalVector.negate();
-                }
-                worldIntersectPoint = {
-                    point: raycastIntersects[0].point,
-                    normalVector: normalVector,
-                    distance: raycastIntersects[0].distance,
-                    isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
-                }
-                return worldIntersectPoint; // these are relative to the world object
-            }
+        if (!cachedWorldObject || objectsToCheck.length === 0) {
+            return {}; // no worldIntersectPoint
         }
-        worldIntersectPoint = {};
-        return worldIntersectPoint;
+        // by default, three.js raycast returns coordinates in the top-level scene coordinate system
+        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
+        if (raycastIntersects.length === 0) {
+            return {}; // no worldIntersectPoint
+        }
+
+        // we successfully raycast against the mesh and/or groundplane – calculate the intersect point coordinates
+        projectedZ = raycastIntersects[0].distance;
+        let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+        realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+        inverseGroundPlaneMatrix.invert();
+        raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+        let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+        // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
+        let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
+        let cameraDirection = new THREE.Vector3();
+        realityEditor.gui.threejsScene.getInternals().camera.getWorldDirection(cameraDirection);
+        if (cameraDirection.dot(normalVector) > 0) {
+            normalVector.negate();
+        }
+        worldIntersectPoint = {
+            point: raycastIntersects[0].point,
+            normalVector: normalVector,
+            distance: raycastIntersects[0].distance,
+            isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
+        }
+        return worldIntersectPoint; // these are relative to the world object
     }
 
     function getCursorRelativeToWorldObject() {
-        if (!cachedWorldObject || !cachedOcclusionObject) { return null; }
+        if ((!cachedWorldObject || !cachedOcclusionObject) && !realityEditor.gui.threejsScene.isGroundPlanePositionSet()) { return null; }
 
         let cursorMatrix = indicator1.matrixWorld.clone(); // in ROOT coordinates
         let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
@@ -1077,6 +1102,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     exports.initService = initService;
     exports.getRaycastCoordinates = getRaycastCoordinates;
+    exports.isGSActive = isGSActive;
+    exports.gsToggleActive = gsToggleActive;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
