@@ -719,7 +719,34 @@ export class Timeline {
     }
 
     appendPose(pose) {
-        this.poses.push(pose);
+        if (this.poses.length > 0) {
+            const lastPose = this.poses.at(-1);
+            if (lastPose.time < pose.time) {
+                this.poses.push(pose);
+            } else {
+                let foundPlace = false;
+                // Not sorted, need to find where to put the new pose
+                // Note that linear search should outperform binary search here
+                // since we expect any disorder to be limited
+                for (let i = this.poses.length - 2; i >= 0; i--) {
+                    const otherPose = this.poses[i];
+                    if (otherPose.time > pose.time) {
+                        continue;
+                    }
+                    foundPlace = true;
+                    // Insert into list following otherPose
+                    this.poses.splice(i + 1, 0, pose);
+                    break;
+                }
+                // Insert at very beginning
+                if (!foundPlace) {
+                    this.poses.splice(0, 0, pose);
+                }
+            }
+        } else {
+            this.poses.push(pose);
+        }
+
         if (this.timeMin < 0) {
             this.timeMin = pose.time - this.widthMs / 2;
         }
