@@ -149,6 +149,8 @@ export class MotionStudy {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
         this.resetPatchVisibility();
+        this.videoPlayer.pause();
+        this.videoPlayer.hide();
     }
 
     /**
