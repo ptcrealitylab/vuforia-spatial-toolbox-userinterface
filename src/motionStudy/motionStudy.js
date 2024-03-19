@@ -452,9 +452,9 @@ export class MotionStudy {
 
         if (!this.videoPlayer && data.videoUrls) {
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
-            let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
-            if (matches && matches[1]) {
-                this.videoStartTime = parseFloat(matches[1]);
+            let matches = /\/rec(\d+)-(\d+)/.exec(data.videoUrls.color);
+            if (matches && matches[2]) {
+                this.videoStartTime = parseFloat(matches[2]);
             }
         }
 
