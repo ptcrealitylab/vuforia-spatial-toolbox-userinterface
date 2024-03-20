@@ -649,8 +649,9 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {Objects} origin - the local copy of the Object
  * @param {Objects} remote - the copy of the Object downloaded from the server
  * @param {string} objectKey
+ * @param {string} avatarName
  */
-realityEditor.network.updateObject = function (origin, remote, objectKey) {
+realityEditor.network.updateObject = function (origin, remote, objectKey, avatarName) {
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -685,6 +686,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].uuid = frameKey;
             
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
+            // todo Steve: added a new frame
+            let params = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                frameType: origin.frames[frameKey].src,
+            };
+            realityEditor.ai.onFrameAdded(params, avatarName);
 
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
@@ -735,6 +743,16 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
             realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
+        
+            // todo Steve: deleted a frame
+            let params = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                additionalInfo: {
+                    frameType: frameType,
+                },
+            }
+            realityEditor.ai.onVehicleDeleted(params, avatarName);
         }
     }
 };
@@ -893,9 +911,6 @@ realityEditor.network.onAction = function (action) {
         };
     }
     
-    let tmpName = realityEditor.avatar.getAvatarNameFromSessionId(thisAction.lastEditor);
-    console.log(tmpName);
-
     if (thisAction.lastEditor === globalStates.tempUuid) {
         return;
     }
@@ -980,7 +995,8 @@ realityEditor.network.onAction = function (action) {
                     }
                 }
                 
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey);
+                let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(thisAction.lastEditor);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey, avatarName);
 
                 _this.cout("got object");
 
@@ -999,6 +1015,15 @@ realityEditor.network.onAction = function (action) {
                 realityEditor.network.reloadFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction);
             }, 500);
         }
+        
+        // todo Steve: repositioned a frame
+        let params = {
+            objectKey: thisFrame.objectId,
+            frameKey: thisFrame.uuid,
+            frameType: thisFrame.src,
+        };
+        let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(thisAction.lastEditor);
+        realityEditor.ai.onFrameRepositioned(params, avatarName);
     }
 
     if (typeof thisAction.reloadNode !== "undefined") {

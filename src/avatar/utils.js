@@ -112,11 +112,13 @@ createNameSpace("realityEditor.avatar.utils");
          * @param {string|null} name - the username (in theory, first name + last name... or however they identify)
          * @param {string} providerId - string id of the virtualizer (point cloud provider) if it's an AR client, '' if not
          * @param {string|null} lockOnMode - the objectId of an avatar they are following, if they're lock on to someone's view
+         * @param {string} sessionId - optional associated session id that is unique for every user on every browser session
          */
-        constructor(name, providerId, lockOnMode) {
+        constructor(name, providerId, lockOnMode, sessionId) {
             this.name = name; // username
             this.providerId = providerId; // id of the phone virtualizer ('' for remote operators)
             this.lockOnMode = lockOnMode; // id of which other avatar this avatar's perspective is locked onto (null if not locked on)
+            this.sessionId = sessionId;
         }
     }
     exports.UserProfile = UserProfile;

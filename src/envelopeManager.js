@@ -258,7 +258,8 @@ createNameSpace("realityEditor.envelopeManager");
 
         realityEditor.gui.recentlyUsedBar.onClose(envelope);
         realityEditor.gui.envelopeIconRenderer.onClose(envelope);
-        realityEditor.ai.onClose(envelope);
+        let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
+        realityEditor.ai.onClose(envelope, avatarName);
     }
 
     /**
@@ -302,7 +303,8 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.gui.envelopeIconRenderer.onFocus(knownEnvelopes[frameId]);
         // focusing an app also brings it to the front of the bar, same as opening it
         realityEditor.gui.recentlyUsedBar.onOpen(knownEnvelopes[frameId]);
-        realityEditor.ai.onOpen(knownEnvelopes[frameId]);
+        let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid); // todo Steve: when another user open the envelope, it automatically opens & minimizes on my end, and here outputs that I opened it myself. Need to find a way to get the other user avatar's name and replace my name here
+        realityEditor.ai.onOpen(knownEnvelopes[frameId], avatarName);
     }
 
     /**
@@ -332,7 +334,8 @@ createNameSpace("realityEditor.envelopeManager");
         updateExitButton();
 
         realityEditor.gui.envelopeIconRenderer.onBlur(knownEnvelopes[frameId]);
-        realityEditor.ai.onBlur(knownEnvelopes[frameId]);
+        let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
+        realityEditor.ai.onBlur(knownEnvelopes[frameId], avatarName);
     }
 
     function createExitButton() {

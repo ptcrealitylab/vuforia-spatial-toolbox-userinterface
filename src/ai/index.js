@@ -30,7 +30,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         15. What measurements did user C make in the latest spatial measure tool?
     `;
 
-    let question1 = `
+    let question0 = `
         Metaverse was created on 2023.12.5 timestamp 17. The name of the metaverse is harpak_ulma_000017, it is created with the center of a packaging machine.
         User A logged into the scene.
         User A created a spatial drawing tool at timestamp 173. The drawing tool has coordinates (489, 2345, 384).
@@ -51,6 +51,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         User C added a measurement tool into the scene, with center around coordinates (67, 139, 486).
         User C added a measure line from (3, 349, 22) to (254, 463, 956). The length is xxx.
     `;
+    let question1 = ``;
     
     // let categorize_prompt = 'Categorize this question into one or more of the 5 categories: 1. summary, what did I miss, what happened; 2. debug, fix stuff, machine data, data source; 3. 3D scene understanding; 4. summarize documents, pdfs, txts, manuals, images; 5. tool contents. 6. Other. Your answer will be formatted in "number, <the corresponding question>" if only 1 category, and ["number, <the corresponding question>", "number, <the corresponding question>", ...] if multiple categories.';
     // let categorize_prompt = 'Categorize this question into one of the 6 categories: 1. summary, what did I miss, what happened; 2. debug, fix stuff, machine data, data source; 3. 3D scene understanding, spatial draw, chat, communication, spatial video, spatial recording, spatial analytics, onShape, spatial measurement, tool types; 4. summarize documents, pdfs, txts, manuals, images; 5. tool contents; 6. Other. You can only choose one of the following number as your answer: 1, 2, 3, 4, 5, 6.';
@@ -66,55 +67,24 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     
     function setupSystemEventListeners() {
         realityEditor.gui.pocket.registerCallback('frameAdded', (params) => {
-            onFrameAdded(params);
+            let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
+            onFrameAdded(params, avatarName);
         });
+        // todo Steve: add tool reposition event triggering for the user who added the tool themselves
         realityEditor.device.registerCallback('vehicleDeleted', (params) => {
-            onVehicleDeleted(params);
+            let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
+            onVehicleDeleted(params, avatarName);
         });
-        document.addEventListener('keydown', (e) => {
-            // if (e.key === 'g' || e.key === 'G') {
-            //     // focus on a random frame each time
-            //     let frames = [];
-            //     let frameKeys = [];
-            //     let worldObject = realityEditor.worldObjects.getBestWorldObject();
-            //     realityEditor.forEachFrameInObject(worldObject.objectId, function(objectKey, frameKey) {
-            //         frames.push(realityEditor.getFrame(objectKey, frameKey));
-            //         frameKeys.push(frameKey);
-            //     });
-            //     console.log(frameKeys);
-            //     let randomIdx = Math.floor(Math.random() * frames.length);
-            //     let randomFrame = frames[randomIdx];
-            //     let randomPositionObj = realityEditor.gui.threejsScene.getToolPosition(frameKeys[randomIdx]);
-            //     let randomPosition = new THREE.Vector3(randomPositionObj.x, randomPositionObj.y, randomPositionObj.z);
-            //     let randomDirection = realityEditor.gui.threejsScene.getToolDirection(frameKeys[randomIdx]);
-            //     realityEditor.device.desktopCamera.focusVirtualCamera(randomPosition, randomDirection);
-            // }
-        })
     }
     
     function focusOnFrame(frameKey) {
-        
-        // let bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        // let objectKey = bestWorldObject.objectId;
-        // let frame = realityEditor.getFrame(objectKey, frameKey);
-        // let m = frame.ar.matrix;
-        // let position = new THREE.Vector3(m[12], m[13], m[14]);
-        // let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
-        // let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-        // realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
-        // inverseGroundPlaneMatrix.invert();
-        // position.applyMatrix4(inverseGroundPlaneMatrix);
-        
-        let randomPositionObj = realityEditor.gui.threejsScene.getToolPosition(frameKey);
-        let randomPosition = new THREE.Vector3(randomPositionObj.x, randomPositionObj.y, randomPositionObj.z);
-        let randomDirection = realityEditor.gui.threejsScene.getToolDirection(frameKey);
-        
-        // console.log(position, randomPosition); // todo Steve: find out why the direction is always pointing almost straight upwards
-        
-        realityEditor.device.desktopCamera.focusVirtualCamera(randomPosition, randomDirection);
+        let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
+        let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+        let frameDirection = cameraPosition.clone().sub(framePosition).normalize();
+        realityEditor.device.desktopCamera.focusVirtualCamera(framePosition, frameDirection);
     }
     
-    function onFrameAdded(params) {
+    function onFrameAdded(params, avatarName = 'Anonymous user') {
         let objectId = params.objectKey;
         let frameId = params.frameKey;
         let frameType = params.frameType;
@@ -129,7 +99,27 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         position.applyMatrix4(inverseGroundPlaneMatrix);
 
         let timestamp = getFormattedTime();
-        console.log(`User A added a ${frameType} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`);
+        let newInfo = `${avatarName} added a ${frameType} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        question1 += `\n${newInfo}`;
+    }
+    
+    function onFrameRepositioned(params, avatarName = 'Anonymous user') {
+        let objectId = params.objectKey;
+        let frameId = params.frameKey;
+        let frameType = params.frameType;
+        let frame = realityEditor.getFrame(objectId, frameId);
+
+        let m = frame.ar.matrix;
+        let position = new THREE.Vector3(m[12], m[13], m[14]);
+        let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+        let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+        realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+        inverseGroundPlaneMatrix.invert();
+        position.applyMatrix4(inverseGroundPlaneMatrix);
+
+        let timestamp = getFormattedTime();
+        let newInfo = `${avatarName} repositioned a ${frameType} tool at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        question1 += `\n${newInfo}`;
     }
     
     function addTestCube(pos) {
@@ -140,7 +130,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.gui.threejsScene.addToScene(cube);
     }
     
-    function onVehicleDeleted(params) {
+    function onVehicleDeleted(params, avatarName = 'Anonymous user') {
         if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
             let objectId = params.objectKey;
             let frameId = params.frameKey;
@@ -148,11 +138,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let frame = realityEditor.getFrame(objectId, frameId);
 
             let timestamp = getFormattedTime();
-            console.log(`User A deleted a ${frameType} tool at ${timestamp}`);
+            let newInfo = `${avatarName} deleted a ${frameType} tool at ${timestamp}`;
+            question1 += `\n${newInfo}`;
         }
     }
     
-    function onOpen(envelope) {
+    function onOpen(envelope, avatarName = 'Anonymous user') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -164,10 +155,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         
         let timestamp = getFormattedTime();
         let frameType = frame.src;
-        console.log(`User A opened a ${frameType} tool at ${timestamp}`);
+        let newInfo = `${avatarName} opened a ${frameType} tool at ${timestamp}`;
+        question1 += `\n${newInfo}`;
     }
 
-    function onClose(envelope) {
+    function onClose(envelope, avatarName = 'Anonymous user') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -179,10 +171,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         let timestamp = getFormattedTime();
         let frameType = frame.src;
-        console.log(`User A closed a ${frameType} tool at ${timestamp}`);
+        let newInfo = `${avatarName} closed a ${frameType} tool at ${timestamp}`;
+        question1 += `\n${newInfo}`;
     }
 
-    function onBlur(envelope) {
+    function onBlur(envelope, avatarName = 'Anonymous user') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -194,7 +187,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         let timestamp = getFormattedTime();
         let frameType = frame.src;
-        console.log(`User A minimized a ${frameType} tool at ${timestamp}`);
+        let newInfo = `${avatarName} minimized a ${frameType} tool at ${timestamp}`;
+        question1 += `\n${newInfo}`;
+    }
+    
+    function onAvatarChangeName(oldName, newName) {
+        let newInfo = `User ${oldName} has changed their name to ${newName}`;
+        question1 += `\n${newInfo}`;
     }
     
     function getFormattedTime() {
@@ -209,7 +208,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let aiContainer;
     let searchTextArea;
     let dialogueContainer;
-    let dialogueMinimizeButton;
 
     let isAiContainerMinimized = false;
     let keyPressed = {
@@ -224,7 +222,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         aiContainer = document.getElementById('ai-chat-tool-container');
         searchTextArea = document.getElementById('searchTextArea');
         dialogueContainer = document.getElementById('ai-chat-tool-dialogue-container');
-        dialogueMinimizeButton = document.getElementById('ai-chat-tool-minimize-button');
 
         scrollToBottom();
         initTextAreaSize();
@@ -282,6 +279,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
         pushToolDialogue(frames, result);
     }
+    
+    function showDialogue() {
+        aiContainer.style.animation = `slideToRight 0.2s ease-in forwards`;
+    }
+    
+    function hideDialogue() {
+        aiContainer.style.animation = `slideToLeft 0.2s ease-in forwards`;
+    }
 
     function setupEventListeners() {
         searchTextArea.addEventListener('input', function(e) {
@@ -299,17 +304,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         document.addEventListener('keydown', (e) => {
             if (e.key === 'g' || e.key === 'G') {
                 // console.log('%c G clicked', 'color: red');
-            }
-        })
-
-        dialogueMinimizeButton.addEventListener('click', () => {
-            isAiContainerMinimized = !isAiContainerMinimized;
-            if (isAiContainerMinimized) {
-                dialogueMinimizeButton.innerHTML = '<br><br> > <br><br><br>';
-                aiContainer.style.animation = `slideToLeft 0.2s ease-in forwards`;
-            } else {
-                dialogueMinimizeButton.innerHTML = '<br><br> < <br><br><br>';
-                aiContainer.style.animation = `slideToRight 0.2s ease-in forwards`;
             }
         })
 
@@ -408,16 +402,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         for (let frame of frames) {
             let b = document.createElement('button');
             let frameKey = frame.uuid;
-
-            let randomPositionObj = realityEditor.gui.threejsScene.getToolPosition(frameKey);
-            let randomPosition = new THREE.Vector3(randomPositionObj.x, randomPositionObj.y, randomPositionObj.z);
-            let randomDirection = realityEditor.gui.threejsScene.getToolDirection(frameKey);
-            
-            b.innerText = `${frame.src} tool at (${randomPosition.x.toFixed(0)},${randomPosition.y.toFixed(0)},${randomPosition.z.toFixed(0)})`;
+            b.innerText = `${frame.src} tool`;
             b.addEventListener('click', () => {
-                realityEditor.device.desktopCamera.focusVirtualCamera(randomPosition, randomDirection);
+                focusOnFrame(frameKey);
             });
-            
             d.appendChild(b);
         }
         
@@ -467,6 +455,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.onOpen = onOpen;
     exports.onClose = onClose;
     exports.onBlur = onBlur;
+    exports.onFrameAdded = onFrameAdded;
+    exports.onFrameRepositioned = onFrameRepositioned;
+    exports.onVehicleDeleted = onVehicleDeleted;
+    exports.onAvatarChangeName = onAvatarChangeName;
+    exports.showDialogue = showDialogue;
+    exports.hideDialogue = hideDialogue;
     exports.focusOnFrame = focusOnFrame;
     
 }(realityEditor.ai));

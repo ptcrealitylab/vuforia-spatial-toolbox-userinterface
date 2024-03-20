@@ -320,12 +320,7 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        // connectedAvatarUserProfiles[objectKey] = {
-        //     name: null, // todo Steve: the actual username
-        //     providerId: '', // todo Steve: virtualizer 
-        //     // sessionId: globalStates.tempUuid
-        // };
-        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
+        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null, globalStates.tempUuid);
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -409,6 +404,9 @@ createNameSpace("realityEditor.avatar");
 
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
             const userProfile = msgContent.publicData.userProfile;
+            if (avatarNames[msgContent.object] !== userProfile.name) {
+                realityEditor.ai.onAvatarChangeName(avatarNames[msgContent.object], userProfile.name);
+            }
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
                 connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null);
@@ -540,6 +538,7 @@ createNameSpace("realityEditor.avatar");
      */
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
+        realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name);
         connectedAvatarUserProfiles[myAvatarId].name = name;
         let sessionId = globalStates.tempUuid;
         connectedAvatarUserProfiles[myAvatarId].sessionId = sessionId;

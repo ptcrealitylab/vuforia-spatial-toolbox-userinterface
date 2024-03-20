@@ -6,14 +6,13 @@ body {
     position: fixed;
     left: 20px;
     bottom: 20px;
-
+    
     display: flex;
     flex-direction: column;
     /*width: calc(100vw - 20px - 20px);*/
     width: calc(max(100px, min(400px, 100%)) - 20px - 20px);
     max-height: calc(80% - 20px - 20px);
     overflow: scroll;
-    
     mask-image: linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0) 0%,
@@ -23,6 +22,8 @@ body {
     border-radius: 10px;
 
     font-size: 1rem;
+    transform: translateX( calc(-110%) );
+    z-index: 1100;
 }
 
 @keyframes slideToLeft {
@@ -42,13 +43,6 @@ body {
     to {
         transform: translateX(0);
     }
-}
-
-#ai-chat-tool-minimize-button {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 10px;
 }
 
 #ai-chat-tool-dialogue-container {
@@ -76,19 +70,29 @@ body {
     user-select: text;
     -webkit-user-select: text;
     /*-webkit-user-drag: auto;*/
+    max-width: 80%;
+    word-wrap: break-word;
 }
 
 .ai-chat-tool-dialogue-my {
     position: relative;
     align-self: flex-end;
-    background: #0D81FF;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+}
+.ai-chat-tool-dialogue-my-light {
+    background: rgba(64,170,29,0.9);
     color: white;
 }
 
 .ai-chat-tool-dialogue-ai {
     position: relative;
     align-self: flex-start;
-    background: #E9E9EB;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+}
+.ai-chat-tool-dialogue-ai-light {
+    background: rgba(233, 233, 235, 0.9);
     color: black;
 }
 
@@ -96,10 +100,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 80%;
 }
 
-#searchTextArea {
+.ai-search-text-area {
     flex-shrink: 0;
     resize: none; /* Removes the resize handle */
     border-radius: 10px; /* Rounded corners */
@@ -109,6 +112,15 @@ body {
     width: max(100px, min(400px, 100%)); /* Full width */
     padding: 10px; /* Some padding inside the textarea */
     box-sizing: border-box; /* Includes padding and border in the width and height */
+    border-style: hidden;
+    outline: none;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+}
+
+.searchTextArea-light {
+    background-color: white;
+    color: black;
 }
 
 #searchTextArea:focus {
