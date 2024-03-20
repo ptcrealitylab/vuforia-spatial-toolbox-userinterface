@@ -149,8 +149,9 @@ export class MotionStudy {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
         this.resetPatchVisibility();
-        this.videoPlayer.pause();
-        this.videoPlayer.hide();
+        if (this.videoPlayer) {
+            this.videoPlayer.hide();
+        }
     }
 
     /**
@@ -452,10 +453,15 @@ export class MotionStudy {
 
         if (!this.videoPlayer && data.videoUrls) {
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
-            let matches = /\/rec(\d+)-(\d+)/.exec(data.videoUrls.color);
-            if (matches && matches[2]) {
-                this.videoStartTime = parseFloat(matches[2]);
+            let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
+            if (matches && matches[1]) {
+                this.videoStartTime = parseFloat(matches[1]);
             }
+            this.videoPlayer.hide();
+            this.videoPlayer.colorVideo.controls = true;
+            this.videoPlayer.colorVideo.style.display = '';
+            this.videoPlayer.colorVideo.classList.add('analytics-video');
+            this.container.appendChild(this.videoPlayer.colorVideo);
         }
 
         if (data.valueAddWasteTime) {
