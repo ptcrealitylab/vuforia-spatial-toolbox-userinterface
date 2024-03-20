@@ -2373,4 +2373,27 @@ Logic Interface CSS
     .statusBarText {
         max-width: 80%;
     }
-} 
+}
+
+.search-container {
+    position: fixed;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40rem;
+    height: 54px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 12.8px;
+}
+
+.search-container-hidden {
+    display: none;
+}
+
+.search-input {
+    background: none;
+    color: white;
+    font-size: 2rem;
+    width: 100%;
+    height: 100%;
+}
