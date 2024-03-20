@@ -556,14 +556,24 @@ uniform mat4 projection, view;
 uniform vec2 focal;
 uniform vec2 viewport;
 
+uniform vec3 uAnimCenter;
+uniform float uAnimRadius;
+
 in vec2 position;
 in int index;
 
 out vec4 vColor;
 out vec2 vPosition;
+out float vDisplay;
 
 void main () {
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
+    // vec4 vWorld = vec4(uintBitsToFloat(cen.xyz), 1.);
+    // if (length(vWorld.xyz - uAnimCenter) < uAnimRadius) {
+    //     vDisplay = 1.;
+    // } else {
+    //     vDisplay = 0.;
+    // }
     vec4 cam = view * vec4(uintBitsToFloat(cen.xyz), 1);
     vec4 pos2d = projection * cam;
 
@@ -612,10 +622,14 @@ precision highp float;
 
 in vec4 vColor;
 in vec2 vPosition;
+in float vDisplay;
 
 out vec4 fragColor;
 
 void main () {
+    // if (vDisplay < 0.5) {
+    //     discard;
+    // }
     float A = -dot(vPosition, vPosition);
     if (A < -4.0) discard;
     float B = exp(A) * vColor.a;
@@ -697,6 +711,11 @@ async function main(initialFilePath) {
     const u_viewport = gl.getUniformLocation(program, "viewport");
     const u_focal = gl.getUniformLocation(program, "focal");
     const u_view = gl.getUniformLocation(program, "view");
+    const u_uAnimCenter = gl.getUniformLocation(program, "uAnimCenter");
+    const u_uAnimRadius = gl.getUniformLocation(program, "uAnimRadius");
+    gl.uniform3fv(u_uAnimCenter, new Float32Array([0, 0, 0]));
+    let animRadius = 0;
+    gl.uniform1f(u_uAnimRadius, animRadius);
 
     // positions
     const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -805,6 +824,10 @@ async function main(initialFilePath) {
     let lastFrame = 0;
     let avgFps = 0;
     // let start = 0;
+    
+    function clamp(x, low, high) {
+        return Math.min(Math.max(x, low), high);
+    }
 
     const frame = (now) => {
 
@@ -857,6 +880,9 @@ async function main(initialFilePath) {
         avgFps = avgFps * 0.9 + currentFps * 0.1;
 
         if (vertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
+            // todo Steve: update the uniform for radius
+            animRadius = clamp(animRadius + 0.05, 0, 10000);
+            gl.uniform1f(u_uAnimRadius, animRadius);
             document.getElementById("gsSpinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.clear(gl.COLOR_BUFFER_BIT);
