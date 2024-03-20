@@ -63,8 +63,10 @@ recognition.onresult = event => {
     }
 };
 
-if (!isRecognitionRunning) {
-    recognition.start();
+window.startAssistantRecognition = function() {
+    if (!isRecognitionRunning) {
+        recognition.start();
+    }
 }
 
 async function onNewTranscription(transcription) {
