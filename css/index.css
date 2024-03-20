@@ -2018,12 +2018,24 @@ Logic Interface CSS
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: calc(320px - 66px); /* guess at timeline top */
+    bottom: calc(320px - 66px + 10rem); /* guess at video top */
     left: 35px;
     padding: 0;
     padding-right: 8px;
     pointer-events: all;
     overflow-y: auto;
+}
+
+.analytics-video {
+    position: absolute;
+    left: 35px;
+    bottom: calc(320px - 66px - 66px + 14px);
+    width: calc(15rem + 2 * 14px);
+
+    z-index: 3000;
+    transform: translateZ(3000px);
+
+    pointer-events: all;
 }
 
 .analytics-pinned-region-cards-csv,
