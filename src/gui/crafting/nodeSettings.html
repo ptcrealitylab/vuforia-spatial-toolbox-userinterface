@@ -373,7 +373,7 @@
     
     function getSrcForCustomIcon() {
         // todo this needs be conform with remote interface
-        return 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/logicNodeIcon/' + logicNodeData.objectName + "/" + logicNodeData.nodeKey + ".jpg";
+        return (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/logicNodeIcon/' + logicNodeData.objectName + "/" + logicNodeData.nodeKey + ".jpg";
     }
     
     function postIconToParent() {
@@ -398,7 +398,7 @@
     
     function useIconCustom() {
         // customIconImage.style.display = 'none'; // force re-render
-        // var customSrc = 'http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg'; http://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg
+        // var customSrc = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg'; (realityEditor.network.useHTTPS ? 'https' : 'http') + ://192.168.1.227:8080/logicNodeIcon/secondScreen/ZHg9f0rbute1.jpg
         var customSrc = getSrcForCustomIcon();
 
         customIconImage.src = customSrc;// + '?' + new Date().getTime();
@@ -435,7 +435,7 @@
         // Set up the request.
         var xhr = new XMLHttpRequest();
         // todo this needs to be conform with remote interface
-        var postUrl = 'http://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/object/' + logicNodeData.objectKey + "/frame/" + logicNodeData.frameKey + "/node/" + logicNodeData.nodeKey + "/uploadIconImage/";
+        var postUrl = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + logicNodeData.ip + ':' + logicNodeData.httpPort + '/object/' + logicNodeData.objectKey + "/frame/" + logicNodeData.frameKey + "/node/" + logicNodeData.nodeKey + "/uploadIconImage/";
 
         // Open the connection.
         xhr.open('POST', postUrl, true);
@@ -470,7 +470,7 @@
     }
 
     // TODO: programmatically add this to the front of the network request, and remove from server-side
-    // http://10.0.0.225:8080
+    // http(s)://10.0.0.225:8080
     
 </script>
 
