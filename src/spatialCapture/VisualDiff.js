@@ -1,5 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {ShaderMode} from './Shaders.js';
+import { LayerConfig } from "../gui/scene/Camera.js";
 
 const DEBUG = false;
 
@@ -82,6 +83,8 @@ function makeDepthTexture(width, height) {
 export class VisualDiff {
     constructor(cameraVis) {
         this.cameraVis = cameraVis;
+        this.cameraVisScene = new THREE.Scene();
+        this.backgroundScene = new THREE.Scene();
         this.rtBase = null;
         this.rtCamera = null;
     }
@@ -180,26 +183,23 @@ export class VisualDiff {
         mesh.material = matBase;
 
         let mainRenderer = realityEditor.gui.threejsScene.getInternals();
-        let camera = mainRenderer.getCamera().getInternalObject();
-        let renderer = mainRenderer.getInternalRenderer();
-        let scene = mainRenderer.getInternalScene();
+        let camera = mainRenderer.getCamera();
 
-        let originalCameraMatrix = camera.matrix.clone();
+        let originalCameraMatrix = camera.getInternalObject().matrix.clone();
         realityEditor.sceneGraph.setCameraPosition(sceneNodeMatrix.elements);
 
         // Move camera to match CameraVis position exactly (not pointing up)
         // Turn off everything but base mesh
-        camera.layers.set(1);
-        renderer.setRenderTarget(this.rtBase);
-        renderer.clear();
-        renderer.render(scene, camera);
+        const originalLayerConfig = camera.getLayerConfig();
+        const layerConfig = new LayerConfig();
+        layerConfig.setGlobal(LayerConfig.LAYER_SCAN);
+        camera.setLayerConfig(layerConfig);
+        mainRenderer.renderToTexture(this.rtBase);
         // Now draw only the cameravis
-        camera.layers.set(2);
-        renderer.setRenderTarget(this.rtCamera);
-        renderer.clear();
-        renderer.render(scene, camera);
+        layerConfig.setGlobal(LayerConfig.LAYER_BACKGROUND);
+        mainRenderer.renderToTexture(this.rtCamera);
         // rt diff is the diff, draw it on the cameravis sort of
-        renderer.setRenderTarget(null);
+        camera.setLayerConfig(originalLayerConfig);
 
         realityEditor.sceneGraph.setCameraPosition(originalCameraMatrix.elements);
 

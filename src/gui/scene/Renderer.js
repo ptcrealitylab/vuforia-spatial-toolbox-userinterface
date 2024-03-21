@@ -1,9 +1,18 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
-import Camera from './Camera.js'
+import { Camera } from './Camera.js'
 import AnchoredGroup from './AnchoredGroup.js'
 
+/**
+ * @typedef {number} {pixels}
+ * @typedef {{a: number, b: number, c: number, normal: THREE.Vector3, materialIndex: number}} Face
+ * @typedef {{distance: number, distanceToRay?: number|undefined, point: THREE.Vector3, index?: number | undefined, face?: Face | null | undefined, faceIndex?: number | undefined, object: THREE.Object3D, uv?: THREE.Vector2 | undefined, uv1?: THREE.Vector2 | undefined, normal?: THREE.Vector3, instanceId?: number | undefined, pointOnLine?: THREE.Vector3, batchId?: number}} Intersection
+ */
+
+/**
+ * Manages the rendering of the main scene
+ */
 class Renderer {
     /** @type {THREE.WebGLRenderer} */
     #renderer
@@ -17,7 +26,6 @@ class Renderer {
     /** @type {THREE.Raycaster} */
     #raycaster
     
-
     /**
      * 
      * @param {HTMLCanvasElement} domElement 
@@ -27,7 +35,6 @@ class Renderer {
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
-        this.#renderer.autoClear = false;
 
         this.#scene = new THREE.Scene();
 
@@ -62,22 +69,6 @@ class Renderer {
         dirLightTopDown.position.set(0, 1, 0); // top-down
         dirLightTopDown.lookAt(0, 0, 0);
         this.#scene.add(dirLightTopDown);
-
-        // let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXLeft.position.set(1, 0, 0);
-        // scene.add(dirLightXLeft);
-
-        // let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXRight.position.set(-1, 0, 0);
-        // scene.add(dirLightXRight);
-
-        // let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZLeft.position.set(0, 0, 1);
-        // scene.add(dirLightZLeft);
-
-        // let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZRight.position.set(0, 0, -1);
-        // scene.add(dirLightZRight);
     }
 
     /**
@@ -104,7 +95,19 @@ class Renderer {
 
     /**
      * 
+     * @param {THREE.WebGLRenderTarget} renderTexture 
+     * @param {THREE.Scene} customScene
+     */
+    renderToTexture(renderTexture) {
+        this.#renderer.setRenderTarget(renderTexture);
+        this.#renderer.render(this.#scene, this.#camera.getInternalObject());
+        this.#renderer.setRenderTarget(null);
+    }
+
+    /**
+     * 
      * @param {string} name 
+     * @returns {THREE.Object3D|undefined}
      */
     getObjectByName(name) {
         return this.#scene.getObjectByName(name);
@@ -113,10 +116,11 @@ class Renderer {
     /**
      * return all objects with the name
      * @param {string} name 
-     * @returns 
+     * @returns {THREE.Object3D[]}
      */
     getObjectsByName(name) {
         if (name === undefined) return;
+        /** @type {THREE.Object3D[]} */
         const objects = [];
         this.#scene.traverse((object) => {
             if (object.name === name) objects.push(object);
@@ -124,10 +128,16 @@ class Renderer {
         return objects;
     }
 
-    // this module exports this utility so that other modules can perform hit tests
-    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
-    // NOTE: returns the coordinates in threejs scene world coordinates:
-    //       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
+    /**
+     * this module exports this utility so that other modules can perform hit tests
+     * objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
+     * NOTE: returns the coordinates in threejs scene world coordinates:
+     *       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
+     * @param {pixels} clientX - screen coordinate left to right
+     * @param {pixels} clientY - screen coordinate top to bottom
+     * @param {THREE.Object3D[]} objectsToCheck
+     * @returns {Intersection[]}
+     */
     getRaycastIntersects(clientX, clientY, objectsToCheck) {
         let mouse = new THREE.Vector2();
         mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
@@ -174,6 +184,10 @@ class Renderer {
         return this.#scene;
     }
 
+    /**
+     * 
+     * @returns {HTMLCanvasElement}
+     */
     getInternalCanvas() {
         return this.#renderer.domElement;
     }

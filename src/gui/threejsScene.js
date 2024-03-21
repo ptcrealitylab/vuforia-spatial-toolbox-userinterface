@@ -11,7 +11,7 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import GroundPlane from "./scene/GroundPlane.js";
 import AnchoredGroup from "./scene/AnchoredGroup.js";
-import Camera from "./scene/Camera.js";
+import { DefaultCamera, LayerConfig } from "./scene/Camera.js";
 import Renderer from "./scene/Renderer.js";
 import {setMatrixFromArray} from "./scene/utils.js";
 
@@ -78,7 +78,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         const domElement = document.getElementById('mainThreejsCanvas');
         mainRenderer = new Renderer(domElement);
 
-        mainCamera = new Camera("mainCamera", window.innerWidth / window.innerHeight);
+        mainCamera = new DefaultCamera("mainCamera", window.innerWidth / window.innerHeight);
         mainRenderer.add(mainCamera); // Normally not needed, but needed in order to add child objects relative to camera
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
@@ -529,6 +529,13 @@ import {setMatrixFromArray} from "./scene/utils.js";
 
             wireMesh.renderOrder = RENDER_ORDER_SCAN;
             gltf.scene.renderOrder = RENDER_ORDER_SCAN;
+            wireMesh.layers.set(LayerConfig.LAYER_SCAN);
+            gltf.scene.layers.set(LayerConfig.LAYER_SCAN);
+            gltf.scene.traverse(child => {
+                if (child.layers) {
+                    child.layers.set(LayerConfig.LAYER_SCAN);
+                }
+            });
 
             threejsContainer.add( wireMesh );
             setTimeout(() => {

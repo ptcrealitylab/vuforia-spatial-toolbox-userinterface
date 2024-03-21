@@ -10,6 +10,7 @@
 
 // import * as THREE from "../../../thirdPartyCode/three/three.module";
 import { InfiniteGridHelper } from '../../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
+import { LayerConfig } from '../scene/Camera.js';
 
 createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
@@ -91,6 +92,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
             gridHelper = new InfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
+            gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 
