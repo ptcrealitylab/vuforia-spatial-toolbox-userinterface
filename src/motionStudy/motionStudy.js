@@ -149,9 +149,8 @@ export class MotionStudy {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
         this.resetPatchVisibility();
-        if (this.videoPlayer) {
-            this.videoPlayer.hide();
-        }
+        // Reset the highlight region (and any animation)
+        this.setHighlightRegion(null);
     }
 
     /**
