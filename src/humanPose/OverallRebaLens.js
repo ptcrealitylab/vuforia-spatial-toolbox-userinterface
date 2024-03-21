@@ -3,6 +3,9 @@ import * as Reba from "./rebaScore.js";
 import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
+export const MIN_REBA_SCORE = 1;
+export const MAX_REBA_SCORE = 12;
+
 /**
  * OverallRebaLens is a lens that calculates the overall REBA score for the pose
  */

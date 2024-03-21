@@ -65,7 +65,7 @@ export class HumanPoseAnalyzer {
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
 
-        this.jointConfidenceThreshold = 0.2;
+        this.jointConfidenceThreshold = 0.25;
 
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
@@ -591,6 +591,7 @@ export class HumanPoseAnalyzer {
            this.reprocessSpaghettiForLens(lens);
         });
 
+        this.motionStudy.updateRegionCards();
     }
 
     getJointConfidenceThreshold() {

@@ -3,8 +3,11 @@ import {MotionStudyLens} from "./MotionStudyLens.js";
 import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
-const HIGH_CUTOFF = 35 // In m/s^2
-const MED_CUTOFF = 15 // In m/s^2
+const HIGH_CUTOFF = 35; // in m/s^2
+const MED_CUTOFF = 15; // in m/s^2
+
+export const MIN_ACCELERATION = 0; // in m/s^2
+export const MAX_ACCELERATION = 40; // in m/s^2
 
 /**
  * AccelerationLens is a lens that calculates the acceleration of each joint in the pose history.
