@@ -44,6 +44,7 @@ export class MotionStudy {
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
         this.loadingHistory = false;
+        this.lastHydratedData = null;
         this.livePlayback = false;
         this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
@@ -457,6 +458,8 @@ export class MotionStudy {
             return;
         }
 
+        this.lastHydratedData = data;
+
         if (!this.videoPlayer && data.videoUrls) {
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
             let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
@@ -586,10 +589,14 @@ export class MotionStudy {
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
-            const motionStudyData = {
-                regionCards: allCards,
-                valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
-            }
+            const motionStudyData = Object.assign(
+                {},
+                this.lastHydratedData || {},
+                {
+                    regionCards: allCards,
+                    valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
+                },
+            );
             realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
         }
     }
