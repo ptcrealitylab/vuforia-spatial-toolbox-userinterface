@@ -105,6 +105,13 @@ export class Animation {
         this.animationState = AnimationState.video;
     }
 
+    clear() {
+        if (this.videoPlayer) {
+            this.stopVideoPlayback();
+            this.videoPlayer.hide();
+        }
+    }
+
     stopVideoPlayback() {
         this.animationState = AnimationState.noVideo;
         this.videoPlayer.pause();

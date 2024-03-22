@@ -903,6 +903,8 @@ export class HumanPoseAnalyzer {
             animationStart: this.animation.startTime,
             animationEnd: this.animation.endTime,
         };
+
+        this.animation.clear();
     }
 
     /**
@@ -1025,7 +1027,7 @@ export class HumanPoseAnalyzer {
      */
     clearAnimation() {
         if (this.animation) {
-            this.animation.stopVideoPlayback();
+            this.animation.clear();
             this.animation = null;
         }
         this.hideLastDisplayedClones();
