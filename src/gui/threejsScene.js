@@ -14,6 +14,18 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
 (function(exports) {
 
+    /**
+     * this layer renders the grid first
+     */
+    const RENDER_ORDER_SCAN = -2;
+
+    /**
+     * this will render the scanned scene second
+     */
+    const RENDER_ORDER_DEPTH_REPLACEMENT = -1;
+
+    exports.RENDER_ORDER_DEPTH_REPLACEMENT = RENDER_ORDER_DEPTH_REPLACEMENT;
+
     var camera, scene, renderer;
     var rendererWidth = window.innerWidth;
     var rendererHeight = window.innerHeight;
@@ -24,18 +36,29 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
     let groundPlaneCollider;
+    let isGroundPlanePositionSet = false; // gets updated when the ground plane collider is added
+    let isWorldMeshLoadedAndProcessed = false;  // gets updated when area target mesh and navmesh have been processed
     let raycaster;
     let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
-    let hasGltfScene = false;
     let allMeshes = [];
     let isHeightMapOn = false;
     let isSteepnessMapOn = false;
     let navmesh = null;
     let gltfBoundingBox = null;
     let cssRenderer = null;
+    // other modules can subscribe to these events
+    let callbacks = {
+        onGltfDownloadProgress: [],
+        onGltfLoaded: [],
+    }
+    // values for the 'renderMode' property of objects
+    const RENDER_MODES = Object.freeze({
+        mesh: 'mesh',
+        ai: 'ai'
+    });
 
     const DISPLAY_ORIGIN_BOX = true;
 
@@ -53,8 +76,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(rendererWidth, rendererHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.autoClear = false;
 
@@ -115,8 +136,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         
         document.addEventListener('keydown', (e) => {
-            e.stopPropagation();
             if (e.key === 'n' || e.key === 'N') {
+                e.stopPropagation();
                 navmesh.visible = !navmesh.visible;
             }
         })
@@ -176,14 +197,50 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
-        const geometry = new THREE.PlaneGeometry( 1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        const material = new THREE.MeshBasicMaterial( {color: 0x88ffff, side: THREE.DoubleSide} );
-        const plane = new THREE.Mesh( geometry, material );
-        plane.rotateX(Math.PI/2);
+        const geometry = new THREE.PlaneGeometry(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        geometry.rotateX(Math.PI / 2); // directly set the geometry's rotation to get the desired visual rotation & raycast direction. Otherwise setting mesh's rotation & run updateWorldMatrix(true, false) looks correct, but has wrong raycast direction
+        const material = new THREE.MeshBasicMaterial({color: 0x88ffff, side: THREE.DoubleSide, wireframe: true});
+        const plane = new THREE.Mesh(geometry, material);
+        // plane.rotateX(Math.PI/2);
         plane.visible = false;
+        // plane.position.set(0, -10, 0); // todo Steve: figure out a way to raycast on mesh first & if no results, raycast on ground plane next. Figure out a way to do it in one go (possibly using depth tests & stuff), instead of using 2 raycasts, to improve performance
         addToScene(plane, {occluded: true});
         plane.name = 'groundPlaneCollider';
         groundPlaneCollider = plane;
+
+        isGroundPlanePositionSet = true;
+
+        let areaTargetNavmesh = null;
+        realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
+            areaTargetNavmesh = navmesh;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        let areaTargetMesh = null;
+        realityEditor.avatar.network.onLoadOcclusionObject((_cachedWorldObject, cachedOcclusionObject) => {
+            areaTargetMesh = cachedOcclusionObject;
+            tryUpdatingGroundPlanePosition();
+        });
+
+        const tryUpdatingGroundPlanePosition = () => {
+            if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
+            isWorldMeshLoadedAndProcessed = true;
+
+            groundPlaneCollider.parent.remove(groundPlaneCollider);
+            areaTargetMesh.add(groundPlaneCollider);
+            let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
+            let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
+            groundPlaneCollider.position.set(0, floorOffset, 0);
+            groundPlaneCollider.updateMatrix();
+            groundPlaneCollider.updateMatrixWorld(true);
+
+            // update the groundPlane sceneNode to match the position of the new groundplane collider
+            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());
+            let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
+            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
+
+            isGroundPlanePositionSet = true;
+        }
     }
 
     function renderScene() {
@@ -264,22 +321,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.clear();
-            // render the ground plane visualizer first
-            camera.layers.set(2);
-            renderer.render(scene, camera);
-            renderer.clearDepth();
-            if (hasGltfScene) {
-                // Set rendered layer to 1: only the background, i.e. the
-                // static gltf mesh
-                camera.layers.set(1);
-                renderer.render(scene, camera);
-                // Leaves only the color from the render, discarding depth and
-                // stencil
-                renderer.clear(false, true, true);
-            }
-            // Set layer to 0: everything but the background
-            camera.layers.set(0);
             renderer.render(scene, camera);
         }
     }
@@ -298,7 +339,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const parentToCamera = parameters.parentToCamera;
         const worldObjectId = parameters.worldObjectId;
         const attach = parameters.attach;
-        const layer = parameters.layer;
         if (occluded) {
             const queue = [obj];
             while (queue.length > 0) {
@@ -325,9 +365,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             } else {
                 threejsContainerObj.add(obj);
             }
-        }
-        if (layer) {
-            obj.layers.set(layer);
         }
     }
 
@@ -469,6 +506,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 let meshesToRemove = [];
                 gltf.scene.traverse(child => {
                     if (child.material && child.geometry) {
+                        // meshes scanned with ATC have additional untextured mesh(es) with this naming convention
+                        // the scan may visually look better if they are removed. textured meshes are named "texture_N"
                         if (child.name && child.name.toLocaleLowerCase().startsWith('mesh_')) {
                             meshesToRemove.push(child);
                             return;
@@ -477,8 +516,15 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                     }
                 });
 
-                for (let mesh of meshesToRemove) {
-                    mesh.removeFromParent();
+                // make sure we don't remove ALL meshes, if certain scanning software (e.g. Polycam) names all children mesh_X
+                if (allMeshes.length > 0) {
+                    for (let mesh of meshesToRemove) {
+                        mesh.removeFromParent();
+                    }
+                } else {
+                    for (let mesh of meshesToRemove) {
+                        allMeshes.push(mesh);
+                    }
                 }
 
                 allMeshes.forEach(child => {
@@ -541,7 +587,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             // add in the navmesh
             // navmesh.scale.set(1000, 1000, 1000);
             // navmesh.position.set(gltfBoundingBox.min.x * 1000, 0, gltfBoundingBox.min.z * 1000);
-            // navmesh.layers.set(1);
             // navmesh.visible = false;
             // threejsContainerObj.add(navmesh);
 
@@ -557,14 +602,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 wireMesh.rotation.set(originRotation.x, originRotation.y, originRotation.z);
             }
 
-            wireMesh.layers.set(1);
-            gltf.scene.layers.set(1);
-            gltf.scene.traverse(child => {
-                if (child.layers) {
-                    child.layers.set(1);
-                }
-            });
-            hasGltfScene = true;
+            wireMesh.renderOrder = RENDER_ORDER_SCAN;
+            gltf.scene.renderOrder = RENDER_ORDER_SCAN;
 
             threejsContainerObj.add( wireMesh );
             setTimeout(() => {
@@ -583,6 +622,17 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             if (callback) {
               callback(gltf.scene, wireMesh);
             }
+
+            // in addition to triggering the callback provided by the caller of this function,
+            // also trigger callbacks for any other modules listening for gltf loaded events
+            callbacks.onGltfLoaded.forEach((cb) => {
+                cb(pathToGltf);
+            });
+        }, (xhr) => {
+            // can be used to display download progress, useful if loading large gltf files on slow networks
+            callbacks.onGltfDownloadProgress.forEach((cb) => {
+                cb(pathToGltf, xhr.loaded, xhr.total);
+            });
         });
     }
     
@@ -1198,6 +1248,55 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         };
     };
 
+    /**
+     * Turns off the mesh rendering so that the scene can be rendered on another canvas by another technology.
+     * This should most likely only be called on non-AR clients.
+     * @param {boolean} broadcastToOthers - if true, posts the updated renderMode to the server to notify other clients
+     */
+    function enableExternalSceneRendering(broadcastToOthers) {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        // hide the mesh
+        if (areaMesh) {
+            areaMesh.visible = false;
+        }
+        // hide the ground plane holodeck visualizer
+        realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        // update the renderMode of the world object and broadcast to other clients
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = RENDER_MODES.ai;
+            if (!broadcastToOthers) return;
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(_response => {
+                // console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
+    }
+
+    /**
+     * Restores mesh rendering when external rendering canvas is removed
+     * This should most likely only be called on non-AR clients.
+     * @param {boolean} broadcastToOthers - if true, posts the updated renderMode to the server to notify other clients
+     */
+    function disableExternalSceneRendering(broadcastToOthers) {
+        let areaMesh = getObjectByName('areaTargetMesh');
+        if (areaMesh) {
+            areaMesh.visible = true;
+        }
+        realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+        let worldObject = realityEditor.worldObjects.getBestWorldObject();
+        if (worldObject) {
+            worldObject.renderMode = RENDER_MODES.mesh;
+            if (!broadcastToOthers) return;
+            realityEditor.network.postObjectRenderMode(worldObject.ip, worldObject.objectId, worldObject.renderMode).then(_response => {
+                // console.log('successfully sent renderMode to other clients via the server', response);
+            }).catch(err => {
+                console.warn('error in postObjectRenderMode', err);
+            });
+        }
+    }
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -1212,6 +1311,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.getObjectByName = getObjectByName;
     exports.getObjectsByName = getObjectsByName;
     exports.getGroundPlaneCollider = getGroundPlaneCollider;
+    exports.isGroundPlanePositionSet = () => { return isGroundPlanePositionSet; };
+    exports.isWorldMeshLoadedAndProcessed = () => { return isWorldMeshLoadedAndProcessed; }
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.getObjectForWorldRaycasts = getObjectForWorldRaycasts;
     exports.getToolGroundPlaneShadowMatrix = getToolGroundPlaneShadowMatrix;
@@ -1226,4 +1327,13 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
+    exports.onGltfDownloadProgress = (cb) => {
+        callbacks.onGltfDownloadProgress.push(cb);
+    }
+    exports.onGltfLoaded = (cb) => {
+        callbacks.onGltfLoaded.push(cb);
+    }
+    exports.enableExternalSceneRendering = enableExternalSceneRendering;
+    exports.disableExternalSceneRendering = disableExternalSceneRendering;
+    exports.RENDER_MODES = RENDER_MODES;
 })(realityEditor.gui.threejsScene);

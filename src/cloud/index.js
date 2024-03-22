@@ -58,16 +58,17 @@ realityEditor.cloud.updateEdgeConnections = function(connections) {
 };
 
 realityEditor.cloud.connectToCloud = function (){
-    console.log("start connectToCloud");
-    let socketURL = 'wss://'+realityEditor.network.state.proxyUrl+':'+realityEditor.network.state.proxyPort;
+    const isSecure = realityEditor.network.state.proxyProtocol.includes('https');
+    const wsProtocol = isSecure ? 'wss://' : 'ws://';
+    const wsURL = wsProtocol + realityEditor.network.state.proxyHost;
 
     if(realityEditor.cloud.socket) realityEditor.cloud.socket.close();
 
-    this.socket = new ToolSocket(socketURL,realityEditor.network.state.proxyNetwork , "web");
+    this.socket = new ToolSocket(wsURL, realityEditor.network.state.proxyNetwork , "web");
 
     this.socket.on('beat', function (route, body) {
         // todo validate for heartbeat
-      //  realityEditor.network.addHeartbeatObject(body);
+        //  realityEditor.network.addHeartbeatObject(body);
         body.network = realityEditor.network.state.proxyNetwork;
         realityEditor.app.callbacks.receivedUDPMessage(body)
         // console.log(route, body);
@@ -75,10 +76,9 @@ realityEditor.cloud.connectToCloud = function (){
 
     this.socket.on('action', function (route, body) {
         // todo validate for heartbeat
-        console.log('get action', route, body)
         body.network = realityEditor.network.state.proxyNetwork;
         realityEditor.app.callbacks.receivedUDPMessage(body)
-       // realityEditor.network.addHeartbeatObject(body);
+        // realityEditor.network.addHeartbeatObject(body);
     });
     //  globalStates.network.edgeServer = connections;
 }.bind(realityEditor.cloud);
@@ -87,9 +87,11 @@ realityEditor.cloud.connectToCloud = function (){
 let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
 if(getDesktopLinkData) {
     if(getDesktopLinkData.n) {
-        realityEditor.network.state.proxyProtocol = "https";
-        realityEditor.network.state.proxyPort = 443;
-        if(window.location.host) realityEditor.network.state.proxyUrl = window.location.host;
+        realityEditor.network.state.proxyProtocol = window.location.protocol.slice(0, -1); // Need to remove the colon
+        realityEditor.network.state.proxyPort = window.location.port;
+        realityEditor.network.state.proxyUrl = window.location.host;
+        realityEditor.network.state.proxyHost = window.location.host;
+        realityEditor.network.state.proxyHostname = window.location.hostname;
         if(getDesktopLinkData.n) realityEditor.network.state.proxyNetwork = getDesktopLinkData.n;
         if(getDesktopLinkData.s) realityEditor.network.state.proxySecret = getDesktopLinkData.s;
         realityEditor.cloud.connectToCloud();

@@ -15,3 +15,6 @@ node_modules/
 dist/
 
 coverage/
+/.vscode
+
+/src/assistant/config.js

@@ -130,7 +130,7 @@ realityEditor.device.onload = async function () {
         // console.log('clear sky mode set to ' + newValue);
     }).moveToDevelopMenu();
 
-    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, 'http://...', function(newValue, textValue) {
+    realityEditor.gui.settings.addToggleWithFrozenText('Interface URL', 'currently: ' + window.location.href, 'externalState',  '../../../svg/download.svg', false, (realityEditor.network.useHTTPS ? 'https' : 'http') + '://...', function(newValue, textValue) {
 
         if (newValue && textValue.length > 0) {
             // we still need to save this to native device storage to be backwards-compatible with how the interface is loaded
@@ -151,7 +151,7 @@ realityEditor.device.onload = async function () {
 
     }, { ignoreOnload: true }).moveToDevelopMenu().setValue(!window.location.href.includes('127.0.0.1') && !window.location.href.includes('localhost')); // default value is based on the current source
 
-    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, 'http://...', function(newValue, textValue) {
+    realityEditor.gui.settings.addToggleWithFrozenText('Discovery Server', 'load objects from static server', 'discoveryState',  '../../../svg/discovery.svg', false, (realityEditor.network.useHTTPS ? 'https' : 'http') + '://...', function(newValue, textValue) {
         if (newValue) {
             setTimeout(function() {
                 realityEditor.network.discoverObjectsFromServer(textValue);
@@ -248,41 +248,43 @@ realityEditor.device.onload = async function () {
 
     let cachedSettings = {};
     const localSettingsHost = `localhost:${realityEditor.device.environment.getLocalServerPort()}`;
+
+    function processNewSettings(settings) {
+        let anyChanged = false;
+        if (cachedSettings.isConnected !== settings.isConnected) {
+            toggleCloudUrl.onToggleCallback(settings.isConnected);
+            anyChanged = true;
+        }
+        if ((cachedSettings.serverUrl !== settings.serverUrl) ||
+            (cachedSettings.networkUUID !== settings.networkUUID) ||
+            (cachedSettings.networkSecret !== settings.networkSecret)) {
+            anyChanged = true;
+            toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
+                `/n/${settings.networkUUID}` +
+                `/s/${settings.networkSecret}`);
+            toggleNewNetworkId.onTextCallback(settings.networkUUID);
+            toggleNewSecret.onTextCallback(settings.networkSecret);
+        }
+        cachedSettings = settings;
+        if (anyChanged) {
+            document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
+                getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
+                getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
+            }), "*");
+        }
+    }
+
     // If we're viewing this on localhost we can connect to and read settings
     // from the local server
     if (window.location.host.split(':')[0] === localSettingsHost.split(':')[0]) {
-        setInterval(async () => {
-            let settings;
-            try {
-                let res = await fetch(`http://${localSettingsHost}/hardwareInterface/edgeAgent/settings`);
-                settings = await res.json();
-            } catch (_e) {
-                return;
-            }
-            let anyChanged = Math.random() < 0.1;
-            if (cachedSettings.isConnected !== settings.isConnected) {
-                toggleCloudUrl.onToggleCallback(settings.isConnected);
-                anyChanged = true;
-            }
-            if ((cachedSettings.serverUrl !== settings.serverUrl) ||
-                (cachedSettings.networkUUID !== settings.networkUUID) ||
-                (cachedSettings.networkSecret !== settings.networkSecret)) {
-                anyChanged = true;
-                toggleCloudUrl.onTextCallback(`https://${settings.serverUrl}/stable` +
-                                              `/n/${settings.networkUUID}` +
-                                              `/s/${settings.networkSecret}`);
-                toggleNewNetworkId.onTextCallback(settings.networkUUID);
-                toggleNewSecret.onTextCallback(settings.networkSecret);
-            }
-            cachedSettings = settings;
-            if (anyChanged) {
-                document.getElementById("settingsIframe").contentWindow.postMessage(JSON.stringify({
-                    getSettings: realityEditor.gui.settings.generateGetSettingsJsonMessage(),
-                    getMainDynamicSettings: realityEditor.gui.settings.generateDynamicSettingsJsonMessage(realityEditor.gui.settings.MenuPages.MAIN)
-                }), "*");
-            }
-        }, 1000);
+        fetch(`${realityEditor.network.useHTTPS ? 'https' : 'http'}://${localSettingsHost}/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
+            processNewSettings(settings);
+        });
     }
+    // Update settings when changed
+    realityEditor.network.realtime.subscribeToInterfaceSettings('edgeAgent', settings => {
+        processNewSettings(settings);
+    });
 
     // Check whether we're offline by adding a cache-busting search parameter
     fetch(window.location + '/?offlineCheck=' + Date.now()).then(res => {
@@ -290,7 +292,7 @@ realityEditor.device.onload = async function () {
             return;
         }
 
-        let message = '<b>Network Offline.</b> Showing last known state. Most functionality is disabled.';
+        let message = 'Network Offline: Showing last known state. Most functionality is disabled.';
 
         realityEditor.gui.modal.showScreenTopNotification(message, -1);
     });
@@ -347,18 +349,19 @@ realityEditor.device.onload = async function () {
         // realityEditor.device.multiclientUI.initService();
         realityEditor.avatar.initService();
         realityEditor.humanPose.initService();
-        realityEditor.analytics.initService();
+        realityEditor.motionStudy.initService();
         realityEditor.oauth.initService();
         realityEditor.spatialCursor.initService();
         realityEditor.gui.spatialIndicator.initService();
         realityEditor.gui.spatialArrow.initService();
         realityEditor.gui.recentlyUsedBar.initService();
         realityEditor.gui.envelopeIconRenderer.initService();
+        realityEditor.gui.search.initService();
     } catch (initError) {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
         console.error('error in initService functions, might lead to corrupted app state', initError);
         try {
-            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 5000);
+            realityEditor.gui.modal.showScreenTopNotification('Error initializing. Restart app or contact support.', 30000);
         } catch (alertError) {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }

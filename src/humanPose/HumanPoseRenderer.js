@@ -7,7 +7,9 @@ import {
     JOINTS_PER_POSE,
     BONES_PER_POSE,
     SMALL_JOINT_FLAGS,
-    SMALL_JOINT_SCALE_VEC
+    SMALL_JOINT_SCALE_VEC,
+    THIN_BONE_FLAGS,
+    THIN_BONE_SCALE_VEC
 } from './constants.js';
 
 /**
@@ -205,7 +207,6 @@ export class HumanPoseRenderer {
      * @param {THREE.Vector3} position
      */
     setJointMatrixAt(slot, index, matrix) {
-
         if(SMALL_JOINT_FLAGS[index]) { // scale down geometry if it is a small joint
             matrix.scale(SMALL_JOINT_SCALE_VEC);
         }
@@ -225,6 +226,9 @@ export class HumanPoseRenderer {
      * @param {THREE.Vector3} position
      */
     setBoneMatrixAt(slot, index, matrix) {
+        if(THIN_BONE_FLAGS[index]) { // scale down geometry if it is a thin bone
+            matrix.scale(THIN_BONE_SCALE_VEC);
+        }
         const offset = slot * BONES_PER_POSE + index;
         this.bonesMesh.setMatrixAt(
             offset,

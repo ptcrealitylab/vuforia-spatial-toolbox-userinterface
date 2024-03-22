@@ -53,7 +53,7 @@ createNameSpace("realityEditor.gui.ar.utilities");
  * @fileOverview realityEditor.gui.ar.utilities.js
  * Various utility functions, mostly mathematical, for calculating AR geometry.
  * Includes simply utilities like multiplying and inverting a matrix,
- * as well as sophisticated algorithms for marker-plane intersections and raycasting points onto a plane.
+ * as well as sophisticated algorithms for target-plane intersections and raycasting points onto a plane.
  */
 
 /**
@@ -689,7 +689,7 @@ realityEditor.gui.ar.utilities.setAverageScale = function(object) {
  * @param {string} objectKey
  * @return {HTMLElement}
  */
-realityEditor.gui.ar.utilities.getDivWithMarkerTransformation = function(objectKey) {
+realityEditor.gui.ar.utilities.getDivWithTargetTransformation = function(objectKey) {
 
     let matrixComputationDiv = globalDOMCache['matrixComputationDivForObjects'];
     if (!matrixComputationDiv) {
@@ -728,7 +728,7 @@ realityEditor.gui.ar.utilities.getDivWithMarkerTransformation = function(objectK
 realityEditor.gui.ar.utilities.screenCoordinatesToTargetXY = function(objectKey, screenX, screenY) {
 
     // set dummy div transform to iframe without x,y,scale
-    let matrixComputationDiv = this.getDivWithMarkerTransformation(objectKey);
+    let matrixComputationDiv = this.getDivWithTargetTransformation(objectKey);
     let newPosition = webkitConvertPointFromPageToNode(matrixComputationDiv, new WebKitPoint(screenX, screenY));
 
     return {

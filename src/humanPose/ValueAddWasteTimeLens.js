@@ -1,36 +1,36 @@
-import {AnalyticsLens} from "./AnalyticsLens.js";
-import {AnalyticsColors} from "./AnalyticsColors.js";
+import {MotionStudyLens} from "./MotionStudyLens.js";
+import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
-import {ValueAddWasteTimeTypes} from "../analytics/ValueAddWasteTimeManager.js";
+import {ValueAddWasteTimeTypes} from "../motionStudy/ValueAddWasteTimeManager.js";
 
 function colorFromValue(value) {
     if (value === ValueAddWasteTimeTypes.VALUE_ADD) {
-        return AnalyticsColors.green;
+        return MotionStudyColors.green;
     }
     if (value === ValueAddWasteTimeTypes.WASTE_TIME) {
-        return AnalyticsColors.red;
+        return MotionStudyColors.red;
     }
-    return AnalyticsColors.gray;
+    return MotionStudyColors.gray;
 }
 
 /**
  * RebaLens is a lens that calculates the REBA score for each bone in the pose history.
  */
-export class ValueAddWasteTimeLens extends AnalyticsLens {
+export class ValueAddWasteTimeLens extends MotionStudyLens {
     /**
      * Creates a new ValueAddWasteTimeLens object.
-     * @param {Analytics} analytics
+     * @param {MotionStudy} motionStudy
      */
-    constructor(analytics) {
+    constructor(motionStudy) {
         super("Value Add/Waste Time");
-        this.analytics = analytics;
+        this.motionStudy = motionStudy;
     }
 
     applyLensToPose(pose) {
         // if (Object.values(pose.joints).every(joint => joint.valueAddWasteTimeValue)) {
         //     return false;
         // }
-        const value = this.analytics.valueAddWasteTimeManager.getValue(pose.timestamp);
+        const value = this.motionStudy.valueAddWasteTimeManager.getValue(pose.timestamp);
         pose.forEachJoint(joint => {
             joint.valueAddWasteTimeValue = value;
         });
@@ -55,22 +55,22 @@ export class ValueAddWasteTimeLens extends AnalyticsLens {
     
     getColorForJoint(joint) {
         if (typeof joint.valueAddWasteTimeValue === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return colorFromValue(joint.valueAddWasteTimeValue);
     }
 
     getColorForBone(bone) {
         if (typeof bone.valueAddWasteTimeValue === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
         return colorFromValue(bone.valueAddWasteTimeValue);
     }
 
     getColorForPose(pose) {
         if (typeof pose.getJoint(JOINTS.HEAD).valueAddWasteTimeValue === "undefined") {
-            return AnalyticsColors.undefined;
+            return MotionStudyColors.undefined;
         }
-        return AnalyticsColors.fade(colorFromValue(pose.getJoint(JOINTS.HEAD).valueAddWasteTimeValue));
+        return MotionStudyColors.fade(colorFromValue(pose.getJoint(JOINTS.HEAD).valueAddWasteTimeValue));
     }
 }

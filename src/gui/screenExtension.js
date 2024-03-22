@@ -260,8 +260,8 @@ realityEditor.gui.screenExtension.onScreenTouchMove = function(eventObject) {
         
         // console.log('touched (x,y) = (' + visibleScreenObject.x + ', ' + visibleScreenObject.y + ')')
         
-        // var markerWidth = targetSize.width;
-        // var screenX = point.x + markerWidth/2;
+        // var targetWidth = targetSize.width;
+        // var screenX = point.x + targetWidth/2;
         //
         // console.log('x -> ' + screenX);
 
@@ -475,7 +475,7 @@ realityEditor.gui.screenExtension.sendScreenObject = function (){
 };
 
 /**
- * Map touchOffset x and y from marker units to 0-1 range representing the percent x and y within the touched frame
+ * Map touchOffset x and y from target units to 0-1 range representing the percent x and y within the touched frame
  * e.g. (0,0) means tapped upper left corner, (0.5, 0.5) is center, (1,1) is lower right corner
  * @param thisFrame
  * @return {{x: number, y: number}}
@@ -544,7 +544,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
             realityEditor.device.resetEditingState();
 
             // update position on server
-            // var urlEndpoint = 'http://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
+            // var urlEndpoint = (realityEditor.network.useHTTPS ? 'https' : 'http') + '://' + objects[this.screenObject.object].ip + ':' + httpPort + '/object/' + this.screenObject.object + "/frame/" + this.screenObject.frame + "/node/" + null + "/size/";
             // var content = thisFrame.ar;
             // content.lastEditor = globalStates.tempUuid;
             // realityEditor.network.postData(urlEndpoint, content);
@@ -588,7 +588,7 @@ realityEditor.gui.screenExtension.updateArFrameVisibility = function (){
 
             // 1. move it so it is centered on the pointer, ignoring touchOffset
             var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnMarker(thisFrame, touchPosition.x, touchPosition.y, false);
+            // realityEditor.gui.ar.positioning.moveVehicleToScreenCoordinateBasedOnTarget(thisFrame, touchPosition.x, touchPosition.y, false);
 
             let xPos = touchPosition.x - window.innerWidth/2; // (0, 0) is the middle of the screen
             let yPos = touchPosition.y - window.innerHeight/2;

@@ -19,7 +19,6 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         if (cachedOcclusionObject === null || cachedOcclusionObject === undefined || inverseGroundPlaneMatrix === null || inverseGroundPlaneMatrix === undefined) {
             intervalId = setInterval(() => {
                 if (cachedOcclusionObject !== null && cachedOcclusionObject !== undefined && inverseGroundPlaneMatrix !== null && inverseGroundPlaneMatrix !== undefined) {
-                    console.log(cachedOcclusionObject);
                     if (realityEditor.device.environment.isDesktop()) {
                         isOnDesktop = true;
                         raycastPosOffset = new THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
@@ -116,6 +115,15 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             let newPos = this.tmp.subVectors(this.position, this.previous);
             newPos.multiplyScalar(DRAG).add(this.position);
             newPos.add(this.a.multiplyScalar(timesq));
+            
+            // add an upper limit to the difference between the 2 positions, cannot exceed the collision threshold or the satisfy constraint threshold, to avoid overshooting past & not collide with the mesh
+            this.tmp3.subVectors(newPos, this.position);
+            let length = this.tmp3.length();
+            if (length > COLLIDE_THRESHOLD) { // todo Steve: besides inside satisfyConstraints we should make sure each particle doesn't move past collision distance & their own constraint, 
+                // todo Steve: we should also add here to make sure that they don't move past their own constraint
+                //  maybe we should implement a new "integrate" function that adds up all the moves during this time step, and use a Math.min function to limit the overall transformation
+                newPos = this.position.clone().add(this.tmp3.normalize().multiplyScalar(COLLIDE_THRESHOLD));
+            }
 
             this.tmp = this.previous;
             this.previous = this.position;
@@ -184,6 +192,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         yLength = y;
         zLength = z;
         restDistance = dist;
+        COLLIDE_THRESHOLD = Math.min(COLLIDE_THRESHOLD, restDistance / 2);
         center = meshCenter;
         xSegs = Math.ceil(xLength / restDistance);
         ySegs = Math.ceil(yLength / restDistance);
@@ -280,8 +289,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(x, 0, z);
                 particle2 = particles.get(x + 1, 0, z);
                 particle3 = particles.get(x, 0, z + 1);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -294,7 +303,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         for (let z = 1; z < zSegs; z++) {
             particle1 = particles.get(0, 0, z);
             particle2 = particles.get(1, 0, z);
-            constraints.push([particle1, particle2]);
+            constraints.push([particle1, particle2, restDistance]);
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -304,7 +313,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         for (let x = 1; x < xSegs; x++) {
             particle1 = particles.get(x, 0, 0);
             particle2 = particles.get(x, 0, 1);
-            constraints.push([particle1, particle2]);
+            constraints.push([particle1, particle2, restDistance]);
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -317,8 +326,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(x, y, zSegs);
                 particle2 = particles.get(x + 1, y, zSegs);
                 particle3 = particles.get(x, y + 1, zSegs);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -334,8 +343,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(xSegs, y, z);
                 particle2 = particles.get(xSegs, y + 1, z);
                 particle3 = particles.get(xSegs, y, z - 1);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -351,8 +360,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(x, y, 0);
                 particle2 = particles.get(x - 1, y, 0);
                 particle3 = particles.get(x, y + 1, 0);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -368,8 +377,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(0, y, z);
                 particle2 = particles.get(0, y + 1, z);
                 particle3 = particles.get(0, y, z + 1);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -385,8 +394,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 particle1 = particles.get(x, ySegs, z);
                 particle2 = particles.get(x + 1, ySegs, z);
                 particle3 = particles.get(x, ySegs, z + 1);
-                constraints.push([particle1, particle2]);
-                constraints.push([particle1, particle3]);
+                constraints.push([particle1, particle2, restDistance]);
+                constraints.push([particle1, particle3, restDistance]);
 
                 if (isVisualize) {
                     lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -399,7 +408,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         for (let z = 0; z < zSegs; z++) {
             particle1 = particles.get(xSegs, ySegs, z);
             particle2 = particles.get(xSegs, ySegs, z + 1);
-            constraints.push([particle1, particle2]);
+            constraints.push([particle1, particle2, restDistance]);
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -409,7 +418,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         for (let x = 0; x < xSegs; x++) {
             particle1 = particles.get(x, ySegs, zSegs);
             particle2 = particles.get(x + 1, ySegs, zSegs);
-            constraints.push([particle1, particle2]);
+            constraints.push([particle1, particle2, restDistance]);
 
             if (isVisualize) {
                 lineGeo = new THREE.BufferGeometry().setFromPoints([particle1.original, particle2.original]);
@@ -475,11 +484,11 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         // todo Steve: can try to pin down the 8 corners of the Box while simulating in the AreaTarget mesh
 
         // entire bottom face pinned down
-        // for (let z = 0; z <= zSegs; z++) {
-        //     for (let x = 0; x <= xSegs; x++) {
-        //         _makePin(x, 0, z);
-        //     }
-        // }
+        for (let z = 0; z <= zSegs; z++) {
+            for (let x = 0; x <= xSegs; x++) {
+                _makePin(x, 0, z);
+            }
+        }
         return pins;
     }
     
@@ -617,6 +626,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             clothMesh: _clothMesh,
             winds: _winds,
             startTime: _time,
+            initVolume: null,
             volume: 0,
             tmpTextLabelPos: _tmpTextLabelPos,
             tmpTextLabelObj: null, // todo Steve: a temporary text label, created under the parent userInterface, but will get deleted after finish computing volume & send info down to tool
@@ -628,9 +638,16 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     let diff = new THREE.Vector3();
 
-    function satisfyConstraints(p1, p2, distance = restDistance) {
+    function satisfyConstraints(constraint, initVolume, volume) {
+        let p1 = constraint[0];
+        let p2 = constraint[1];
+        let distance = constraint[2];
+        
         diff.subVectors(p2.position, p1.position);
         let currentDist = diff.length();
+        // currentDist = Math.min(Math.min(currentDist, restDistance), constraint[2]); // todo Steve: a huge visual difference between this method line and below. Find out why.
+        // currentDist = Math.min(currentDist, restDistance);
+        currentDist = Math.min(currentDist, constraint[2] * 1.05);
         if (currentDist === 0) return; // prevents division by 0
         let correction = diff.multiplyScalar(1 - distance / currentDist);
         let correctionHalf = correction.multiplyScalar(0.5);
@@ -642,7 +659,13 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         } else if (!p1.collided && !p2.collided) {
             p1.position.add(correctionHalf);
             p2.position.sub(correctionHalf);
+        } else {
+            return;
         }
+        
+        if (initVolume === null) return;
+        let p = Math.max(0, volume / initVolume);
+        constraint[2] = restDistance * p;
     }
 
     const TIMESTEP = 5 / 1000; // step size 5 / 10 seems like some good choices. Note that the step size also affects COLLIDE_THRESHOLD and GRAVITY. The bigger the step size, the bigger COLLIDE_THRESHOLD & the smaller GRAVITY needs to be, to avoid skipping some collisions
@@ -682,9 +705,9 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
     raycaster.layers.enable(0);
     raycaster.layers.enable(1);
     raycaster.layers.enable(2);
-    const COLLIDE_THRESHOLD = 50; // 0.05 seems like a perfect threshold: too big then it skips some collision; too small it causes some particle jittering
+    let COLLIDE_THRESHOLD = 50; // 0.05 seems like a perfect threshold: too big then it skips some collision; too small it causes some particle jittering
 
-    function simulateCloth(particles, constraints, pins, winds) {
+    function simulateCloth(particles, constraints, pins, winds, initVolume, volume) {
         if (cachedOcclusionObject === null || inverseGroundPlaneMatrix === null) {
             return;
         }
@@ -703,6 +726,13 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 distance = tmp.subVectors(particle.position, wind.position).length();
                 particle.addForce(wind.force.clone().divideScalar(distance).multiplyScalar(1000));
             })
+        })
+        
+        // apply particle inward force
+        particles.map.forEach((particle) => {
+            if (particle.hasCollided) return;
+            
+            particle.addForce(particle.normal.clone().multiplyScalar(0.6).multiplyScalar(1000));
         })
 
         // collision with mesh
@@ -725,8 +755,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 return;
             }
             
-            let diff = result[0].point.clone().sub(particle.position).length();
-            particle.collide(result[0].point.sub(particleDir.clone().multiplyScalar(diff)));
+            let diff = particle.position.clone().sub(result[0].point);
+            particle.collide(result[0].point.add(diff.normalize().multiplyScalar(COLLIDE_THRESHOLD)));
         })
 
         // verlet integration
@@ -735,10 +765,15 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         })
 
         // relax constraints
-        let constraint = null;
-        for (let i = 0; i < constraints.length; i++) {
-            constraint = constraints[i];
-            satisfyConstraints(constraint[0], constraint[1]);
+        // for (let i = 0; i < constraints.length; i++) {
+        //     satisfyConstraints(constraints[i], initVolume, volume);
+        // }
+        let rand = Math.floor(Math.random() * constraints.length);
+        for (let i = rand; i < constraints.length; i++) {
+            satisfyConstraints(constraints[i], initVolume, volume);
+        }
+        for (let i = rand - 1; i >= 0; i--) {
+            satisfyConstraints(constraints[i], initVolume, volume);
         }
 
         // pin constraints
@@ -772,7 +807,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         })
     }
     
-    const tmpTextLabelOffset = new THREE.Vector3(600, -600, 600);
+    const tmpTextLabelOffset = new THREE.Vector3(200, -200, 200);
     function getVolume(key, geometry, divObj, divObjPos) {
         if (!geometry.isBufferGeometry) {
             console.log("'geometry' must be an indexed or non-indexed buffer geometry");
@@ -828,16 +863,17 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
         if (Object.keys(CLOTH_INFO).length === 0) return;
         for (const key of Object.keys(CLOTH_INFO)) {
             const value = CLOTH_INFO[`${key}`];
-            simulateCloth(value.particles, value.constraints, value.pins, value.winds);
+            simulateCloth(value.particles, value.constraints, value.pins, value.winds, value.initVolume, value.volume);
             renderCloth(value.particles, value.clothMesh);
             
             let new_volume = getVolume(key, value.clothMesh.geometry, value.tmpTextLabelObj, value.tmpTextLabelPos);
             if (value.volume === 0) { // when first started, the volume is set to 0
                 value.volume = new_volume;
+                value.initVolume = new_volume;
                 return;
             }
             
-            if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.00005) || Date.now() - value.startTime > 20000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 10%; (3) after running 20 seconds, then count as finished
+            if ( new_volume < 0 || Date.now() - value.startTime > 5000 && (Math.abs((value.volume - new_volume) / value.volume) < 0.00001) || Date.now() - value.startTime > 30000 ) { // if: (1) new volume < 0; (2) after running 5 seconds && change of volume < 0.001%; (3) after running 30 seconds, then count as finished
                 console.log(`The final computed volume is ${new_volume}`);
                 console.log(Math.abs((value.volume - new_volume) / value.volume));
                 delete CLOTH_INFO[`${key}`];

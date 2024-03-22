@@ -333,8 +333,18 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         }
     }
 
-    if (this.cachedWorldObject && this.cachedOcclusionObject) {
-        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, [this.cachedOcclusionObject]);
+    // if there's a ground plane or an area target mesh, compute the projectedZ, worldIntersectPoint, and threejsIntersectPoint
+    if ((this.cachedWorldObject && this.cachedOcclusionObject) || realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+        let objectsToCheck = [];
+        if (this.cachedOcclusionObject) {
+            objectsToCheck.push(this.cachedOcclusionObject);
+        }
+        // pass correct coordinate into tools even if there's no world mesh, if we raycast against the groundplane
+        if (realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
+            objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
+        }
+
+        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, objectsToCheck);
         if (raycastIntersects.length > 0) {
             projectedZ = raycastIntersects[0].distance;
 

@@ -122,9 +122,39 @@ class EnvelopeIconRenderer {
         let modelMatrix = realityEditor.sceneGraph.getModelMatrixLookingAt(frameId, 'CAMERA');
         let modelViewMatrix = [];
         this.arUtilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
-        this.arUtilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
 
-        iconDiv.style.transform = 'matrix3d(' + finalMatrix.toString() + ')';
+        // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
+        if (realityEditor.device.environment.isARMode()) {
+            this.arUtilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+        } else {
+            // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+            // so let's correct the scale and remove the rotation – this works on desktop because camera up = scene up
+            let scale = realityEditor.sceneGraph.getSceneNodeById(frameId).getVehicleScale();
+            let constructedModelViewMatrix = [
+                scale, 0, 0, 0,
+                0, -scale, 0, 0,
+                0, 0, scale, 0,
+                modelViewMatrix[12], modelViewMatrix[13], modelViewMatrix[14], 1
+            ];
+            this.arUtilities.multiplyMatrix(constructedModelViewMatrix, globalStates.projectionMatrix, finalMatrix);
+        }
+
+        finalMatrix[14] = realityEditor.gui.ar.positioning.getFinalMatrixScreenZ(finalMatrix[14]);
+
+        // normalize the matrix and clear the last column, to avoid some browser-specific bugs
+        let normalizedMatrix = realityEditor.gui.ar.utilities.normalizeMatrix(finalMatrix);
+        normalizedMatrix[3] = 0;
+        normalizedMatrix[7] = 0;
+        normalizedMatrix[11] = 0;
+
+        // if tool is rendering while it should be behind the camera, visually hide it (for now)
+        if (normalizedMatrix[14] < 0) {
+            iconDiv.classList.add('elementBehindCamera');
+        } else {
+            iconDiv.classList.remove('elementBehindCamera');
+        }
+
+        iconDiv.style.transform = 'matrix3d(' + normalizedMatrix.toString() + ')';
     }
 
     createIconDiv(frameId, src, isCopy) {

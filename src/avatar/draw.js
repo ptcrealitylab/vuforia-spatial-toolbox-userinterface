@@ -18,9 +18,6 @@ createNameSpace("realityEditor.avatar.draw");
     let statusUI = null;
     let hasConnectionFeedbackBeenShown = false; // ensures we only show the "Connected!" UI one time
 
-    const ICON_WIDTH = 30; // layout information for circular icons
-    const ICON_GAP = 10;
-
     // main rendering loop – trigger this at 60fps to render all the visual feedback for the avatars (e.g. laser pointers)
     function renderOtherAvatars(avatarTouchStates, avatarNames, avatarCursorStates) {
         try {
@@ -29,7 +26,7 @@ createNameSpace("realityEditor.avatar.draw");
             }
             for (const [objectKey, avatarCursorState] of Object.entries(avatarCursorStates)) {
                 realityEditor.spatialCursor.renderOtherSpatialCursor(objectKey,
-                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.worldId);
+                    avatarCursorState.matrix, avatarCursorState.colorHSL, avatarCursorState.isColored, avatarCursorState.worldId);
             }
         } catch (e) {
             console.warn('error rendering other avatars', e);
@@ -50,174 +47,11 @@ createNameSpace("realityEditor.avatar.draw");
 
             // it only makes sense to draw the laser beam on our own screen if at least one other user is connected
             let numConnectedAvatars = Object.keys(realityEditor.avatar.getConnectedAvatarList()).length;
-            if (numConnectedAvatars < 2) return;
+            if (numConnectedAvatars < 1) return;
 
             drawLaserBeam(myAvatarObject.objectId, null, realityEditor.avatar.utils.getColor(myAvatarObject), realityEditor.avatar.utils.getColorLighter(myAvatarObject), myAvatarTouchState.screenX, myAvatarTouchState.screenY);
         } catch (e) {
             console.warn(e);
-        }
-    }
-
-    // show a list of circular icons, one per avatar, with the (random) color and (chosen) initials of that user
-    function renderAvatarIconList(connectedAvatars) {
-        let iconContainer = document.getElementById('avatarIconContainer');
-        if (!iconContainer) {
-            iconContainer = createIconContainer();
-        }
-        while (iconContainer.hasChildNodes()) {
-            iconContainer.removeChild(iconContainer.lastChild);
-        }
-
-        if (Object.keys(connectedAvatars).length < 2) {
-            return; // don't show my icon unless there is at least one other user connected
-        }
-
-        let sortedKeys = realityEditor.avatar.utils.sortAvatarList(connectedAvatars);
-
-        // if too many collaborators, show a "+N..." at the end (I'm calling this the ellipsis) and limit how many icons
-        const MAX_ICONS = realityEditor.device.environment.variables.maxAvatarIcons;
-        const ADDITIONAL_NAMES = 2; // list out this many extra names with commas when hovering over the ellipsis
-
-        sortedKeys.forEach((objectKey, index) => {
-            let isEllipsis = index === (MAX_ICONS - 1) && sortedKeys.length > MAX_ICONS; // last one turns into "+2", "+3", etc
-            let numTooMany = sortedKeys.length - (MAX_ICONS - 1);
-            if (index >= MAX_ICONS) { return; } // after the ellipsis, we ignore the rest
-
-            let info = connectedAvatars[objectKey];
-            let initials = realityEditor.avatar.utils.getInitialsFromName(info.name) || '';
-            if (isEllipsis) {
-                initials = '+' + numTooMany;
-            }
-
-            let isMyIcon = objectKey.includes(realityEditor.avatar.utils.getAvatarName());
-            let iconDiv = createAvatarIcon(iconContainer, objectKey, initials, index, isMyIcon, isEllipsis);
-
-            // show full name when hovering over the icon
-            let tooltipText = info.name;
-            // or put all the extra names into the tooltip text
-            if (isEllipsis) {
-                let remainingKeys = sortedKeys.slice(-1 * numTooMany);
-                let names = remainingKeys.map(key => connectedAvatars[key].name).filter(name => !!name);
-                names = names.slice(0, ADDITIONAL_NAMES); // limit number of comma-separated names
-                tooltipText = names.join(', ');
-
-                let additional = numTooMany - names.length; // number of anonymous and beyond-additional
-                if (additional > 0) {
-                    tooltipText += ' and ' + additional + ' more';
-                }
-            }
-            
-            iconDiv.addEventListener('pointerover', () => {
-                showFullNameTooltip(iconDiv, tooltipText, isMyIcon, isEllipsis);
-            });
-            ['pointerout', 'pointercancel', 'pointerup'].forEach((eventName) => {
-                iconDiv.addEventListener(eventName, hideFullNameTooltip);
-            });
-        });
-
-        let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) - ICON_GAP;
-        iconContainer.style.width = iconsWidth + 'px';
-    }
-
-    // create the container that all the avatar icon list elements will get added to
-    function createIconContainer() {
-        let iconContainer = document.createElement('div');
-        iconContainer.id = 'avatarIconContainer';
-        iconContainer.classList.add('avatarIconContainerScaleAdjustment')
-        iconContainer.style.top = (realityEditor.device.environment.variables.screenTopOffset + 20) + 'px';
-        document.body.appendChild(iconContainer)
-        return iconContainer;
-    }
-
-    // create an icon for this avatar, and add hover event listeners to show tooltip with full name
-    function createAvatarIcon(parent, objectKey, initials, index, isMyIcon, isEllipsis) {
-        let iconDiv = document.createElement('div');
-        iconDiv.id = 'avatarIcon' + objectKey;
-        iconDiv.classList.add('avatarListIcon', 'avatarListIconVerticalAdjustment');
-        iconDiv.style.left = ((ICON_WIDTH + ICON_GAP) * index) + 'px';
-        parent.appendChild(iconDiv);
-
-        let iconImg = document.createElement('img');
-        iconImg.classList.add('avatarListIconImage');
-        iconDiv.appendChild(iconImg);
-
-        if (initials) {
-            iconImg.src = 'svg/avatar-initials-background-dark.svg';
-
-            let iconInitials = document.createElement('div');
-            iconInitials.classList.add('avatarListIconInitials');
-            iconInitials.innerText = initials;
-            iconDiv.appendChild(iconInitials);
-        } else {
-            if (isMyIcon) {
-                iconImg.src = 'svg/avatar-placeholder-icon.svg';
-            } else {
-                iconImg.src = 'svg/avatar-placeholder-icon-dark.svg';
-            }
-        }
-
-        let color = realityEditor.avatar.utils.getColor(realityEditor.getObject(objectKey));
-        let lightColor = realityEditor.avatar.utils.getColorLighter(realityEditor.getObject(objectKey));
-        if (isMyIcon && color) {
-            iconImg.style.border = '2px solid white';
-            iconImg.style.backgroundColor = color;
-        } else if (!isEllipsis && lightColor) {
-            iconImg.style.border = '2px solid ' + lightColor;
-            iconImg.style.backgroundColor = lightColor;
-        } else {
-            iconImg.style.border = '2px solid black';
-            iconImg.style.backgroundColor = 'rgb(95, 95, 95)';
-        }
-        iconImg.style.borderRadius = '20px';
-
-        return iconDiv;
-    }
-
-    // shows a tooltip that either says the name, or "You" or "Anonymous" if no name is provided, or a list of extra names
-    function showFullNameTooltip(element, name, isMyAvatar) {
-        let container = document.getElementById('avatarListHoverName');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'avatarListHoverName';
-            container.classList.add('avatarListTooltipVerticalAdjustment'); // lets us position differently in portrait app
-            element.parentElement.appendChild(container);
-        }
-
-        let nameDiv = document.getElementById('avatarListHoverNameText');
-        if (!nameDiv) {
-            nameDiv = document.createElement('div');
-            nameDiv.id = 'avatarListHoverNameText';
-            container.appendChild(nameDiv);
-        }
-
-        let tooltipArrow = document.getElementById('avatarListTooltipArrow');
-        if (!tooltipArrow) {
-            let tooltipArrow = document.createElement('img');
-            tooltipArrow.id = 'avatarListTooltipArrow';
-            tooltipArrow.src = 'svg/tooltip-arrow-up.svg';
-            container.appendChild(tooltipArrow);
-        }
-
-        if (name) {
-            nameDiv.innerText = isMyAvatar ? name + ' (you)' : name;
-        } else {
-            nameDiv.innerText = isMyAvatar ? 'You (Anonymous)' : 'Anonymous';
-        }
-        let width = Math.max(120, (nameDiv.innerText.length) * 12);
-        nameDiv.style.width = width + 'px';
-        container.style.width = width + 'px;'
-
-        // center the tooltip on the icon
-        let iconRelativeLeft = element.getBoundingClientRect().left - element.parentElement.getBoundingClientRect().left;
-        let iconHalfWidth = element.getBoundingClientRect().width / 2;
-        container.style.left = (iconRelativeLeft + iconHalfWidth) + 'px';
-        container.style.display = '';
-    }
-
-    function hideFullNameTooltip() {
-        let nameDiv = document.getElementById('avatarListHoverName');
-        if (nameDiv) {
-            nameDiv.style.display = 'none';
         }
     }
 
@@ -680,7 +514,6 @@ createNameSpace("realityEditor.avatar.draw");
     exports.renderOtherAvatars = renderOtherAvatars;
     exports.renderMyAvatar = renderMyAvatar;
     exports.updateAvatarName = updateAvatarName;
-    exports.renderAvatarIconList = renderAvatarIconList;
     exports.renderCursorOverlay = renderCursorOverlay;
     exports.renderConnectionFeedback = renderConnectionFeedback;
     exports.renderConnectionDebugInfo = renderConnectionDebugInfo;
