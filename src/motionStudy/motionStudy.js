@@ -281,6 +281,10 @@ export class MotionStudy {
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         this.humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
+
+        if (!this.humanPoseAnalyzer.isAnimationPlaying() && this.videoPlayer) {
+            this.videoPlayer.currentTime = (time - this.videoStartTime) / 1000;
+        }
     }
 
     /**
