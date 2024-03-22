@@ -27,6 +27,10 @@ export class Animation {
         this.playing = true;
 
         this.animationState = AnimationState.noVideo;
+
+        if (this.videoPlayer) {
+            this.attachVideoPlayerEvents();
+        }
     }
 
     get videoPlayer() {
@@ -35,6 +39,19 @@ export class Animation {
 
     get videoStartTime() {
         return this.motionStudy.videoStartTime;
+    }
+
+    attachVideoPlayerEvents() {
+        this.videoPlayer.colorVideo.addEventListener('play', () => {
+            if (this.animationState === AnimationState.video) {
+                this.playing = true;
+            }
+        });
+        this.videoPlayer.colorVideo.addEventListener('pause', () => {
+            if (this.animationState === AnimationState.video) {
+                this.playing = false;
+            }
+        });
     }
 
     update(time) {
@@ -89,9 +106,8 @@ export class Animation {
     }
 
     stopVideoPlayback() {
-        this.videoPlayer.hide();
-        this.videoPlayer.pause();
         this.animationState = AnimationState.noVideo;
+        this.videoPlayer.pause();
     }
 
     isVideoPlayerInControl(cursorTime) {
