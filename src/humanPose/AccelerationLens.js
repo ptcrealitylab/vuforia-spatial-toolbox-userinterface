@@ -43,26 +43,51 @@ export class AccelerationLens extends MotionStudyLens {
         const previousPreviousPose = previousPose ? previousPose.metadata.previousPose : null;
         if (!previousPose) {
             pose.forEachJoint(joint => {
-                joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose
+                // Velocity and acceleration are zero for the first pose
+                joint.velocity = new THREE.Vector3(); 
                 joint.speed = 0;
-                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
+                joint.acceleration = new THREE.Vector3();
                 joint.accelerationMagnitude = 0;
             });
         } else if (!previousPreviousPose) {
             pose.forEachJoint(joint => {
                 const previousJoint = previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
-                joint.speed = joint.velocity.length();
-                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
-                joint.accelerationMagnitude = 0;
+                if (!joint.valid || !previousJoint.valid) {
+                    // Velocity and acceleration are zero if a joint is invalid in current or previous pose
+                    joint.velocity = new THREE.Vector3();
+                    joint.speed = 0;
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = 0;
+                } else {  // joint.valid == true && previousJoint.valid == true 
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    // Acceleration is zero for the second pose
+                    joint.acceleration = new THREE.Vector3(); 
+                    joint.accelerationMagnitude = 0;
+                }
             });
         } else {
             pose.forEachJoint(joint => {
                 const previousJoint = previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
-                joint.speed = joint.velocity.length();
-                joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
-                joint.accelerationMagnitude = joint.acceleration.length();
+                const previousPreviousJoint = previousPreviousPose.getJoint(joint.name);
+                if (!joint.valid || !previousJoint.valid) {
+                    // Velocity and acceleration are zero if a joint is invalid in current or previous pose
+                    joint.velocity = new THREE.Vector3();
+                    joint.speed = 0;
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = 0;
+                } else if (!previousPreviousJoint.valid) {   // joint.valid == true && previousJoint.valid == true
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    // Acceleration is zero if a joint is invalid in previous previous pose
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = 0;
+                } else {  // joint.valid == true && previousJoint.valid == true && previousPreviousJoint.valid == true
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
+                    joint.accelerationMagnitude = joint.acceleration.length();
+                }
             });
         }
         return true;
