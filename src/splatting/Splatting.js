@@ -1,5 +1,12 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
+/*
+ *  MIT License
+ *  Copyright (c) 2023 Kevin Kwok
+ *
+ *  Use of the original version of this source code is governed by a license
+ *  that can be found in the LICENSE_splat file in the thirdPartyCode directory.
+ */
 
 let gsInitialized = false;
 let gsActive = false;

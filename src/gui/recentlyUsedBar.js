@@ -15,12 +15,10 @@ class RecentlyUsedBar {
 
         this.iconElts = [];
         this.capacity = 3;
-        this.hoveredFrameId = null;
-        this.hoverAnimationPercent = 0;
-        this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line
-        this.lastAnimationPositions = null;
         this.lastDraw = Date.now();
-        this.canvasHasContent = false;
+        this.hoverAnimation = new LineToFrameAnimation(this.ctx, null, false);
+        this.animations = [this.hoverAnimation];
+
 
         this.callbacks = {
             onIconStartDrag: [],
@@ -159,11 +157,11 @@ class RecentlyUsedBar {
 
     onIconPointerOver(event) {
         const iconElt = event.target;
-        this.hoveredFrameId = iconElt.dataset.frameId;
+        this.hoverAnimation.hoveredFrameId = iconElt.dataset.frameId;
     }
 
     onIconPointerOut(event) {
-        this.hoveredFrameId = null;
+        this.hoverAnimation.hoveredFrameId = null;
 
         const iconElt = event.target;
         if (this.dragState.pointerDown &&
@@ -364,17 +362,10 @@ class RecentlyUsedBar {
 
     renderCanvas() {
         try {
-            if (this.canvasHasContent) {
-                this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            }
-
+            this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             this.updateAnimationPercent();
 
-            if (this.hoverAnimationPercent <= 0) {
-                this.lastAnimationPositions = null;
-            } else {
-                this.renderAnimation();
-            }
+            this.renderAnimation();
         } catch (e) {
             console.warn(e);
         }
@@ -384,6 +375,50 @@ class RecentlyUsedBar {
     updateAnimationPercent() {
         let dt = Date.now() - this.lastDraw;
         this.lastDraw += dt;
+        for (let animation of this.animations) {
+            animation.updateAnimationPercent(dt);
+        }
+    }
+
+    renderAnimation() {
+        for (let animation of this.animations) {
+            if (animation.hoverAnimationPercent <= 0) {
+                animation.lastAnimationPositions = null;
+            } else {
+                animation.renderAnimation();
+            }
+        }
+    }
+
+    /**
+     * Create a new LineToFrameAnimation, adding it to our list of updating
+     * animations
+     * @param {string} frameId
+     * @param {boolean} startFromSearch
+     * @return {LineToFrameAnimation}
+     */
+    createAnimation(frameId, startFromSearch) {
+        let animation = new LineToFrameAnimation(this.ctx, frameId, startFromSearch);
+        this.animations.push(animation);
+        return animation;
+    }
+
+    removeAnimation(animation) {
+        this.animations = this.animations.filter(a => a !== animation);
+    }
+}
+
+class LineToFrameAnimation {
+    constructor(ctx, hoveredFrameId, startFromSearch) {
+        this.ctx = ctx;
+        this.hoveredFrameId = hoveredFrameId;
+        this.startFromSearch = startFromSearch;
+        this.hoverAnimationPercent = 0;
+        this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line
+        this.lastAnimationPositions = null;
+    }
+
+    updateAnimationPercent(dt) {
         // the line animates forwards and backwards over time
         if (this.hoveredFrameId) {
             this.hoverAnimationPercent = Math.min(1,
@@ -399,27 +434,35 @@ class RecentlyUsedBar {
 
     renderAnimation() {
         // draw animated line from hovered icon element to tool
-        // if we stop hovering, draw a receding animation back to the last hovered icon element 
+        // if we stop hovering, draw a receding animation back to the last hovered icon element
         if (!this.hoveredFrameId && !this.lastAnimationPositions) return;
 
         let frameScreenPosition = this.hoveredFrameId ?
             realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
             this.lastAnimationPositions.frame;
 
-        let iconElt = this.getIcon(this.hoveredFrameId);
-        if (this.hoveredFrameId && !iconElt) {
-            this.hoveredFrameId = null;
-            return;
+        let lineStartX = 0;
+        let lineStartY = 0;
+        if (this.startFromSearch) {
+            lineStartX = window.innerWidth / 2;
+            lineStartY = 115;
+        } else {
+            let iconElt = recentlyUsedBar.getIcon(this.hoveredFrameId);
+            if (this.hoveredFrameId && !iconElt) {
+                this.hoveredFrameId = null;
+                return;
+            }
+
+            let iconRect = this.hoveredFrameId ? iconElt.getBoundingClientRect() : null;
+            let iconBottom = this.hoveredFrameId ?
+                { x: iconRect.left + iconRect.width / 2,  y: iconRect.bottom } :
+                this.lastAnimationPositions.icon;
+
+            lineStartX = iconBottom.x;
+            lineStartY = iconBottom.y + 5;
         }
 
-        let iconRect = this.hoveredFrameId ? iconElt.getBoundingClientRect() : null;
-        let iconBottom = this.hoveredFrameId ?
-            { x: iconRect.left + iconRect.width / 2,  y: iconRect.bottom } :
-            this.lastAnimationPositions.icon;
-
-        let lineStartX = iconBottom.x;
-        let lineStartY = iconBottom.y + 5;
-        let lineNextY = iconBottom.y + 15;
+        let lineNextY = lineStartY + 10;
 
         // the line gets a fast, smooth, fade-in animation by having
         // multiple layers animate in/out with different speeds
@@ -453,17 +496,17 @@ class RecentlyUsedBar {
             this.ctx.closePath();
         });
 
-        this.canvasHasContent = true; // so we can clear the canvas only when necessary
-
         // keep track of the line's start and end, so we can do reverse animation
         // when you stop hovering over the active icon element
         if (this.hoveredFrameId) {
             this.lastAnimationPositions = {
-                icon: { x: iconBottom.x, y: iconBottom.y },
+                icon: { x: lineStartX, y: lineStartY - 5 },
                 frame: { x: frameScreenPosition.x, y: frameScreenPosition.y }
             }
         }
     }
 }
 
-realityEditor.gui.recentlyUsedBar = new RecentlyUsedBar();
+let recentlyUsedBar = new RecentlyUsedBar();
+realityEditor.gui.recentlyUsedBar = recentlyUsedBar;
+realityEditor.gui.LineToFrameAnimation = LineToFrameAnimation;
