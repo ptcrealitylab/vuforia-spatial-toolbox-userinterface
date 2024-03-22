@@ -1117,7 +1117,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
     }
 
     /**
-     * @return {mainRenderer} Various internal objects necessary for advanced (hacky) functions
+     * @return {Renderer} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
         return mainRenderer;

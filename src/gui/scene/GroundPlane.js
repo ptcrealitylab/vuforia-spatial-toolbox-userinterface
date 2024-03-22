@@ -1,7 +1,7 @@
 import * as THREE from "../../../thirdPartyCode/three/three.module.js"
 
 /**
- * @typedef {number} Milimeters
+ * @typedef {number} Millimeters
  */
 
 /**
@@ -13,7 +13,7 @@ class GroundPlane {
 
     /**
      * 
-     * @param {Milimeters} size 
+     * @param {Millimeters} size 
      */
     constructor(size) {
         const geometry = new THREE.PlaneGeometry(size, size);
