@@ -42,14 +42,19 @@ export class Animation {
     }
 
     attachVideoPlayerEvents() {
-        this.videoPlayer.colorVideo.addEventListener('play', () => {
-            if (this.animationState === AnimationState.video) {
-                this.playing = true;
-            }
+        const video = this.videoPlayer.colorVideo;
+        video.addEventListener('play', () => {
+            this.playing = true;
         });
-        this.videoPlayer.colorVideo.addEventListener('pause', () => {
-            if (this.animationState === AnimationState.video) {
+        video.addEventListener('pause', () => {
+            if (this.animationState !== AnimationState.video) {
+                return;
+            }
+
+            if (this.humanPoseAnalyzer.active) {
                 this.playing = false;
+            } else if (this.playing) {
+                this.videoPlayer.play();
             }
         });
     }
