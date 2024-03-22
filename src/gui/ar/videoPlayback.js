@@ -245,6 +245,8 @@ class VideoPlayer extends Followable {
 
         this.shaderMode = ShaderMode.SOLID; // default to the non-first-person shader
 
+        this.manuallyHidden = false;
+
         this.decoder = new TextDecoder();
 
         // this.debugBox = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshNormalMaterial());
@@ -337,7 +339,9 @@ class VideoPlayer extends Followable {
         if (this.frameKey) {
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
         }
-        this.pointCloud.visible = true;
+        if (!this.manuallyHidden) {
+            this.pointCloud.visible = true;
+        }
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
     }
     
@@ -349,13 +353,21 @@ class VideoPlayer extends Followable {
         this.colorVideo.pause();
     }
 
+    isShown() {
+        return !this.manuallyHidden &&
+            this.pointCloud &&
+            this.pointCloud.visible;
+    }
+
     show() {
+        this.manuallyHidden = false;
         if (this.pointCloud) {
             this.pointCloud.visible = true;
         }
     }
 
     hide() {
+        this.manuallyHidden = true;
         if (this.pointCloud) {
             this.pointCloud.visible = false;
         }
