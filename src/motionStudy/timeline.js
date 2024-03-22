@@ -672,7 +672,7 @@ export class Timeline {
         let hpa = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
         if (hpa && hpa.animationMode === AnimationMode.region) {
             let icon = this.iconPlay;
-            if (hpa.animation && hpa.animation.playing) {
+            if (hpa.isAnimationPlaying()) {
                 icon = this.iconPause;
             }
             const iconSize = rowHeight - 2 * rowPad;

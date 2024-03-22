@@ -922,6 +922,10 @@ export class HumanPoseAnalyzer {
         this.prevAnimationState = null;
     }
 
+    isAnimationPlaying() {
+        return this.animation && this.animation.playing;
+    }
+
     setHistoricalPoseRenderersOpacity(opacity) {
         for (let hpr of this.historicalPoseRenderers) {
             if (hpr.material.opacity !== opacity) {
