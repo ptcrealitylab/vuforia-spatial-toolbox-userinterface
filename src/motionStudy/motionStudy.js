@@ -190,6 +190,9 @@ export class MotionStudy {
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+        if (this.videoPlayer) {
+            pinnedRegionCardsContainer.classList.add('analytics-has-video');
+        }
         // Prevent camera control from stealing attempts to scroll the container
         pinnedRegionCardsContainer.addEventListener('wheel', (event) => {
             event.stopPropagation();
@@ -464,6 +467,10 @@ export class MotionStudy {
             this.videoPlayer.colorVideo.controls = true;
             this.videoPlayer.colorVideo.style.display = '';
             this.videoPlayer.colorVideo.classList.add('analytics-video');
+            this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
+
+            this.createVideoPlayerShowHideButton();
+
             this.container.appendChild(this.videoPlayer.colorVideo);
         }
 
@@ -490,6 +497,23 @@ export class MotionStudy {
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
+    }
+
+    createVideoPlayerShowHideButton() {
+        this.videoPlayerShowHideButton = document.createElement('div');
+        this.videoPlayerShowHideButton.classList.add('analytics-video-toggle');
+        this.videoPlayerShowHideButton.classList.add('analytics-button-container');
+        this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+        this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
+            if (this.videoPlayer.isShown()) {
+                this.videoPlayer.hide();
+                this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+            } else {
+                this.videoPlayer.show();
+                this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
+            }
+        });
+        this.container.appendChild(this.videoPlayerShowHideButton);
     }
 
     addRegionCard(regionCard) {
