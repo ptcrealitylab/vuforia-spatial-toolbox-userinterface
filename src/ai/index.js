@@ -51,7 +51,51 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         User C added a measurement tool into the scene, with center around coordinates (67, 139, 486).
         User C added a measure line from (3, 349, 22) to (254, 463, 956). The length is xxx.
     `;
-    let question1 = ``;
+    let question2 = `
+    Metaverse was created by Ben Reynolds on March 20th, 2024 at 15:03, with the name "Harpak Ulma Troubleshooting".
+    James Hobin joined the space at 15:08.
+    Daniel Dangond joined the space at 15:08.
+    Keranie Theodosiou joined the space at 15:08.
+    Steve Xie joined the space at 15:08.
+    Ben Reynolds added a spatialDraw tool at 15:10 with coordinates (982, 92, 222).
+    James Hobin, Daniel Dangond, Keranie Theodosiou, and Steve Xie opened the spatialDraw tool and annotated the space.
+    Keranie Theodosiou added a communication tool at 15:11.
+    Keranie, Ben, and Steve reviewed the cable connections in the communication tool.
+    James Hobin added a communication tool at 15:12, mentioning the cable falled out in testing.
+    Ben Reynolds added a spatialAnalytics tool at 16:10, and started recording the worker's pose for later analysis.`;
+
+    // todo Steve: for the MS recording
+    let question3 = `
+    James Hobin joined the space at 15:08
+    Daniel Dangond joined the space at 15:08
+    Keranie Theodosiou joined the space at 15:08
+    Steve Xie joined the space at 15:08
+    Ben Reynolds added a spatialDraw tool at 15:09 with coordinates (1109, -825, -820)
+    Ben Reynolds opened a spatialDraw tool at 15:10 and annotated the space
+    James Hobin opened a spatialDraw tool at 15:10 and annotated the space
+    Daniel Dangond opened a spatialDraw tool at 15:10 and annotated the space
+    Keranie Theodosiou opened a spatialDraw tool at 15:10 and annotated the space
+    Steve Xie opened a spatialDraw tool at 15:10 and annotated the space
+    Keranie Theodosiou closed a spatialDraw tool at 15:11
+    Ben Reynolds closed a spatialDraw tool at 15:11
+    Keranie Theodosiou added a communication tool at 15:11 with coordinates (334, -762, -1752)
+    Keranie Theodosiou opened a communication tool at 15:11 and and discussed about some issues
+    Ben Reynolds opened a communication tool at 15:11 and discussed about some issues
+    Ben Reynolds closed a communication tool at 15:11
+    Steve Xie closed a spatialDraw tool at 15:12
+    Steve Xie opened a communication tool at 15:12 and discussed about some issues
+    James Hobin closed a spatialDraw tool at 15:12
+    James Hobin added a communication tool at 15:12 with coordinates (983, 229, -1435)
+    James Hobin opened a communication tool at 15:13 and discussed about some issues
+    Ben Reynolds opened a communication tool at 15:13 and discussed about some issues
+    Ben Reynolds closed a communication tool at 15:15
+    Ben Reynolds added a spatialAnalytics tool at 16:10
+    Ben Reynolds opened a spatialAnalytics tool at 16:10 and started recording the worker's pose for later analysis
+    Keranie Theodosiou opened a spatialAnalytics tool at 16:10 and started recording the worker's pose for later analysis
+    James Hobin opened a spatialAnalytics tool at 16:10 and started recording the worker's pose for later analysis
+    Ben Reynolds opened a communication tool at 16:12 and discussed about some issues`;
+    
+    let question1 = '';
     
     // let categorize_prompt = 'Categorize this question into one or more of the 5 categories: 1. summary, what did I miss, what happened; 2. debug, fix stuff, machine data, data source; 3. 3D scene understanding; 4. summarize documents, pdfs, txts, manuals, images; 5. tool contents. 6. Other. Your answer will be formatted in "number, <the corresponding question>" if only 1 category, and ["number, <the corresponding question>", "number, <the corresponding question>", ...] if multiple categories.';
     // let categorize_prompt = 'Categorize this question into one of the 6 categories: 1. summary, what did I miss, what happened; 2. debug, fix stuff, machine data, data source; 3. 3D scene understanding, spatial draw, chat, communication, spatial video, spatial recording, spatial analytics, onShape, spatial measurement, tool types; 4. summarize documents, pdfs, txts, manuals, images; 5. tool contents; 6. Other. You can only choose one of the following number as your answer: 1, 2, 3, 4, 5, 6.';
@@ -155,7 +199,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         
         let timestamp = getFormattedTime();
         let frameType = frame.src;
-        let newInfo = `${avatarName} opened a ${frameType} tool at ${timestamp}`;
+        let additionalDescription = '';
+        if (frameType === 'spatialDraw') {
+            additionalDescription = ' and annotated the space';
+        } else if (frameType === 'spatialAnalytics') {
+            additionalDescription = " and started recording the worker's pose for later analysis";
+        } else if (frameType === 'spatialMeasure') {
+            additionalDescription = ' and measured some objects in the space';
+        } else if (frameType === 'communication') {
+            additionalDescription = ' and discussed about some issues';
+        }
+        let newInfo = `${avatarName} opened a ${frameType} tool at ${timestamp} ${additionalDescription}`;
         question1 += `\n${newInfo}`;
     }
 
@@ -192,15 +246,22 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     
     function onAvatarChangeName(oldName, newName) {
-        let newInfo = `User ${oldName} has changed their name to ${newName}`;
-        question1 += `\n${newInfo}`;
+        // return; // todo Steve: for the MS recording
+        let timestamp = getFormattedTime();
+        if (oldName === null) {
+            let newInfo = `User ${newName} joined the space at ${timestamp}`;
+            question1 += `\n${newInfo}`;
+        } else {
+            let newInfo = `User ${oldName} has changed their name to ${newName}`;
+            question1 += `\n${newInfo}`;
+        }
     }
     
     function getFormattedTime() {
         return new Date().toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit',
+            // second: '2-digit',
             hour12: false // Set to true for AM/PM format
         });
     }
@@ -230,7 +291,48 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         setupSystemEventListeners();
     }
     
+    function authorSetToString(authorSet) {
+        let authorSetArr = Array.from(authorSet);
+        let authorSetString = '';
+        if (authorSetArr.length === 1) {
+            authorSetString = `${authorSetArr[0]}`;
+            return authorSetString;
+        }
+        for (let i = 0; i < authorSetArr.length; i++) {
+            if (i === 0) {
+                authorSetString += authorSetArr[0];
+            } else if (i === authorSetArr.length - 1) {
+                authorSetString += `, and ${authorSetArr[authorSetArr.length - 1]}`;
+            } else {
+                authorSetString += `, ${authorSetArr[i]}`;
+            }
+        }
+        return authorSetString;
+    }
+    
     function askQuestion() {
+        let authorAll = [];
+        let chatAll = [];
+        // todo Steve: for the MS recording
+        let frames = realityEditor.worldObjects.getBestWorldObject().frames;
+        for (const frameId in frames) {
+            const frame = frames[frameId];
+            if (frame.src === 'communication') {
+                const storage = Object.values(frame.nodes)[0];
+                const messages = storage.publicData.messages;
+                let authorSet = new Set();
+                let chat = '';
+                for (const message of messages) {
+                    authorSet.add(message.author);
+                    chat += message.messageText;
+                    chat += '. ';
+                }
+                authorAll.push(authorSetToString(authorSet));
+                chatAll.push(chat);
+            }
+        }
+        // authorAll = ["Keranie Theodosiou, Ben Reynolds, and Steve Xie", "James Hobin and Ben Reynolds"];
+        // chatAll = ["Please check the connections here. Ok, we'll have our technician take a look. The top left corner cables look correct. Verified. Everything was reviewed. ", "Is this one connected properly? Remember this falling out in testing. We will check this."]
         let dialogueLengthTotal = dialogueContainer.children.length;
         let maxDialogueLength = Math.min(PAST_MESSAGES_INCLUDED, dialogueLengthTotal);
         let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
@@ -245,7 +347,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             if (child.classList.contains('ai-chat-tool-dialogue-my')) {
                 if (i === lastDialogueIndex - 1) { // last dialogue, need to include the categorize question here
                     // conversation[conversationObjectIndex] = { role: "user", content: `${child.innerText}`, extra: `${categorize_prompt}` };
-                    conversation[conversationObjectIndex] = { role: "user", content: `${question1}\n${child.innerText}`, extra: `${categorize_prompt}` };
+                    conversation[conversationObjectIndex] = { role: "user", 
+                        content: `${question1}\n${child.innerText}`, 
+                        extra: `${categorize_prompt}`, 
+                        communicationToolInfo: {
+                            authorAll,
+                            chatAll
+                        } 
+                    };
                 } else {
                     conversation[conversationObjectIndex] = {role: "user", content: `${child.innerText}`};
                 }
@@ -428,13 +537,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     function pushAIDialogue(text) {
+        console.log(text);
         if (!text.trim()) {
             console.log('error');
             return;
         }
+        let html = text.replace(/\n/g, '<br><br>');
         let d = document.createElement('div');
         d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai');
-        d.innerText = text;
+        // d.innerText = text;
+        d.innerHTML = html;
         dialogueContainer.append(d);
         scrollToBottom();
     }
