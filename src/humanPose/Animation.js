@@ -80,7 +80,7 @@ export class Animation {
         // Adjusted cursorTime that might be tracking a
         // wobbly-relative-to-real-time video playback
         let cursorTimeAdj = this.cursorTime;
-        if (this.isVideoPlayerInControl(cursorTimeAdj)) {
+        if (this.isVideoPlayerInControl(cursorTimeAdj) && this.playing) {
             if (this.animationState !== AnimationState.video) {
                 this.startVideoPlayback(cursorTimeAdj);
             } else {
