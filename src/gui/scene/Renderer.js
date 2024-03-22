@@ -106,6 +106,14 @@ class Renderer {
 
     /**
      * 
+     * @param {() => void} func 
+     */
+    setAnimationLoop(func) {
+        this.#renderer.setAnimationLoop(func);
+    }
+
+    /**
+     * 
      * @param {string} name 
      * @returns {THREE.Object3D|undefined}
      */
