@@ -1217,10 +1217,19 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.getToolPosition = function(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-        return realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+        let tp = realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, toolSceneNode, groundPlaneNode);
+        return new THREE.Vector3(tp.x, tp.y, tp.z);
+    }
+    
+    exports.getCameraPosition = function() {
+        let cameraSceneNode = realityEditor.sceneGraph.getCameraNode();
+        let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+        let cp = realityEditor.sceneGraph.convertToNewCoordSystem({x: 0, y: 0, z: 0}, cameraSceneNode, groundPlaneNode);
+        return new THREE.Vector3(cp.x, cp.y, cp.z);
     }
 
     // gets the direction the tool is facing, within the coordinate system of the groundplane
+    // todo Steve: currently this is not correct. Need further debugging
     exports.getToolDirection = function(toolId) {
         let toolSceneNode = realityEditor.sceneGraph.getSceneNodeById(toolId);
         let groundPlaneNode = realityEditor.sceneGraph.getGroundPlaneNode();

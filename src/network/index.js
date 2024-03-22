@@ -649,8 +649,9 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {Objects} origin - the local copy of the Object
  * @param {Objects} remote - the copy of the Object downloaded from the server
  * @param {string} objectKey
+ * @param {string} avatarName
  */
-realityEditor.network.updateObject = function (origin, remote, objectKey) {
+realityEditor.network.updateObject = function (origin, remote, objectKey, avatarName) {
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -685,6 +686,13 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].uuid = frameKey;
             
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
+            // todo Steve: added a new frame
+            let params = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                frameType: origin.frames[frameKey].src,
+            };
+            realityEditor.ai.onFrameAdded(params, avatarName);
 
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
@@ -735,6 +743,16 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
             realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
+        
+            // todo Steve: deleted a frame
+            let params = {
+                objectKey: objectKey,
+                frameKey: frameKey,
+                additionalInfo: {
+                    frameType: frameType,
+                },
+            }
+            realityEditor.ai.onVehicleDeleted(params, avatarName);
         }
     }
 };
@@ -892,7 +910,7 @@ realityEditor.network.onAction = function (action) {
             action: action
         };
     }
-
+    
     if (thisAction.lastEditor === globalStates.tempUuid) {
         return;
     }
@@ -977,7 +995,8 @@ realityEditor.network.onAction = function (action) {
                     }
                 }
                 
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey);
+                let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(thisAction.lastEditor);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey, avatarName);
 
                 _this.cout("got object");
 
@@ -996,6 +1015,15 @@ realityEditor.network.onAction = function (action) {
                 realityEditor.network.reloadFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction);
             }, 500);
         }
+        
+        // todo Steve: repositioned a frame
+        let params = {
+            objectKey: thisFrame.objectId,
+            frameKey: thisFrame.uuid,
+            frameType: thisFrame.src,
+        };
+        let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(thisAction.lastEditor);
+        realityEditor.ai.onFrameRepositioned(params, avatarName);
     }
 
     if (typeof thisAction.reloadNode !== "undefined") {
@@ -2377,6 +2405,33 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
 
+realityEditor.network.postQuestionToAI = function(conversation) {
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+    let route = '/ai';
+    
+    // let question = 'What year was Microsoft founded?';
+
+    // callback(null, JSON.parse(request.responseText));
+    this.postData(realityEditor.network.getURL(ip, port, route), 
+        {
+            conversation: conversation
+        }, 
+        function (err, res) {
+        if (err) {
+            console.warn('postNewNode error:', err);
+        } else {
+            console.log(res);
+            if (res.tools !== undefined) {
+                realityEditor.ai.getToolAnswer(res.category, res.tools);
+            } else {
+                realityEditor.ai.getAnswer(res.category, res.answer);
+            }
+        }
+    });
+}
+
 /**
  * When the settings menu posts up its new state to the rest of the application, refresh/update all settings
  * Also used for the settings menu to request data from the application, such as the list of Found Objects
@@ -2803,6 +2858,7 @@ realityEditor.network.postData = function (url, body, callback) {
 
         if (request.status >= 200 && request.status <= 299) {
             try {
+                // console.log(request);
                 callback(null, JSON.parse(request.responseText));
             } catch (e) {
                 callback({status: request.status, error: e, failure: true}, null);

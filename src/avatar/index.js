@@ -73,6 +73,11 @@ createNameSpace("realityEditor.avatar");
     let isDesktop = false;
 
     function initService() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'g' || e.key === 'G') {
+                console.log(connectedAvatarUserProfiles);
+            }
+        })
         network = realityEditor.avatar.network;
         draw = realityEditor.avatar.draw;
         iconMenu = realityEditor.avatar.iconMenu;
@@ -213,6 +218,12 @@ createNameSpace("realityEditor.avatar");
         });
     }
     
+    // todo Steve: a function that subscribes to different users, so that whenever me / another user perform some actions, the user info should be included as part of the info in the action message,
+    //  eg: when added a frame, realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', callback) should include who added the frame in the callback parameter.
+    //  very similar to the function above 'getUserDetails'
+    
+    // todo Steve: object.json, last editor
+    
     function addLinkCanvas() {
         let linkCanvasContainer = document.createElement('div');
         linkCanvasContainer.className = 'link-canvas-container';
@@ -309,7 +320,7 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
+        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null, globalStates.tempUuid);
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -393,6 +404,9 @@ createNameSpace("realityEditor.avatar");
 
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
             const userProfile = msgContent.publicData.userProfile;
+            if (avatarNames[msgContent.object] !== userProfile.name) {
+                realityEditor.ai.onAvatarChangeName(avatarNames[msgContent.object], userProfile.name);
+            }
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
                 connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null);
@@ -524,7 +538,10 @@ createNameSpace("realityEditor.avatar");
      */
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
+        realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name);
         connectedAvatarUserProfiles[myAvatarId].name = name;
+        let sessionId = globalStates.tempUuid;
+        connectedAvatarUserProfiles[myAvatarId].sessionId = sessionId;
         draw.updateAvatarName(myAvatarId, name);
         iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
@@ -716,6 +733,19 @@ createNameSpace("realityEditor.avatar");
             return utils.getColor(realityEditor.getObject(objectKey));
         }
     }
+
+    function getAvatarNameFromSessionId(sessionId) {
+        for (let objectKey in connectedAvatarUserProfiles) {
+            if (!connectedAvatarUserProfiles[objectKey]) {
+                return;
+            }
+            let userProfile = connectedAvatarUserProfiles[objectKey];
+            if (userProfile.sessionId !== sessionId) {
+                continue;
+            }
+            return userProfile.name;
+        }
+    }
     
     function getLinkCanvasInfo() {
         return {
@@ -739,6 +769,7 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
+    exports.getAvatarNameFromSessionId = getAvatarNameFromSessionId;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.writeMyLockOnMode = writeMyLockOnMode;
