@@ -510,7 +510,6 @@ export const JOINT_RADIUS = 0.02; // unit: meters
 export const BONE_RADIUS = 0.01; // unit: meters
 export const SCALE = 1000; // we want to scale up the size of individual joints to milimeters, but not apply the scale to their positions
 
-export const RENDER_CONFIDENCE_COLOR = false;
 // Amount of pose instances per historical HumanPoseRenderer
 export const MAX_POSE_INSTANCES = 512;
 export const MAX_POSE_INSTANCES_MOBILE = 8;

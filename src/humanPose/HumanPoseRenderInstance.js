@@ -3,7 +3,6 @@ import {
     JOINT_TO_INDEX,
     BONE_TO_INDEX,
     SCALE,
-    RENDER_CONFIDENCE_COLOR,
     HIDDEN_JOINTS,
     HIDDEN_BONES,
     DISPLAY_HIDDEN_ELEMENTS,
@@ -223,7 +222,7 @@ export class HumanPoseRenderInstance {
         });
         // MK - why this condition (lens === this.lens)? When switching lens this is not true and this is not applied. 
         // Extra code needs to call this again after this.lens is updated to new lens.  
-        if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
+        if (lens === this.lens) {
             this.pose.forEachJoint(joint => {
                 this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
             });
@@ -231,21 +230,6 @@ export class HumanPoseRenderInstance {
                 this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
             });
         }
-    }
-
-    /**
-     * Sets joint color using pose confidence
-     * @param {string} jointName - name of joint to set color of
-     * @param {number} confidence - confidence value to set color to
-     */
-    setJointConfidenceColor(jointName, confidence) {
-        if (typeof JOINT_TO_INDEX[jointName] === 'undefined') {
-            return;
-        }
-        let baseColorHSL = MotionStudyColors.base.getHSL({});
-        baseColorHSL.l = baseColorHSL.l * confidence;
-        let color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
-        this.setJointColor(jointName, color);
     }
 
     setVisible(visible) {

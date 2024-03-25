@@ -5,7 +5,7 @@ import {
     getGroundPlaneRelativeMatrix,
     setMatrixFromArray
 } from './utils.js';
-import {JOINTS,JOINT_CONNECTIONS, JOINT_TO_INDEX, RENDER_CONFIDENCE_COLOR} from './constants.js';
+import {JOINTS,JOINT_CONNECTIONS, JOINT_TO_INDEX} from './constants.js';
 import {Pose} from "./Pose.js";
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 
@@ -129,11 +129,6 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
             }
         }
         jointConfidences[jointId] = confidence;
-
-        if (RENDER_CONFIDENCE_COLOR) {
-
-            poseRenderInstance.setJointConfidenceColor(jointId, confidence);
-        }
     }
 
     const poseHasParent = poseObject.parent && (poseObject.parent !== 'none');
