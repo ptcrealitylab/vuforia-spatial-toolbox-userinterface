@@ -31,6 +31,9 @@ function angleBetween(vector1, vector2) {
 
 /**
  * Sets the score and color for the neck reba.
+ * Starting with score=1
+ * +1 for forward bending > 20 degrees or backward bending > 5 degrees
+ * +1 if side bending or twisting wrt shoulders
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function neckReba(rebaData) {
@@ -44,32 +47,41 @@ function neckReba(rebaData) {
     
     // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
     const upMisalignmentAngle = angleBetween(headUp, rebaData.orientations.chest.up);
-    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);
+    // all vectors are normalised, so dot() == cos(angle between vectors) 
+    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);  
     const backwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward.clone().negate());
     const rightBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right);
     const leftBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
     // Check for bending
+    let sideBend = false;
     const bendingThreshold = 20 + 10; // 20 according to official REBA, adjusting due to noisy inputs
     if (upMisalignmentAngle > bendingThreshold) {
         neckScore++; // +1 for greater than threshold
-        if (forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) {
-            neckScore++; // +1 for side-bending or back-bending greater than threshold
-        }
+
+        // check for side-bending only when above the overall bending threshold
+        // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+        sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                    (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
     } else {
-        if (forwardBendingAlignment < backwardBendingAlignment) {
-            neckScore++; // +1 for back-bending any amount
+        if (forwardBendingAlignment < backwardBendingAlignment &&
+            upMisalignmentAngle > 5) {  // (5 deg not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
+            neckScore++; // +1 for back-bending more than few degrees
         }
     }
     
+    // Check for twisting of more degrees than bendingThreshold from straight ahead
     const twistRightAngle = angleBetween(headForward, rebaData.orientations.chest.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
-    
-    // Check for twisting of >20 degrees from straight ahead
-    if (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold)) {
-        neckScore++; // +1 for twisting
+    const twist = (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold));
+
+    // +1 for twisting or side-bending
+    if (sideBend || twist) {
+        neckScore++; 
     }
-    
+
+    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
+
     neckScore = clamp(neckScore, 1, 3);
 
     if (neckScore === 1 ) {
@@ -111,33 +123,33 @@ function neckReba(rebaData) {
  * +1 for any bending > 5 degrees
  * +1 for forward or backwards bending > 20 degrees
  * +1 for forward or backwards bending > 60 degrees
- * +1 if bending is sideways
- * +1 for twisting shoulders wrt hips
+ * +1 if side bending or twisting shoulders wrt hips
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function trunkReba(rebaData) {
     let trunkScore = 1;
     let trunkColor = MotionStudyColors.undefined;
     
+    // Comparisons should be relative to directions determined by hips
+    // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
     const chestUp = rebaData.orientations.chest.up;
     const chestForward = rebaData.orientations.chest.forward;
-    
-    // Comparisons should be relative to directions determined by hips
-
-    // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
     const up = new THREE.Vector3(0, 1, 0);
     const upMisalignmentAngle = angleBetween(chestUp, up);
+    // all vectors are normalised, so dot() == cos(angle between vectors) 
     const forwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward);
     const backwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward.clone().negate());
     const rightBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right);
     const leftBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right.clone().negate());
     
     // Check for bending
+    let sideBend = false;
     if (upMisalignmentAngle > 5) {
-        trunkScore++; // +1 for greater than 5 degrees
-        if ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment)) {
-            trunkScore++; // +1 for side-bending
-        }
+        trunkScore++; // +1 for greater than 5 degrees (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
+        // check for side-bending only when above the overall bending threshold
+        // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
+        sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                    (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
         if (upMisalignmentAngle > 20) {
             trunkScore++; // +1 for greater than 20 degrees
             if (upMisalignmentAngle > 60) {
@@ -146,12 +158,17 @@ function trunkReba(rebaData) {
         }
     }
     
+    // Check for twisting of more than twistThreshold from straight ahead
+    const twistThreshold = 30;
     const twistRightAngle = angleBetween(chestForward, rebaData.orientations.hips.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
-    
-    // Check for twisting
-    if (twistRightAngle < 70 || twistLeftAngle < 70) {
-        trunkScore++; // +1 for twisting
+    const twist = (twistRightAngle < (90 - twistThreshold) || twistLeftAngle < (90 - twistThreshold));
+
+    //console.log(`Trunk: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
+
+    // +1 for twisting or side-bending
+    if (sideBend || twist) {
+        trunkScore++; 
     }
     
     trunkScore = clamp(trunkScore, 1, 5);
@@ -492,6 +509,9 @@ function lowerArmReba(rebaData) {
 
 /**
  * Sets the score and color for the wrist reba.
+ * Starting with score=1
+ * +1 for wrist flexion/extention > 15 degrees
+ * +1 if bending from midline or twisting wrt elbow
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function wristReba(rebaData) {
@@ -522,28 +542,29 @@ function wristReba(rebaData) {
         // check if wrist position is outside +-15 deg, then +1
         const leftHandUp = new THREE.Vector3(); 
         leftHandUp.crossVectors(leftHandPinky2Index, leftHandDirection).normalize();   // note: swapped order compared to right hand
-        let wristPositionAngle = angleBetween(leftHandUp, leftForearmDirection) - 90;
+        const wristPositionAngle = angleBetween(leftHandUp, leftForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > 15) {
-            leftWristScore += 1;
+            leftWristScore++;
         }
 
-        // check if the hand is bent away from midline, then +1
+        // check if the hand is bent away from midline
         // the angle limit from midline is not specified in REBA definition (chosen by us)
-        let wristBendAngle = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);
-        if (Math.abs(wristBendAngle) > 30) {
-            leftWristScore += 1;
-        }
+        const wristBendAngle = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);
+        const sideBend = (Math.abs(wristBendAngle) > 30);
 
-        // check if the hand is twisted (palm up), then +1
+        // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
         const leftElbowAxis = new THREE.Vector3(); // direction towards the body
         leftElbowAxis.crossVectors(leftForearmDirection, leftUpperarmDirection).normalize(); // note: swapped order compared to right hand
-        let wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
-        if (wristTwistAngle > 120) {
-            leftWristScore += 1;
+        const wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
+        const twist = (wristTwistAngle > 120);
+
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            leftWristScore++; 
         }
 
-        //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+        //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, 3);
 
@@ -574,28 +595,29 @@ function wristReba(rebaData) {
         // check if wrist position is outside +-15 deg, then +1 
         const rightHandUp = new THREE.Vector3(); 
         rightHandUp.crossVectors(rightHandDirection, rightHandPinky2Index).normalize();
-        let wristPositionAngle = angleBetween(rightHandUp, rightForearmDirection) - 90;
+        const wristPositionAngle = angleBetween(rightHandUp, rightForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > 15) {
-            rightWristScore += 1;
+            rightWristScore++;
         }
 
-        // check if the hand is bent away from midline, then +1
+        // check if the hand is bent away from midline
         // the angle limit from midline is not specified in REBA definition (chosen by us)
-        let wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
-        if (Math.abs(wristBendAngle) > 30) {
-            rightWristScore += 1;
-        }
+        const wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
+        const sideBend = (Math.abs(wristBendAngle) > 30);
 
-        // check if the hand is twisted (palm up), then +1
+        // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
         const rightElbowAxis = new THREE.Vector3(); // direction towards the body
         rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
-        let wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
-        if (wristTwistAngle > 120) {
-            rightWristScore += 1;
+        const wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
+        const twist = (wristTwistAngle > 120);
+ 
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            rightWristScore++; 
         }
 
-        //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+        //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, 3);
 
