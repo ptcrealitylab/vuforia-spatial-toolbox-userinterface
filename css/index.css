@@ -1978,6 +1978,10 @@ Logic Interface CSS
     cursor: pointer;
 }
 
+.analytics-title {
+    margin-bottom: 10px;
+}
+
 .analytics-region-card {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
