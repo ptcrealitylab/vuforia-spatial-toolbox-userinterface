@@ -75,13 +75,14 @@ function neckReba(rebaData) {
     const twistLeftAngle = 180 - twistRightAngle;
     const twist = (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold));
 
+    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
+
     // +1 for twisting or side-bending
     if (sideBend || twist) {
         neckScore++; 
     }
 
-    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
-
+    
     neckScore = clamp(neckScore, 1, 3);
 
     if (neckScore === 1 ) {
@@ -159,17 +160,17 @@ function trunkReba(rebaData) {
     }
     
     // Check for twisting of more than twistThreshold from straight ahead
-    const twistThreshold = 30;
+    const twistThreshold = 25;
     const twistRightAngle = angleBetween(chestForward, rebaData.orientations.hips.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
     const twist = (twistRightAngle < (90 - twistThreshold) || twistLeftAngle < (90 - twistThreshold));
-
-    //console.log(`Trunk: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
 
     // +1 for twisting or side-bending
     if (sideBend || twist) {
         trunkScore++; 
     }
+
+    // console.log(`Trunk: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
     
     trunkScore = clamp(trunkScore, 1, 5);
 
@@ -909,17 +910,21 @@ function extractRebaData(pose) {
         rebaData.boneColors[boneId] = MotionStudyColors.undefined;
     }
     
-    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
+    // make sure these coord systems have orthogonal axes
     rebaData.orientations.head.up = rebaData.joints[JOINTS.HEAD].clone().sub(rebaData.joints[JOINTS.NECK]).normalize();
+    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
     rebaData.orientations.head.right = rebaData.orientations.head.forward.clone().cross(rebaData.orientations.head.up).normalize();
+    rebaData.orientations.head.forward = rebaData.orientations.head.up.clone().cross(rebaData.orientations.head.right).normalize();  // make perpendicular
     
     rebaData.orientations.chest.up = rebaData.joints[JOINTS.NECK].clone().sub(rebaData.joints[JOINTS.CHEST]).normalize();
     rebaData.orientations.chest.right = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]).normalize();
     rebaData.orientations.chest.forward = rebaData.orientations.chest.up.clone().cross(rebaData.orientations.chest.right).normalize();
+    rebaData.orientations.chest.right = rebaData.orientations.chest.forward.clone().cross(rebaData.orientations.chest.up).normalize();  // make perpendicular
     
     rebaData.orientations.hips.up = new THREE.Vector3(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up)
     rebaData.orientations.hips.right = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_HIP]).normalize();
     rebaData.orientations.hips.forward = rebaData.orientations.hips.up.clone().cross(rebaData.orientations.hips.right).normalize();
+    rebaData.orientations.hips.right = rebaData.orientations.hips.forward.clone().cross(rebaData.orientations.hips.up).normalize();  // make perpendicular
 
     return rebaData;
 }
