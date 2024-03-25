@@ -1,5 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {ShaderMode} from './Shaders.js';
+import { LayerConfig } from "../gui/scene/Camera.js";
 
 const DEBUG = false;
 
@@ -82,6 +83,8 @@ function makeDepthTexture(width, height) {
 export class VisualDiff {
     constructor(cameraVis) {
         this.cameraVis = cameraVis;
+        this.cameraVisScene = new THREE.Scene();
+        this.backgroundScene = new THREE.Scene();
         this.rtBase = null;
         this.rtCamera = null;
     }
@@ -112,7 +115,7 @@ export class VisualDiff {
             realityEditor.gui.threejsScene.addToScene(cubeCamera);
             cubeCamera.position.set(-400, 250, -1000);
 
-            const camera = realityEditor.gui.threejsScene.getInternals().camera;
+            const camera = realityEditor.gui.threejsScene.getInternals().getCamera();
 
             let matDiff = new THREE.ShaderMaterial({
                 uniforms: {
@@ -120,8 +123,8 @@ export class VisualDiff {
                     mapBaseDepth: {value: this.rtBase.depthTexture},
                     mapCamera: {value: this.rtCamera.texture},
                     mapCameraDepth: {value: this.rtCamera.depthTexture},
-                    cameraNear: {value: camera.near},
-                    cameraFar: {value: camera.far},
+                    cameraNear: {value: camera.getNear()},
+                    cameraFar: {value: camera.getFar()},
                 },
                 vertexShader,
                 fragmentShader: fragmentShaderDepth,
@@ -144,7 +147,7 @@ export class VisualDiff {
             this.init();
         }
 
-        const camera = realityEditor.gui.threejsScene.getInternals().camera;
+        const camera = realityEditor.gui.threejsScene.getInternals().getCamera();
 
         let matDiff = material.clone();
         matDiff.fragmentShader = shaderMode === ShaderMode.DIFF ?
@@ -154,8 +157,8 @@ export class VisualDiff {
         matDiff.uniforms.mapBaseDepth =  {value: this.rtBase.depthTexture};
         matDiff.uniforms.mapCamera = {value: this.rtCamera.texture};
         matDiff.uniforms.mapCameraDepth =  {value: this.rtCamera.depthTexture};
-        matDiff.uniforms.cameraNear = {value: camera.near};
-        matDiff.uniforms.cameraFar = {value: camera.far};
+        matDiff.uniforms.cameraNear = {value: camera.getNear()};
+        matDiff.uniforms.cameraFar = {value: camera.getFar()};
         return matDiff;
     }
 
@@ -179,24 +182,24 @@ export class VisualDiff {
         // Set standard material to draw normally for visual difference
         mesh.material = matBase;
 
-        let {scene, camera, renderer} = realityEditor.gui.threejsScene.getInternals();
+        let mainRenderer = realityEditor.gui.threejsScene.getInternals();
+        let camera = mainRenderer.getCamera();
 
-        let originalCameraMatrix = camera.matrix.clone();
+        let originalCameraMatrix = camera.getInternalObject().matrix.clone();
         realityEditor.sceneGraph.setCameraPosition(sceneNodeMatrix.elements);
 
         // Move camera to match CameraVis position exactly (not pointing up)
         // Turn off everything but base mesh
-        camera.layers.set(1);
-        renderer.setRenderTarget(this.rtBase);
-        renderer.clear();
-        renderer.render(scene, camera);
+        const originalLayerConfig = camera.getLayerConfig();
+        const layerConfig = new LayerConfig();
+        layerConfig.setGlobal(LayerConfig.LAYER_SCAN);
+        camera.setLayerConfig(layerConfig);
+        mainRenderer.renderToTexture(this.rtBase);
         // Now draw only the cameravis
-        camera.layers.set(2);
-        renderer.setRenderTarget(this.rtCamera);
-        renderer.clear();
-        renderer.render(scene, camera);
+        layerConfig.setGlobal(LayerConfig.LAYER_BACKGROUND);
+        mainRenderer.renderToTexture(this.rtCamera);
         // rt diff is the diff, draw it on the cameravis sort of
-        renderer.setRenderTarget(null);
+        camera.setLayerConfig(originalLayerConfig);
 
         realityEditor.sceneGraph.setCameraPosition(originalCameraMatrix.elements);
 
