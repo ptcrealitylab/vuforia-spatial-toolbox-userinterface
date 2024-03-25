@@ -158,7 +158,7 @@ function trunkReba(rebaData) {
 
     if (trunkScore === 1 ) {
         trunkColor = MotionStudyColors.green;
-    } else if (trunkScore <= 4) {
+    } else if (trunkScore < 4) {
         trunkColor = MotionStudyColors.yellow;
     } else {
         trunkColor = MotionStudyColors.red;
@@ -446,7 +446,7 @@ function lowerArmReba(rebaData) {
         if (leftArmScore === 1) {
             leftArmColor = MotionStudyColors.green;
         } else {
-            leftArmColor = MotionStudyColors.red;
+            leftArmColor = MotionStudyColors.yellow;
         }
     }
     
@@ -475,7 +475,7 @@ function lowerArmReba(rebaData) {
         if (rightArmScore === 1) {
             rightArmColor = MotionStudyColors.green;
         } else {
-            rightArmColor = MotionStudyColors.red;
+            rightArmColor = MotionStudyColors.yellow;
         }
     }
     
