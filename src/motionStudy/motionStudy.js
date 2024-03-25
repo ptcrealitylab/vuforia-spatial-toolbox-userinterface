@@ -658,4 +658,17 @@ export class MotionStudy {
         });
         this.writeMotionStudyData();
     }
+
+    updateRegionCards() {
+        this.pinnedRegionCards.forEach(card => {
+            card.updateLensStatistics();
+        });
+        if (this.timeline.regionCard) {
+            this.timeline.regionCard.updateLensStatistics();
+        }
+
+        this.updateCsvExportLink();
+        //this.writeMotionStudyData();
+    }
+
 }

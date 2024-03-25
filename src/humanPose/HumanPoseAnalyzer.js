@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS} from './constants.js';
+import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
@@ -64,6 +64,8 @@ export class HumanPoseAnalyzer {
 
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
+
+        this.jointConfidenceThreshold = JOINT_CONFIDENCE_THRESHOLD;
 
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
@@ -192,6 +194,8 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
         this.settingsUi.setChildHumanPosesVisible(this.childHumanObjectsVisible);
+        this.settingsUi.setJointConfidenceFilter(true);
+        //this.settingsUi.setJointConfidenceThreshold(this.jointConfidenceThreshold);
     }
 
     /**
@@ -327,6 +331,8 @@ export class HumanPoseAnalyzer {
         } else {
             this.clones.live.push(poseRenderInstance);
         }
+        
+        pose.setBodyPartValidity(this.jointConfidenceThreshold); // Needs to be called before setPose(), because it sets internal attributes needed by setPose() 
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
@@ -393,7 +399,7 @@ export class HumanPoseAnalyzer {
             const timestamp = pose.timestamp;
             const id = pose.metadata.poseObjectId;
             let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
-            currentPoint.y += 400;
+            currentPoint.y += 400; // mm
             if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
                 this.createSpaghetti(lens, id, historical);
             }
@@ -548,12 +554,49 @@ export class HumanPoseAnalyzer {
             const posesChanged = lens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
                 if (wasChanged) { // Only update colors if the pose data was modified
-                    relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].updateColorBuffers(lens);
                     relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
         this.reprocessSpaghettiForLens(lens);
+    }
+
+    setJointConfidenceThreshold(confidence) {
+        this.jointConfidenceThreshold = confidence;
+        //console.info('jointConfidenceThreshold=', confidence);
+
+        // update all poses and derived clones for visualisation
+        [this.clones.live, this.clones.historical].forEach(relevantClones => {
+            relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
+            // lens calculations need to be updated based on changed valid attribute of joints
+            let poses = relevantClones.map(clone => clone.pose);
+            this.lenses.forEach(lens => {
+                // need to upate whole history, although it takes a bit of time
+                lens.applyLensToHistory(poses, true /* force */); 
+            });
+            relevantClones.forEach(clone => {
+                if (clone.visible) {
+                    clone.updateJointPositions();
+                    clone.updateBonePositions();
+                    clone.renderer.markMatrixNeedsUpdate();
+                }
+                clone.updateColorBuffers(this.activeLens);
+                clone.renderer.markColorNeedsUpdate();
+            });
+            
+        }); 
+        
+        // update all spaghetti lines
+        this.lenses.forEach(lens => {
+           this.reprocessSpaghettiForLens(lens);
+        });
+
+        this.motionStudy.updateRegionCards();
+    }
+
+    getJointConfidenceThreshold() {
+        return this.jointConfidenceThreshold;
     }
 
     /**
@@ -567,6 +610,7 @@ export class HumanPoseAnalyzer {
         this.applyCurrentLensToHistory();
 
         // Swap hpri colors
+        // Sets lens to individual render instances
         this.clones.all.forEach(clone => {
             clone.setLens(lens);
             clone.renderer.markColorNeedsUpdate();
@@ -808,6 +852,7 @@ export class HumanPoseAnalyzer {
             posesChanged.forEach((wasChanged, index) => {
                 if (wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
@@ -948,13 +993,13 @@ export class HumanPoseAnalyzer {
             this.setCloneVisibleInInterval(true, start, end);
             const startClone = this.getCloneByTimestamp(start);
             if (startClone) {
-                this.selectionMarkPoseRenderInstances.start.copy(startClone);
+                this.selectionMarkPoseRenderInstances.start.copy(startClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.start.setVisible(true);
                 this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
             }
             const endClone = this.getCloneByTimestamp(end);
             if (endClone) {
-                this.selectionMarkPoseRenderInstances.end.copy(endClone);
+                this.selectionMarkPoseRenderInstances.end.copy(endClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.end.setVisible(true);
                 this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
             }
@@ -1099,12 +1144,14 @@ export class HumanPoseAnalyzer {
 
         clonesToHide.forEach(clone => {
             clone.setVisible(false);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
         clonesToShow.forEach(clone => {
             const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             clone.setVisible(canBeVisible);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
 
         this.lastDisplayedClones = bestClones;

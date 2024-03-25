@@ -9,7 +9,7 @@ const TIME_INTERVAL_DURATION = 10000; // 10 seconds
  */
 class TimeLens extends MotionStudyLens {
     /**
-     * Creates a new RebaLens object.
+     * Creates a new TimeLens object.
      */
     constructor() {
         super("Time");

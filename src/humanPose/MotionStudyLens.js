@@ -24,7 +24,7 @@ export class MotionStudyLens {
      * @param {Pose} _pose The pose to apply the lens to.
      * @return {boolean} True if the pose was modified, false otherwise.
      */
-    applyLensToPose(_pose) {
+    applyLensToPose(_pose, _force = false) {
         return false;
     }
 
@@ -33,7 +33,7 @@ export class MotionStudyLens {
      * @param {Pose[]} poseHistory An array of pose objects.
      * @return {boolean[]} An array of booleans, one for each pose in the history, indicating whether the pose was modified.
      */
-    applyLensToHistoryMinimally(poseHistory) {
+    applyLensToHistoryMinimally(poseHistory, _force = false) {
         return poseHistory.map(() => false);
     }
 
@@ -42,7 +42,7 @@ export class MotionStudyLens {
      * @param {Pose[]} poseHistory An array of pose objects.
      * @return {boolean[]} An array of booleans, one for each pose in the history, indicating whether the pose was modified.
      */
-    applyLensToHistory(poseHistory) {
+    applyLensToHistory(poseHistory, _force = false) {
         return poseHistory.map(() => false);
     }
 
