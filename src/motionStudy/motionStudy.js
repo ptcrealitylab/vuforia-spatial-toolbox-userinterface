@@ -501,10 +501,6 @@ export class MotionStudy {
             this.container.appendChild(this.videoPlayer.colorVideo);
         }
 
-        if (data.title) {
-            this.titleInput.textContent = data.title;
-        }
-
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
             this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
@@ -513,6 +509,10 @@ export class MotionStudy {
         data.regionCards.sort((rcDescA, rcDescB) => {
             return rcDescA.startTime - rcDescB.startTime;
         });
+
+        if (data.title) {
+            this.titleInput.textContent = data.title;
+        }
 
         for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
@@ -624,11 +624,13 @@ export class MotionStudy {
                 {},
                 this.lastHydratedData || {},
                 {
-                    title: this.titleInput.textContent,
                     regionCards: allCards,
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },
             );
+            if (this.titleInput.textContent) {
+                motionStudyData.title = this.titleInput.textContent;
+            }
             realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
         }
     }
