@@ -10,6 +10,7 @@ import {
     postPersistRequest,
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
+import {makeTextInput} from '../utilities/makeTextInput.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -203,6 +204,8 @@ export class MotionStudy {
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];
 
+        this.createTitleInput();
+
         this.pinnedRegionCardsCsvContainer = document.createElement('div');
         this.pinnedRegionCardsCsvContainer.classList.add('analytics-button-container');
         this.pinnedRegionCardsCsvLink = document.createElement('a');
@@ -213,6 +216,18 @@ export class MotionStudy {
         this.pinnedRegionCardsCsvContainer.appendChild(this.pinnedRegionCardsCsvLink);
         this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvContainer);
         this.createStepFileUploadComponent();
+    }
+
+    createTitleInput() {
+        this.titleInput = document.createElement('div');
+        this.titleInput.classList.add('analytics-button-container');
+        this.titleInput.classList.add('analytics-title');
+        this.titleInput.contentEditable = true;
+        this.titleInput.textContent = '';
+        makeTextInput(this.titleInput, () => {
+            this.writeMotionStudyData();
+        });
+        this.pinnedRegionCardsContainer.appendChild(this.titleInput);
     }
 
     draw() {
@@ -477,6 +492,10 @@ export class MotionStudy {
             this.container.appendChild(this.videoPlayer.colorVideo);
         }
 
+        if (data.title) {
+            this.titleInput.textContent = data.title;
+        }
+
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
             this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
@@ -593,6 +612,7 @@ export class MotionStudy {
                 {},
                 this.lastHydratedData || {},
                 {
+                    title: this.titleInput.textContent,
                     regionCards: allCards,
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },

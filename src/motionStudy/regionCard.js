@@ -3,6 +3,7 @@ import {JOINTS} from '../humanPose/constants.js';
 import {MIN_ACCELERATION, MAX_ACCELERATION} from '../humanPose/AccelerationLens.js';
 import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/OverallRebaLens.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
+import {makeTextInput} from '../utilities/makeTextInput.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -239,29 +240,8 @@ export class RegionCard {
         this.labelElement.setAttribute('contenteditable', true);
         this.setLabel('');
 
-        let debouncedSave = null;
-        this.labelElement.addEventListener('keydown', (event) => {
-            const code = event.keyCode || event.which;
-            // 13 is Enter
-            if (code === 13) {
-                event.preventDefault();
-                this.labelElement.blur();
-            }
-            event.stopPropagation();
-        });
-        this.labelElement.addEventListener('keypress', (event) => {
-            event.stopPropagation();
-        });
-        this.labelElement.addEventListener('keyup', (event) => {
-            event.stopPropagation();
-
-            if (debouncedSave) {
-                clearTimeout(debouncedSave);
-            }
-            debouncedSave = setTimeout(() => {
-                this.motionStudy.writeMotionStudyData();
-                debouncedSave = null;
-            }, 1000);
+        makeTextInput(this.labelElement, () => {
+            this.motionStudy.writeMotionStudyData();
         });
 
         this.element.appendChild(this.labelElement);
