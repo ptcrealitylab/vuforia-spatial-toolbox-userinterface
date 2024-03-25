@@ -2061,8 +2061,17 @@ Logic Interface CSS
 
 }
 
-.analytics-pinned-region-cards-csv,
-.analytics-pinned-region-cards-csv:visited {
+.analytics-export-link-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.analytics-export-link {
+    font-size: 0.9em;
+}
+.analytics-export-link,
+.analytics-export-link:visited {
     cursor: pointer;
     color: white;
 }
