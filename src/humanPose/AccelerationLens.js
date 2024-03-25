@@ -35,7 +35,7 @@ export class AccelerationLens extends MotionStudyLens {
      * @return {boolean} True if the joint has had its acceleration calculated, false otherwise.
      */
     accelerationAppliedToJoint(joint) {
-        return joint.acceleration && joint.accelerationMagnitude && joint.accelerationMagnitude !== -1
+        return joint.acceleration && joint.accelerationMagnitude && joint.accelerationMagnitude !== -1;
     }
     
     applyLensToPose(pose) {
