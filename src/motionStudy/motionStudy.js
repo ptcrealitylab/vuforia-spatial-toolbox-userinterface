@@ -608,6 +608,9 @@ export class MotionStudy {
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
+            if (frameKey !== this.frame) {
+                continue;
+            }
             const motionStudyData = Object.assign(
                 {},
                 this.lastHydratedData || {},
