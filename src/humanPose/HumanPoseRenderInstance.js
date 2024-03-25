@@ -3,10 +3,10 @@ import {
     JOINT_TO_INDEX,
     BONE_TO_INDEX,
     SCALE,
-    RENDER_CONFIDENCE_COLOR,
     HIDDEN_JOINTS,
     HIDDEN_BONES,
-    DISPLAY_HIDDEN_ELEMENTS
+    DISPLAY_HIDDEN_ELEMENTS,
+    DISPLAY_INVALID_ELEMENTS
 } from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
 
@@ -93,7 +93,8 @@ export class HumanPoseRenderInstance {
             return;
         }
         this.pose.forEachJoint(joint => {
-            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_JOINTS.includes(joint.name);
+            let visible = (DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_JOINTS.includes(joint.name)) && 
+                          (DISPLAY_INVALID_ELEMENTS || joint.valid);
             this.setJointPosition(joint.name, joint.position, visible);
         });
     }
@@ -139,7 +140,8 @@ export class HumanPoseRenderInstance {
 
         this.pose.forEachBone(bone => {
             // hides hands in general at the moment. But one could use this also for hiding joints based on their low confidence.
-            let visible = DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_BONES.includes(bone.name);
+            let visible = (DISPLAY_HIDDEN_ELEMENTS || !HIDDEN_BONES.includes(bone.name)) && 
+                          (DISPLAY_INVALID_ELEMENTS || bone.valid);
             this.updateBonePosition(bone, visible);
         });
     }
@@ -208,11 +210,19 @@ export class HumanPoseRenderInstance {
         }
         this.pose.forEachJoint(joint => {
             this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = lens.getColorForJoint(joint);
+            if (!joint.valid) {
+                this.lensColors[lens.name].joints[JOINT_TO_INDEX[joint.name]] = MotionStudyColors.undefined;
+            }
         });
         this.pose.forEachBone(bone => {
             this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = lens.getColorForBone(bone);
+            if (!bone.valid) {
+                this.lensColors[lens.name].bones[BONE_TO_INDEX[bone.name]] = MotionStudyColors.undefined;
+            }
         });
-        if (lens === this.lens && !RENDER_CONFIDENCE_COLOR) {
+        // MK - why this condition (lens === this.lens)? When switching lens this is not true and this is not applied. 
+        // Extra code needs to call this again after this.lens is updated to new lens.  
+        if (lens === this.lens) {
             this.pose.forEachJoint(joint => {
                 this.setJointColor(joint.name, this.lensColors[this.lens.name].joints[JOINT_TO_INDEX[joint.name]]);
             });
@@ -220,21 +230,6 @@ export class HumanPoseRenderInstance {
                 this.setBoneColor(bone.name, this.lensColors[this.lens.name].bones[BONE_TO_INDEX[bone.name]]);
             });
         }
-    }
-
-    /**
-     * Sets joint color using pose confidence
-     * @param {string} jointName - name of joint to set color of
-     * @param {number} confidence - confidence value to set color to
-     */
-    setJointConfidenceColor(jointName, confidence) {
-        if (typeof JOINT_TO_INDEX[jointName] === 'undefined') {
-            return;
-        }
-        let baseColorHSL = MotionStudyColors.base.getHSL({});
-        baseColorHSL.l = baseColorHSL.l * confidence;
-        let color = new THREE.Color().setHSL(baseColorHSL.h, baseColorHSL.s, baseColorHSL.l);
-        this.setJointColor(jointName, color);
     }
 
     setVisible(visible) {
