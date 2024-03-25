@@ -1261,6 +1261,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         // hide the ground plane holodeck visualizer
         realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        // update the spatial cursor internal state
+        realityEditor.spatialCursor.gsToggleActive(true);
         // update the renderMode of the world object and broadcast to other clients
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
@@ -1285,6 +1287,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             areaMesh.visible = true;
         }
         realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+        realityEditor.spatialCursor.gsToggleActive(false);
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
             worldObject.renderMode = RENDER_MODES.mesh;
