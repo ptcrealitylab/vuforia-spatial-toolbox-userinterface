@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {DISPLAY_INVALID_ELEMENTS, JOINTS} from './constants.js';
+import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
@@ -65,7 +65,7 @@ export class HumanPoseAnalyzer {
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
 
-        this.jointConfidenceThreshold = 0.25;
+        this.jointConfidenceThreshold = JOINT_CONFIDENCE_THRESHOLD;
 
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
@@ -194,7 +194,8 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
         this.settingsUi.setChildHumanPosesVisible(this.childHumanObjectsVisible);
-        this.settingsUi.setJointConfidenceThreshold(this.jointConfidenceThreshold);
+        this.settingsUi.setJointConfidenceFilter(true);
+        //this.settingsUi.setJointConfidenceThreshold(this.jointConfidenceThreshold);
     }
 
     /**
@@ -563,7 +564,7 @@ export class HumanPoseAnalyzer {
 
     setJointConfidenceThreshold(confidence) {
         this.jointConfidenceThreshold = confidence;
-        console.info('jointConfidenceThreshold=', confidence);
+        //console.info('jointConfidenceThreshold=', confidence);
 
         // update all poses and derived clones for visualisation
         [this.clones.live, this.clones.historical].forEach(relevantClones => {

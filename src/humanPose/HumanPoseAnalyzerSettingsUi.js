@@ -1,4 +1,4 @@
-import {JOINTS} from "./constants.js";
+import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {setChildHumanPosesVisible} from "./draw.js"
 
 export class HumanPoseAnalyzerSettingsUi {
@@ -29,8 +29,10 @@ export class HumanPoseAnalyzerSettingsUi {
                             <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-child-human-poses">
                         </div>
                         <div class="hpa-settings-section-row">
-                            <div class="hpa-settings-section-row-label">Set joint confidence</div>
-                            <input type="text" id="hpa-settings-set-joint-confidence">
+ <!--                       <div class="hpa-settings-section-row-label">Set joint confidence</div> -->
+ <!--                       <input type="text" id="hpa-settings-set-joint-confidence"> --> 
+                            <div class="hpa-settings-section-row-label">Filter unreliable joints</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-joint-confidence">
                         </div>
                     </div>
                 </div>
@@ -152,10 +154,12 @@ export class HumanPoseAnalyzerSettingsUi {
             this.humanPoseAnalyzer.setActiveLensByName(event.target.value);
         });
        
+        /*
+        // for debugging purposes
         this.root.querySelector('#hpa-settings-set-joint-confidence').addEventListener('keydown', (event) => {
             event.stopPropagation();
         });
-
+        
         this.root.querySelector('#hpa-settings-set-joint-confidence').addEventListener('change', (event) => {
             let num = parseFloat(event.target.value);
             if(!isNaN(num)) {
@@ -167,6 +171,16 @@ export class HumanPoseAnalyzerSettingsUi {
                 }
                 this.humanPoseAnalyzer.setJointConfidenceThreshold(num);
                 this.setJointConfidenceThreshold(num);
+            }
+        });
+        */
+
+        this.root.querySelector('#hpa-settings-toggle-joint-confidence').addEventListener('change', (event) => {
+            if (event.target.checked) {
+                this.humanPoseAnalyzer.setJointConfidenceThreshold(JOINT_CONFIDENCE_THRESHOLD);
+            }
+            else {
+                this.humanPoseAnalyzer.setJointConfidenceThreshold(0.0);
             }
         });
         
@@ -326,8 +340,14 @@ export class HumanPoseAnalyzerSettingsUi {
         // this.root.querySelector('#hpa-settings-select-joint').value = jointName; // TODO: re-add once implemented
     }
 
+    /*
+    // for debugging purposes
     setJointConfidenceThreshold(confidence) {
         this.root.querySelector('#hpa-settings-set-joint-confidence').value = confidence;
+    }
+    */
+    setJointConfidenceFilter(filterOn) {
+        this.root.querySelector('#hpa-settings-toggle-joint-confidence').checked = filterOn;
     }
     
     markLive() {

@@ -141,6 +141,7 @@ export class AccelerationLens extends MotionStudyLens {
     }
     
     getColorForPose(pose) {
+        // 'head' joint is always valid when body is tracked. Thus, acceleration is calculated under normal circumstances.
         if (!this.accelerationAppliedToJoint(pose.getJoint(JOINTS.HEAD))) {
             return MotionStudyColors.undefined;
         }

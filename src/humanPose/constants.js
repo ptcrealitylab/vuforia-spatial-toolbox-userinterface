@@ -515,6 +515,9 @@ export const RENDER_CONFIDENCE_COLOR = false;
 export const MAX_POSE_INSTANCES = 512;
 export const MAX_POSE_INSTANCES_MOBILE = 8;
 
+// Threshold for joint confidence which determines validity of a joint and associated bones.
+export const JOINT_CONFIDENCE_THRESHOLD = 0.25;
+
 export function getBoneName(bone) {
     return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
 }
