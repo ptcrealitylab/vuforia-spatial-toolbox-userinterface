@@ -345,11 +345,24 @@ function upperArmReba(rebaData) {
     if (rebaData.jointValidities[JOINTS.LEFT_ELBOW] && rebaData.jointValidities[JOINTS.LEFT_SHOULDER]) {
         // calculate arm angle
         const leftShoulderYDifference = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
-        const leftShoulderDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
-        const leftArmAngle = angleBetween(leftShoulderDown, down);
+        const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
+        const leftArmAngle = angleBetween(leftUpperArmDown, down);
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
+        const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
+        const rightAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.right);
+        const leftAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.right.clone().negate());
 
+        let abduction = false;
         if (leftArmAngle > 20) {
             leftArmScore++; // +1 for greater than 20 degrees
+            // check for abduction only when the arm angle is above the small threshold
+            // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+            abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
+                         (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
+            if (abduction) {
+                leftArmScore++; // +1 for left arm abducted
+            }
             if (leftArmAngle > 45) {
                 leftArmScore++; // +1 for greater than 45 degrees
                 if (leftArmAngle > 90) {
@@ -359,18 +372,14 @@ function upperArmReba(rebaData) {
         }
         
         // Check for shoulder raising
-        // console.log(`leftShoulderYDifference: ${leftShoulderYDifference}\nCurrent cutoff: ${shoulderDifferenceCutoff}`);
+        let _raise = false;
         if (leftShoulderYDifference > shoulderDifferenceCutoff) {
             leftArmScore++; // +1 for left shoulder raised
+            _raise = true;
         }
-        
-        // Check for arm abduction
-        const chestLeft = rebaData.orientations.chest.right.clone().negate();
-        const leftAlignmentAngle = angleBetween(leftShoulderDown, chestLeft);
-        if (leftAlignmentAngle < 70) {
-            leftArmScore++; // +1 for left arm abducted
-        }
-        
+
+        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderYDifference: ${leftShoulderYDifference.toFixed(0)}; raise=${_raise}; abduction=${abduction}; leftArmScore=${leftArmScore}`);
+
         leftArmScore = clamp(leftArmScore, 1, 6);
         if (leftArmScore === 1) {
             leftArmColor = MotionStudyColors.green;
@@ -384,11 +393,24 @@ function upperArmReba(rebaData) {
     /* right uppper arm */
     if (rebaData.jointValidities[JOINTS.RIGHT_ELBOW] && rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]) {
         const rightShoulderYDifference = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
-        const rightShoulderDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
-        const rightArmAngle = angleBetween(rightShoulderDown, down);
+        const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+        const rightArmAngle = angleBetween(rightUpperArmDown, down);
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
+        const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
+        const rightAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.right);
+        const leftAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.right.clone().negate());
 
+        let abduction = false;
         if (rightArmAngle > 20) {
             rightArmScore++; // +1 for greater than 20 degrees
+            // check for abduction only when the arm angle is above the small threshold
+            // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+            abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
+                         (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
+            if (abduction) {
+                rightArmScore++; // +1 for left arm abducted
+            }
             if (rightArmAngle > 45) {
                 rightArmScore++; // +1 for greater than 45 degrees
                 if (rightArmAngle > 90) {
@@ -397,15 +419,13 @@ function upperArmReba(rebaData) {
             }
         }
 
+        let _raise = false;
         if (rightShoulderYDifference > shoulderDifferenceCutoff) {
             rightArmScore++; // +1 for right shoulder raised
+            _raise = true;
         }
 
-        const chestRight = rebaData.orientations.chest.right;
-        const rightAlignmentAngle = angleBetween(rightShoulderDown, chestRight);
-        if (rightAlignmentAngle < 70) {
-            rightArmScore++; // +1 for right arm abducted
-        }
+        // console.log(`Right upper arm: leftArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderYDifference: ${rightShoulderYDifference.toFixed(0)}; raise=${_raise}; abduction=${abduction}; rightArmScore=${rightArmScore}`);
         
         rightArmScore = clamp(rightArmScore, 1, 6);
         if (rightArmScore === 1) {
