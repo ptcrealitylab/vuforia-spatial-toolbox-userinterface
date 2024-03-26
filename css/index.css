@@ -2030,6 +2030,18 @@ Logic Interface CSS
     overflow-y: auto;
 }
 
+@media (max-width: 600px) and (max-height: 1000px) {
+    /**
+     * shift further up due to recording buttons, note that
+     * analytics-has-video is okay to overlap since there will no longer be
+     * buttons
+     */
+    .analytics-pinned-region-cards-container {
+        bottom: calc(320px);
+    }
+}
+
+
 .analytics-pinned-region-cards-container.analytics-has-video {
     bottom: calc(320px + 91px); /* guess at video top */
 }
