@@ -147,12 +147,12 @@ function trunkReba(rebaData) {
     let sideBend = false;
     if (upMisalignmentAngle > 5) {
         trunkScore++; // +1 for greater than 5 degrees (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
-        // check for side-bending only when above the overall bending threshold
-        // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
-        sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
-                    (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
         if (upMisalignmentAngle > 20) {
             trunkScore++; // +1 for greater than 20 degrees
+            // check for side-bending only when above some overall bending threshold
+            // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
+            sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                        (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
             if (upMisalignmentAngle > 60) {
                 trunkScore++; // +1 for greater than 60 degrees
             }
