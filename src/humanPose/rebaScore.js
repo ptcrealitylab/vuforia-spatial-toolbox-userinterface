@@ -380,7 +380,7 @@ function upperArmReba(rebaData) {
         //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; leftArmScore=${leftArmScore}`);
 
         leftArmScore = clamp(leftArmScore, 1, 6);
-        if (leftArmScore === 1) {
+        if (leftArmScore < 3) {
             leftArmColor = MotionStudyColors.green;
         } else if (leftArmScore < 5) {
             leftArmColor = MotionStudyColors.yellow;
@@ -427,7 +427,7 @@ function upperArmReba(rebaData) {
         //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; rightArmScore=${rightArmScore}`);
         
         rightArmScore = clamp(rightArmScore, 1, 6);
-        if (rightArmScore === 1) {
+        if (rightArmScore < 3) {
             rightArmColor = MotionStudyColors.green;
         } else if (rightArmScore < 5) {
             rightArmColor = MotionStudyColors.yellow;
