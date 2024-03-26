@@ -208,7 +208,7 @@ function trunkReba(rebaData) {
  * Starting with score=1
  * +1 for knee bending > 30 degrees
  * +1 for knee bending > 60 degrees
- * +1 if leg is raised
+ * +1 if one leg is raised above other (+1 applied to both legs)
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function legsReba(rebaData) {
@@ -217,8 +217,22 @@ function legsReba(rebaData) {
     let rightLegScore = 1;
     let rightLegColor = MotionStudyColors.undefined;
     
-    // Height difference for leg raise is not specified in REBA standard (we picked 10cm)
-    const footDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
+    // Height difference for leg raise is not specified in REBA standard
+    const footHeightDifferenceThreshold = 100; // mm  
+
+    // Check for unilateral bearing of the body weight
+    let _onelegged = false;
+    // check if all needed joints have a valid position
+    if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] &&
+        rebaData.jointValidities[JOINTS.RIGHT_ANKLE]) {
+        const footHeightDifference = Math.abs(rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y);
+        if (footHeightDifference > footHeightDifferenceThreshold) {
+            leftLegScore++;  // this raises score of both legs, so max() works correctly in neckLegTrunkScore()
+            rightLegScore++;
+            _onelegged = true;
+        }
+        //console.log(`Legs: footHeightDifference: ${footHeightDifference.toFixed(0)}mm; onelegged=${_onelegged}`);        
+    }
 
     /* left leg */
     // check if all needed joints have a valid position
@@ -239,12 +253,7 @@ function legsReba(rebaData) {
             }
         }
         
-        // Check for left leg bearing the body weight
-        const footHeightDifference = rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y;
-        // console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
-        if (rebaData.jointValidities[JOINTS.RIGHT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            leftLegScore++; 
-        }
+        //console.log(`Left leg: leftKneeUpAngle=${leftKneeUpAngle.toFixed(0)}; leftLegScore=${leftLegScore}`);        
         
         leftLegScore = clamp(leftLegScore, 1, 4);
         if (leftLegScore === 1) {
@@ -272,11 +281,7 @@ function legsReba(rebaData) {
             }
         }
 
-        // Check for right leg bearing the body weight   
-        const footHeightDifference = rebaData.joints[JOINTS.LEFT_ANKLE].y - rebaData.joints[JOINTS.RIGHT_ANKLE].y;
-        if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            rightLegScore++;   
-        }
+        //console.log(`Right leg: rightKneeUpAngle=${rightKneeUpAngle.toFixed(0)}; rightLegScore=${rightLegScore}`);   
 
         rightLegScore = clamp(rightLegScore, 1, 4);
         if (rightLegScore === 1) {
