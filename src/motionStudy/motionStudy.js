@@ -430,8 +430,8 @@ export class MotionStudy {
     }
 
     getStepColor() {
-        let hue = (this.nextStepNumber * 17) % 360;
-        return `hsl(${hue} 100% 70%)`;
+        let hue = (this.nextStepNumber * 37 + 180) % 360;
+        return `hsl(${hue} 100% 60%)`;
     }
 
     updateStepLabel() {
@@ -710,10 +710,8 @@ export class MotionStudy {
             return;
         }
 
-
         // Create array manually since we can go over the JSON.stringify and string
         // length limits
-
         const poseStrings = ['['];
 
         for (const pose of allPoses) {
