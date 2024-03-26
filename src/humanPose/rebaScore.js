@@ -31,6 +31,9 @@ function angleBetween(vector1, vector2) {
 
 /**
  * Sets the score and color for the neck reba.
+ * Starting with score=1
+ * +1 for forward bending > 20 degrees or backward bending > 5 degrees
+ * +1 if side bending or twisting wrt shoulders
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function neckReba(rebaData) {
@@ -44,31 +47,40 @@ function neckReba(rebaData) {
     
     // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
     const upMisalignmentAngle = angleBetween(headUp, rebaData.orientations.chest.up);
-    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);
+    // all vectors are normalised, so dot() == cos(angle between vectors) 
+    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);  
     const backwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward.clone().negate());
     const rightBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right);
     const leftBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
     // Check for bending
-    const bendingThreshold = 20 + 10; // 20 according to official REBA, adjusting due to noisy inputs
+    let sideBend = false;
+    const bendingThreshold = 20;
     if (upMisalignmentAngle > bendingThreshold) {
         neckScore++; // +1 for greater than threshold
-        if (forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) {
-            neckScore++; // +1 for side-bending or back-bending greater than threshold
-        }
+
+        // check for side-bending only when above the overall bending threshold
+        // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+        sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                    (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
     } else {
-        if (forwardBendingAlignment < backwardBendingAlignment) {
-            neckScore++; // +1 for back-bending any amount
+        if (forwardBendingAlignment < backwardBendingAlignment &&
+            upMisalignmentAngle > 5) {  // (5 deg not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
+            neckScore++; // +1 for back-bending more than few degrees
         }
     }
     
+    // Check for twisting of more degrees than bendingThreshold from straight ahead
     const twistRightAngle = angleBetween(headForward, rebaData.orientations.chest.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
-    
-    // Check for twisting of >20 degrees from straight ahead
-    if (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold)) {
-        neckScore++; // +1 for twisting
+    const twist = (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold));
+
+    // +1 for twisting or side-bending
+    if (sideBend || twist) {
+        neckScore++; 
     }
+
+    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
     
     neckScore = clamp(neckScore, 1, 3);
 
@@ -111,54 +123,59 @@ function neckReba(rebaData) {
  * +1 for any bending > 5 degrees
  * +1 for forward or backwards bending > 20 degrees
  * +1 for forward or backwards bending > 60 degrees
- * +1 if bending is sideways
- * +1 for twisting shoulders wrt hips
+ * +1 if side bending or twisting shoulders wrt hips
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function trunkReba(rebaData) {
     let trunkScore = 1;
     let trunkColor = MotionStudyColors.undefined;
     
+    // Comparisons should be relative to directions determined by hips
+    // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
     const chestUp = rebaData.orientations.chest.up;
     const chestForward = rebaData.orientations.chest.forward;
-    
-    // Comparisons should be relative to directions determined by hips
-
-    // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
     const up = new THREE.Vector3(0, 1, 0);
     const upMisalignmentAngle = angleBetween(chestUp, up);
+    // all vectors are normalised, so dot() == cos(angle between vectors) 
     const forwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward);
     const backwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward.clone().negate());
     const rightBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right);
     const leftBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right.clone().negate());
     
     // Check for bending
+    let sideBend = false;
     if (upMisalignmentAngle > 5) {
-        trunkScore++; // +1 for greater than 5 degrees
-        if ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment)) {
-            trunkScore++; // +1 for side-bending
-        }
+        trunkScore++; // +1 for greater than 5 degrees (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
         if (upMisalignmentAngle > 20) {
             trunkScore++; // +1 for greater than 20 degrees
+            // check for side-bending only when above some overall bending threshold
+            // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
+            sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                        (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
             if (upMisalignmentAngle > 60) {
                 trunkScore++; // +1 for greater than 60 degrees
             }
         }
     }
     
+    // Check for twisting of more than twistThreshold from straight ahead
+    const twistThreshold = 25;
     const twistRightAngle = angleBetween(chestForward, rebaData.orientations.hips.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
-    
-    // Check for twisting
-    if (twistRightAngle < 70 || twistLeftAngle < 70) {
-        trunkScore++; // +1 for twisting
+    const twist = (twistRightAngle < (90 - twistThreshold) || twistLeftAngle < (90 - twistThreshold));
+
+    // +1 for twisting or side-bending
+    if (sideBend || twist) {
+        trunkScore++; 
     }
+
+    // console.log(`Trunk: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
     
     trunkScore = clamp(trunkScore, 1, 5);
 
     if (trunkScore === 1 ) {
         trunkColor = MotionStudyColors.green;
-    } else if (trunkScore <= 4) {
+    } else if (trunkScore < 4) {
         trunkColor = MotionStudyColors.yellow;
     } else {
         trunkColor = MotionStudyColors.red;
@@ -190,7 +207,7 @@ function trunkReba(rebaData) {
  * Starting with score=1
  * +1 for knee bending > 30 degrees
  * +1 for knee bending > 60 degrees
- * +1 if leg is raised
+ * +1 if one leg is raised above other (+1 applied to both legs)
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function legsReba(rebaData) {
@@ -199,8 +216,22 @@ function legsReba(rebaData) {
     let rightLegScore = 1;
     let rightLegColor = MotionStudyColors.undefined;
     
-    // Height difference for leg raise is not specified in REBA standard (we picked 10cm)
-    const footDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
+    // Height difference for leg raise is not specified in REBA standard
+    const footHeightDifferenceThreshold = 100; // mm  
+
+    // Check for unilateral bearing of the body weight
+    let _onelegged = false;
+    // check if all needed joints have a valid position
+    if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] &&
+        rebaData.jointValidities[JOINTS.RIGHT_ANKLE]) {
+        const footHeightDifference = Math.abs(rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y);
+        if (footHeightDifference > footHeightDifferenceThreshold) {
+            leftLegScore++;  // this raises score of both legs, so max() works correctly in neckLegTrunkScore()
+            rightLegScore++;
+            _onelegged = true;
+        }
+        //console.log(`Legs: footHeightDifference: ${footHeightDifference.toFixed(0)}mm; onelegged=${_onelegged}`);        
+    }
 
     /* left leg */
     // check if all needed joints have a valid position
@@ -221,12 +252,7 @@ function legsReba(rebaData) {
             }
         }
         
-        // Check for left leg bearing the body weight
-        const footHeightDifference = rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y;
-        // console.log(`footYDifference: ${footYDifference}\nCurrent cutoff: ${footDifferenceCutoff}`);
-        if (rebaData.jointValidities[JOINTS.RIGHT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            leftLegScore++; 
-        }
+        //console.log(`Left leg: leftKneeUpAngle=${leftKneeUpAngle.toFixed(0)}; leftLegScore=${leftLegScore}`);        
         
         leftLegScore = clamp(leftLegScore, 1, 4);
         if (leftLegScore === 1) {
@@ -254,11 +280,7 @@ function legsReba(rebaData) {
             }
         }
 
-        // Check for right leg bearing the body weight   
-        const footHeightDifference = rebaData.joints[JOINTS.LEFT_ANKLE].y - rebaData.joints[JOINTS.RIGHT_ANKLE].y;
-        if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] && footHeightDifference > footDifferenceCutoff) {
-            rightLegScore++;   
-        }
+        //console.log(`Right leg: rightKneeUpAngle=${rightKneeUpAngle.toFixed(0)}; rightLegScore=${rightLegScore}`);   
 
         rightLegScore = clamp(rightLegScore, 1, 4);
         if (rightLegScore === 1) {
@@ -309,7 +331,8 @@ function legsReba(rebaData) {
  * +1 for upper arm angle raised > 90 degrees
  * +1 if shoulder is raised
  * +1 if arm is abducted
- * Cannot implement: -1 if arm is supported or person is leaning
+ * -1 if arm is aligned with gravity and it is raised > 45 degrees from trunk
+ * Cannot implement: -1 if arm is supported
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function upperArmReba(rebaData) {
@@ -318,22 +341,43 @@ function upperArmReba(rebaData) {
     let rightArmScore = 1;
     let rightArmColor = MotionStudyColors.undefined;
     
-    // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture.
+    // Angles for upper arm should be measured relative to trunk direction
+    const chestDown = rebaData.orientations.chest.up.clone().negate();
     const down = new THREE.Vector3(0, -1, 0);
-    const shoulderDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
     
     /* left uppper arm */
     // check if all needed joints have a valid position
     if (rebaData.jointValidities[JOINTS.LEFT_ELBOW] && rebaData.jointValidities[JOINTS.LEFT_SHOULDER]) {
-        // calculate arm angle
-        const leftShoulderYDifference = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
-        const leftShoulderDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
-        const leftArmAngle = angleBetween(leftShoulderDown, down);
+        // calculate arm angles
+        const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
+        const leftArmAngle = angleBetween(leftUpperArmDown, chestDown);
+        const leftShoulderAngle = angleBetween(rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const leftArmGravityAngle = angleBetween(leftUpperArmDown, down);
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
+        const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right);
+        const leftAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
+        let abduction = false;
+        let gravityAlign = false;
         if (leftArmAngle > 20) {
             leftArmScore++; // +1 for greater than 20 degrees
+            // check for abduction only when the arm angle is above the small threshold
+            // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+            abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
+                         (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
+            if (abduction) {
+                leftArmScore++; // +1 for arm abducted
+            }
             if (leftArmAngle > 45) {
                 leftArmScore++; // +1 for greater than 45 degrees
+                // Check for gravity assistance
+                // -1 for upper arm aligned with gravity (less than 20 degress from gravity vector)
+                gravityAlign = (leftArmGravityAngle < 20);
+                if (gravityAlign) {
+                    leftArmScore--; 
+                } 
                 if (leftArmAngle > 90) {
                     leftArmScore++; // +1 for greater than 90 degrees
                 }
@@ -341,20 +385,16 @@ function upperArmReba(rebaData) {
         }
         
         // Check for shoulder raising
-        // console.log(`leftShoulderYDifference: ${leftShoulderYDifference}\nCurrent cutoff: ${shoulderDifferenceCutoff}`);
-        if (leftShoulderYDifference > shoulderDifferenceCutoff) {
-            leftArmScore++; // +1 for left shoulder raised
+        let _raise = false;
+        if (leftShoulderAngle < 80) {
+            leftArmScore++; // +1 for shoulder raised (less than 80 degress from chest up)
+            _raise = true;
         }
-        
-        // Check for arm abduction
-        const chestLeft = rebaData.orientations.chest.right.clone().negate();
-        const leftAlignmentAngle = angleBetween(leftShoulderDown, chestLeft);
-        if (leftAlignmentAngle < 70) {
-            leftArmScore++; // +1 for left arm abducted
-        }
-        
+
+        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; leftArmScore=${leftArmScore}`);
+
         leftArmScore = clamp(leftArmScore, 1, 6);
-        if (leftArmScore === 1) {
+        if (leftArmScore < 3) {
             leftArmColor = MotionStudyColors.green;
         } else if (leftArmScore < 5) {
             leftArmColor = MotionStudyColors.yellow;
@@ -365,32 +405,51 @@ function upperArmReba(rebaData) {
 
     /* right uppper arm */
     if (rebaData.jointValidities[JOINTS.RIGHT_ELBOW] && rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]) {
-        const rightShoulderYDifference = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
-        const rightShoulderDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
-        const rightArmAngle = angleBetween(rightShoulderDown, down);
+        const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+        const rightArmAngle = angleBetween(rightUpperArmDown, chestDown);
+        const rightShoulderAngle = angleBetween(rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const rightArmGravityAngle = angleBetween(rightUpperArmDown, down);
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
+        const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right);
+        const leftAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
+        let abduction = false;
+        let gravityAlign = false;
         if (rightArmAngle > 20) {
             rightArmScore++; // +1 for greater than 20 degrees
+            // check for abduction only when the arm angle is above the small threshold
+            // true when above +-45 deg from chest forward or chest backward direction (when looking from above) 
+            abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
+                         (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
+            if (abduction) {
+                rightArmScore++; // +1 for arm abducted
+            }
             if (rightArmAngle > 45) {
                 rightArmScore++; // +1 for greater than 45 degrees
+                // Check for gravity assistance
+                // -1 for upper arm aligned with gravity (less than 20 degress from gravity vector)
+                gravityAlign = (rightArmGravityAngle < 20);
+                if (gravityAlign) {
+                    rightArmScore--; 
+                } 
                 if (rightArmAngle > 90) {
                     rightArmScore++; // +1 for greater than 90 degrees
                 }
             }
         }
 
-        if (rightShoulderYDifference > shoulderDifferenceCutoff) {
-            rightArmScore++; // +1 for right shoulder raised
+        let _raise = false;
+        if (rightShoulderAngle < 80) {
+            rightArmScore++; // +1 for shoulder raised (less than 80 degress from chest up)
+            _raise = true;
         }
 
-        const chestRight = rebaData.orientations.chest.right;
-        const rightAlignmentAngle = angleBetween(rightShoulderDown, chestRight);
-        if (rightAlignmentAngle < 70) {
-            rightArmScore++; // +1 for right arm abducted
-        }
+        //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; rightArmScore=${rightArmScore}`);
         
         rightArmScore = clamp(rightArmScore, 1, 6);
-        if (rightArmScore === 1) {
+        if (rightArmScore < 3) {
             rightArmColor = MotionStudyColors.green;
         } else if (rightArmScore < 5) {
             rightArmColor = MotionStudyColors.yellow;
@@ -412,6 +471,8 @@ function upperArmReba(rebaData) {
 
 /**
  * Sets the score and color for the lower arms reba.
+ * Starting with score=1
+ * +1 for elbow bent < 60 or > 100 degrees
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function lowerArmReba(rebaData) {
@@ -432,21 +493,18 @@ function lowerArmReba(rebaData) {
         const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]);
         const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
     
-        // Standard REBA calculation marks arms straight down as bad, very confusing for users
-        // if (leftElbowAngle < 60 || leftElbowAngle > 100) {
-        //     leftArmScore = 2; // 2 for left elbow bent < 60 or > 100 degrees
-        // }
-
-        // This calculation is less accurate to REBA but more intuitive
-        if (leftElbowAngle > 100) {
-            leftArmScore = 2; // 2 for left elbow bent > 100 degrees
+        // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
+        if (leftElbowAngle < 60 || leftElbowAngle > 100) {
+            leftArmScore++; // +1 for left elbow bent < 60 or > 100 degrees
         }
+
+        //console.log(`Left lower arm: leftElbowAngle=${leftElbowAngle.toFixed(0)}; leftArmScore=${leftArmScore}`);
     
         leftArmScore = clamp(leftArmScore, 1, 2);
         if (leftArmScore === 1) {
             leftArmColor = MotionStudyColors.green;
         } else {
-            leftArmColor = MotionStudyColors.red;
+            leftArmColor = MotionStudyColors.yellow;
         }
     }
     
@@ -461,21 +519,18 @@ function lowerArmReba(rebaData) {
         const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
         const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
 
-        // Standard REBA calculation marks arms straight down as bad, very confusing for users
-        // if (rightElbowAngle < 60 || rightElbowAngle > 100) {
-        //     rightArmScore = 2; // 2 for right elbow bent < 60 or > 100 degrees
-        // }
-
-        // This calculation is less accurate to REBA but more intuitive
-        if (rightElbowAngle > 100) {
-            rightArmScore = 2; // 2 for right elbow bent > 100 degrees
+        // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
+        if (rightElbowAngle < 60 || rightElbowAngle > 100) {
+            rightArmScore++; // +1 for left elbow bent < 60 or > 100 degrees
         }
+
+        //console.log(`Right lower arm: rightElbowAngle=${rightElbowAngle.toFixed(0)}; rightArmScore=${rightArmScore}`);
 
         rightArmScore = clamp(rightArmScore, 1, 2);
         if (rightArmScore === 1) {
             rightArmColor = MotionStudyColors.green;
         } else {
-            rightArmColor = MotionStudyColors.red;
+            rightArmColor = MotionStudyColors.yellow;
         }
     }
     
@@ -492,6 +547,9 @@ function lowerArmReba(rebaData) {
 
 /**
  * Sets the score and color for the wrist reba.
+ * Starting with score=1
+ * +1 for wrist flexion/extention > 15 degrees
+ * +1 if bending from midline or twisting wrt elbow
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function wristReba(rebaData) {
@@ -522,28 +580,29 @@ function wristReba(rebaData) {
         // check if wrist position is outside +-15 deg, then +1
         const leftHandUp = new THREE.Vector3(); 
         leftHandUp.crossVectors(leftHandPinky2Index, leftHandDirection).normalize();   // note: swapped order compared to right hand
-        let wristPositionAngle = angleBetween(leftHandUp, leftForearmDirection) - 90;
+        const wristPositionAngle = angleBetween(leftHandUp, leftForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > 15) {
-            leftWristScore += 1;
+            leftWristScore++;
         }
 
-        // check if the hand is bent away from midline, then +1
+        // check if the hand is bent away from midline
         // the angle limit from midline is not specified in REBA definition (chosen by us)
-        let wristBendAngle = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);
-        if (Math.abs(wristBendAngle) > 30) {
-            leftWristScore += 1;
-        }
+        const wristBendAngle = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);
+        const sideBend = (Math.abs(wristBendAngle) > 30);
 
-        // check if the hand is twisted (palm up), then +1
+        // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
         const leftElbowAxis = new THREE.Vector3(); // direction towards the body
         leftElbowAxis.crossVectors(leftForearmDirection, leftUpperarmDirection).normalize(); // note: swapped order compared to right hand
-        let wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
-        if (wristTwistAngle > 120) {
-            leftWristScore += 1;
+        const wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
+        const twist = (wristTwistAngle > 120);
+
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            leftWristScore++; 
         }
 
-        //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+        //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, 3);
 
@@ -574,28 +633,29 @@ function wristReba(rebaData) {
         // check if wrist position is outside +-15 deg, then +1 
         const rightHandUp = new THREE.Vector3(); 
         rightHandUp.crossVectors(rightHandDirection, rightHandPinky2Index).normalize();
-        let wristPositionAngle = angleBetween(rightHandUp, rightForearmDirection) - 90;
+        const wristPositionAngle = angleBetween(rightHandUp, rightForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > 15) {
-            rightWristScore += 1;
+            rightWristScore++;
         }
 
-        // check if the hand is bent away from midline, then +1
+        // check if the hand is bent away from midline
         // the angle limit from midline is not specified in REBA definition (chosen by us)
-        let wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
-        if (Math.abs(wristBendAngle) > 30) {
-            rightWristScore += 1;
-        }
+        const wristBendAngle = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);
+        const sideBend = (Math.abs(wristBendAngle) > 30);
 
-        // check if the hand is twisted (palm up), then +1
+        // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
         const rightElbowAxis = new THREE.Vector3(); // direction towards the body
         rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
-        let wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
-        if (wristTwistAngle > 120) {
-            rightWristScore += 1;
+        const wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
+        const twist = (wristTwistAngle > 120);
+ 
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            rightWristScore++; 
         }
 
-        //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg`);
+        //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, 3);
 
@@ -887,17 +947,21 @@ function extractRebaData(pose) {
         rebaData.boneColors[boneId] = MotionStudyColors.undefined;
     }
     
-    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
+    // make sure these coord systems have orthogonal axes
     rebaData.orientations.head.up = rebaData.joints[JOINTS.HEAD].clone().sub(rebaData.joints[JOINTS.NECK]).normalize();
+    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
     rebaData.orientations.head.right = rebaData.orientations.head.forward.clone().cross(rebaData.orientations.head.up).normalize();
+    rebaData.orientations.head.forward = rebaData.orientations.head.up.clone().cross(rebaData.orientations.head.right).normalize();  // make perpendicular
     
     rebaData.orientations.chest.up = rebaData.joints[JOINTS.NECK].clone().sub(rebaData.joints[JOINTS.CHEST]).normalize();
     rebaData.orientations.chest.right = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]).normalize();
     rebaData.orientations.chest.forward = rebaData.orientations.chest.up.clone().cross(rebaData.orientations.chest.right).normalize();
+    rebaData.orientations.chest.right = rebaData.orientations.chest.forward.clone().cross(rebaData.orientations.chest.up).normalize();  // make perpendicular
     
     rebaData.orientations.hips.up = new THREE.Vector3(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up)
     rebaData.orientations.hips.right = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_HIP]).normalize();
     rebaData.orientations.hips.forward = rebaData.orientations.hips.up.clone().cross(rebaData.orientations.hips.right).normalize();
+    rebaData.orientations.hips.right = rebaData.orientations.hips.forward.clone().cross(rebaData.orientations.hips.up).normalize();  // make perpendicular
 
     return rebaData;
 }
