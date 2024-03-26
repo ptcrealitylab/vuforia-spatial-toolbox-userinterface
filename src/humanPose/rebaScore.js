@@ -55,7 +55,7 @@ function neckReba(rebaData) {
 
     // Check for bending
     let sideBend = false;
-    const bendingThreshold = 20 + 10; // 20 according to official REBA, adjusting due to noisy inputs
+    const bendingThreshold = 20;
     if (upMisalignmentAngle > bendingThreshold) {
         neckScore++; // +1 for greater than threshold
 
@@ -75,13 +75,12 @@ function neckReba(rebaData) {
     const twistLeftAngle = 180 - twistRightAngle;
     const twist = (twistRightAngle < (90 - bendingThreshold) || twistLeftAngle < (90 - bendingThreshold));
 
-    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
-
     // +1 for twisting or side-bending
     if (sideBend || twist) {
         neckScore++; 
     }
 
+    //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
     
     neckScore = clamp(neckScore, 1, 3);
 
@@ -454,6 +453,8 @@ function upperArmReba(rebaData) {
 
 /**
  * Sets the score and color for the lower arms reba.
+ * Starting with score=1
+ * +1 for elbow bent < 60 or > 100 degrees
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function lowerArmReba(rebaData) {
@@ -474,15 +475,12 @@ function lowerArmReba(rebaData) {
         const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]);
         const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
     
-        // Standard REBA calculation marks arms straight down as bad, very confusing for users
-        // if (leftElbowAngle < 60 || leftElbowAngle > 100) {
-        //     leftArmScore = 2; // 2 for left elbow bent < 60 or > 100 degrees
-        // }
-
-        // This calculation is less accurate to REBA but more intuitive
-        if (leftElbowAngle > 100) {
-            leftArmScore = 2; // 2 for left elbow bent > 100 degrees
+        // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
+        if (leftElbowAngle < 60 || leftElbowAngle > 100) {
+            leftArmScore++; // +1 for left elbow bent < 60 or > 100 degrees
         }
+
+        //console.log(`Left lower arm: leftElbowAngle=${leftElbowAngle.toFixed(0)}; leftArmScore=${leftArmScore}`);
     
         leftArmScore = clamp(leftArmScore, 1, 2);
         if (leftArmScore === 1) {
@@ -503,15 +501,12 @@ function lowerArmReba(rebaData) {
         const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
         const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
 
-        // Standard REBA calculation marks arms straight down as bad, very confusing for users
-        // if (rightElbowAngle < 60 || rightElbowAngle > 100) {
-        //     rightArmScore = 2; // 2 for right elbow bent < 60 or > 100 degrees
-        // }
-
-        // This calculation is less accurate to REBA but more intuitive
-        if (rightElbowAngle > 100) {
-            rightArmScore = 2; // 2 for right elbow bent > 100 degrees
+        // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
+        if (rightElbowAngle < 60 || rightElbowAngle > 100) {
+            rightArmScore++; // +1 for left elbow bent < 60 or > 100 degrees
         }
+
+        //console.log(`Right lower arm: rightElbowAngle=${rightElbowAngle.toFixed(0)}; rightArmScore=${rightArmScore}`);
 
         rightArmScore = clamp(rightArmScore, 1, 2);
         if (rightArmScore === 1) {
