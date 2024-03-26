@@ -731,6 +731,7 @@ export class MotionStudy {
                 delete filteredPose.joints[jointKey].position;
                 delete filteredPose.joints[jointKey].acceleration;
                 delete filteredPose.joints[jointKey].velocity;
+                delete filteredPose.joints[jointKey].confidence;
             }
 
             poseStrings.push(JSON.stringify(filteredPose));
