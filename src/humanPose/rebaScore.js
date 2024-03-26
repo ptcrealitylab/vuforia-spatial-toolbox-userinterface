@@ -338,15 +338,14 @@ function upperArmReba(rebaData) {
     
     // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture.
     const down = new THREE.Vector3(0, -1, 0);
-    const shoulderDifferenceCutoff = 100; // mm  // TODO: measure this to find a good cutoff
     
     /* left uppper arm */
     // check if all needed joints have a valid position
     if (rebaData.jointValidities[JOINTS.LEFT_ELBOW] && rebaData.jointValidities[JOINTS.LEFT_SHOULDER]) {
-        // calculate arm angle
-        const leftShoulderYDifference = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
+        // calculate arm angles
         const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
         const leftArmAngle = angleBetween(leftUpperArmDown, down);
+        const leftShoulderAngle = angleBetween(rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
         const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
         const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
@@ -373,12 +372,12 @@ function upperArmReba(rebaData) {
         
         // Check for shoulder raising
         let _raise = false;
-        if (leftShoulderYDifference > shoulderDifferenceCutoff) {
-            leftArmScore++; // +1 for left shoulder raised
+        if (leftShoulderAngle < 80) {
+            leftArmScore++; // +1 for left shoulder raised (less than 80 degress from chest up)
             _raise = true;
         }
 
-        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderYDifference: ${leftShoulderYDifference.toFixed(0)}; raise=${_raise}; abduction=${abduction}; leftArmScore=${leftArmScore}`);
+        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; leftArmScore=${leftArmScore}`);
 
         leftArmScore = clamp(leftArmScore, 1, 6);
         if (leftArmScore === 1) {
@@ -392,9 +391,9 @@ function upperArmReba(rebaData) {
 
     /* right uppper arm */
     if (rebaData.jointValidities[JOINTS.RIGHT_ELBOW] && rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]) {
-        const rightShoulderYDifference = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]).dot(rebaData.orientations.chest.up);
         const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
         const rightArmAngle = angleBetween(rightUpperArmDown, down);
+        const rightShoulderAngle = angleBetween(rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
         const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
         const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
@@ -420,12 +419,12 @@ function upperArmReba(rebaData) {
         }
 
         let _raise = false;
-        if (rightShoulderYDifference > shoulderDifferenceCutoff) {
-            rightArmScore++; // +1 for right shoulder raised
+        if (rightShoulderAngle < 80) {
+            rightArmScore++; // +1 for left shoulder raised (less than 80 degress from chest up)
             _raise = true;
         }
 
-        // console.log(`Right upper arm: leftArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderYDifference: ${rightShoulderYDifference.toFixed(0)}; raise=${_raise}; abduction=${abduction}; rightArmScore=${rightArmScore}`);
+        //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; rightArmScore=${rightArmScore}`);
         
         rightArmScore = clamp(rightArmScore, 1, 6);
         if (rightArmScore === 1) {
