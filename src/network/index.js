@@ -59,49 +59,61 @@ realityEditor.network.state = {
     proxySecret : null
 }
 
-realityEditor.network.desktopURLSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n"],
-        "expected": ["n", "s"],
-    }
-}
+realityEditor.network.desktopURLSchema = new ToolSocket.Schema([
+    new ToolSocket.Schema.StringValidator('n', {minLength: 1, maxLength: 25, pattern: /^[A-Za-z0-9_]*$/, required: true, expected: true}),
+    new ToolSocket.Schema.StringValidator('i', {minLength: 1, maxLength: 25, pattern: /^[A-Za-z0-9_]*$/}),
+    new ToolSocket.Schema.GroupValidator('s', [
+        new ToolSocket.Schema.StringValidator('s', {minLength: 0, maxLength: 45, pattern: /^[A-Za-z0-9_]*$/, required: true, expected: true}),
+        new ToolSocket.Schema.NullValidator('s'),
+        new ToolSocket.Schema.UndefinedValidator('s')
+    ], {expected: true}),
+    new ToolSocket.Schema.StringValidator('server', {minLength: 0, maxLength: 2000, pattern: /^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]/}),
+    new ToolSocket.Schema.StringValidator('protocol', {minLength: 1, maxLength: 20, enum: ["spatialtoolbox", "ws", "wss", "http", "https"]}),
+]);
 
-realityEditor.network.urlSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n", "i"],
-        "expected": ["n", "i", "s"],
-    }
-}
-
-realityEditor.network.qrSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n", "server","protocol"],
-        "expected": ["n", "server", "protocol", "s"],
-    }
-}
+// realityEditor.network.desktopURLSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n"],
+//         "expected": ["n", "s"],
+//     }
+// }
+//
+// realityEditor.network.urlSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n", "i"],
+//         "expected": ["n", "i", "s"],
+//     }
+// }
+//
+// realityEditor.network.qrSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n", "server","protocol"],
+//         "expected": ["n", "server", "protocol", "s"],
+//     }
+// }
 
 /**
  * if the main site is opened with https, we will assume that the main server is running https

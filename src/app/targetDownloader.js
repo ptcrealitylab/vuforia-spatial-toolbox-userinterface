@@ -690,32 +690,36 @@ createNameSpace("realityEditor.app.targetDownloader");
 
     }
 
+ // let schema = {
+ //        "type": "object",
+ //        "items": {
+ //            "properties": {
+ //                "obj": {"type": "string", "minLength": 1, "maxLength": 50, "pattern": "^[A-Za-z0-9_]*$"},
+ //                "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+ //            },
+ //            "required": ["server", "obj"],
+ //            "expected": ["server", "obj"],
+ //        }
+ //    }
+
+    const schema = new ToolSocket.Schema([
+        new ToolSocket.Schema.StringValidator('obj', {minLength: 1, maxLength: 50, pattern: /^[A-Za-z0-9_]*$/, required: true, expected: true}),
+        new ToolSocket.Schema.StringValidator('server', {minLength: 0, maxLength: 2000, pattern: /^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]/, required: true, expected: true})
+    ])
+
     /**
      * Uses a combination of IP address and object name to locate the ID.
      * e.g. "http(s)://10.10.10.108:8080/obj/monitorScreen/target/target.xml" -> ("10.10.10.108", "monitorScreen") -> object named monitor screen with that IP
      * @param {string} fileName
      */
-
- let schema = {
-        "type": "object",
-        "items": {
-            "properties": {
-                "obj": {"type": "string", "minLength": 1, "maxLength": 50, "pattern": "^[A-Za-z0-9_]*$"},
-                "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            },
-            "required": ["server", "obj"],
-            "expected": ["server", "obj"],
-        }
-    }
-
     function getObjectIDFromFilename(fileName) {
-        let urlObj = io.parseUrl(fileName, schema)
-        if (!urlObj) {
-            console.warn('io.parseUrl failed. this may cause targets not to download', fileName);
+        let parsedUrl = schema.parseUrl(new URL(fileName));
+        if (!parsedUrl) {
+            console.warn('schema.parseUrl failed. this may cause targets not to download', fileName);
             return;
         }
-        const ip = urlObj.server;
-        const objectName = urlObj.obj;
+        const ip = parsedUrl.server;
+        const objectName = parsedUrl.obj;
 
 
         for (var objectKey in objects) {
