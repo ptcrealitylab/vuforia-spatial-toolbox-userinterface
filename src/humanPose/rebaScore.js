@@ -331,7 +331,8 @@ function legsReba(rebaData) {
  * +1 for upper arm angle raised > 90 degrees
  * +1 if shoulder is raised
  * +1 if arm is abducted
- * Cannot implement: -1 if arm is supported or person is leaning
+ * -1 if arm is aligned with gravity and it is raised > 45 degrees from trunk
+ * Cannot implement: -1 if arm is supported
  * @param {RebaData} rebaData The rebaData to calculate the score and color for.
  */
 function upperArmReba(rebaData) {
@@ -340,7 +341,8 @@ function upperArmReba(rebaData) {
     let rightArmScore = 1;
     let rightArmColor = MotionStudyColors.undefined;
     
-    // Angles for upper arm should be measured relative to world up, arms naturally hang straight down regardless of posture.
+    // Angles for upper arm should be measured relative to trunk direction
+    const chestDown = rebaData.orientations.chest.up.clone().negate();
     const down = new THREE.Vector3(0, -1, 0);
     
     /* left uppper arm */
@@ -348,15 +350,17 @@ function upperArmReba(rebaData) {
     if (rebaData.jointValidities[JOINTS.LEFT_ELBOW] && rebaData.jointValidities[JOINTS.LEFT_SHOULDER]) {
         // calculate arm angles
         const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
-        const leftArmAngle = angleBetween(leftUpperArmDown, down);
+        const leftArmAngle = angleBetween(leftUpperArmDown, chestDown);
         const leftShoulderAngle = angleBetween(rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const leftArmGravityAngle = angleBetween(leftUpperArmDown, down);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
-        const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
-        const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
-        const rightAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.right);
-        const leftAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.hips.right.clone().negate());
+        const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
+        const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right);
+        const leftAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
         let abduction = false;
+        let gravityAlign = false;
         if (leftArmAngle > 20) {
             leftArmScore++; // +1 for greater than 20 degrees
             // check for abduction only when the arm angle is above the small threshold
@@ -364,10 +368,16 @@ function upperArmReba(rebaData) {
             abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
                          (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
             if (abduction) {
-                leftArmScore++; // +1 for left arm abducted
+                leftArmScore++; // +1 for arm abducted
             }
             if (leftArmAngle > 45) {
                 leftArmScore++; // +1 for greater than 45 degrees
+                // Check for gravity assistance
+                // -1 for upper arm aligned with gravity (less than 20 degress from gravity vector)
+                gravityAlign = (leftArmGravityAngle < 20);
+                if (gravityAlign) {
+                    leftArmScore--; 
+                } 
                 if (leftArmAngle > 90) {
                     leftArmScore++; // +1 for greater than 90 degrees
                 }
@@ -377,11 +387,11 @@ function upperArmReba(rebaData) {
         // Check for shoulder raising
         let _raise = false;
         if (leftShoulderAngle < 80) {
-            leftArmScore++; // +1 for left shoulder raised (less than 80 degress from chest up)
+            leftArmScore++; // +1 for shoulder raised (less than 80 degress from chest up)
             _raise = true;
         }
 
-        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; leftArmScore=${leftArmScore}`);
+        //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; leftArmScore=${leftArmScore}`);
 
         leftArmScore = clamp(leftArmScore, 1, 6);
         if (leftArmScore < 3) {
@@ -396,15 +406,17 @@ function upperArmReba(rebaData) {
     /* right uppper arm */
     if (rebaData.jointValidities[JOINTS.RIGHT_ELBOW] && rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]) {
         const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
-        const rightArmAngle = angleBetween(rightUpperArmDown, down);
+        const rightArmAngle = angleBetween(rightUpperArmDown, chestDown);
         const rightShoulderAngle = angleBetween(rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const rightArmGravityAngle = angleBetween(rightUpperArmDown, down);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
-        const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward);
-        const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.forward.clone().negate());
-        const rightAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.right);
-        const leftAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.hips.right.clone().negate());
+        const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
+        const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right);
+        const leftAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
 
         let abduction = false;
+        let gravityAlign = false;
         if (rightArmAngle > 20) {
             rightArmScore++; // +1 for greater than 20 degrees
             // check for abduction only when the arm angle is above the small threshold
@@ -412,10 +424,16 @@ function upperArmReba(rebaData) {
             abduction = ((flexionAlignment < rightAbductionAlignment || flexionAlignment < leftAbductionAlignment) && 
                          (extensionAlignment < rightAbductionAlignment || extensionAlignment < leftAbductionAlignment));
             if (abduction) {
-                rightArmScore++; // +1 for left arm abducted
+                rightArmScore++; // +1 for arm abducted
             }
             if (rightArmAngle > 45) {
                 rightArmScore++; // +1 for greater than 45 degrees
+                // Check for gravity assistance
+                // -1 for upper arm aligned with gravity (less than 20 degress from gravity vector)
+                gravityAlign = (rightArmGravityAngle < 20);
+                if (gravityAlign) {
+                    rightArmScore--; 
+                } 
                 if (rightArmAngle > 90) {
                     rightArmScore++; // +1 for greater than 90 degrees
                 }
@@ -424,11 +442,11 @@ function upperArmReba(rebaData) {
 
         let _raise = false;
         if (rightShoulderAngle < 80) {
-            rightArmScore++; // +1 for left shoulder raised (less than 80 degress from chest up)
+            rightArmScore++; // +1 for shoulder raised (less than 80 degress from chest up)
             _raise = true;
         }
 
-        //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; rightArmScore=${rightArmScore}`);
+        //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; rightArmScore=${rightArmScore}`);
         
         rightArmScore = clamp(rightArmScore, 1, 6);
         if (rightArmScore < 3) {
