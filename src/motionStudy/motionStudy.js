@@ -728,8 +728,12 @@ export class MotionStudy {
                 filteredPose.joints[jointKey] = Object.assign({}, jointData);
                 delete filteredPose.joints[jointKey].poseObjectId;
                 delete filteredPose.joints[jointKey].rebaColor;
-                delete filteredPose.joints[jointKey].rebaColorOverall;
+                delete filteredPose.joints[jointKey].overallRebaColor;
+                delete filteredPose.joints[jointKey].position;
+                delete filteredPose.joints[jointKey].acceleration;
+                delete filteredPose.joints[jointKey].velocity;
             }
+
             poseStrings.push(JSON.stringify(filteredPose));
             poseStrings.push(',');
         }
