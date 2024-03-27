@@ -2108,17 +2108,17 @@ realityEditor.network.onInternalPostMessage = function (e) {
         if (!errorNotificationUI) {
             errorNotificationUI = document.createElement('div');
             errorNotificationUI.id = 'errorNotificationUI';
-            errorNotificationUI.classList.add('statusBar');
+            errorNotificationUI.classList.add('statusBar-tbr');
             document.body.appendChild(errorNotificationUI);
 
             textContainer = document.createElement('div');
             textContainer.id = 'errorNotificationText';
-            errorNotificationUI.classList.add('statusBarText');
+            errorNotificationUI.classList.add('statusBarText-tbr');
             errorNotificationUI.appendChild(textContainer);
         }
 
         // show and populate with message
-        errorNotificationUI.classList.add('statusBar');
+        errorNotificationUI.classList.add('statusBar-tbr');
         errorNotificationUI.classList.remove('statusBarHidden');
         textContainer.innerHTML = errorMessageText;
 
@@ -2129,7 +2129,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             } // no need to hide it if it doesn't exist
 
             errorNotificationUI.classList.add('statusBarHidden');
-            errorNotificationUI.classList.remove('statusBar');
+            errorNotificationUI.classList.remove('statusBar-tbr');
         }, messageTime);
     }
 
