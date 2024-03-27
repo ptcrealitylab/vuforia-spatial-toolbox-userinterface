@@ -1792,6 +1792,7 @@ Logic Interface CSS
 
 #avatarIconContainer {
     position: absolute;
+    top: 60px;
     left: 50vw;
     transform: translateX(-50%);
     background-color: rgba(0,0,0,0.5);
@@ -2404,8 +2405,12 @@ Logic Interface CSS
 
 /* smaller screens: mobile phones and portrait tablets */
 @media only screen and (max-width: 768px) {
+    .statusBar {
+        top: unset;
+        bottom: 130px;
+    }
     .statusBarText {
-        max-width: 80%;
+        width: 80%;
     }
 }
 

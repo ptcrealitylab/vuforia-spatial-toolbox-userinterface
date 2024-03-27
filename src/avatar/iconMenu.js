@@ -248,7 +248,6 @@ createNameSpace("realityEditor.avatar.iconMenu");
         let iconContainer = document.createElement('div');
         iconContainer.id = 'avatarIconContainer';
         iconContainer.classList.add('avatarIconContainerScaleAdjustment')
-        iconContainer.style.top = (realityEditor.device.environment.variables.screenTopOffset + 20) + 'px';
         document.body.appendChild(iconContainer)
         return iconContainer;
     }

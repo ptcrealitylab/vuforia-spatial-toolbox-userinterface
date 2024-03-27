@@ -95,16 +95,12 @@ createNameSpace("realityEditor.device.tracking");
             currentStatusInfo = trackingStatusInfo;
 
         } else {
-            // hide the UI
-            hideTrackingStatusUI();
-            
             currentStatusInfo = null;
         }
     }
 
     function showLimitedTrackingUI(statusInfo) {
         let readableStatus = 'Limited AR tracking';
-        let isLongMessage = false;
 
         switch (statusInfo) {
             case 'INITIALIZING':
@@ -122,9 +118,7 @@ createNameSpace("realityEditor.device.tracking");
                 //  shouldn't matter whether you restart tracking immediately
                 if (timeRelocalizing > 4000) {
                     if (willRelocalizingHaveEffect()) {
-                        readableStatus = 'Trouble re-localizing - move device to the same position it was at<br/>' +
-                            'when the app was last closed, or tap here to restart AR tracking';
-                        isLongMessage = true;
+                        readableStatus = 'Trouble re-localizing - move device to the same position it was at when the app was last closed, or tap here to restart AR tracking';
                     } else {
                         realityEditor.app.restartDeviceTracker();
                     }
@@ -154,35 +148,12 @@ createNameSpace("realityEditor.device.tracking");
         }
 
         // create UI if needed
+        // showBannerNotification removes notification after set time so no additional function is needed
         let trackingStatusUI = document.getElementById('trackingStatusUI');
-        let textContainer = document.getElementById('trackingStatusText');
         if (!trackingStatusUI) {
-            trackingStatusUI = document.createElement('div');
-            trackingStatusUI.id = 'trackingStatusUI';
-            trackingStatusUI.classList.add('statusBar');
-            if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-                trackingStatusUI.classList.add('statusBarPortrait');
-            }
-            document.body.appendChild(trackingStatusUI);
-            
-            textContainer = document.createElement('div');
-            textContainer.id = 'trackingStatusText';
-            trackingStatusUI.classList.add('statusBarText');
-            trackingStatusUI.appendChild(textContainer);
-
+            trackingStatusUI = realityEditor.gui.modal.showBannerNotification(readableStatus, 'trackingStatusUI', 'trackingStatusText', 5000);
             trackingStatusUI.addEventListener('pointerup', statusBarPointerUp);
-        }
-
-        // show and populate with message
-        trackingStatusUI.classList.add('statusBar');
-        trackingStatusUI.classList.remove('statusBarHidden');
-        trackingStatusUI.style.paddingTop = (10 + realityEditor.device.environment.variables.screenTopOffset) + 'px';
-        textContainer.innerHTML = readableStatus;
-        
-        if (isLongMessage) {
-            trackingStatusUI.classList.add('statusTextLong');
-        } else {
-            trackingStatusUI.classList.remove('statusTextLong');
+            document.body.appendChild(trackingStatusUI);
         }
     }
 
@@ -197,14 +168,6 @@ createNameSpace("realityEditor.device.tracking");
             console.log('tapped on relocalizing banner');
             realityEditor.app.restartDeviceTracker();
         }
-    }
-
-    function hideTrackingStatusUI() {
-        let trackingStatusUI = document.getElementById('trackingStatusUI');
-        if (!trackingStatusUI) { return; } // no need to hide it if it doesn't exist
-
-        trackingStatusUI.classList.add('statusBarHidden');
-        trackingStatusUI.classList.remove('statusBar');
     }
 
     exports.initService = initService;
