@@ -1674,6 +1674,7 @@ Logic Interface CSS
 }
 
 .statusBar {
+    pointer-events: none;
     position: absolute;
     display: flex;
     align-items: center;
@@ -1793,6 +1794,9 @@ Logic Interface CSS
     position: absolute;
     left: 50vw;
     transform: translateX(-50%);
+    background-color: rgba(0,0,0,0.5);
+    height: 50px;
+    border-radius: 25px;
 }
 
 .avatarListIcon {
@@ -1801,15 +1805,11 @@ Logic Interface CSS
     height: 30px;
 }
 
-.avatarListIconMyAvatar {
-    cursor: pointer;
-}
-
 .avatarListIconImage {
     position: absolute;
     left: 0;
     top: 0;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .avatarListIconInitials {
@@ -1824,10 +1824,26 @@ Logic Interface CSS
     pointer-events: none;
 }
 
+.avatarListIconFollowingBubble {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    text-align: center;
+    line-height: 15px; /* slightly less than div height looks better */
+    vertical-align: middle;
+    pointer-events: none;
+    background-color: black;
+    font-size: 12px;
+}
+
 #avatarListHoverName {
     position: absolute;
-    left: 0;
-    top: 40px;
+    left: 50%;
+    top: 100%;
+    margin-top: 17px;
     height: 30px;
     background-color: rgb(0, 0, 0);
     border-radius: 5px;
@@ -1845,6 +1861,34 @@ Logic Interface CSS
     transform: translateX(-50%) translateY(-100%);
     width: 16px;
     height: 8px;
+}
+
+.avatarListIconDropdown {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    margin-top: 20px;
+    background-color: rgba(0,0,0,0.9);
+    border-radius: 5px;
+    &.hiddenDropdown {
+        display: none;
+    }
+}
+
+.avatarListIconDropdownItem {
+    width: 160px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 16px;
+    vertical-align: middle;
+    padding-left: 10px;
+    padding-top: 10px;
+    &:hover {
+        background-color: rgba(55,55,55,0.9);
+    }
+    border-radius: 5px;
 }
 
 #analytics-container {
@@ -1934,6 +1978,10 @@ Logic Interface CSS
     cursor: pointer;
 }
 
+.analytics-title {
+    margin-bottom: 10px;
+}
+
 .analytics-region-card {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1974,16 +2022,68 @@ Logic Interface CSS
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: calc(320px - 66px); /* guess at timeline top */
     left: 35px;
+    bottom: calc(320px - 124px); /* guess at timeline top */
     padding: 0;
     padding-right: 8px;
     pointer-events: all;
     overflow-y: auto;
 }
 
-.analytics-pinned-region-cards-csv,
-.analytics-pinned-region-cards-csv:visited {
+@media (max-width: 600px) and (max-height: 1000px) {
+    /**
+     * shift further up due to recording buttons, note that
+     * analytics-has-video is okay to overlap since there will no longer be
+     * buttons
+     */
+    .analytics-pinned-region-cards-container {
+        bottom: calc(320px);
+    }
+}
+
+
+.analytics-pinned-region-cards-container.analytics-has-video {
+    bottom: calc(320px + 91px); /* guess at video top */
+}
+
+.analytics-video {
+    position: absolute;
+    left: 35px;
+    bottom: calc(320px - 66px - 66px + 14px);
+    width: calc(15rem + 2 * 14px);
+    height: 151px;
+
+    z-index: 2900;
+    transform: translateZ(2900px);
+
+    pointer-events: all;
+}
+
+.analytics-video-toggle {
+    position: absolute;
+    left: 35px;
+    bottom: calc(320px + 37px);
+
+    z-index: 2900;
+    transform: translateZ(2900px);
+
+    cursor: pointer;
+
+    pointer-events: all;
+
+}
+
+.analytics-export-link-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.analytics-export-link {
+    font-size: 0.9em;
+}
+.analytics-export-link,
+.analytics-export-link:visited {
     cursor: pointer;
     color: white;
 }
@@ -2319,4 +2419,27 @@ Logic Interface CSS
     .statusBarText {
         max-width: 80%;
     }
-} 
+}
+
+.search-container {
+    position: fixed;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40rem;
+    height: 54px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 12.8px;
+}
+
+.search-container-hidden {
+    display: none;
+}
+
+.search-input {
+    background: none;
+    color: white;
+    font-size: 2rem;
+    width: 100%;
+    height: 100%;
+}

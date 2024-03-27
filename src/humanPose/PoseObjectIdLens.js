@@ -120,4 +120,5 @@ export class PoseObjectIdLens extends MotionStudyLens {
     getColorForPose(pose) {
         return MotionStudyColors.fade(this.getColorFromId(pose.metadata.poseObjectId));
     }
+
 }

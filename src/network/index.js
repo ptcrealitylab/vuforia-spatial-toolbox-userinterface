@@ -254,6 +254,27 @@ realityEditor.network.addObjectDiscoveredCallback = function(callback) {
 };
 
 /**
+ * Lists of renderMode callback functions, organized by objectId
+ * @type {Object.<string, Array.<function>>}
+ */
+realityEditor.network.renderModeUpdateCallbacks = {};
+
+/**
+ * Allow other modules to be notified when a specific object's renderMode changes. Also triggers once when added.
+ * @param {string} objectId
+ * @param {function} callback
+ */
+realityEditor.network.addRenderModeUpdateCallback = function(objectId, callback) {
+    if (typeof this.renderModeUpdateCallbacks[objectId] === 'undefined') {
+        this.renderModeUpdateCallbacks[objectId] = [];
+    }
+    this.renderModeUpdateCallbacks[objectId].push(callback);
+    let existingObject = realityEditor.getObject(objectId);
+    if (!existingObject) return;
+    callback(existingObject.renderMode);
+};
+
+/**
  * @type {CallbackHandler}
  */
 realityEditor.network.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('network/index');
@@ -648,6 +669,17 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
 
     if (remote.matrix) {
         origin.matrix = remote.matrix;
+    }
+
+    // triggers any renderModeUpdateCallbacks if the object's renderMode has changed
+    if (origin.renderMode !== remote.renderMode) {
+        origin.renderMode = remote.renderMode;
+
+        if (typeof this.renderModeUpdateCallbacks[objectKey] !== 'undefined') {
+            this.renderModeUpdateCallbacks[objectKey].forEach(callback => {
+                callback(origin.renderMode);
+            });
+        }
     }
 
     // update each frame in the object // TODO: create an updateFrame function, the same way we have an updateNode function
@@ -3442,6 +3474,34 @@ realityEditor.network.postObjectPosition = function(ip, objectKey, matrix, world
         }
     });
 };
+
+/**
+ * Update the renderMode of the object on the server and other clients
+ * @param {string} ip
+ * @param {string} objectKey
+ * @param {string} renderMode
+ * @returns {Promise<unknown>}
+ */
+realityEditor.network.postObjectRenderMode = (ip, objectKey, renderMode) => {
+    let object = realityEditor.getObject(objectKey);
+    if (!object) return;
+    let port = realityEditor.network.getPort(object);
+    let urlEndpoint = realityEditor.network.getURL(ip, port, `/object/${objectKey}/renderMode`);
+    let content = {
+        renderMode: renderMode,
+        lastEditor: globalStates.tempUuid
+    };
+    return new Promise((resolve, reject) => {
+        realityEditor.network.postData(urlEndpoint, content, (err, response) => {
+            if (err) {
+                console.warn('error posting object position to ' + urlEndpoint, err);
+                reject(err);
+            } else {
+                resolve(response);
+            }
+        });
+    });
+}
 
 realityEditor.network.searchAndDownloadUnpinnedFrames = function (ip, port) {
     realityEditor.network.search.searchFrames(ip, port, {src: 'communication'}, function(matchingFrame) {

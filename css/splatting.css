@@ -1,0 +1,170 @@
+#gsContainer {
+    pointer-events: none;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    text-shadow: 0 0 3px black;
+    /*z-index: 10000;*/
+    background-color: black;
+}
+#gsContainer a, body {
+    color: white;
+}
+#gsInfo {
+    z-index: 100;
+    position: absolute;
+    top: 25px;
+    left: 15px;
+    display: none;
+}
+#gsContainer h3 {
+    margin: 5px 0;
+}
+#gsContainer p {
+    margin: 5px 0;
+    font-size: small;
+}
+
+#gsContainer .cube-wrapper {
+    transform-style: preserve-3d;
+}
+
+#gsContainer .cube {
+    transform-style: preserve-3d;
+    transform: rotateX(45deg) rotateZ(45deg);
+    animation: gsCubeRotation 2s infinite;
+}
+
+#gsContainer .cube-faces {
+    transform-style: preserve-3d;
+    height: 80px;
+    width: 80px;
+    position: relative;
+    transform-origin: 0 0;
+    transform: translateX(0) translateY(0) translateZ(-40px);
+}
+
+#gsContainer .cube-face {
+    position: absolute;
+    inset: 0;
+    background: #0017ff;
+    border: solid 1px #ffffff;
+}
+#gsContainer .cube-face.top {
+    transform: translateZ(80px);
+}
+#gsContainer .cube-face.front {
+    transform-origin: 0 50%;
+    transform: rotateY(-90deg);
+}
+#gsContainer .cube-face.back {
+    transform-origin: 0 50%;
+    transform: rotateY(-90deg) translateZ(-80px);
+}
+#gsContainer .cube-face.right {
+    transform-origin: 50% 0;
+    transform: rotateX(-90deg) translateY(-80px);
+}
+#gsContainer .cube-face.left {
+    transform-origin: 50% 0;
+    transform: rotateX(-90deg) translateY(-80px) translateZ(80px);
+}
+
+@keyframes gsCubeRotation {
+    0% {
+        transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
+        animation-timing-function: cubic-bezier(
+                0.17,
+                0.84,
+                0.44,
+                1
+        );
+    }
+    50% {
+        transform: rotateX(45deg) rotateY(0) rotateZ(225deg);
+        animation-timing-function: cubic-bezier(
+                0.76,
+                0.05,
+                0.86,
+                0.06
+        );
+    }
+    100% {
+        transform: rotateX(45deg) rotateY(0) rotateZ(405deg);
+        animation-timing-function: cubic-bezier(
+                0.17,
+                0.84,
+                0.44,
+                1
+        );
+    }
+}
+
+#gsContainer .scene,
+#gsMessage {
+    position: absolute;
+    display: flex;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 2;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+#gsMessage {
+    font-weight: bold;
+    font-size: large;
+    color: red;
+    pointer-events: none;
+}
+
+#gsContainer details {
+    font-size: small;
+
+}
+
+#gsProgress {
+    position: absolute;
+    top: 0;
+    height: 5px;
+    background: blue;
+    z-index: 99;
+    transition: width 0.1s ease-in-out;
+}
+
+#gsQuality {
+    position: absolute;
+    bottom: 10px;
+    z-index: 999;
+    right: 10px;
+}
+
+#gsCanvas {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+#gsInstructions {
+    background: rgba(0,0,0,0.6);
+    white-space: pre-wrap;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: x-small;
+}
+#gsContainer body.nohf .nohf {
+    display: none;
+}
+#gsContainer body.nohf #gsProgress, #gsContainer body.nohf .cube-face {
+    background: #ff9d0d;
+}

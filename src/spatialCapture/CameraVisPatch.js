@@ -64,7 +64,7 @@ export class CameraVisPatch {
         this.maskMaterial = this.mesh.material.clone();
         this.maskMaterial.colorWrite = false;
         this.maskMaterial.depthFunc = THREE.AlwaysDepth;
-        this.maskMaterial.uniform.useFarDepth.value = true;
+        this.maskMaterial.uniforms.useFarDepth.value = true;
         this.maskMesh.material = this.maskMaterial;
     }
 
