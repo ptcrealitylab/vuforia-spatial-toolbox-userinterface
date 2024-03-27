@@ -559,8 +559,9 @@ export class MotionStudy {
                 regionCard.remove();
 
                 // New region card may have an updated label
+                // TODO have better criteria than starting with Step
                 const newLabel = regionCard.labelElement.textContent;
-                if (newLabel) {
+                if (newLabel && !newLabel.startsWith('Step ')) {
                     pinnedRegionCard.setLabel(newLabel);
                 }
                 return;
