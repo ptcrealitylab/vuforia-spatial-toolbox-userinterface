@@ -46,6 +46,7 @@ export class MotionStudy {
         this.opened = false;
         this.loadingHistory = false;
         this.lastHydratedData = null;
+        this.writeMSDataTimeout = null;
         this.livePlayback = false;
         this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
@@ -564,6 +565,13 @@ export class MotionStudy {
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
+            if (this.writeMSDataTimeout) {
+                clearTimeout(this.writeMSDataTimeout);
+            }
+            this.writeMSDataTimeout = setTimeout(() => {
+                this.writeMotionStudyData();
+                this.writeMSDataTimeout = null;
+            }, 1000);
         }
 
         regionCard.setAccentColor(this.getStepColor());
