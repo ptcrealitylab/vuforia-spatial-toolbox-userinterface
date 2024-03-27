@@ -1688,9 +1688,32 @@ Logic Interface CSS
     animation: dropIn 300ms ease-out;
 }
 
+/*review - should be replaced with .statusBar */
+.statusBar-tbr {
+    position: absolute;
+    left: 80px;
+    top: 130px;
+    width: calc(100vw - 220px);
+    height: 30px;
+    color: white;
+    font-family: "Open Sans", sans-serif;
+    background-color: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    text-align: center;
+    line-height: 30px;
+    animation: dropIn 300ms ease-out;
+    transition: height 300ms ease-out;
+}
+
 @keyframes dropIn {
     0% { opacity: 0 }
     100% { opacity: 1 }
+}
+
+/* review - should be removed along with .statusBar-tbr and .statusBarText-tbr */
+.statusBarPortrait {
+    left: 40px;
+    width: calc(100vw - 100px); /* centers, including padding */
 }
 
 .statusBarHidden {
@@ -1707,6 +1730,12 @@ Logic Interface CSS
     width: max-content;
     border-radius: 10px;
     word-wrap: normal;
+}
+
+/*review - should be replaced with .statusBarText*/
+.statusBarText-tbr {
+    padding: 10px;
+    font-size: 14px;
 }
 
 .statusTextLong {
@@ -1792,6 +1821,7 @@ Logic Interface CSS
 
 #avatarIconContainer {
     position: absolute;
+    top: 60px;
     left: 50vw;
     transform: translateX(-50%);
     background-color: rgba(0,0,0,0.5);
@@ -2416,8 +2446,12 @@ Logic Interface CSS
 
 /* smaller screens: mobile phones and portrait tablets */
 @media only screen and (max-width: 768px) {
+    .statusBar {
+        top: unset;
+        bottom: 160px;
+    }
     .statusBarText {
-        max-width: 80%;
+        width: 80%;
     }
 }
 
