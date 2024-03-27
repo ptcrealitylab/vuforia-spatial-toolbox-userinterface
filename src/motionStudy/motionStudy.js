@@ -571,13 +571,15 @@ export class MotionStudy {
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
-            if (this.writeMSDataTimeout) {
-                clearTimeout(this.writeMSDataTimeout);
+            if (this.stepLabels.length > 0) {
+                if (this.writeMSDataTimeout) {
+                    clearTimeout(this.writeMSDataTimeout);
+                }
+                this.writeMSDataTimeout = setTimeout(() => {
+                    this.writeMotionStudyData();
+                    this.writeMSDataTimeout = null;
+                }, 1000);
             }
-            this.writeMSDataTimeout = setTimeout(() => {
-                this.writeMotionStudyData();
-                this.writeMSDataTimeout = null;
-            }, 1000);
         }
 
         regionCard.setAccentColor(this.getStepColor());
