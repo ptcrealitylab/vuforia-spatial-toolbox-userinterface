@@ -557,6 +557,12 @@ export class MotionStudy {
                (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
                 // New region card already exists in the list
                 regionCard.remove();
+
+                // New region card may have an updated label
+                const newLabel = regionCard.labelElement.textContent;
+                if (newLabel) {
+                    pinnedRegionCard.setLabel(newLabel);
+                }
                 return;
             }
         }
