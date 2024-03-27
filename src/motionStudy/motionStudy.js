@@ -589,14 +589,18 @@ export class MotionStudy {
             return;
         }
 
-        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
-        if (!desktopRenderer) {
-            return;
-        }
+        try {
+            const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+            if (!desktopRenderer) {
+                return;
+            }
 
-        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
-        if (!patches) {
-            return;
+            const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
+            if (!patches) {
+                return;
+            }
+        } catch (e) {
+            console.warn('Unable to clone patches', e);
         }
 
         // Hide cloned patches after brief delay to not clutter the space
