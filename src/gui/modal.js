@@ -248,6 +248,17 @@ createNameSpace("realityEditor.gui.modal");
         }
     }
     
+      //Creates notification container for toast and other messages triggered by in-app events (errors, network
+      // updates, device tracking, etc)
+    function createNotificationContainer() {
+
+        let notificationContainer = document.createElement('div');
+        notificationContainer.id = 'interfaceNotificationContainer';
+        notificationContainer.classList.add('statusBarContainer');
+        
+        document.body.appendChild(notificationContainer);
+    }
+    
     function Notification(headerText, descriptionText, onCloseCallback, isPortraitLayout) {
         this.headerText = headerText;
         this.descriptionText = descriptionText;
@@ -343,6 +354,8 @@ createNameSpace("realityEditor.gui.modal");
     //Whenever this function is used, make sure to append the returned element to the dom/document. This is done so
     // additional event listeners can be added if needed.
     function showBannerNotification(message, uiId, textId, timeMs = 3000) {
+
+        let notificationContainer = document.getElementById('interfaceNotificationContainer');
         
         let notificationUI = document.createElement('div');
         notificationUI.classList.add('statusBar');
@@ -358,16 +371,17 @@ createNameSpace("realityEditor.gui.modal");
 
         if (timeMs > 0) {
             setTimeout(() => {
-                document.body.removeChild(notificationUI);
+                notificationContainer.removeChild(notificationUI);
             }, timeMs);
         }
-        
-        return notificationUI;
+
+        notificationContainer.appendChild(notificationUI);
     }
 
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
     exports.openInputModal = openInputModal;
+    exports.createNotificationContainer = createNotificationContainer;
     exports.showSimpleNotification = showSimpleNotification;
     exports.showBannerNotification = showBannerNotification;
     

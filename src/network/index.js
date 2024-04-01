@@ -2104,33 +2104,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
         // create UI if needed
         let errorNotificationUI = document.getElementById('errorNotificationUI');
-        let textContainer = document.getElementById('errorNotificationText');
         if (!errorNotificationUI) {
-            errorNotificationUI = document.createElement('div');
-            errorNotificationUI.id = 'errorNotificationUI';
-            errorNotificationUI.classList.add('statusBar-tbr');
-            document.body.appendChild(errorNotificationUI);
-
-            textContainer = document.createElement('div');
-            textContainer.id = 'errorNotificationText';
-            errorNotificationUI.classList.add('statusBarText-tbr');
-            errorNotificationUI.appendChild(textContainer);
+            realityEditor.gui.modal.showBannerNotification(errorMessageText, 'errorNotificationUI', 'errorNotificationText', messageTime);
         }
-
-        // show and populate with message
-        errorNotificationUI.classList.add('statusBar-tbr');
-        errorNotificationUI.classList.remove('statusBarHidden');
-        textContainer.innerHTML = errorMessageText;
-
-        setTimeout(function () {
-            // let errorNotificationUI = document.getElementById('errorNotificationUI');
-            if (!errorNotificationUI) {
-                return;
-            } // no need to hide it if it doesn't exist
-
-            errorNotificationUI.classList.add('statusBarHidden');
-            errorNotificationUI.classList.remove('statusBar-tbr');
-        }, messageTime);
     }
 
     if (typeof msgContent.setPinned !== "undefined") {

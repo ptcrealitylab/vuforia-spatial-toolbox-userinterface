@@ -183,6 +183,8 @@ realityEditor.device.onload = async function () {
         //     // realityEditor.app.targetDownloader.resetTargetDownloadCache();
         // }
     }).moveToDevelopMenu();
+    
+    realityEditor.gui.modal.createNotificationContainer();
 
     let enablePoseTrackingTimeout = null;
     // Add a toggle to enable virtualization features
@@ -294,8 +296,7 @@ realityEditor.device.onload = async function () {
 
         let message = 'Network Offline: Showing last known state. Most functionality is disabled.';
         // showBannerNotification removes notification after set time so no additional function is needed
-        let offlineNotificationUI = realityEditor.gui.modal.showBannerNotification(message, 'offlineUIcontainer', 'offlineUItext', 5000);
-        document.body.appendChild(offlineNotificationUI);
+        realityEditor.gui.modal.showBannerNotification(message, 'offlineUIcontainer', 'offlineUItext', 5000);
     });
 
     // set up the global canvas for drawing the links
@@ -364,8 +365,7 @@ realityEditor.device.onload = async function () {
         try {
             let initializeMessage = 'Error initializing. Restart app or contact support.';
             // showBannerNotification removes notification after set time so no additional function is needed
-            let initializeUI = realityEditor.gui.modal.showBannerNotification(initializeMessage, 'initializeUIContainer', 'initializeText', 5000);
-            document.body.appendChild(initializeUI);
+            realityEditor.gui.modal.showBannerNotification(initializeMessage, 'initializeErrorUI', 'initializeErrorText', 5000);
         } catch (alertError) {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }

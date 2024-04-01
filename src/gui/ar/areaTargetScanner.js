@@ -529,9 +529,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
                 });
             }, 1000);
 
-            showMessage('Successful capture.', 2000);
+            showMessage('Successful capture.', 'caputureSuccessUI', 'caputureSuccessText', 2000);
         } else {
-            showMessage('Error: ' + errorMessage, 2000);
+            showMessage('Error: ' + errorMessage, 'caputureErrorUI', 'caputureErrorText', 2000);
         }
 
         callbacks.onCaptureSuccessOrError.forEach(cb => {
@@ -564,9 +564,9 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         xhr.onload = function () {
             if (xhr.status === 200) {
-                showMessage('Successfully uploaded icon to new world object', 2000);
+                showMessage('Successfully uploaded icon to new world object', 'uploadSuccessUI', 'uploadSuccessText', 2000);
             } else {
-                showMessage('Error uploading icon to new world object', 2000);
+                showMessage('Error uploading icon to new world object', 'uploadErrorUI', 'uploadErrorText', 2000);
             }
         };
 
@@ -574,45 +574,12 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         xhr.send(formData);
     }
 
-    function showMessage(message, lifetime) {
+    function showMessage(message, containerId, textId, lifetime) {
         // create UI if needed
-        // let notificationUI = document.getElementById('captureNotificationUI');
-        // let notificationTextContainer = document.getElementById('captureNotificationStatusText');
-        // if (!notificationUI) {
-        let notificationUI = document.createElement('div');
-        // notificationUI.id = 'notificationUI';
-        notificationUI.classList.add('statusBar-tbr');
-        if (realityEditor.device.environment.variables.layoutUIForPortrait) {
-            notificationUI.classList.add('statusBarPortrait');
+        let notificationUI = document.getElementById(containerId);
+        if (!notificationUI) {
+            realityEditor.gui.modal.showBannerNotification(message, containerId, textId, lifetime);
         }
-        document.body.appendChild(notificationUI);
-
-        let notificationTextContainer = document.createElement('div');
-        // notificationTextContainer.id = 'trackingStatusText';
-        notificationUI.classList.add('statusBarText-tbr');
-        notificationUI.appendChild(notificationTextContainer);
-        // }
-
-        // show and populate with message
-        notificationUI.classList.add('statusBar-tbr');
-        notificationUI.classList.remove('statusBarHidden');
-        notificationTextContainer.innerHTML = message;
-
-        setTimeout(function() {
-            // let errorNotificationUI = document.getElementById('errorNotificationUI');
-            if (!notificationUI) {
-                return;
-            } // no need to hide it if it doesn't exist
-            // notificationUI.classList.add('statusBarHidden');
-            // notificationUI.classList.remove('statusBar');
-            notificationUI.parentElement.removeChild(notificationUI);
-        }, lifetime);
-
-        // if (isLongMessage) {
-        //     notificationUI.classList.add('statusTextLong');
-        // } else {
-        //     notificationUI.classList.remove('statusTextLong');
-        // }
     }
 
     function showLoadingDialog(headerText, descriptionText) {
