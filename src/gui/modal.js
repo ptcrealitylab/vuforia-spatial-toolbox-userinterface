@@ -340,13 +340,17 @@ createNameSpace("realityEditor.gui.modal");
         }
     }
 
-    function showScreenTopNotification(message, timeMs = 3000) {
+    //Whenever this function is used, make sure to append the returned element to the dom/document. This is done so
+    // additional event listeners can be added if needed.
+    function showBannerNotification(message, uiId, textId, timeMs = 3000) {
+        
         let notificationUI = document.createElement('div');
         notificationUI.classList.add('statusBar');
-        document.body.appendChild(notificationUI);
+        notificationUI.id = uiId;
 
         let notificationTextContainer = document.createElement('div');
         notificationTextContainer.classList.add('statusBarText');
+        notificationTextContainer.id = textId;
         notificationUI.appendChild(notificationTextContainer);
 
         // show and populate with message
@@ -357,12 +361,14 @@ createNameSpace("realityEditor.gui.modal");
                 document.body.removeChild(notificationUI);
             }, timeMs);
         }
+        
+        return notificationUI;
     }
 
     exports.openClassicModal = openClassicModal;
     exports.openRealityModal = openRealityModal;
     exports.openInputModal = openInputModal;
     exports.showSimpleNotification = showSimpleNotification;
-    exports.showScreenTopNotification = showScreenTopNotification;
+    exports.showBannerNotification = showBannerNotification;
     
 })(realityEditor.gui.modal);

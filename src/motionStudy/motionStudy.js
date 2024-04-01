@@ -46,6 +46,7 @@ export class MotionStudy {
         this.opened = false;
         this.loadingHistory = false;
         this.lastHydratedData = null;
+        this.writeMSDataTimeout = null;
         this.livePlayback = false;
         this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
@@ -556,6 +557,13 @@ export class MotionStudy {
                (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
                 // New region card already exists in the list
                 regionCard.remove();
+
+                // New region card may have an updated label
+                // TODO have better criteria than starting with Step
+                const newLabel = regionCard.labelElement.textContent;
+                if (newLabel && !newLabel.startsWith('Step ')) {
+                    pinnedRegionCard.setLabel(newLabel);
+                }
                 return;
             }
         }
@@ -564,6 +572,15 @@ export class MotionStudy {
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
+            if (this.stepLabels.length > 0) {
+                if (this.writeMSDataTimeout) {
+                    clearTimeout(this.writeMSDataTimeout);
+                }
+                this.writeMSDataTimeout = setTimeout(() => {
+                    this.writeMotionStudyData();
+                    this.writeMSDataTimeout = null;
+                }, 1000);
+            }
         }
 
         regionCard.setAccentColor(this.getStepColor());
@@ -581,14 +598,18 @@ export class MotionStudy {
             return;
         }
 
-        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
-        if (!desktopRenderer) {
-            return;
-        }
+        try {
+            const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+            if (!desktopRenderer) {
+                return;
+            }
 
-        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
-        if (!patches) {
-            return;
+            const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
+            if (!patches) {
+                return;
+            }
+        } catch (e) {
+            console.warn('Unable to clone patches', e);
         }
 
         // Hide cloned patches after brief delay to not clutter the space

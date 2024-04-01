@@ -581,7 +581,7 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
         // if (!notificationUI) {
         let notificationUI = document.createElement('div');
         // notificationUI.id = 'notificationUI';
-        notificationUI.classList.add('statusBar');
+        notificationUI.classList.add('statusBar-tbr');
         if (realityEditor.device.environment.variables.layoutUIForPortrait) {
             notificationUI.classList.add('statusBarPortrait');
         }
@@ -589,12 +589,12 @@ createNameSpace("realityEditor.gui.ar.areaTargetScanner");
 
         let notificationTextContainer = document.createElement('div');
         // notificationTextContainer.id = 'trackingStatusText';
-        notificationUI.classList.add('statusBarText');
+        notificationUI.classList.add('statusBarText-tbr');
         notificationUI.appendChild(notificationTextContainer);
         // }
 
         // show and populate with message
-        notificationUI.classList.add('statusBar');
+        notificationUI.classList.add('statusBar-tbr');
         notificationUI.classList.remove('statusBarHidden');
         notificationTextContainer.innerHTML = message;
 
