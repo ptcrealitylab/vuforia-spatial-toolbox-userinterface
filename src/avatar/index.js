@@ -18,7 +18,6 @@ createNameSpace("realityEditor.avatar");
 
     let linkCanvas = null, linkCanvasCtx = null;
     let linkCanvasNeedsClear = true;
-    let menuBarHeight;
     
     let myAvatarId = null;
     let myAvatarObject = null;
@@ -114,7 +113,6 @@ createNameSpace("realityEditor.avatar");
             isDesktop = realityEditor.device.environment.isDesktop();
             addLinkCanvas();
             resizeLinkCanvas();
-            translateLinkCanvas();
             window.addEventListener('resize', () => {
                 realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
@@ -225,8 +223,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvas = document.createElement('canvas');
         linkCanvas.className = 'link-canvas';
         linkCanvas.style.position = 'absolute';
-        menuBarHeight = realityEditor.device.environment.variables.screenTopOffset;
-        linkCanvas.style.top = `${menuBarHeight}px`;
+        linkCanvas.style.top = '0';
         linkCanvas.style.left = '0';
         linkCanvas.style.zIndex = '3001';
         linkCanvasContainer.appendChild(linkCanvas);
@@ -237,16 +234,12 @@ createNameSpace("realityEditor.avatar");
     function resizeLinkCanvas() {
         if (linkCanvas !== undefined) {
             linkCanvas.width = window.innerWidth;
-            linkCanvas.height = window.innerHeight - menuBarHeight;
+            linkCanvas.height = window.innerHeight;
         }
-    }
-    
-    function translateLinkCanvas() {
-        linkCanvasCtx.translate(0, -menuBarHeight);
     }
 
     function clearLinkCanvas() {
-        linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
+        linkCanvasCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         linkCanvasNeedsClear = false;
     }
 
