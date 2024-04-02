@@ -18,7 +18,6 @@ createNameSpace("realityEditor.avatar");
 
     let linkCanvas = null, linkCanvasCtx = null;
     let linkCanvasNeedsClear = true;
-    let menuBarHeight;
     
     let myAvatarId = null;
     let myAvatarObject = null;
@@ -224,8 +223,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvas = document.createElement('canvas');
         linkCanvas.className = 'link-canvas';
         linkCanvas.style.position = 'absolute';
-        menuBarHeight = realityEditor.device.environment.variables.screenTopOffset;
-        linkCanvas.style.top = `${menuBarHeight}px`;
+        linkCanvas.style.top = '0';
         linkCanvas.style.left = '0';
         linkCanvas.style.zIndex = '3001';
         linkCanvasContainer.appendChild(linkCanvas);
