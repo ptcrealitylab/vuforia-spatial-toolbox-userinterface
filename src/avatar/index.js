@@ -114,7 +114,6 @@ createNameSpace("realityEditor.avatar");
             isDesktop = realityEditor.device.environment.isDesktop();
             addLinkCanvas();
             resizeLinkCanvas();
-            translateLinkCanvas();
             window.addEventListener('resize', () => {
                 realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
@@ -237,16 +236,12 @@ createNameSpace("realityEditor.avatar");
     function resizeLinkCanvas() {
         if (linkCanvas !== undefined) {
             linkCanvas.width = window.innerWidth;
-            linkCanvas.height = window.innerHeight - menuBarHeight;
+            linkCanvas.height = window.innerHeight;
         }
-    }
-    
-    function translateLinkCanvas() {
-        linkCanvasCtx.translate(0, -menuBarHeight);
     }
 
     function clearLinkCanvas() {
-        linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
+        linkCanvasCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         linkCanvasNeedsClear = false;
     }
 
