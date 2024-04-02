@@ -9,6 +9,8 @@
 */
 
 // import * as THREE from "../../../thirdPartyCode/three/three.module";
+import { InfiniteGridHelper } from '../../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
+import { LayerConfig } from '../scene/Camera.js';
 
 createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
@@ -88,8 +90,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
-            gridHelper = realityEditor.gui.threejsScene.createInfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
+            gridHelper = new InfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
+            gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
         }
 
@@ -184,7 +187,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
 
         if (target) {
             // raycast from center of screen onto groundplane and move the visualizer to the resulting (x,y)
-            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(centerPoint.x, centerPoint.y, [cachedGroundPlaneCollider]);
+            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(centerPoint.x, centerPoint.y, [cachedGroundPlaneCollider.getInternalObject()]);
             if (raycastIntersects.length === 0) { return; }
 
             // transform the world coordinate into the groundplane coordinate system

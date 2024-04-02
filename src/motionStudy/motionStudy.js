@@ -10,6 +10,7 @@ import {
     postPersistRequest,
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
+import {makeTextInput} from '../utilities/makeTextInput.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -44,6 +45,8 @@ export class MotionStudy {
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
         this.opened = false;
         this.loadingHistory = false;
+        this.lastHydratedData = null;
+        this.writeMSDataTimeout = null;
         this.livePlayback = false;
         this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
@@ -51,9 +54,11 @@ export class MotionStudy {
         this.nextStepNumber = 1;
         this.stepLabels = [];
         this.pinnedRegionCardsContainer = null;
-        this.pinnedRegionCardsCsvLink = null;
+        this.exportLinkContainer = null;
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
+
+        this.videoPlayer = null;
 
         this.draw = this.draw.bind(this);
 
@@ -147,6 +152,8 @@ export class MotionStudy {
             realityEditor.gui.threejsScene.removeFromScene(this.threejsContainer);
         }
         this.resetPatchVisibility();
+        // Reset the highlight region (and any animation)
+        this.setHighlightRegion(null);
     }
 
     /**
@@ -186,6 +193,9 @@ export class MotionStudy {
         }
         const pinnedRegionCardsContainer = document.createElement('div');
         pinnedRegionCardsContainer.classList.add('analytics-pinned-region-cards-container');
+        if (this.videoPlayer) {
+            pinnedRegionCardsContainer.classList.add('analytics-has-video');
+        }
         // Prevent camera control from stealing attempts to scroll the container
         pinnedRegionCardsContainer.addEventListener('wheel', (event) => {
             event.stopPropagation();
@@ -195,16 +205,39 @@ export class MotionStudy {
         this.pinnedRegionCardsContainer = pinnedRegionCardsContainer;
         this.pinnedRegionCards = [];
 
-        this.pinnedRegionCardsCsvContainer = document.createElement('div');
-        this.pinnedRegionCardsCsvContainer.classList.add('analytics-button-container');
-        this.pinnedRegionCardsCsvLink = document.createElement('a');
-        this.pinnedRegionCardsCsvLink.classList.add('analytics-pinned-region-cards-csv');
-        this.pinnedRegionCardsCsvLink.setAttribute('download', 'spatial analytics timeline regions.csv');
-        this.pinnedRegionCardsCsvLink.textContent = 'Export CSV';
-        this.pinnedRegionCardsCsvContainer.style.display = 'none';
-        this.pinnedRegionCardsCsvContainer.appendChild(this.pinnedRegionCardsCsvLink);
-        this.pinnedRegionCardsContainer.appendChild(this.pinnedRegionCardsCsvContainer);
+        this.createTitleInput();
+
+        this.exportLinkContainer = document.createElement('div');
+        this.exportLinkContainer.classList.add('analytics-button-container');
+        this.exportLinkContainer.classList.add('analytics-export-link-container');
+
+        this.exportLinkPinnedRegionCards = document.createElement('a');
+        this.exportLinkPinnedRegionCards.classList.add('analytics-export-link');
+        this.exportLinkPinnedRegionCards.setAttribute('download', 'spatial analytics timeline region cards.csv');
+        this.exportLinkPinnedRegionCards.textContent = 'Export Cards';
+
+        this.exportLinkPoseData = document.createElement('a');
+        this.exportLinkPoseData.classList.add('analytics-export-link');
+        this.exportLinkPoseData.setAttribute('download', 'spatial analytics pose data.json');
+        this.exportLinkPoseData.textContent = 'Export Poses';
+
+        this.exportLinkContainer.style.display = 'none';
+        this.exportLinkContainer.appendChild(this.exportLinkPinnedRegionCards);
+        this.exportLinkContainer.appendChild(this.exportLinkPoseData);
+        this.pinnedRegionCardsContainer.appendChild(this.exportLinkContainer);
         this.createStepFileUploadComponent();
+    }
+
+    createTitleInput() {
+        this.titleInput = document.createElement('div');
+        this.titleInput.classList.add('analytics-button-container');
+        this.titleInput.classList.add('analytics-title');
+        this.titleInput.contentEditable = true;
+        this.titleInput.textContent = '';
+        makeTextInput(this.titleInput, () => {
+            this.writeMotionStudyData();
+        });
+        this.pinnedRegionCardsContainer.appendChild(this.titleInput);
     }
 
     draw() {
@@ -270,13 +303,17 @@ export class MotionStudy {
     }
 
     /**
-     * @param {{startTime: number, endTime: number}} highlightRegion
+     * @param {number} time - absolute time within timeline
      * @param {boolean} fromSpaghetti - prevents infinite recursion from
      *                  modifying human pose spaghetti which calls this function
      */
     setCursorTime(time, fromSpaghetti) {
         this.timeline.setCursorTime(time);
         this.humanPoseAnalyzer.setCursorTime(time, fromSpaghetti);
+
+        if (!this.humanPoseAnalyzer.isAnimationPlaying() && this.videoPlayer) {
+            this.videoPlayer.currentTime = (time - this.videoStartTime) / 1000;
+        }
     }
 
     /**
@@ -348,12 +385,12 @@ export class MotionStudy {
             case RecordingState.empty:
             case RecordingState.recording:
                 this.stepLabelContainer.style.display = '';
-                this.pinnedRegionCardsCsvContainer.style.display = 'none';
+                this.exportLinkContainer.style.display = 'none';
                 break;
             case RecordingState.done:
             default:
                 this.stepLabelContainer.style.display = 'none';
-                this.pinnedRegionCardsCsvContainer.style.display = '';
+                this.exportLinkContainer.style.display = '';
                 break;
         }
         if (recordingState !== RecordingState.empty) {
@@ -394,8 +431,8 @@ export class MotionStudy {
     }
 
     getStepColor() {
-        let hue = (this.nextStepNumber * 17) % 360;
-        return `hsl(${hue} 100% 70%)`;
+        let hue = (this.nextStepNumber * 37 + 180) % 360;
+        return `hsl(${hue} 100% 60%)`;
     }
 
     updateStepLabel() {
@@ -438,7 +475,6 @@ export class MotionStudy {
         console.error('setAllClonesVisible unimplemented', allClonesVisible);
     }
 
-
     hydrateMotionStudy(data) {
         if (this.loadingHistory) {
             setTimeout(() => {
@@ -446,7 +482,26 @@ export class MotionStudy {
             }, 100);
             return;
         }
-        
+
+        this.lastHydratedData = data;
+
+        if (!this.videoPlayer && data.videoUrls) {
+            this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
+            let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
+            if (matches && matches[1]) {
+                this.videoStartTime = parseFloat(matches[1]);
+            }
+            this.videoPlayer.hide();
+            this.videoPlayer.colorVideo.controls = true;
+            this.videoPlayer.colorVideo.style.display = '';
+            this.videoPlayer.colorVideo.classList.add('analytics-video');
+            this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
+
+            this.createVideoPlayerShowHideButton();
+
+            this.container.appendChild(this.videoPlayer.colorVideo);
+        }
+
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
             this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
@@ -455,6 +510,10 @@ export class MotionStudy {
         data.regionCards.sort((rcDescA, rcDescB) => {
             return rcDescA.startTime - rcDescB.startTime;
         });
+
+        if (data.title) {
+            this.titleInput.textContent = data.title;
+        }
 
         for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
@@ -472,6 +531,23 @@ export class MotionStudy {
         }
     }
 
+    createVideoPlayerShowHideButton() {
+        this.videoPlayerShowHideButton = document.createElement('div');
+        this.videoPlayerShowHideButton.classList.add('analytics-video-toggle');
+        this.videoPlayerShowHideButton.classList.add('analytics-button-container');
+        this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+        this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
+            if (this.videoPlayer.isShown()) {
+                this.videoPlayer.hide();
+                this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+            } else {
+                this.videoPlayer.show();
+                this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
+            }
+        });
+        this.container.appendChild(this.videoPlayerShowHideButton);
+    }
+
     addRegionCard(regionCard) {
         // Allow for a small amount of inaccuracy in timestamps, e.g. when
         // switching from live to historical clone source
@@ -481,6 +557,13 @@ export class MotionStudy {
                (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
                 // New region card already exists in the list
                 regionCard.remove();
+
+                // New region card may have an updated label
+                // TODO have better criteria than starting with Step
+                const newLabel = regionCard.labelElement.textContent;
+                if (newLabel && !newLabel.startsWith('Step ')) {
+                    pinnedRegionCard.setLabel(newLabel);
+                }
                 return;
             }
         }
@@ -489,6 +572,15 @@ export class MotionStudy {
 
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
+            if (this.stepLabels.length > 0) {
+                if (this.writeMSDataTimeout) {
+                    clearTimeout(this.writeMSDataTimeout);
+                }
+                this.writeMSDataTimeout = setTimeout(() => {
+                    this.writeMotionStudyData();
+                    this.writeMSDataTimeout = null;
+                }, 1000);
+            }
         }
 
         regionCard.setAccentColor(this.getStepColor());
@@ -497,7 +589,7 @@ export class MotionStudy {
 
         this.updateStepLabel();
 
-        this.updateCsvExportLink();
+        this.updateExportLinks();
 
         // wider tolerance for associating local cameravis patches with
         // potentially remote region cards
@@ -506,14 +598,18 @@ export class MotionStudy {
             return;
         }
 
-        const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
-        if (!desktopRenderer) {
-            return;
-        }
+        try {
+            const desktopRenderer = realityEditor.gui.ar.desktopRenderer;
+            if (!desktopRenderer) {
+                return;
+            }
 
-        const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
-        if (!patches) {
-            return;
+            const patches = desktopRenderer.cloneCameraVisPatches('HIDDEN');
+            if (!patches) {
+                return;
+            }
+        } catch (e) {
+            console.warn('Unable to clone patches', e);
         }
 
         // Hide cloned patches after brief delay to not clutter the space
@@ -542,9 +638,19 @@ export class MotionStudy {
         for (let envelope of openEnvelopes) {
             let objectKey = envelope.object;
             let frameKey = envelope.frame;
-            const motionStudyData = {
-                regionCards: allCards,
-                valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
+            if (frameKey !== this.frame) {
+                continue;
+            }
+            const motionStudyData = Object.assign(
+                {},
+                this.lastHydratedData || {},
+                {
+                    regionCards: allCards,
+                    valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
+                },
+            );
+            if (this.titleInput.textContent) {
+                motionStudyData.title = this.titleInput.textContent;
             }
             realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
         }
@@ -574,11 +680,16 @@ export class MotionStudy {
         this.pinnedRegionCards = this.pinnedRegionCards.filter(prc => {
             return prc !== regionCard;
         });
-        this.updateCsvExportLink();
+        this.updateExportLinks();
         this.writeMotionStudyData();
     }
 
-    updateCsvExportLink() {
+    updateExportLinks() {
+        this.updatePinnedRegionCardsExportLink();
+        this.updatePoseDataExportLink();
+    }
+
+    updatePinnedRegionCardsExportLink() {
         let header = [
             'label',
             'start', 'end', 'duration seconds', 'distance meters',
@@ -609,8 +720,50 @@ export class MotionStudy {
             return line.join(',');
         }).join('\n'));
 
-        this.pinnedRegionCardsCsvLink.href = dataUrl;
+        this.exportLinkPinnedRegionCards.href = dataUrl;
         // window.open(dataUrl, '_blank');
+    }
+
+    updatePoseDataExportLink() {
+        const allPoses = this.humanPoseAnalyzer.getPosesInTimeInterval(0, Number.MAX_VALUE);
+
+        if (allPoses.length === 0) {
+            return;
+        }
+
+        // Create array manually since we can go over the JSON.stringify and string
+        // length limits
+        const poseStrings = ['['];
+
+        for (const pose of allPoses) {
+            let filteredPose = {
+                joints: {},
+                timestamp: pose.timestamp,
+            };
+
+            for (const jointKey of Object.keys(pose.joints)) {
+                const jointData = pose.joints[jointKey];
+                // Clone to modify pose data (filter out unnecessary info)
+                filteredPose.joints[jointKey] = Object.assign({}, jointData);
+                delete filteredPose.joints[jointKey].poseObjectId;
+                delete filteredPose.joints[jointKey].rebaColor;
+                delete filteredPose.joints[jointKey].rebaColorOverall;
+                delete filteredPose.joints[jointKey].overallRebaColor;
+                delete filteredPose.joints[jointKey].position;
+                delete filteredPose.joints[jointKey].acceleration;
+                delete filteredPose.joints[jointKey].velocity;
+                delete filteredPose.joints[jointKey].confidence;
+            }
+
+            poseStrings.push(JSON.stringify(filteredPose));
+            poseStrings.push(',');
+        }
+        poseStrings.pop();
+        poseStrings.push(']');
+
+        const blob = new Blob(poseStrings, {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        this.exportLinkPoseData.href = url;
     }
 
     /**
@@ -658,4 +811,17 @@ export class MotionStudy {
         });
         this.writeMotionStudyData();
     }
+
+    updateRegionCards() {
+        this.pinnedRegionCards.forEach(card => {
+            card.updateLensStatistics();
+        });
+        if (this.timeline.regionCard) {
+            this.timeline.regionCard.updateLensStatistics();
+        }
+
+        this.updateExportLinks();
+        //this.writeMotionStudyData();
+    }
+
 }

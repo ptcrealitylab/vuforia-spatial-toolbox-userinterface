@@ -448,7 +448,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             } else {
                 // when there is area target mesh at screen center
                 let worldCamPoint = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(worldCamPoint);
                 realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
             }
         }
@@ -509,7 +509,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             } else {
                 // when there is area target mesh at screen center
                 let worldCamPoint = new THREE.Vector3();
-                realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(worldCamPoint);
+                realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(worldCamPoint);
                 realityEditor.gui.ar.positioning.moveFrameToCamera(addedElement.objectId, addedElement.uuid, worldCenterPoint.point.distanceTo(worldCamPoint));
             }
         }
@@ -957,7 +957,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             !realityEditor.gui.threejsScene.isWorldMeshLoadedAndProcessed())) {
             let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
             groundPlane.updateWorldMatrix(true, false);
-            objectsToCheck.push(groundPlane);
+            objectsToCheck.push(groundPlane.getInternalObject());
         }
         if (!cachedWorldObject || objectsToCheck.length === 0) {
             return {}; // no worldIntersectPoint
@@ -979,7 +979,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
         let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
         let cameraDirection = new THREE.Vector3();
-        realityEditor.gui.threejsScene.getInternals().camera.getWorldDirection(cameraDirection);
+        realityEditor.gui.threejsScene.getInternals().getCamera().getWorldDirection(cameraDirection);
         if (cameraDirection.dot(normalVector) > 0) {
             normalVector.negate();
         }
@@ -1007,7 +1007,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             worldIntersectPoint.distance = 1000;
 
             let camPos = new THREE.Vector3();
-            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(camPos);
             let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
@@ -1042,7 +1042,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             worldIntersectPoint.distance = 1000;
 
             let camPos = new THREE.Vector3();
-            realityEditor.gui.threejsScene.getInternals().camera.getWorldPosition(camPos);
+            realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(camPos);
             let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);

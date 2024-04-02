@@ -309,7 +309,7 @@ realityEditor.gui.ar.areaCreator.didAreaUpdate = function() {
 
 realityEditor.gui.ar.areaCreator.calculateGroundPlaneIntersection = function(event) {
     const groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-    const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.clientX, event.clientY, [groundPlane]);
+    const intersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.clientX, event.clientY, [groundPlane.getInternalObject()]);
     if (intersects.length > 0) {
         let worldObjectToolboxMatrix = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId()).worldMatrix;
         const worldObjectThreeMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();

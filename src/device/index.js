@@ -341,7 +341,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         }
         // pass correct coordinate into tools even if there's no world mesh, if we raycast against the groundplane
         if (realityEditor.gui.threejsScene.isGroundPlanePositionSet()) {
-            objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider());
+            objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider().getInternalObject());
         }
 
         if (realityEditor.spatialCursor.isGSActive()) {

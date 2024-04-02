@@ -5,12 +5,15 @@ import { CSS2DRenderer } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
-import { MeshBVH, acceleratedRaycast } from '../../thirdPartyCode/three-mesh-bvh.module.js';
+import { MeshBVH } from '../../thirdPartyCode/three-mesh-bvh.module.js';
 import { TransformControls } from '../../thirdPartyCode/three/TransformControls.js';
-import { InfiniteGridHelper } from '../../thirdPartyCode/THREE.InfiniteGridHelper/InfiniteGridHelper.module.js';
-import { RoomEnvironment } from '../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUSTUMS, UNIFORMS } from './ViewFrustum.js';
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
+import GroundPlane from "./scene/GroundPlane.js";
+import AnchoredGroup from "./scene/AnchoredGroup.js";
+import { DefaultCamera, LayerConfig } from "./scene/Camera.js";
+import Renderer from "./scene/Renderer.js";
+import {setMatrixFromArray} from "./scene/utils.js";
 
 (function(exports) {
 
@@ -26,20 +29,17 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
     exports.RENDER_ORDER_DEPTH_REPLACEMENT = RENDER_ORDER_DEPTH_REPLACEMENT;
 
-    var camera, scene, renderer;
-    var rendererWidth = window.innerWidth;
-    var rendererHeight = window.innerHeight;
-    var aspectRatio = rendererWidth / rendererHeight;
     var isProjectionMatrixSet = false;
     const animationCallbacks = [];
     let lastFrameTime = Date.now();
     const worldObjectGroups = {}; // Parent objects for objects attached to world objects
     const worldOcclusionObjects = {}; // Keeps track of initialized occlusion objects per world object
-    let groundPlaneCollider;
+    /**
+     * @type {GroundPlane}
+     */
+    let groundPlane;
     let isGroundPlanePositionSet = false; // gets updated when the ground plane collider is added
     let isWorldMeshLoadedAndProcessed = false;  // gets updated when area target mesh and navmesh have been processed
-    let raycaster;
-    let mouse;
     let distanceRaycastVector = new THREE.Vector3();
     let distanceRaycastResultPosition = new THREE.Vector3();
     let originBoxes = {};
@@ -67,44 +67,38 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
     let areaTargetMaterials = [];
 
-    // for now, this contains everything not attached to a specific world object
-    var threejsContainerObj;
+    /**
+     * for now, this contains everything not attached to a specific world object
+     * @type {AnchoredGroup}
+     */ 
+    var threejsContainer;
+
+    /**
+     * @type {Camera}
+     */
+    var mainCamera;
+
+    /**
+     * @type {Renderer}
+     */
+    var mainRenderer;
 
     function initService() {
         // create a fullscreen webgl renderer for the threejs content
+        /** @type {HTMLCanvasElement} */
         const domElement = document.getElementById('mainThreejsCanvas');
-        renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(rendererWidth, rendererHeight);
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.autoClear = false;
+        mainRenderer = new Renderer(domElement);
 
-        camera = new THREE.PerspectiveCamera(70, aspectRatio, 1, 1000);
-        camera.matrixAutoUpdate = false;
-        scene = new THREE.Scene();
-        scene.add(camera); // Normally not needed, but needed in order to add child objects relative to camera
-
-        realityEditor.device.layout.onWindowResized(({width, height}) => {
-            renderer.setSize(width, height);
-        });
+        mainCamera = new DefaultCamera("mainCamera", window.innerWidth / window.innerHeight);
+        mainRenderer.add(mainCamera); // Normally not needed, but needed in order to add child objects relative to camera
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
-        threejsContainerObj = new THREE.Object3D();
-        threejsContainerObj.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-        scene.add(threejsContainerObj);
-
-        setupLighting();
+        threejsContainer = new AnchoredGroup("threejsContainer");
+        mainRenderer.add(threejsContainer);
 
         customMaterials = new CustomMaterials();
-        let _mapShaderUI = new MapShaderSettingsUI();
-
-        // Add the BVH optimized raycast function from three-mesh-bvh.module.js
-        // Assumes the BVH is available on the `boundsTree` variable
-        THREE.Mesh.prototype.raycast = acceleratedRaycast;
-
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
+        let _mapShaderUI = new MapShaderSettingsUI();        
 
         // additional 3d content can be added to the scene like so:
         // var radius = 75;
@@ -118,12 +112,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         // mesh.position.setZ(150);
 
         addGroundPlaneCollider(); // invisible object for raycasting intersections with ground plane
-
-        let pmremGenerator = new THREE.PMREMGenerator(renderer);
-        pmremGenerator.compileEquirectangularShader();
-
-        let neutralEnvironment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
-        scene.environment = neutralEnvironment;
 
         // this triggers with a requestAnimationFrame on remote operator,
         // or at frequency of Vuforia updates on mobile
@@ -154,39 +142,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         document.body.appendChild(css3dCanvas);
     }
 
-    // light the scene with a combination of ambient and directional white light
-    function setupLighting() {
-        // This doesn't seem to work with the area target model material, but adding it for everything else
-        let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambLight);
-
-        // attempts to light the scene evenly with directional lights from each side, but mostly from the top
-        let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLightTopDown.position.set(0, 1, 0); // top-down
-        dirLightTopDown.lookAt(0, 0, 0);
-        scene.add(dirLightTopDown);
-
-        // let dirLightXLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXLeft.position.set(1, 0, 0);
-        // scene.add(dirLightXLeft);
-
-        // let dirLightXRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightXRight.position.set(-1, 0, 0);
-        // scene.add(dirLightXRight);
-
-        // let dirLightZLeft = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZLeft.position.set(0, 0, 1);
-        // scene.add(dirLightZLeft);
-
-        // let dirLightZRight = new THREE.DirectionalLight(0xffffff, 0.5);
-        // dirLightZRight.position.set(0, 0, -1);
-        // scene.add(dirLightZRight);
-    }
-
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
-        setMatrixFromArray(camera.matrix, matrix);
-        camera.updateMatrixWorld(true);
+        mainCamera.setCameraMatrixFromArray(matrix);
         if (customMaterials) {
             let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
             customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
@@ -197,18 +155,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     // this is different from the ground plane visualizer element
     function addGroundPlaneCollider() {
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
-        const geometry = new THREE.PlaneGeometry(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
-        geometry.rotateX(Math.PI / 2); // directly set the geometry's rotation to get the desired visual rotation & raycast direction. Otherwise setting mesh's rotation & run updateWorldMatrix(true, false) looks correct, but has wrong raycast direction
-        const material = new THREE.MeshBasicMaterial({color: 0x88ffff, side: THREE.DoubleSide, wireframe: true});
-        const plane = new THREE.Mesh(geometry, material);
-        // plane.rotateX(Math.PI/2);
-        plane.visible = false;
-        // plane.position.set(0, -10, 0); // todo Steve: figure out a way to raycast on mesh first & if no results, raycast on ground plane next. Figure out a way to do it in one go (possibly using depth tests & stuff), instead of using 2 raycasts, to improve performance
-        addToScene(plane, {occluded: true});
-        plane.name = 'groundPlaneCollider';
-        groundPlaneCollider = plane;
 
         isGroundPlanePositionSet = true;
+        groundPlane = new GroundPlane(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        addToScene(groundPlane.getInternalObject(), {occluded: true});
 
         let areaTargetNavmesh = null;
         realityEditor.app.targetDownloader.onNavmeshCreated((navmesh) => {
@@ -226,18 +176,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             if (!areaTargetMesh || !areaTargetNavmesh) return; // only continue after both have been processed
             isWorldMeshLoadedAndProcessed = true;
 
-            groundPlaneCollider.parent.remove(groundPlaneCollider);
-            areaTargetMesh.add(groundPlaneCollider);
-            let areaTargetMeshScale = Math.max(areaTargetMesh.matrixWorld.elements[0], areaTargetMesh.matrixWorld.elements[5], areaTargetMesh.matrixWorld.elements[10]);
-            let floorOffset = (areaTargetNavmesh.floorOffset * 1000) / areaTargetMeshScale;
-            groundPlaneCollider.position.set(0, floorOffset, 0);
-            groundPlaneCollider.updateMatrix();
-            groundPlaneCollider.updateMatrixWorld(true);
-
-            // update the groundPlane sceneNode to match the position of the new groundplane collider
-            let groundPlaneRelativeOrigin = areaTargetMesh.localToWorld(groundPlaneCollider.position.clone());
-            let groundPlaneRelativeMatrix = new THREE.Matrix4().setPosition(groundPlaneRelativeOrigin); //.copyPosition(groundPlaneRelativeOrigin);
-            realityEditor.sceneGraph.setGroundPlanePosition(groundPlaneRelativeMatrix.elements);
+            groundPlane.tryUpdatingGroundPlanePosition(areaTargetMesh, areaTargetNavmesh);
 
             isGroundPlanePositionSet = true;
         }
@@ -247,7 +186,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
-        cssRenderer.render(scene, camera);
+        cssRenderer.render(mainRenderer.getInternalScene(), mainCamera.getInternalObject());
         
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
@@ -255,8 +194,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         });
 
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
-            setMatrixFromArray(camera.projectionMatrix, globalStates.realProjectionMatrix);
-            camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+            mainCamera.setProjectionMatrixFromArray(globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
 
@@ -267,7 +205,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
                 group.name = worldObjectId + '_group';
                 worldObjectGroups[worldObjectId] = group;
                 group.matrixAutoUpdate = false; // this is needed to position it directly with matrices
-                scene.add(group);
+                mainRenderer.add(group);
 
                 // Helps visualize world object origin point for debugging
                 if (DISPLAY_ORIGIN_BOX && worldObjectId !== realityEditor.worldObjects.getLocalWorldId() && !realityEditor.device.environment.variables.hideOriginCube) {
@@ -314,14 +252,14 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         // the main three.js container object has its origin set to the ground plane origin
         const rootMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         if (rootMatrix) {
-            setMatrixFromArray(threejsContainerObj.matrix, rootMatrix);
+            threejsContainer.setMatrixFromArray(rootMatrix);
         }
 
         customMaterials.update();
 
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
-            renderer.render(scene, camera);
+            mainRenderer.render();
         }
     }
 
@@ -331,6 +269,11 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         });
     }
 
+    /**
+     * 
+     * @param {THREE.Object3D} obj 
+     * @param {*} parameters 
+     */
     function addToScene(obj, parameters) {
         if (!parameters) {
             parameters = {};
@@ -349,9 +292,9 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         if (parentToCamera) {
             if (attach) {
-                camera.attach(obj);
+                mainCamera.attach(obj);
             } else {
-                camera.add(obj);
+                mainCamera.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
@@ -361,13 +304,17 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             }
         } else {
             if (attach) {
-                threejsContainerObj.attach(obj);
+                threejsContainer.attach(obj);
             } else {
-                threejsContainerObj.add(obj);
+                threejsContainer.add(obj);
             }
         }
     }
 
+    /**
+     * 
+     * @param {THREE.Object3D} obj 
+     */
     function removeFromScene(obj) {
         if (obj && obj.parent) {
             obj.parent.remove(obj);
@@ -428,13 +375,13 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             const group = new THREE.Group(); // mesh needs to be in group so scale doesn't get overriden by model view matrix
             group.add(mesh);
             group.matrixAutoUpdate = false; // allows us to update with the model view matrix
-            scene.add(group);
+            mainRenderer.add(group);
             worldOcclusionObjects[objectId] = group;
         });
     }
 
     function getObjectForWorldRaycasts(objectId) {
-        return worldOcclusionObjects[objectId] || scene.getObjectByName('areaTargetMesh');
+        return worldOcclusionObjects[objectId] || mainRenderer.getObjectByName('areaTargetMesh');
     }
 
     function isOcclusionActive(objectId) {
@@ -604,12 +551,19 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 
             wireMesh.renderOrder = RENDER_ORDER_SCAN;
             gltf.scene.renderOrder = RENDER_ORDER_SCAN;
+            wireMesh.layers.set(LayerConfig.LAYER_SCAN);
+            gltf.scene.layers.set(LayerConfig.LAYER_SCAN);
+            gltf.scene.traverse(child => {
+                if (child.layers) {
+                    child.layers.set(LayerConfig.LAYER_SCAN);
+                }
+            });
 
-            threejsContainerObj.add( wireMesh );
+            threejsContainer.add( wireMesh );
             setTimeout(() => {
-                threejsContainerObj.remove(wireMesh);
+                threejsContainer.remove(wireMesh);
             }, 5000);
-            threejsContainerObj.add( gltf.scene );
+            threejsContainer.add( gltf.scene );
 
             realityEditor.network.addPostMessageHandler('getAreaTargetMesh', (_, fullMessageData) => {
                 realityEditor.network.postMessageIntoFrame(fullMessageData.frame, {
@@ -690,40 +644,6 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
     }
 
-    // small helper function for setting three.js matrices from the custom format we use
-    function setMatrixFromArray(matrix, array) {
-        matrix.set( array[0], array[4], array[8], array[12],
-            array[1], array[5], array[9], array[13],
-            array[2], array[6], array[10], array[14],
-            array[3], array[7], array[11], array[15]
-        );
-    }
-
-    // this module exports this utility so that other modules can perform hit tests
-    // objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
-    // NOTE: returns the coordinates in threejs scene world coordinates:
-    //       may need to call objectToCheck.worldToLocal(results[0].point) to get the result in the right system
-    function getRaycastIntersects(clientX, clientY, objectsToCheck) {
-        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
-
-        //2. set the picking ray from the camera position and mouse coordinates
-        raycaster.setFromCamera( mouse, camera );
-
-        raycaster.firstHitOnly = true; // faster (using three-mesh-bvh)
-
-        //3. compute intersections
-        // add object layer to raycast layer mask
-        objectsToCheck.forEach(obj => {
-            raycaster.layers.mask = raycaster.layers.mask | obj.layers.mask;
-        });
-        let results = raycaster.intersectObjects( objectsToCheck || scene.children, true );
-        results.forEach(intersection => {
-            intersection.rayDirection = raycaster.ray.direction;
-        });
-        return results;
-    }
-
     /**
      * Returns the 3D coordinate which is [distance] mm in front of the screen pixel coordinates [clientX, clientY]
      * @param {number} clientX - in screen pixels
@@ -737,28 +657,23 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        distanceRaycastVector.unproject(camera);
+        distanceRaycastVector.unproject(mainCamera.getInternalObject());
         distanceRaycastVector.normalize();
         distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
         return distanceRaycastResultPosition;
     }
 
     function getObjectByName(name) {
-        return scene.getObjectByName(name);
+        return mainRenderer.getObjectByName(name);
     }
     
-    // return all objects with the name
+    
     function getObjectsByName(name) {
-        if (name === undefined) return;
-        const objects = [];
-        scene.traverse((object) => {
-            if (object.name === name) objects.push(object);
-        })
-        return objects;
+        return mainRenderer.getObjectsByName(name);
     }
 
     function getGroundPlaneCollider() {
-        return groundPlaneCollider;
+        return groundPlane;
     }
 
     function getToolGroundPlaneShadowMatrix(objectKey, frameKey) {
@@ -1151,7 +1066,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(camera, renderer.domElement);
+        let transformControls = new TransformControls(mainCamera.getInternalObject(), mainRenderer.getInternalCanvas());
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1165,7 +1080,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             transformControls.size = options.size;
         }
         transformControls.attach(object);
-        scene.add(transformControls);
+        mainRenderer.add(transformControls);
 
         if (typeof onChange === 'function') {
             transformControls.addEventListener('change', onChange);
@@ -1176,42 +1091,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         return transformControls;
     }
 
-    exports.createInfiniteGridHelper = function(size1, size2, thickness, color, maxVisibilityDistance) {
-        return new InfiniteGridHelper(size1, size2, thickness, color, maxVisibilityDistance);
-    }
+    exports.getScreenXY = (meshPosition) => mainCamera.getScreenXY(meshPosition);
 
-    // source: https://github.com/mrdoob/three.js/issues/78
-    exports.getScreenXY = function(meshPosition) {
-        let pos = meshPosition.clone();
-        let projScreenMat = new THREE.Matrix4();
-        projScreenMat.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-        pos.applyMatrix4(projScreenMat);
-        
-        // check if the position is behind the camera, if so, manually flip the screen position, b/c the screen position somehow is inverted when behind the camera
-        let meshPosWrtCamera = meshPosition.clone();
-        meshPosWrtCamera.applyMatrix4(camera.matrixWorldInverse);
-        if (meshPosWrtCamera.z > 0) {
-            pos.negate();
-        }
-
-        return {
-            x: ( pos.x + 1 ) * window.innerWidth / 2,
-            y: ( -pos.y + 1) * window.innerHeight / 2
-        };
-    };
-
-    // source: https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
-    exports.isPointOnScreen = function(pointPosition) {
-        let frustum = new THREE.Frustum();
-        let matrix = new THREE.Matrix4();
-        matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-        frustum.setFromProjectionMatrix(matrix);
-        if (frustum.containsPoint(pointPosition)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    
+    exports.isPointOnScreen = (pointPosition) => mainCamera.isPointOnScreen(pointPosition);
 
     // gets the position relative to groundplane (common coord system for threejsScene)
     exports.getToolPosition = function(toolId) {
@@ -1243,18 +1126,10 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     }
 
     /**
-     * @return {{
-           camera: THREE.PerspectiveCamera,
-           renderer: THREE.WebGLRenderer,
-           scene: THREE.Scene,
-       }} Various internal objects necessary for advanced (hacky) functions
+     * @return {Renderer} Various internal objects necessary for advanced (hacky) functions
      */
     exports.getInternals = function getInternals() {
-        return {
-            camera,
-            renderer,
-            scene,
-        };
+        return mainRenderer;
     };
 
     /**
@@ -1270,6 +1145,8 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
         }
         // hide the ground plane holodeck visualizer
         realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
+        // update the spatial cursor internal state
+        realityEditor.spatialCursor.gsToggleActive(true);
         // update the renderMode of the world object and broadcast to other clients
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
@@ -1294,6 +1171,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
             areaMesh.visible = true;
         }
         realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
+        realityEditor.spatialCursor.gsToggleActive(false);
         let worldObject = realityEditor.worldObjects.getBestWorldObject();
         if (worldObject) {
             worldObject.renderMode = RENDER_MODES.mesh;
@@ -1315,7 +1193,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.removeAnimationCallback = removeAnimationCallback;
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
-    exports.getRaycastIntersects = getRaycastIntersects;
+    exports.getRaycastIntersects = (clientX, clientY, objectsToCheck) => {return mainRenderer.getRaycastIntersects(clientX, clientY, objectsToCheck)};
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
     exports.getObjectsByName = getObjectsByName;
@@ -1333,6 +1211,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
     exports.changeMeasureMapType = changeMeasureMapType;
     exports.highlightWalkableArea = highlightWalkableArea;
     exports.updateGradientMapThreshold = updateGradientMapThreshold;
+    exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
     exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;

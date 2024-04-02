@@ -3,8 +3,11 @@ import {MotionStudyLens} from "./MotionStudyLens.js";
 import {MotionStudyColors} from "./MotionStudyColors.js";
 import {JOINTS} from "./constants.js";
 
-const HIGH_CUTOFF = 35 // In m/s^2
-const MED_CUTOFF = 15 // In m/s^2
+const HIGH_CUTOFF = 35; // in m/s^2
+const MED_CUTOFF = 15; // in m/s^2
+
+export const MIN_ACCELERATION = 0; // in m/s^2
+export const MAX_ACCELERATION = 40; // in m/s^2
 
 /**
  * AccelerationLens is a lens that calculates the acceleration of each joint in the pose history.
@@ -23,7 +26,7 @@ export class AccelerationLens extends MotionStudyLens {
      * @return {boolean} True if the joint has had its velocity calculated, false otherwise.
      */
     velocityAppliedToJoint(joint) {
-        return joint.velocity && joint.speed > 0.000001;
+        return joint.velocity && joint.speed && joint.speed !== -1;
     }
 
     /**
@@ -32,7 +35,7 @@ export class AccelerationLens extends MotionStudyLens {
      * @return {boolean} True if the joint has had its acceleration calculated, false otherwise.
      */
     accelerationAppliedToJoint(joint) {
-        return joint.acceleration && joint.accelerationMagnitude > 0.000001
+        return joint.acceleration && joint.accelerationMagnitude && joint.accelerationMagnitude !== -1;
     }
     
     applyLensToPose(pose) {
@@ -40,26 +43,51 @@ export class AccelerationLens extends MotionStudyLens {
         const previousPreviousPose = previousPose ? previousPose.metadata.previousPose : null;
         if (!previousPose) {
             pose.forEachJoint(joint => {
-                joint.velocity = new THREE.Vector3(); // Velocity is zero for the first pose
-                joint.speed = 0;
-                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
-                joint.accelerationMagnitude = 0;
+                // Velocity and acceleration are zero for the first pose
+                joint.velocity = new THREE.Vector3(); 
+                joint.speed = -1; // -1 means that the metric cannot calculated based on data
+                joint.acceleration = new THREE.Vector3();
+                joint.accelerationMagnitude = -1; // -1 means that the metric cannot calculated based on data
             });
         } else if (!previousPreviousPose) {
             pose.forEachJoint(joint => {
                 const previousJoint = previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
-                joint.speed = joint.velocity.length();
-                joint.acceleration = new THREE.Vector3(); // Acceleration is zero for the first two poses
-                joint.accelerationMagnitude = 0;
+                if (!joint.valid || !previousJoint.valid) {
+                    // Velocity and acceleration are zero if a joint is invalid in current or previous pose
+                    joint.velocity = new THREE.Vector3();
+                    joint.speed = -1;
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = -1;
+                } else {  // joint.valid == true && previousJoint.valid == true 
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    // Acceleration is zero for the second pose
+                    joint.acceleration = new THREE.Vector3(); 
+                    joint.accelerationMagnitude = -1;
+                }
             });
         } else {
             pose.forEachJoint(joint => {
                 const previousJoint = previousPose.getJoint(joint.name);
-                joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
-                joint.speed = joint.velocity.length();
-                joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
-                joint.accelerationMagnitude = joint.acceleration.length();
+                const previousPreviousJoint = previousPreviousPose.getJoint(joint.name);
+                if (!joint.valid || !previousJoint.valid) {
+                    // Velocity and acceleration are zero if a joint is invalid in current or previous pose
+                    joint.velocity = new THREE.Vector3();
+                    joint.speed = -1;
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = -1;
+                } else if (!previousPreviousJoint.valid) {   // joint.valid == true && previousJoint.valid == true
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    // Acceleration is zero if a joint is invalid in previous previous pose
+                    joint.acceleration = new THREE.Vector3();
+                    joint.accelerationMagnitude = -1;
+                } else {  // joint.valid == true && previousJoint.valid == true && previousPreviousJoint.valid == true
+                    joint.velocity = joint.position.clone().sub(previousJoint.position).divideScalar(pose.timestamp - previousPose.timestamp); // mm/ms = m/s
+                    joint.speed = joint.velocity.length();
+                    joint.acceleration = joint.velocity.clone().sub(previousJoint.velocity).divideScalar((pose.timestamp - previousPose.timestamp) / 1000);
+                    joint.accelerationMagnitude = joint.acceleration.length();
+                }
             });
         }
         return true;
@@ -97,7 +125,7 @@ export class AccelerationLens extends MotionStudyLens {
     }
 
     getColorForJoint(joint) {
-        if (typeof joint.accelerationMagnitude !== "number") {
+        if (!this.accelerationAppliedToJoint(joint)) {
             return MotionStudyColors.undefined;
         }
         const acceleration = joint.accelerationMagnitude;
@@ -105,7 +133,7 @@ export class AccelerationLens extends MotionStudyLens {
     }
 
     getColorForBone(bone) {
-        if (typeof bone.joint0.accelerationMagnitude !== "number" || typeof bone.joint1.accelerationMagnitude !== "number") {
+        if (!this.accelerationAppliedToJoint(bone.joint0) || !this.accelerationAppliedToJoint(bone.joint1)) {
             return MotionStudyColors.undefined;
         }
         const maxAcceleration = Math.max(bone.joint0.accelerationMagnitude, bone.joint1.accelerationMagnitude);
@@ -113,7 +141,8 @@ export class AccelerationLens extends MotionStudyLens {
     }
     
     getColorForPose(pose) {
-        if (typeof pose.getJoint(JOINTS.HEAD).accelerationMagnitude !== "number") {
+        // 'head' joint is always valid when body is tracked. Thus, acceleration is calculated under normal circumstances.
+        if (!this.accelerationAppliedToJoint(pose.getJoint(JOINTS.HEAD))) {
             return MotionStudyColors.undefined;
         }
         let maxAcceleration = 0;

@@ -1236,41 +1236,24 @@ async function main(initialFilePath) {
     }
 }
 
+// The comma key can be used to toggle the splat rendering visibility after it's been loaded at least once
 window.addEventListener("keydown", e => {
     if (e.key === ',') {
         if (!gsInitialized) {
-            gsInitialized = true;
-            gsContainer = document.querySelector('#gsContainer');
-            gsContainer.style.opacity = 1.0;
-            // gsContainer.style.position = 'absolute';
-            // gsContainer.style.left = '0';
-            // gsContainer.style.top = '0';
-            // gsContainer.style.zIndex = '-1'; // use this when in normal action
-            // gsContainer.style.opacity = '1';
-            // gsContainer.style.pointerEvents = 'none';
-            // gsContainer.style.width = '100vw';
-            // gsContainer.style.height = '100vh';
-            main().catch((err) => {
-                document.getElementById("gsSpinner").style.display = "none";
-                document.getElementById("gsMessage").innerText = err.toString();
-            });
+            return; // must be initialized using UI button before comma key can be used
         }
         gsContainer.classList.toggle('hidden');
         gsActive = !gsContainer.classList.contains('hidden');
         if(gsActive)
         {
-            realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = false;
-            realityEditor.gui.ar.groundPlaneRenderer.stopVisualization();
-            realityEditor.spatialCursor.gsToggleActive(true);
+            realityEditor.gui.threejsScene.enableExternalSceneRendering(true);
             callbacks.onSplatShown.forEach(cb => {
                 cb();
             });
         }
         else
         {
-            realityEditor.gui.threejsScene.getObjectByName('areaTargetMesh').visible = true;
-            realityEditor.gui.ar.groundPlaneRenderer.startVisualization();
-            realityEditor.spatialCursor.gsToggleActive(false);
+            realityEditor.gui.threejsScene.disableExternalSceneRendering(true);
             callbacks.onSplatHidden.forEach(cb => {
                 cb();
             });
