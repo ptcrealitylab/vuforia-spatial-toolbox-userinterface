@@ -1,5 +1,5 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import {JOINTS} from './constants.js';
+import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
@@ -11,28 +11,11 @@ import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
 import {MAX_POSE_INSTANCES, MAX_POSE_INSTANCES_MOBILE} from './constants.js';
+import {AnimationMode} from './draw.js';
+import {Animation} from './Animation.js';
 
 const POSE_OPACITY_BASE = 1;
 const POSE_OPACITY_BACKGROUND = 0.2;
-
-/**
- * @typedef {string} AnimationMode
- */
-
-/**
- * Enum for the different clone rendering modes for the HumanPoseAnalyzer:
- * cursor: The single historical pose at the cursor time is visible,
- * region: A single historical pose within the highlight region is visible, it animates through the movements it made,
- * regionAll: Every historical pose within the highlight region is visible,
- * all: Every historical pose is visible
- * @type {{cursor: AnimationMode, region: AnimationMode, regionAll: AnimationMode, all: AnimationMode}}
- */
-export const AnimationMode = {
-    cursor: 'cursor',
-    region: 'region',
-    regionAll: 'regionAll',
-    all: 'all',
-};
 
 export class HumanPoseAnalyzer {
     /**
@@ -41,6 +24,8 @@ export class HumanPoseAnalyzer {
      */
     constructor(motionStudy, parent) {
         this.motionStudy = motionStudy;
+        this.animation = null;
+
         this.setupContainers(parent);
 
         this.rebaLens = new RebaLens();
@@ -64,6 +49,8 @@ export class HumanPoseAnalyzer {
 
         // auxiliary human objects supporting fused human objects
         this.childHumanObjectsVisible = false;
+
+        this.jointConfidenceThreshold = JOINT_CONFIDENCE_THRESHOLD;
 
         this.historyLines = {}; // Dictionary of {lensName: {(all | historical | live): Spaghetti}}, separated by historical and live
         this.historyLineContainers = {
@@ -92,13 +79,8 @@ export class HumanPoseAnalyzer {
         this.recordingClones = realityEditor.device.environment.isDesktop();
         this.lastDisplayedClones = [];
 
-        this.animationPlaying = true;
         this.prevAnimationState = null;
-        this.animationStart = -1;
-        this.animationEnd = -1;
-        this.animationPosition = -1;
         this.animationMode = AnimationMode.region;
-        this.lastAnimationTime = Date.now();
 
         const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
             MAX_POSE_INSTANCES :
@@ -192,6 +174,8 @@ export class HumanPoseAnalyzer {
         this.settingsUi.setHistoricalHistoryLinesVisible(this.historicalHistoryLineContainer.visible);
         this.settingsUi.setActiveJointByName(this.activeJointName);
         this.settingsUi.setChildHumanPosesVisible(this.childHumanObjectsVisible);
+        this.settingsUi.setJointConfidenceFilter(true);
+        //this.settingsUi.setJointConfidenceThreshold(this.jointConfidenceThreshold);
     }
 
     /**
@@ -327,6 +311,8 @@ export class HumanPoseAnalyzer {
         } else {
             this.clones.live.push(poseRenderInstance);
         }
+        
+        pose.setBodyPartValidity(this.jointConfidenceThreshold); // Needs to be called before setPose(), because it sets internal attributes needed by setPose() 
         poseRenderInstance.setPose(pose); // Needs to be set before visible is set, setting a pose always makes visible at the moment
         const canBeVisible = this.childHumanObjectsVisible || !pose.metadata.poseHasParent;
         if (this.animationMode === AnimationMode.all) {
@@ -393,7 +379,7 @@ export class HumanPoseAnalyzer {
             const timestamp = pose.timestamp;
             const id = pose.metadata.poseObjectId;
             let currentPoint = pose.getJoint(JOINTS.HEAD).position.clone();
-            currentPoint.y += 400;
+            currentPoint.y += 400; // mm
             if (!this.historyLines[lens.name].all.hasOwnProperty(id)) {
                 this.createSpaghetti(lens, id, historical);
             }
@@ -548,12 +534,49 @@ export class HumanPoseAnalyzer {
             const posesChanged = lens.applyLensToHistory(relevantClones.map(clone => clone.pose));
             posesChanged.forEach((wasChanged, index) => {
                 if (wasChanged) { // Only update colors if the pose data was modified
-                    relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].updateColorBuffers(lens);
                     relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
         this.reprocessSpaghettiForLens(lens);
+    }
+
+    setJointConfidenceThreshold(confidence) {
+        this.jointConfidenceThreshold = confidence;
+        //console.info('jointConfidenceThreshold=', confidence);
+
+        // update all poses and derived clones for visualisation
+        [this.clones.live, this.clones.historical].forEach(relevantClones => {
+            relevantClones.forEach(clone => clone.pose.setBodyPartValidity(this.jointConfidenceThreshold));
+            // lens calculations need to be updated based on changed valid attribute of joints
+            let poses = relevantClones.map(clone => clone.pose);
+            this.lenses.forEach(lens => {
+                // need to upate whole history, although it takes a bit of time
+                lens.applyLensToHistory(poses, true /* force */); 
+            });
+            relevantClones.forEach(clone => {
+                if (clone.visible) {
+                    clone.updateJointPositions();
+                    clone.updateBonePositions();
+                    clone.renderer.markMatrixNeedsUpdate();
+                }
+                clone.updateColorBuffers(this.activeLens);
+                clone.renderer.markColorNeedsUpdate();
+            });
+            
+        }); 
+        
+        // update all spaghetti lines
+        this.lenses.forEach(lens => {
+           this.reprocessSpaghettiForLens(lens);
+        });
+
+        this.motionStudy.updateRegionCards();
+    }
+
+    getJointConfidenceThreshold() {
+        return this.jointConfidenceThreshold;
     }
 
     /**
@@ -567,6 +590,7 @@ export class HumanPoseAnalyzer {
         this.applyCurrentLensToHistory();
 
         // Swap hpri colors
+        // Sets lens to individual render instances
         this.clones.all.forEach(clone => {
             clone.setLens(lens);
             clone.renderer.markColorNeedsUpdate();
@@ -626,8 +650,10 @@ export class HumanPoseAnalyzer {
      * @param {boolean} fromSpaghetti - whether a history mesh originated this change
      */
     setHighlightRegion(highlightRegion, fromSpaghetti) {
-        // Reset animationPlaying so that we default to always playing
-        this.animationPlaying = true;
+        // Reset animation's playing so that we default to always playing
+        if (this.animation) {
+            this.animation.playing = true;
+        }
         if (!highlightRegion) {
             this.setAnimationMode(AnimationMode.cursor);
             if (!fromSpaghetti) {
@@ -638,6 +664,7 @@ export class HumanPoseAnalyzer {
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
             this.prevAnimationState = null;
+            this.clearAnimation();
             return;
         }
         if (this.animationMode !== AnimationMode.region &&
@@ -808,6 +835,7 @@ export class HumanPoseAnalyzer {
             posesChanged.forEach((wasChanged, index) => {
                 if (wasChanged) { // Only update colors if the pose data was modified
                     relevantClones[index].updateColorBuffers(this.activeLens);
+                    relevantClones[index].renderer.markColorNeedsUpdate();
                 }
             });
         });
@@ -866,15 +894,17 @@ export class HumanPoseAnalyzer {
             return;
         }
         // May have not set an animation state
-        if (this.animationStart < 0 || this.animationEnd < 0) {
+        if (!this.animation) {
             return;
         }
 
         this.prevAnimationState = {
             animationMode: this.animationMode,
-            animationStart: this.animationStart,
-            animationEnd: this.animationEnd,
+            animationStart: this.animation.startTime,
+            animationEnd: this.animation.endTime,
         };
+
+        this.animation.clear();
     }
 
     /**
@@ -890,6 +920,10 @@ export class HumanPoseAnalyzer {
             this.prevAnimationState.animationStart,
             this.prevAnimationState.animationEnd);
         this.prevAnimationState = null;
+    }
+
+    isAnimationPlaying() {
+        return this.animation && this.animation.playing;
     }
 
     setHistoricalPoseRenderersOpacity(opacity) {
@@ -933,7 +967,9 @@ export class HumanPoseAnalyzer {
      * @param {number} end - end time of animation in ms
      */
     setAnimationRange(start, end) {
-        if (this.animationStart === start && this.animationEnd === end) {
+        if (this.animation &&
+            this.animation.startTime === start &&
+            this.animation.endTime === end) {
             return;
         }
 
@@ -948,13 +984,13 @@ export class HumanPoseAnalyzer {
             this.setCloneVisibleInInterval(true, start, end);
             const startClone = this.getCloneByTimestamp(start);
             if (startClone) {
-                this.selectionMarkPoseRenderInstances.start.copy(startClone);
+                this.selectionMarkPoseRenderInstances.start.copy(startClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.start.setVisible(true);
                 this.selectionMarkPoseRenderInstances.start.renderer.markNeedsUpdate();
             }
             const endClone = this.getCloneByTimestamp(end);
             if (endClone) {
-                this.selectionMarkPoseRenderInstances.end.copy(endClone);
+                this.selectionMarkPoseRenderInstances.end.copy(endClone, this.jointConfidenceThreshold);
                 this.selectionMarkPoseRenderInstances.end.setVisible(true);
                 this.selectionMarkPoseRenderInstances.end.renderer.markNeedsUpdate();
             }
@@ -968,10 +1004,13 @@ export class HumanPoseAnalyzer {
             break;
         }
 
-        this.animationStart = start;
-        this.animationEnd = end;
-        if (this.animationPosition < start || this.animationPosition > end) {
-            this.animationPosition = start;
+        let cursorTime = -1;
+        if (this.animation) {
+            cursorTime = this.animation.cursorTime;
+        }
+        this.animation = new Animation(this, this.motionStudy, start, end);
+        if (cursorTime > start && cursorTime < end) {
+            this.animation.cursorTime = cursorTime;
         }
     }
 
@@ -979,38 +1018,22 @@ export class HumanPoseAnalyzer {
      * Plays the current frame of the animation
      */
     updateAnimation() {
-        const now = Date.now();
-        const dt = now - this.lastAnimationTime;
-        this.lastAnimationTime = now;
-        if (this.animationStart < 0 || this.animationEnd < 0) {
+        if (!this.animation || this.animation.startTime < 0 || this.animation.endTime < 0) {
             this.clearAnimation();
             return;
         }
-
-        if (this.animationPlaying) {
-            this.animationPosition += dt;
-        }
-        let progress = this.animationPosition - this.animationStart;
-        let animationDuration = this.animationEnd - this.animationStart;
-        let progressClamped = (progress + animationDuration) % animationDuration; // adding animationDuration to avoid negative modulo
-        this.animationPosition = this.animationStart + progressClamped;
-
-        // As the active HPA we control the shared cursor
-        if (this.active) {
-            this.motionStudy.setCursorTime(this.animationPosition, true);
-        } else {
-            // Otherwise display the clone without interfering
-            this.displayClonesByTimestamp(this.animationPosition);
-        }
+        const now = Date.now();
+        this.animation.update(now);
     }
 
     /**
      * Resets the animation data and stops playback
      */
     clearAnimation() {
-        this.animationStart = -1;
-        this.animationEnd = -1;
-        this.animationPosition = -1;
+        if (this.animation) {
+            this.animation.clear();
+            this.animation = null;
+        }
         this.hideLastDisplayedClones();
     }
 
@@ -1099,12 +1122,14 @@ export class HumanPoseAnalyzer {
 
         clonesToHide.forEach(clone => {
             clone.setVisible(false);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
         clonesToShow.forEach(clone => {
             const canBeVisible = this.childHumanObjectsVisible || !clone.pose.metadata.poseHasParent;
             clone.setVisible(canBeVisible);
-            clone.renderer.markMatrixNeedsUpdate();
+            //clone.renderer.markMatrixNeedsUpdate();
+            clone.renderer.markNeedsUpdate();
         });
 
         this.lastDisplayedClones = bestClones;

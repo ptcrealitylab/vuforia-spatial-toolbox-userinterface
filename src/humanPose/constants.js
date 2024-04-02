@@ -213,13 +213,18 @@ export const JOINT_CONNECTIONS = {
 export const JOINTS_PER_POSE = Object.keys(JOINTS).length;
 export const BONES_PER_POSE = Object.keys(JOINT_CONNECTIONS).length;
 
+// Option to hide joints (+ adjacent bones) which have low confidence (thus considered poorly tracked)
+// This affects dynamic visualisation based on a given pose.
+export const DISPLAY_INVALID_ELEMENTS = false;
+
 // Flag for switching on/off an experimental feature of hand tracking
 export const TRACK_HANDS = true;
 
-// Option to hide joint/bones which are for example considered poorly tracked in general or redundant for a use case
+// Option to hide joints/bones which are for example considered poorly tracked in general or redundant for a use case
+// This affects visualisation of all poses the same way. 
 // Currently, defined according to debug switch TRACK_HANDS
 export const DISPLAY_HIDDEN_ELEMENTS = TRACK_HANDS;
-export const HIDDEN_JOINTS = [
+export const LEFT_HAND_JOINTS = [
     JOINTS.LEFT_THUMB_CMC,
     JOINTS.LEFT_THUMB_MCP,
     JOINTS.LEFT_THUMB_IP,
@@ -239,7 +244,9 @@ export const HIDDEN_JOINTS = [
     JOINTS.LEFT_PINKY_MCP,
     JOINTS.LEFT_PINKY_PIP,
     JOINTS.LEFT_PINKY_DIP,
-    JOINTS.LEFT_PINKY_TIP,
+    JOINTS.LEFT_PINKY_TIP
+];
+export const RIGHT_HAND_JOINTS = [
     JOINTS.RIGHT_THUMB_CMC,
     JOINTS.RIGHT_THUMB_MCP,
     JOINTS.RIGHT_THUMB_IP,
@@ -261,6 +268,8 @@ export const HIDDEN_JOINTS = [
     JOINTS.RIGHT_PINKY_DIP,
     JOINTS.RIGHT_PINKY_TIP
 ];
+export const HIDDEN_JOINTS = [...LEFT_HAND_JOINTS, ...RIGHT_HAND_JOINTS];
+
 export const HIDDEN_BONES = [
     getBoneName(JOINT_CONNECTIONS.thumb1Left),
     getBoneName(JOINT_CONNECTIONS.thumb2Left),
@@ -501,10 +510,12 @@ export const JOINT_RADIUS = 0.02; // unit: meters
 export const BONE_RADIUS = 0.01; // unit: meters
 export const SCALE = 1000; // we want to scale up the size of individual joints to milimeters, but not apply the scale to their positions
 
-export const RENDER_CONFIDENCE_COLOR = false;
 // Amount of pose instances per historical HumanPoseRenderer
 export const MAX_POSE_INSTANCES = 512;
 export const MAX_POSE_INSTANCES_MOBILE = 8;
+
+// Threshold for joint confidence which determines validity of a joint and associated bones.
+export const JOINT_CONFIDENCE_THRESHOLD = 0.25;
 
 export function getBoneName(bone) {
     return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);

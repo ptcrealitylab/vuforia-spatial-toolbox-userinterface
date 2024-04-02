@@ -14,15 +14,15 @@ export class RebaLens extends MotionStudyLens {
         super("REBA Ergonomics");
     }
     
-    applyLensToPose(pose) {
-        if (Object.values(pose.joints).every(joint => joint.rebaScore)) {
+    applyLensToPose(pose, force = false) {
+        if (!force && Object.values(pose.joints).every(joint => joint.rebaScore)) {
             return false;
-        }
+        } 
         const rebaData = Reba.calculateForPose(pose);
         pose.forEachJoint(joint => {
             joint.rebaScore = rebaData.scores[joint.name];
             joint.rebaColor = rebaData.colors[joint.name];
-            joint.rebaScoreOverall = rebaData.overallRebaScore;
+            joint.rebaScoreOverall = rebaData.overallRebaScore; // not really used, overallRebaScore from REBA Ergonomics (Overall) is propagated into stats  
             joint.rebaColorOverall = rebaData.overallRebaColor;
         });
         pose.forEachBone(bone => {
@@ -32,16 +32,16 @@ export class RebaLens extends MotionStudyLens {
         return true;
     }
 
-    applyLensToHistoryMinimally(poseHistory) {
-        const modified = this.applyLensToPose(poseHistory[poseHistory.length - 1]);
+    applyLensToHistoryMinimally(poseHistory, force = false) {
+        const modified = this.applyLensToPose(poseHistory[poseHistory.length - 1], force);
         const modifiedArray = poseHistory.map(() => false);
         modifiedArray[modifiedArray.length - 1] = modified;
         return modifiedArray;
     }
 
-    applyLensToHistory(poseHistory) {
+    applyLensToHistory(poseHistory, force = false) {
         return poseHistory.map(pose => {
-            return this.applyLensToPose(pose);
+            return this.applyLensToPose(pose, force);
         });
     }
     

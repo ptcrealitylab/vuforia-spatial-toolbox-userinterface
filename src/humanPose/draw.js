@@ -5,10 +5,9 @@ import {
     getGroundPlaneRelativeMatrix,
     setMatrixFromArray
 } from './utils.js';
-import {JOINTS,JOINT_CONNECTIONS, JOINT_TO_INDEX, RENDER_CONFIDENCE_COLOR} from './constants.js';
+import {JOINTS,JOINT_CONNECTIONS, JOINT_TO_INDEX} from './constants.js';
 import {Pose} from "./Pose.js";
 import {HumanPoseRenderInstance} from './HumanPoseRenderInstance.js';
-
 
 /**
  * @typedef {string} AnimationMode
@@ -129,17 +128,14 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
             }
         }
         jointConfidences[jointId] = confidence;
-
-        if (RENDER_CONFIDENCE_COLOR) {
-
-            poseRenderInstance.setJointConfidenceColor(jointId, confidence);
-        }
     }
 
     const poseHasParent = poseObject.parent && (poseObject.parent !== 'none');
     const pose = new Pose(jointPositions, jointConfidences, timestamp, {poseObjectId: poseObject.objectId, poseHasParent: poseHasParent});
     pose.metadata.previousPose = mostRecentPoseByObjectId[poseObject.objectId];
     mostRecentPoseByObjectId[poseObject.objectId] = pose;
+    // setBodyPartValidity() needs to be called before applyLensToPose(pose) and setPose(pose)
+    pose.setBodyPartValidity(liveHumanPoseAnalyzer.getJointConfidenceThreshold());
     liveHumanPoseAnalyzer.activeLens.applyLensToPose(pose);
     poseRenderInstance.setPose(pose);
     poseRenderInstance.setLens(liveHumanPoseAnalyzer.activeLens);

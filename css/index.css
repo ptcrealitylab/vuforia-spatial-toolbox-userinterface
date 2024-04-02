@@ -1688,9 +1688,32 @@ Logic Interface CSS
     animation: dropIn 300ms ease-out;
 }
 
+/*review - should be replaced with .statusBar */
+.statusBar-tbr {
+    position: absolute;
+    left: 80px;
+    top: 130px;
+    width: calc(100vw - 220px);
+    height: 30px;
+    color: white;
+    font-family: "Open Sans", sans-serif;
+    background-color: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    text-align: center;
+    line-height: 30px;
+    animation: dropIn 300ms ease-out;
+    transition: height 300ms ease-out;
+}
+
 @keyframes dropIn {
     0% { opacity: 0 }
     100% { opacity: 1 }
+}
+
+/* review - should be removed along with .statusBar-tbr and .statusBarText-tbr */
+.statusBarPortrait {
+    left: 40px;
+    width: calc(100vw - 100px); /* centers, including padding */
 }
 
 .statusBarHidden {
@@ -1707,6 +1730,12 @@ Logic Interface CSS
     width: max-content;
     border-radius: 10px;
     word-wrap: normal;
+}
+
+/*review - should be replaced with .statusBarText*/
+.statusBarText-tbr {
+    padding: 10px;
+    font-size: 14px;
 }
 
 .statusTextLong {
@@ -1792,6 +1821,7 @@ Logic Interface CSS
 
 #avatarIconContainer {
     position: absolute;
+    top: 60px;
     left: 50vw;
     transform: translateX(-50%);
     background-color: rgba(0,0,0,0.5);
@@ -1978,6 +2008,10 @@ Logic Interface CSS
     cursor: pointer;
 }
 
+.analytics-title {
+    margin-bottom: 10px;
+}
+
 .analytics-region-card {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -2018,16 +2052,68 @@ Logic Interface CSS
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
-    bottom: calc(320px - 66px); /* guess at timeline top */
     left: 35px;
+    bottom: calc(320px - 124px); /* guess at timeline top */
     padding: 0;
     padding-right: 8px;
     pointer-events: all;
     overflow-y: auto;
 }
 
-.analytics-pinned-region-cards-csv,
-.analytics-pinned-region-cards-csv:visited {
+@media (max-width: 600px) and (max-height: 1000px) {
+    /**
+     * shift further up due to recording buttons, note that
+     * analytics-has-video is okay to overlap since there will no longer be
+     * buttons
+     */
+    .analytics-pinned-region-cards-container {
+        bottom: calc(320px);
+    }
+}
+
+
+.analytics-pinned-region-cards-container.analytics-has-video {
+    bottom: calc(320px + 91px); /* guess at video top */
+}
+
+.analytics-video {
+    position: absolute;
+    left: 35px;
+    bottom: calc(320px - 66px - 66px + 14px);
+    width: calc(15rem + 2 * 14px);
+    height: 151px;
+
+    z-index: 2900;
+    transform: translateZ(2900px);
+
+    pointer-events: all;
+}
+
+.analytics-video-toggle {
+    position: absolute;
+    left: 35px;
+    bottom: calc(320px + 37px);
+
+    z-index: 2900;
+    transform: translateZ(2900px);
+
+    cursor: pointer;
+
+    pointer-events: all;
+
+}
+
+.analytics-export-link-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+.analytics-export-link {
+    font-size: 0.9em;
+}
+.analytics-export-link,
+.analytics-export-link:visited {
     cursor: pointer;
     color: white;
 }
@@ -2370,8 +2456,12 @@ Logic Interface CSS
 
 /* smaller screens: mobile phones and portrait tablets */
 @media only screen and (max-width: 768px) {
+    .statusBar {
+        top: unset;
+        bottom: 160px;
+    }
     .statusBarText {
-        max-width: 80%;
+        width: 80%;
     }
 }
 
