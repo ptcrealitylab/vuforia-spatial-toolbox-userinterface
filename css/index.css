@@ -1823,10 +1823,11 @@ Logic Interface CSS
     position: absolute;
     top: 60px;
     left: 50vw;
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 1000px);
     background-color: rgba(0,0,0,0.5);
     height: 50px;
     border-radius: 25px;
+    z-index: 1000;
 }
 
 .avatarListIcon {
