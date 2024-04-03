@@ -293,13 +293,7 @@ export class MotionStudy {
      */
     bulkRenderHistoricalPoses(poses) {
         if (realityEditor.humanPose.draw.is2DPoseRendered()) return;
-        poses.forEach(pose => {
-            this.timeline.appendPose({
-                time: pose.timestamp,
-            });
-        });
         this.humanPoseAnalyzer.bulkHistoricalPosesUpdated(poses);
-
     }
 
     /**
