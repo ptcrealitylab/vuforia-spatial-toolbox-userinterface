@@ -24,9 +24,7 @@ createNameSpace("realityEditor.device.environment");
     // use this to distinguish between opening the remote operator in a mobile
     // safari vs opening the userinterface in AR mode in the app
     function isWithinToolboxApp() {
-        return typeof window.webkit !== 'undefined' &&
-            typeof window.webkit.messageHandlers !== 'undefined' &&
-            typeof window.webkitWasTamperedWith === 'undefined';
+        return navigator.userAgent.includes('iOS/VuforiaSpatialToolbox');
     }
 
     // rather than checking for "isDesktop", this gives a more reliable way to
