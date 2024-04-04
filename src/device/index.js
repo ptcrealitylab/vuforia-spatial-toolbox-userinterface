@@ -641,13 +641,43 @@ realityEditor.device.disablePinchToScale = function() {
 };
 
 /**
+ * This system allows any number of modules to mark with a flag that they're
+ * currently claiming the pointer events for a camera control mode.
+ * @type {Object.<string, boolean>}
+ */
+realityEditor.device.manualCameraControlFlags = {};
+/**
+ * @param {string} flagName - the name of the module/reason that the pointer is claimed by
+ */
+realityEditor.device.setFlagForPointerOccupiedByCamera = function(flagName) {
+    realityEditor.device.manualCameraControlFlags[flagName] = true;
+};
+/**
+ * @param {string} flagName - provide the same name used in setFlagForPointerOccupiedByCamera, to release the pointer
+ */
+realityEditor.device.clearFlagForPointerOccupiedByCamera = function(flagName) {
+    delete realityEditor.device.manualCameraControlFlags[flagName];
+};
+/**
+ * @return {boolean}
+ */
+realityEditor.device.isPointerOccupiedByCameraControl = function() {
+    return Object.keys(realityEditor.device.manualCameraControlFlags).length > 0;
+};
+
+/**
  * @return {boolean} If the event is intended to control the camera and not the
- *   AR elements
+ *   AR elements, avatar pointer beams, or other pointer interactions
  */
 realityEditor.device.isMouseEventCameraControl = function(event) {
-  // If mouse events are enabled ignore right clicks and middle clicks
-  return realityEditor.device.environment.requiresMouseEvents() &&
-    (event.button === 2 || event.button === 1);
+    // first check if anything is manually taking claim over the pointer events
+    if (realityEditor.device.isPointerOccupiedByCameraControl()) {
+        return true;
+    }
+    // If mouse events are enabled ignore right clicks and middle clicks
+    // otherwise the pointer is presumed to not be being used for camera controls
+    return realityEditor.device.environment.requiresMouseEvents() &&
+        (event.button === 2 || event.button === 1);
 };
 
 /**
