@@ -169,11 +169,8 @@ class EnvelopeIconRenderer {
         let icon = document.createElement('img');
         icon.src = src;
         icon.classList.add('minimizedEnvelopeIcon', 'tool-color-gradient');
+        icon.setAttribute('frameId', frameId);
         container.appendChild(icon);
-
-        icon.addEventListener('pointerup', () => {
-            realityEditor.envelopeManager.focusEnvelope(frameId);
-        });
 
         return container;
     }
@@ -218,13 +215,19 @@ class EnvelopeIconRenderer {
     }
 
     onIconPointerDown(event) {
+        if (realityEditor.device.isMouseEventCameraControl(event)) return;
         const iconElt = event.target;
         this.setDragTarget(iconElt.dataset.objectId, iconElt.dataset.frameId);
         this.dragState.pointerDown = true;
     }
 
-    onIconPointerUp() {
+    onIconPointerUp(event) {
+        if (realityEditor.device.isMouseEventCameraControl(event)) return;
         this.dragState.pointerDown = false;
+        let frameId = event.currentTarget.getAttribute('frameId');
+        if (frameId) {
+            realityEditor.envelopeManager.focusEnvelope(frameId);
+        }
     }
 
     onIconPointerOut(event) {
@@ -269,6 +272,7 @@ class EnvelopeIconRenderer {
         if (!this.dragState.pointerDown) return;
         if (!this.dragState.didStartDrag) return;
         if (!this.dragState.draggedIcon) return;
+        if (realityEditor.device.isMouseEventCameraControl(event)) return;
 
         let boundingRect = this.dragState.draggedIcon.getBoundingClientRect();
 

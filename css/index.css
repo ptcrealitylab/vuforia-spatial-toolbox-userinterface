@@ -2315,6 +2315,7 @@ Logic Interface CSS
     left: calc(100vw/2 - 300px/2 - 16px);
     top: calc(100vh/2 - 300px/2 - 16px);
     pointer-events: auto;
+    opacity: 0.7;
 }
 
 .tool-color-gradient {
