@@ -643,26 +643,26 @@ realityEditor.device.disablePinchToScale = function() {
 /**
  * This system allows any number of modules to mark with a flag that they're
  * currently claiming the pointer events for a camera control mode.
- * @type {Object.<string, boolean>}
+ * @type {Set<string>}
  */
-realityEditor.device.manualCameraControlFlags = {};
+realityEditor.device.manualCameraControlFlags = new Set();
 /**
  * @param {string} flagName - the name of the module/reason that the pointer is claimed by
  */
 realityEditor.device.setFlagForPointerOccupiedByCamera = function(flagName) {
-    realityEditor.device.manualCameraControlFlags[flagName] = true;
+    realityEditor.device.manualCameraControlFlags.add(flagName);
 };
 /**
  * @param {string} flagName - provide the same name used in setFlagForPointerOccupiedByCamera, to release the pointer
  */
 realityEditor.device.clearFlagForPointerOccupiedByCamera = function(flagName) {
-    delete realityEditor.device.manualCameraControlFlags[flagName];
+    realityEditor.device.manualCameraControlFlags.delete(flagName);
 };
 /**
  * @return {boolean}
  */
 realityEditor.device.isPointerOccupiedByCameraControl = function() {
-    return Object.keys(realityEditor.device.manualCameraControlFlags).length > 0;
+    return realityEditor.device.manualCameraControlFlags.size > 0;
 };
 
 /**
