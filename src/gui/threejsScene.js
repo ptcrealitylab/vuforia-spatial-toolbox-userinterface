@@ -12,7 +12,7 @@ import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import GroundPlane from "./scene/GroundPlane.js";
 import AnchoredGroup from "./scene/AnchoredGroup.js";
 import { DefaultCamera, LayerConfig } from "./scene/Camera.js";
-import Renderer from "./scene/Renderer.js";
+import { Renderer } from "./scene/Renderer.js";
 import {setMatrixFromArray} from "./scene/utils.js";
 
 (function(exports) {
@@ -157,7 +157,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
 
         isGroundPlanePositionSet = true;
-        groundPlane = new GroundPlane(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        groundPlane = new GroundPlane(sceneSizeInMeters / mainRenderer.getGlobalScale().getSceneScale());
         addToScene(groundPlane.getInternalObject(), {occluded: true});
 
         let areaTargetNavmesh = null;
@@ -185,6 +185,19 @@ import {setMatrixFromArray} from "./scene/utils.js";
     function renderScene() {
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
+
+        const globalScale = mainRenderer.getGlobalScale();
+        if (mainRenderer.isInWebXRMode()) {
+            // 1 meter is 1 device unit
+            if (globalScale.getDeviceScale() !== 1) {
+                globalScale.setDeviceScale(1);
+            }
+        } else {
+            // 1 meter is 1000 device units
+            if (globalScale.getDeviceScale() !== 1000) {
+                //globalScale.setDeviceScale(1000);
+            }
+        }
 
         cssRenderer.render(mainRenderer.getInternalScene(), mainCamera.getInternalObject());
         

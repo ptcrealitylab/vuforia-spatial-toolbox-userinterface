@@ -94,6 +94,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             gridHelper.name = 'groundPlaneVisualizer';
             gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
+            realityEditor.gui.threejsScene.getInternals().getGlobalScale().addListener((globalScale) => {
+                gridHelper.setSizesAndDistance(gridSquareSizeInMm * globalScale.getGlobalScale(), gridRegionSizeInMm * globalScale.getGlobalScale(), maxVisibilityDistanceInMm * globalScale.getGlobalScale());
+            });
         }
 
         // don't show origin on devices that don't support AR tracking, because it's to help debug the groundplane tracker
