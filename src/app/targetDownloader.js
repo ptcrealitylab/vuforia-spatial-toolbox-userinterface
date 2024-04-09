@@ -713,7 +713,14 @@ createNameSpace("realityEditor.app.targetDownloader");
      * @param {string} fileName
      */
     function getObjectIDFromFilename(fileName) {
-        let parsedUrl = schema.parseUrl(new URL(fileName));
+        let fileUrl;
+        try {
+            fileUrl = new URL(fileName);
+        } catch (e) {
+            console.error(`Cannot create URL from file name: ${fileName}`, e);
+            return;
+        }
+        let parsedUrl = schema.parseUrl(fileUrl);
         if (!parsedUrl) {
             console.warn('schema.parseUrl failed. this may cause targets not to download', fileName);
             return;

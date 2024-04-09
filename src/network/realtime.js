@@ -774,7 +774,13 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function|undefined} onConnect - optional .on('connect') callback
      */
     function createSocketInSet(setName, socketIP, onConnect) {
-        const url = new URL(socketIP);
+        let url;
+        try {
+            url = new URL(socketIP);
+        } catch (e) {
+            console.error(`Failed to create URL from socketIP: ${socketIP}`, e);
+            return;
+        }
         url.protocol = url.protocol.replace('http', 'ws');
         let socket = new ToolSocket.Io(url);
         if (DEBUG) {
