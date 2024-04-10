@@ -9,6 +9,7 @@ body {
     
     display: flex;
     flex-direction: column;
+    gap: 3px;
     /*width: calc(100vw - 20px - 20px);*/
     width: calc(max(100px, min(400px, 100%)) - 20px - 20px);
     max-height: calc(80% - 20px - 20px);
@@ -77,22 +78,22 @@ body {
 .ai-chat-tool-dialogue-my {
     position: relative;
     align-self: flex-end;
-    background: rgba(0, 0, 0, 0.5);
+    /*background: rgba(0, 0, 0, 0.5);*/
     color: white;
 }
 .ai-chat-tool-dialogue-my-light {
-    background: rgba(64,170,29,0.9);
+    /*background: rgba(64,170,29,0.9);*/
     color: white;
 }
 
 .ai-chat-tool-dialogue-ai {
     position: relative;
     align-self: flex-start;
-    background: rgba(0, 0, 0, 0.5);
+    /*background: rgba(0, 0, 0, 0.5);*/
     color: white;
 }
 .ai-chat-tool-dialogue-ai-light {
-    background: rgba(233, 233, 235, 0.9);
+    /*background: rgba(233, 233, 235, 0.9);*/
     color: black;
 }
 
@@ -125,4 +126,17 @@ body {
 
 #searchTextArea:focus {
     overflow: auto; /* Allows scrolling when the field is focused */
+}
+
+.ai-highlight {
+    /*background-color: rgba(0, 0, 0, 0.5);*/
+    color: darkturquoise;
+    cursor: default;
+    transition: all 0.1s;
+}
+
+.ai-highlight:hover {
+    cursor: pointer;
+    /*background-color: white;*/
+    /*color: black;*/
 }

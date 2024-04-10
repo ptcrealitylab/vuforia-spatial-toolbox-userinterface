@@ -1096,6 +1096,14 @@ export class HumanPoseAnalyzer {
             clone.renderer.markMatrixNeedsUpdate();
         });
     }
+    
+    getDataByTimestamp(timestamp) {
+        if (this.clones.all.length < 2) {
+            return;
+        }
+        const bestClones = this.getClonesByTimestamp(timestamp);
+        return bestClones;
+    }
 
     /**
      * Displays the clones with the closest timestamp to the given timestamp per objectId

@@ -12,7 +12,9 @@ createNameSpace("realityEditor.avatar.utils");
     exports.PUBLIC_DATA_KEYS = {
         touchState: 'touchState',
         cursorState: 'cursorState',
-        userProfile: 'userProfile'
+        userProfile: 'userProfile',
+        aiDialogue: 'aiDialogue',
+        aiApiKeys: 'aiApiKeys'
     };
 
     // other modules in the project can use this to reliably check whether an object is an avatar

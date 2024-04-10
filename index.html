@@ -101,6 +101,8 @@
     <script src="src/envelopeManager.js" type="module"></script>
 
     <script src="src/ai/index.js" type="module"></script>
+    <script src="src/ai/map.js" type="module"></script>
+    <script src="src/ai/crc.js" type="module"></script>
     
     <script src="src/app/index.js" type="module"></script>
     <script src="src/app/callbacks.js" type="module"></script>
@@ -650,6 +652,8 @@
 <div id= "searchDiv" style="position: absolute; left: 0px; bottom: 0px; right: 65px; height: 121px; -webkit-transform: translateZ(9px); display: none; border: solid #01fffc 2px"></div>
 <div id="ai-chat-tool-container">
     <div id="ai-chat-tool-dialogue-container"></div>
+    <textarea id="ai-endpoint-text-area" class='ai-search-text-area' rows="1" placeholder="Endpoint"></textarea>
+    <textarea id="ai-api-key-text-area" class='ai-search-text-area' rows="1" placeholder="Azure API Key"></textarea>
     <textarea id='searchTextArea' class='ai-search-text-area' rows="1" placeholder="Ask a question"></textarea>
 </div>
 </body>

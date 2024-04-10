@@ -110,14 +110,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     let history = '';
     
     function setupSystemEventListeners() {
+        map.setupEventListeners();
         realityEditor.gui.pocket.registerCallback('frameAdded', (params) => {
-            let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
-            onFrameAdded(params, avatarName);
+            let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
+            onFrameAdded(params, avatarId);
         });
         // todo Steve: add tool reposition event triggering for the user who added the tool themselves
         realityEditor.device.registerCallback('vehicleDeleted', (params) => {
-            let avatarName = realityEditor.avatar.getAvatarNameFromSessionId(globalStates.tempUuid);
-            onVehicleDeleted(params, avatarName);
+            let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
+            onVehicleDeleted(params, avatarId);
         });
     }
     
@@ -128,7 +129,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.device.desktopCamera.focusVirtualCamera(framePosition, frameDirection);
     }
     
-    function onFrameAdded(params, avatarName = 'Anonymous user') {
+    function onFrameAdded(params, avatarId = 'Anonymous id') {
         let objectId = params.objectKey;
         let frameId = params.frameKey;
         let frameType = params.frameType;
@@ -143,11 +144,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         position.applyMatrix4(inverseGroundPlaneMatrix);
 
         let timestamp = getFormattedTime();
-        let newInfo = `${avatarName} added a ${frameType} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+        map.addToMap(avatarId, avatarName, avatarScrambledId);
+        map.addToMap(frameId, frameType, frameScrambledId);
+        let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        // let newInfo = `${avatarId} added ${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        // let newInfo = `The user ${avatarName} id:${avatarId} added a tool ${frameType} id:${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         question1 += `\n${newInfo}`;
     }
     
-    function onFrameRepositioned(params, avatarName = 'Anonymous user') {
+    function onFrameRepositioned(params, avatarId = 'Anonymous id') {
         let objectId = params.objectKey;
         let frameId = params.frameKey;
         let frameType = params.frameType;
@@ -162,19 +170,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         position.applyMatrix4(inverseGroundPlaneMatrix);
 
         let timestamp = getFormattedTime();
-        let newInfo = `${avatarName} repositioned a ${frameType} tool at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+        map.addToMap(avatarId, avatarName, avatarScrambledId);
+        map.addToMap(frameId, frameType, frameScrambledId);
+        let newInfo = `User ${avatarScrambledId} repositioned a ${frameScrambledId} tool at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        // let newInfo = `The user ${avatarName} id:${avatarId} repositioned a tool ${frameType} id:${frameId} at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         question1 += `\n${newInfo}`;
     }
     
-    function addTestCube(pos) {
-        let geo = new THREE.BoxGeometry(50, 50, 50);
-        let mat = new THREE.MeshBasicMaterial({color: 0xff0000});
-        let cube = new THREE.Mesh(geo, mat);
-        cube.position.copy(pos);
-        realityEditor.gui.threejsScene.addToScene(cube);
-    }
-    
-    function onVehicleDeleted(params, avatarName = 'Anonymous user') {
+    function onVehicleDeleted(params, avatarId = 'Anonymous id') {
         if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
             let objectId = params.objectKey;
             let frameId = params.frameKey;
@@ -182,12 +188,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let frame = realityEditor.getFrame(objectId, frameId);
 
             let timestamp = getFormattedTime();
-            let newInfo = `${avatarName} deleted a ${frameType} tool at ${timestamp}`;
+            let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+            let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+            let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+            map.addToMap(avatarId, avatarName, avatarScrambledId);
+            map.addToMap(frameId, frameType, frameScrambledId);
+            let newInfo = `User ${avatarScrambledId} deleted a ${frameScrambledId} tool at ${timestamp}`;
+            // let newInfo = `The user ${avatarName} id:${avatarId} deleted a tool ${frameType} id:${frameId} at ${timestamp}`;
             question1 += `\n${newInfo}`;
         }
     }
     
-    function onOpen(envelope, avatarName = 'Anonymous user') {
+    function onOpen(envelope, avatarId = 'Anonymous id') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -198,6 +210,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
         
         let timestamp = getFormattedTime();
+        let frameId = frame.uuid;
         let frameType = frame.src;
         let additionalDescription = '';
         if (frameType === 'spatialDraw') {
@@ -209,11 +222,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         } else if (frameType === 'communication') {
             additionalDescription = ' and discussed about some issues';
         }
-        let newInfo = `${avatarName} opened a ${frameType} tool at ${timestamp} ${additionalDescription}`;
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+        map.addToMap(avatarId, avatarName, avatarScrambledId);
+        map.addToMap(frameId, frameType, frameScrambledId);
+        let newInfo = `User ${avatarScrambledId} opened a ${frameScrambledId} tool at ${timestamp} ${additionalDescription}`;
         question1 += `\n${newInfo}`;
     }
 
-    function onClose(envelope, avatarName = 'Anonymous user') {
+    function onClose(envelope, avatarId = 'Anonymous id') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -224,12 +242,18 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         let timestamp = getFormattedTime();
+        let frameId = frame.uuid;
         let frameType = frame.src;
-        let newInfo = `${avatarName} closed a ${frameType} tool at ${timestamp}`;
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+        map.addToMap(avatarId, avatarName, avatarScrambledId);
+        map.addToMap(frameId, frameType, frameScrambledId);
+        let newInfo = `User ${avatarScrambledId} closed a ${frameScrambledId} tool at ${timestamp}`;
         question1 += `\n${newInfo}`;
     }
 
-    function onBlur(envelope, avatarName = 'Anonymous user') {
+    function onBlur(envelope, avatarId = 'Anonymous id') {
         const object = objects[envelope.object];
         if (!object) {
             return;
@@ -240,20 +264,28 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         let timestamp = getFormattedTime();
+        let frameId = frame.uuid;
         let frameType = frame.src;
-        let newInfo = `${avatarName} minimized a ${frameType} tool at ${timestamp}`;
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
+        map.addToMap(avatarId, avatarName, avatarScrambledId);
+        map.addToMap(frameId, frameType, frameScrambledId);
+        let newInfo = `User ${avatarScrambledId} minimized a ${frameScrambledId} tool at ${timestamp}`;
+        // let newInfo = `The user ${avatarName} id:${avatarId} minimized a tool ${frameType} id:${frame.uuid} at ${timestamp}`;
         question1 += `\n${newInfo}`;
     }
     
     function onAvatarChangeName(oldName, newName) {
         // return; // todo Steve: for the MS recording
+        // todo Steve: after switching from getavatarIdFromSessionId() to getAvatarObjectKeyFromSessionId(), this still stays the old way. Need to change later
         let timestamp = getFormattedTime();
         if (oldName === null) {
-            let newInfo = `User ${newName} joined the space at ${timestamp}`;
-            question1 += `\n${newInfo}`;
+            // let newInfo = `User ${newName} joined the space at ${timestamp}`;
+            // question1 += `\n${newInfo}`;
         } else {
-            let newInfo = `User ${oldName} has changed their name to ${newName}`;
-            question1 += `\n${newInfo}`;
+            // let newInfo = `User ${oldName} has changed their name to ${newName}`;
+            // question1 += `\n${newInfo}`;
         }
     }
     
@@ -267,6 +299,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     let aiContainer;
+    let endpointArea, apiKeyArea;
     let searchTextArea;
     let dialogueContainer;
 
@@ -277,18 +310,25 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     };
     let INCLUDE_TEST_HISTORY_MESSAGE = true;
     let PAST_MESSAGES_INCLUDED = 20 - (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
+    let map;
     
     function initService() {
-        console.log('ai init service');
         aiContainer = document.getElementById('ai-chat-tool-container');
+        endpointArea = document.getElementById('ai-endpoint-text-area');
+        apiKeyArea = document.getElementById('ai-api-key-text-area');
         searchTextArea = document.getElementById('searchTextArea');
+        searchTextArea.style.display = 'none'; // initially, before inputting endpoint and api key, hide the search text area
         dialogueContainer = document.getElementById('ai-chat-tool-dialogue-container');
 
+        map = realityEditor.ai.map;
+        
         scrollToBottom();
         initTextAreaSize();
-        adjustTextAreaSize();
+        // adjustTextAreaSize();
         setupEventListeners();
         setupSystemEventListeners();
+        
+        showDialogue();
     }
     
     function authorSetToString(authorSet) {
@@ -320,6 +360,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             if (frame.src === 'communication') {
                 const storage = Object.values(frame.nodes)[0];
                 const messages = storage.publicData.messages;
+                if (messages === undefined) continue;
                 let authorSet = new Set();
                 let chat = '';
                 for (const message of messages) {
@@ -329,18 +370,33 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 }
                 authorAll.push(authorSetToString(authorSet));
                 chatAll.push(chat);
+            } else if (frame.src === 'spatialAnalytics') {
+                continue;
+                console.log(frame);
+                let hpos = realityEditor.humanPose.returnHumanPoseObjects();
+                console.log(hpos);
+                
+                const storage = Object.values(frame.nodes)[0];
+                const regionCards = storage.publicData.analyticsData.regionCards;
+                for (let i = 0; i < regionCards.length; i++) {
+                    let label = regionCards[i].label;
+                    let startTime = regionCards[i].startTime;
+                    let endTime = regionCards[i].endTime;
+                    let motionStudy = realityEditor.motionStudy.getMotionStudyByFrame(frameId);
+                    if (motionStudy === undefined) continue;
+                    let cloneData = motionStudy.humanPoseAnalyzer.getDataByTimestamp(startTime);
+                    console.log(cloneData);
+                }
             }
         }
-        // authorAll = ["Keranie Theodosiou, Ben Reynolds, and Steve Xie", "James Hobin and Ben Reynolds"];
-        // chatAll = ["Please check the connections here. Ok, we'll have our technician take a look. The top left corner cables look correct. Verified. Everything was reviewed. ", "Is this one connected properly? Remember this falling out in testing. We will check this."]
+        // return;
+        
         let dialogueLengthTotal = dialogueContainer.children.length;
         let maxDialogueLength = Math.min(PAST_MESSAGES_INCLUDED, dialogueLengthTotal);
         let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
         let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
         // firstDialogueIndex += (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
         let conversation = {};
-        console.log(firstDialogueIndex, lastDialogueIndex);
-        console.log(dialogueContainer.children);
         for (let i = firstDialogueIndex; i < lastDialogueIndex; i++) {
             let child = dialogueContainer.children[i];
             let conversationObjectIndex = i + (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
@@ -348,7 +404,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 if (i === lastDialogueIndex - 1) { // last dialogue, need to include the categorize question here
                     // conversation[conversationObjectIndex] = { role: "user", content: `${child.innerText}`, extra: `${categorize_prompt}` };
                     conversation[conversationObjectIndex] = { role: "user", 
-                        content: `${question1}\n${child.innerText}`, 
+                        content: `${question1}\n${map.preprocess(child.innerHTML)}`, 
                         extra: `${categorize_prompt}`, 
                         communicationToolInfo: {
                             authorAll,
@@ -356,23 +412,29 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                         } 
                     };
                 } else {
-                    conversation[conversationObjectIndex] = {role: "user", content: `${child.innerText}`};
+                    conversation[conversationObjectIndex] = {role: "user", content: `${map.preprocess(child.innerHTML)}`};
                 }
             } else if (child.classList.contains('ai-chat-tool-dialogue-ai')) {
-                conversation[conversationObjectIndex] = { role: "assistant", content: `${child.innerText}` };
+                conversation[conversationObjectIndex] = { role: "assistant", content: `${map.preprocess(child.innerHTML)}` };
             }
         }
         if (INCLUDE_TEST_HISTORY_MESSAGE) {
             // conversation[0] = { role: "user", content: `${question1}` };
         }
-        console.log(conversation);
-        realityEditor.network.postQuestionToAI(conversation);
+        // todo Steve: include extra information here to provide to ai
+        let extra = {
+            worldObjectId: realityEditor.worldObjects.getBestWorldObject().objectId,
+        }
+        realityEditor.network.postQuestionToAI(conversation, extra);
     }
     
     function getAnswer(category, answer) {
         console.log(`%c This question is of category ${category}`, 'color: blue');
         
-        pushAIDialogue(answer);
+        // todo Steve new: preprocess the answer in map.js, and then send out the processed answer to the dialogue
+        //  but since the processed answer got fed straight into the ai prompt, not sure if this is a good idea, or the names need to be converted to ids again, and fed back to the ai
+        let html = map.postprocess(answer);
+        pushAIDialogue(html);
     }
     
     function getToolAnswer(category, tools) {
@@ -396,8 +458,32 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function hideDialogue() {
         aiContainer.style.animation = `slideToLeft 0.2s ease-in forwards`;
     }
+    
+    function hideEndpointApiKeyAndShowSearchTextArea() {
+        endpointArea.style.display = 'none';
+        apiKeyArea.style.display = 'none';
+        searchTextArea.style.display = 'block';
+        adjustTextAreaSize();
+    }
 
     function setupEventListeners() {
+        endpointArea.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (endpointArea.value === '' || apiKeyArea.value === '') return;
+                realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
+            }
+        })
+        apiKeyArea.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (endpointArea.value === '' || apiKeyArea.value === '') return;
+                realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
+            }
+        })
+        
         searchTextArea.addEventListener('input', function(e) {
             // adjustTextAreaSize();
         });
@@ -444,6 +530,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
                 pushMyDialogue(searchTextArea.value);
                 clearMyDialogue();
+                adjustTextAreaSize();
             } else if (e.key === 'Shift') {
                 e.preventDefault();
                 keyPressed['Shift'] = true;
@@ -503,7 +590,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     
     function pushToolDialogue(frames, result) {
-        console.log(frames);
         let d = document.createElement('div');
         d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai', 'ai-chat-tool-dialogue-tools');
         d.innerText = `Here are all the ${result} tools:`;
@@ -531,24 +617,20 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-my');
         d.innerText = text;
         dialogueContainer.append(d);
+        realityEditor.avatar.network.sendAiDialogue(realityEditor.avatar.getMyAvatarNodeInfo(), d.outerHTML);
         scrollToBottom();
 
         askQuestion();
     }
 
-    function pushAIDialogue(text) {
-        console.log(text);
-        if (!text.trim()) {
-            console.log('error');
-            return;
-        }
-        let html = text.replace(/\n/g, '<br><br>');
-        let d = document.createElement('div');
-        d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai');
-        // d.innerText = text;
-        d.innerHTML = html;
-        dialogueContainer.append(d);
+    function pushAIDialogue(html) {
+        dialogueContainer.append(html);
+        realityEditor.avatar.network.sendAiDialogue(realityEditor.avatar.getMyAvatarNodeInfo(), html.outerHTML);
         scrollToBottom();
+    }
+    
+    function pushDialogueFromOtherUser(html) {
+        dialogueContainer.insertAdjacentHTML('beforeend', html);
     }
 
     function scrollToBottom() {
@@ -564,6 +646,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.askQuestion = askQuestion;
     exports.getAnswer = getAnswer;
     exports.getToolAnswer = getToolAnswer;
+    exports.pushDialogueFromOtherUser = pushDialogueFromOtherUser;
     exports.onOpen = onOpen;
     exports.onClose = onClose;
     exports.onBlur = onBlur;
@@ -573,6 +656,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.onAvatarChangeName = onAvatarChangeName;
     exports.showDialogue = showDialogue;
     exports.hideDialogue = hideDialogue;
+    exports.hideEndpointApiKeyAndShowSearchTextArea = hideEndpointApiKeyAndShowSearchTextArea;
     exports.focusOnFrame = focusOnFrame;
     
 }(realityEditor.ai));

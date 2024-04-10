@@ -412,6 +412,18 @@ createNameSpace("realityEditor.avatar");
             iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             debugDataReceived();
         };
+        
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiDialogue] = (msgContent) => {
+            // console.log(msgContent.publicData.aiDialogue);
+            console.log("push other's ai dialogue");
+            realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
+        }
+        
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
+            let endpoint = msgContent.publicData.aiApiKeys.endpoint;
+            let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
+            realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false);
+        }
 
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
 
@@ -733,7 +745,7 @@ createNameSpace("realityEditor.avatar");
         }
     }
 
-    function getAvatarNameFromSessionId(sessionId) {
+    function getAvatarObjectKeyFromSessionId(sessionId) {
         for (let objectKey in connectedAvatarUserProfiles) {
             if (!connectedAvatarUserProfiles[objectKey]) {
                 return;
@@ -742,8 +754,19 @@ createNameSpace("realityEditor.avatar");
             if (userProfile.sessionId !== sessionId) {
                 continue;
             }
-            return userProfile.name;
+            return objectKey;
         }
+    }
+    
+    function getAvatarNameFromObjectKey(objectKey) {
+        if (!connectedAvatarUserProfiles[objectKey]) {
+            return;
+        }
+        return connectedAvatarUserProfiles[objectKey].name;
+    }
+    
+    function getMyAvatarNodeInfo() {
+        return utils.getAvatarNodeInfo(myAvatarObject);
     }
     
     function getLinkCanvasInfo() {
@@ -768,7 +791,8 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
-    exports.getAvatarNameFromSessionId = getAvatarNameFromSessionId;
+    exports.getAvatarObjectKeyFromSessionId = getAvatarObjectKeyFromSessionId;
+    exports.getAvatarNameFromObjectKey = getAvatarNameFromObjectKey;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.writeMyLockOnMode = writeMyLockOnMode;
@@ -779,5 +803,6 @@ createNameSpace("realityEditor.avatar");
     exports.getConnectedAvatarList = () => { return connectedAvatarUserProfiles; };
     exports.setLinkCanvasNeedsClear = (value) => { linkCanvasNeedsClear = value; };
     exports.getMyAvatarId = () => {  return myAvatarId; };
+    exports.getMyAvatarNodeInfo = getMyAvatarNodeInfo;
 
 }(realityEditor.avatar));
