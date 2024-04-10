@@ -8,7 +8,7 @@ import {MotionStudyColors} from "./MotionStudyColors.js";
 
 /** Calculations assume human poses defined in Y-up CS and in milimeter units. */
 
-/** Default configuration of thresholds for REBA calculation. */
+/** Default configuration of thresholds for REBA calculation and visualisation. */
 const REBA_CONFIG_DEFAULT = Object.freeze({
     neckFrontBendAngleThresholds: [5, 20],  // degrees
     neckTwistAngleThresholds: [20],  // degrees
@@ -22,7 +22,20 @@ const REBA_CONFIG_DEFAULT = Object.freeze({
     wristFrontBendAngleThresholds: [15], // degrees
     wristSideBendAngleThresholds: [30], // degrees
     wristTwistAngleThresholds: [120],  // degrees
-    footHeightDifferenceThresholds: [100] // mm
+    footHeightDifferenceThresholds: [100], // mm
+
+    // Definitions of score ranges for different levels of strain for each body part.
+    // Minimum score is always 1 and maximum score is the last entry in the threshold list
+    // Example with 3 levels of strain: 1 (low), 2-3 (medium), 4-5 (high)
+    //    trunkScoreLevels: [2, 4, 6]   
+    // This is used for assigning colours for visualising levels of REBA scores.
+    neckScoreLevels: [2, 3, 4],
+    trunkScoreLevels: [2, 4, 6], 
+    legScoreLevels: [2, 3, 5], 
+    upperArmScoreLevels: [3, 5, 7], 
+    lowerArmScoreLevels: [2, 3],
+    wristScoreLevels: [2, 3, 4],
+    overallScoreLevels: [4, 8, 13]
 });
 
 /** Modifiable configuration of thresholds for REBA calculation. */
@@ -101,11 +114,11 @@ function neckReba(rebaData) {
 
     //console.log(`Neck: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
     
-    neckScore = clamp(neckScore, 1, 3);
+    neckScore = clamp(neckScore, 1, REBA_CONFIG.neckScoreLevels[2] - 1);
 
-    if (neckScore === 1 ) {
+    if (neckScore < REBA_CONFIG.neckScoreLevels[0]) {
         neckColor = MotionStudyColors.green;
-    } else if (neckScore === 2) {
+    } else if (neckScore < REBA_CONFIG.neckScoreLevels[1]) {
         neckColor = MotionStudyColors.yellow;
     } else {
         neckColor = MotionStudyColors.red;
@@ -189,11 +202,11 @@ function trunkReba(rebaData) {
 
     // console.log(`Trunk: upMisalignmentAngle=${upMisalignmentAngle.toFixed(0)}deg;  twistRightAngle=${twistRightAngle.toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
     
-    trunkScore = clamp(trunkScore, 1, 5);
+    trunkScore = clamp(trunkScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
 
-    if (trunkScore === 1 ) {
+    if (trunkScore < REBA_CONFIG.trunkScoreLevels[0]) {
         trunkColor = MotionStudyColors.green;
-    } else if (trunkScore < 4) {
+    } else if (trunkScore < REBA_CONFIG.trunkScoreLevels[1]) {
         trunkColor = MotionStudyColors.yellow;
     } else {
         trunkColor = MotionStudyColors.red;
@@ -270,10 +283,10 @@ function legsReba(rebaData) {
         
         //console.log(`Left leg: leftKneeUpAngle=${leftKneeUpAngle.toFixed(0)}; leftLegScore=${leftLegScore}`);        
         
-        leftLegScore = clamp(leftLegScore, 1, 4);
-        if (leftLegScore === 1) {
+        leftLegScore = clamp(leftLegScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
+        if (leftLegScore < REBA_CONFIG.legScoreLevels[0]) {
             leftLegColor = MotionStudyColors.green;
-        } else if (leftLegScore === 2) {
+        } else if (leftLegScore < REBA_CONFIG.legScoreLevels[1]) {
             leftLegColor = MotionStudyColors.yellow;
         } else {
             leftLegColor = MotionStudyColors.red;
@@ -298,10 +311,10 @@ function legsReba(rebaData) {
 
         //console.log(`Right leg: rightKneeUpAngle=${rightKneeUpAngle.toFixed(0)}; rightLegScore=${rightLegScore}`);   
 
-        rightLegScore = clamp(rightLegScore, 1, 4);
-        if (rightLegScore === 1) {
+        rightLegScore = clamp(rightLegScore, 1, REBA_CONFIG.legScoreLevels[2] - 1);
+        if (rightLegScore < REBA_CONFIG.legScoreLevels[0]) {
             rightLegColor = MotionStudyColors.green;
-        } else if (rightLegScore === 2) {
+        } else if (rightLegScore < REBA_CONFIG.legScoreLevels[1]) {
             rightLegColor = MotionStudyColors.yellow;
         } else {
             rightLegColor = MotionStudyColors.red;
@@ -409,10 +422,10 @@ function upperArmReba(rebaData) {
 
         //console.log(`Left upper arm: leftArmAngle=${leftArmAngle.toFixed(0)}; leftShoulderAngle: ${leftShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; leftArmScore=${leftArmScore}`);
 
-        leftArmScore = clamp(leftArmScore, 1, 6);
-        if (leftArmScore < 3) {
+        leftArmScore = clamp(leftArmScore, 1, REBA_CONFIG.upperArmScoreLevels[2] - 1);
+        if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
             leftArmColor = MotionStudyColors.green;
-        } else if (leftArmScore < 5) {
+        } else if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
             leftArmColor = MotionStudyColors.yellow;
         } else {
             leftArmColor = MotionStudyColors.red;
@@ -464,10 +477,10 @@ function upperArmReba(rebaData) {
 
         //console.log(`Right upper arm: rightArmAngle=${rightArmAngle.toFixed(0)}; rightShoulderAngle: ${rightShoulderAngle.toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; rightArmScore=${rightArmScore}`);
         
-        rightArmScore = clamp(rightArmScore, 1, 6);
-        if (rightArmScore < 3) {
+        rightArmScore = clamp(rightArmScore, 1, REBA_CONFIG.upperArmScoreLevels[2] - 1);
+        if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
             rightArmColor = MotionStudyColors.green;
-        } else if (rightArmScore < 5) {
+        } else if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
             rightArmColor = MotionStudyColors.yellow;
         } else {
             rightArmColor = MotionStudyColors.red;
@@ -516,8 +529,8 @@ function lowerArmReba(rebaData) {
 
         //console.log(`Left lower arm: leftElbowAngle=${leftElbowAngle.toFixed(0)}; leftArmScore=${leftArmScore}`);
     
-        leftArmScore = clamp(leftArmScore, 1, 2);
-        if (leftArmScore === 1) {
+        leftArmScore = clamp(leftArmScore, 1, REBA_CONFIG.lowerArmScoreLevels[1] - 1);
+        if (leftArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
             leftArmColor = MotionStudyColors.green;
         } else {
             leftArmColor = MotionStudyColors.yellow;
@@ -542,8 +555,8 @@ function lowerArmReba(rebaData) {
 
         //console.log(`Right lower arm: rightElbowAngle=${rightElbowAngle.toFixed(0)}; rightArmScore=${rightArmScore}`);
 
-        rightArmScore = clamp(rightArmScore, 1, 2);
-        if (rightArmScore === 1) {
+        rightArmScore = clamp(rightArmScore, 1, REBA_CONFIG.lowerArmScoreLevels[1] - 1);
+        if (rightArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
             rightArmColor = MotionStudyColors.green;
         } else {
             rightArmColor = MotionStudyColors.yellow;
@@ -620,11 +633,11 @@ function wristReba(rebaData) {
 
         //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
-        leftWristScore = clamp(leftWristScore, 1, 3);
+        leftWristScore = clamp(leftWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
-        if (leftWristScore === 1) {
+        if (leftWristScore < REBA_CONFIG.wristScoreLevels[0]) {
             leftWristColor = MotionStudyColors.green;
-        } else if (leftWristScore == 2) {
+        } else if (leftWristScore < REBA_CONFIG.wristScoreLevels[1]) {
             leftWristColor = MotionStudyColors.yellow;
         } else {
             leftWristColor = MotionStudyColors.red;
@@ -673,11 +686,11 @@ function wristReba(rebaData) {
 
         //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
-        rightWristScore = clamp(rightWristScore, 1, 3);
+        rightWristScore = clamp(rightWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
-        if (rightWristScore === 1) {
+        if (rightWristScore < REBA_CONFIG.wristScoreLevels[0]) {
             rightWristColor = MotionStudyColors.green;
-        } else if (rightWristScore == 2) {
+        } else if (rightWristScore < REBA_CONFIG.wristScoreLevels[1]) {
             rightWristColor = MotionStudyColors.yellow;
         } else {
             rightWristColor = MotionStudyColors.red;
@@ -734,8 +747,8 @@ const startColor = MotionStudyColors.fade(MotionStudyColors.green);
 const endColor = MotionStudyColors.fade(MotionStudyColors.red);
 
 function getOverallRebaColor(rebaScore) {
-    const lowCutoff = 4;
-    const highCutoff = 8;
+    const lowCutoff = REBA_CONFIG.overallScoreLevels[0];
+    const highCutoff = REBA_CONFIG.overallScoreLevels[1];
     // console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`); // TODO: experiment with cutoffs
     const rebaFrac = (clamp(rebaScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
     return startColor.clone().lerpHSL(endColor, rebaFrac);
