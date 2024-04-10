@@ -143,14 +143,6 @@ function updateJointsAndBones(poseRenderInstance, poseObject, timestamp) {
     poseRenderInstance.renderer.markNeedsUpdate();
 
     liveHumanPoseAnalyzer.poseUpdated(pose, false);
-    if (realityEditor.motionStudy) {
-        let timeline = realityEditor.motionStudy.getActiveTimeline();
-        if (timeline) {
-            timeline.appendPose({
-                time: timestamp,
-            });
-        }
-    }
 }
 
 /**
