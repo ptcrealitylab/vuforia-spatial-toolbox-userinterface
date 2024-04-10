@@ -34,6 +34,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
 
+    // pointerSnapMode only affects non-desktop devices:
+    // snaps the cursor to the pointer position if true, resets to center of viewport if false
+    let pointerSnapMode = false;
+
     let clock = new THREE.Clock();
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
@@ -360,7 +364,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
         
-        document.addEventListener('pointerdown', () => {
+        document.addEventListener('pointerdown', (e) => {
+            if (!isFlying) {
+                screenX = e.pageX;
+                screenY = e.pageY;
+            }
             // make the spatial cursor inner white circle pulse
             innerRadiusSpeed += 0.15;
         })
@@ -535,7 +543,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             screenY = lastScreenY;
         });
 
-        document.addEventListener('mousemove', (e) => {
+        document.addEventListener('pointermove', (e) => {
             if (!isFlying) {
                 screenX = e.pageX;
                 screenY = e.pageY;
@@ -643,7 +651,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         try {
             // for iPhone usage, keep spatial cursor at the center of the screen
-            if (!realityEditor.device.environment.isDesktop()) {
+            if (!realityEditor.device.environment.isDesktop() && !pointerSnapMode) {
                 screenX = window.innerWidth / 2;
                 screenY = window.innerHeight / 2;
             }
@@ -917,6 +925,15 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gsActive = active;
     }
 
+    /**
+     * Pointer Snap Mode makes the spatial cursor snap to the pointer position,
+     * even on AR devices where the cursor otherwise snaps to the middle of the screen
+     * @param {boolean} active
+     */
+    function updatePointerSnapMode(active) {
+        pointerSnapMode = active;
+    }
+
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
         let worldIntersectPoint = null;
@@ -1119,4 +1136,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.setCursorPosition = setCursorPosition;
     exports.setCursorStyle = setCursorStyle;
     exports.isCursorOnValidPosition = isCursorOnValidPosition;
+    exports.updatePointerSnapMode = updatePointerSnapMode;
 }(realityEditor.spatialCursor));

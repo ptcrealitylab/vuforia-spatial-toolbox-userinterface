@@ -191,9 +191,12 @@ class VideoPlayer extends Followable {
 
         // then the VideoPlayer can initialize as usual...
         this.id = id;
-        this.urls = window.location.origin.includes('toolboxedge.net') ? urls : {
-            color: urls.color.replace('https://toolboxedge.net', `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit by proxying video
-            rvl: urls.rvl.replace('https://toolboxedge.net', `${window.location.origin}/proxy`) // Avoid CORS issues on iOS WebKit by proxying video
+        const onHostedCloudProxy = window.location.origin.includes('toolboxedge.net') ||
+            window.location.origin.includes('spatial.ptc.io');
+        // If not on cloud proxy, use local proxy to download without cross-origin issues
+        this.urls = onHostedCloudProxy ? urls : {
+            color: urls.color.replace(/https:\/\/(toolboxedge\.net|spatial\.ptc\.io)/, `${window.location.origin}/proxy`), // Avoid CORS issues on iOS WebKit by proxying video
+            rvl: urls.rvl.replace(/https:\/\/(toolboxedge\.net|spatial\.ptc\.io)/, `${window.location.origin}/proxy`) // Avoid CORS issues on iOS WebKit by proxying video
         }; // TODO: test without rvl proxy, don't think it is needed
         this.frameKey = frameKey;
         this.state = VideoPlayerStates.LOADING;

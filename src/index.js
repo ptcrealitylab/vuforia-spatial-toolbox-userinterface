@@ -113,7 +113,8 @@ window.realityEditor = {
         },
         settings: { // todo: combine gui/settings/index.js with gui/settings.js
             logo: {},
-            states: {}
+            states: {},
+            setupSettingsMenu: {}
         },
         buttons: {},
         dropdown: {},
