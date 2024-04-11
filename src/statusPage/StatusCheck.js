@@ -1,4 +1,4 @@
-let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
+let getDesktopLinkData = ToolSocket.URL_SCHEMA.parseRoute(window.location.pathname);
 const isCloud = !!getDesktopLinkData;
 
 function _getBasePath() {
@@ -45,7 +45,7 @@ function checkMessageRate(socket, timeoutSeconds) {
         let messagesIn = 0;
         let messagesOut = 0;
 
-        socket.addEventListener('message', () => {
+        socket.addEventListener('rawMessage', () => {
             messagesIn++;
         });
 
@@ -273,7 +273,7 @@ const checklist = new Checklist([
             return Promise.reject(`World object ToolSocket (realityEditor.network.realtime.getServerSocketForObject(${worldObject.objectId})) is undefined`);
         }
         return withTimeout(new Promise((resolve) => {
-            socket.socket.on('io', () => {
+            socket.on('rawMessage', () => {
                 resolve(`Received io message via ToolSocket`);
             });
         }), timeoutSeconds * 1000, `Did not receive io message within ${timeoutSeconds} second timeout\nsocket\n${JSON.stringify(socket)}`);
@@ -288,7 +288,7 @@ const checklist = new Checklist([
         if (!socket) {
             return Promise.reject(`World object ToolSocket (realityEditor.network.realtime.getServerSocketForObject(${worldObject.objectId})) is undefined`);
         }
-        return checkMessageRate(socket.socket.socket, timeoutSeconds);
+        return checkMessageRate(socket, timeoutSeconds);
     }),
     new Check('Desktop ToolSocket connection', () => {
         if (!realityEditor.device.environment.shouldCreateDesktopSocket()) {
@@ -313,14 +313,8 @@ const checklist = new Checklist([
         }
         const timeoutSeconds = 10;
         return withTimeout(new Promise(resolve => {
-            socket.socket.socket.addEventListener('message', msg => {
-                // TODO: Make this better
-                // Stupid hack
-                // When connected via cloud proxy, cloud proxy bounces back ping messages with pong, ignore those, we're looking for lack of /udp/beat, /udp/action messages, which come from edge server
-                const msgData = JSON.parse(msg.data);
-                if (msgData.r === 'action/ping') {
-                    return;
-                }
+            socket.on('io', () => {
+                // These messages (udp/beat, udpMessage, e.g.) are sent only by edge server, not cloud proxy, allowing us to check if that connection is still active
                 resolve(`Received message via ToolSocket`);
             });
         }), timeoutSeconds * 1000, `Did not receive any messages via ToolSocket within ${timeoutSeconds} second timeout\nsocket\n${JSON.stringify(socket)}`);
@@ -364,7 +358,7 @@ const checklist = new Checklist([
             return Promise.reject('Desktop ToolSocket (realityEditor.network.realtime.getDesktopSocket()) is undefined');
         }
 
-        return checkMessageRate(socket.socket.socket, timeoutSeconds);
+        return checkMessageRate(socket, timeoutSeconds);
     }),
     new Check('Cloud ToolSocket connection', () => {
         if (!isCloud) {
@@ -406,7 +400,7 @@ const checklist = new Checklist([
             return Promise.reject('Cloud ToolSocket (realityEditor.cloud.socket) is undefined');
         }
         const timeoutSeconds = 5;
-        return checkMessageRate(socket.socket, timeoutSeconds);
+        return checkMessageRate(socket, timeoutSeconds);
     })
 ]);
 
