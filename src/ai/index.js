@@ -220,8 +220,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         adjustTextAreaSize();
         setupEventListeners();
         setupSystemEventListeners();
-        
-        showDialogue();
     }
     
     function authorSetToString(authorSet) {
