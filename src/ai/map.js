@@ -88,6 +88,7 @@ createNameSpace("realityEditor.ai.map");
             currentDiv = e.target;
             if (currentDiv.classList.contains('ai-highlight')) {
                 if (currentDiv.dataset.id.match(avatarRegex)) {
+                    // todo Steve: make a line link to the corresponding avatar icon? Or turn camera to the avatar cube?
                 } else if (currentDiv.dataset.id.match(toolRegex)) {
                     let rect = currentDiv.getBoundingClientRect();
                     setFrameHighlight(currentDiv.dataset.id, true, {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2});
