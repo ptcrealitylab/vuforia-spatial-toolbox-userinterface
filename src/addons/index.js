@@ -18,7 +18,7 @@ createNameSpace("realityEditor.addons");
     }
 
     // Fetch the list of all add-ons to inject
-    let allScriptsLoaded = fetch('/addons/sources').then((res) => {
+    let allScriptsLoaded = fetch('addons/sources').then((res) => {
         return res.json();
     }).then((addonSources) => {
         // Inject all scripts, counting on them to load asynchronously and add
@@ -38,12 +38,15 @@ createNameSpace("realityEditor.addons");
     });
 
     // Also fetch CSS addons
-    fetch('/addons/styles').then((res) => {
+    fetch('addons/styles').then((res) => {
         return res.json();
     }).then((addonSources) => {
         // Inject all stylesheets
-        for (const source of addonSources) {
+        for (let source of addonSources) {
             const styleNode = document.createElement('link');
+            if (source.startsWith('/')) {
+              source = '.' + source;
+            }
             styleNode.rel = 'stylesheet';
             styleNode.type = 'text/css';
             styleNode.href = source;
@@ -53,7 +56,7 @@ createNameSpace("realityEditor.addons");
 
     // Also fetch image resources and store references to them at the correct path
     let resourcePaths = [];
-    fetch('/addons/resources').then((res) => {
+    fetch('addons/resources').then((res) => {
         return res.json();
     }).then((addonSources) => {
         resourcePaths = addonSources;
