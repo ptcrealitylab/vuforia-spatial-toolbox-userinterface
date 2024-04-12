@@ -589,6 +589,9 @@ createNameSpace("realityEditor.avatar");
             myAvatarTouchState = touchState;
         }
 
+        // snaps the spatial cursor to the beam endpoint on all devices until you stop the beam
+        realityEditor.spatialCursor.updatePointerSnapMode(true);
+
         debugDataSent();
     }
 
@@ -613,6 +616,9 @@ createNameSpace("realityEditor.avatar");
             // stop showing your own beam
             myAvatarTouchState = touchState;
         }
+
+        // ensure that on non-desktop devices, the spatial cursor position resets to center of view
+        realityEditor.spatialCursor.updatePointerSnapMode(false);
 
         debugDataSent();
     }

@@ -84,7 +84,7 @@ realityEditor.cloud.connectToCloud = function (){
 }.bind(realityEditor.cloud);
 
 // load remote interface via dekstop interface
-let getDesktopLinkData = io.parseUrl(window.location.pathname, realityEditor.network.desktopURLSchema);
+let getDesktopLinkData = realityEditor.network.desktopURLSchema.parseRoute(window.location.pathname);
 if(getDesktopLinkData) {
     if(getDesktopLinkData.n) {
         realityEditor.network.state.proxyProtocol = window.location.protocol.slice(0, -1); // Need to remove the colon

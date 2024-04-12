@@ -321,7 +321,7 @@ export function createPointCloudMaterial(texture, textureDepth, shaderMode, bord
         vertexShader,
         fragmentShader,
         // blending: THREE.AdditiveBlending,
-        depthTest: shaderMode !== ShaderMode.FIRST_PERSON,
+        depthTest: true,
         // depthWrite: false,
         transparent: true
     });
