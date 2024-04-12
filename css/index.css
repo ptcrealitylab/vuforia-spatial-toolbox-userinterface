@@ -2466,3 +2466,15 @@ Logic Interface CSS
     width: 100%;
     height: 100%;
 }
+
+#temp-ui-container {
+    position: absolute;
+    z-index: 1000;
+    transform: translateZ(1000px);
+    width: 330px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 20px;
+    top: 130px;
+    left: 20px;
+    padding: 10px;
+}

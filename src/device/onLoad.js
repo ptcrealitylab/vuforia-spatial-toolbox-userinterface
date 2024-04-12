@@ -49,6 +49,8 @@
 
 createNameSpace("realityEditor.device");
 
+import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
+
 /**
  * @fileOverview realityEditor.device.onLoad.js
  * Sets the application's window.onload function to trigger this init method, which sets up the GUI and networking.
@@ -165,6 +167,13 @@ realityEditor.device.onload = async function () {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }
     }
+
+    // TODO: figure out better place to initialize and make use of the apiOrchestrator
+    let apiOrchestrator = new IframeAPIOrchestrator();
+    console.log(apiOrchestrator);
+    setTimeout(() => {
+        console.log(apiOrchestrator.getSpatialServiceRegistry());
+    }, 5000);
 
     realityEditor.app.promises.getDeviceReady().then(deviceName => {
         globalStates.device = deviceName;
