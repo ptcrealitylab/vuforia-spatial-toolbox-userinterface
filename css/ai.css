@@ -1,7 +1,3 @@
-body {
-    margin: 0;
-}
-
 #ai-chat-tool-container {
     position: fixed;
     left: 20px;
@@ -10,7 +6,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    /*width: calc(100vw - 20px - 20px);*/
     width: calc(max(100px, min(400px, 100%)) - 20px - 20px);
     max-height: calc(80% - 20px - 20px);
     overflow: scroll;
@@ -31,7 +26,6 @@ body {
     from {
         transform: translateX(0);
     }
-    /*to { transform: translateX( calc(-(max(100px, min(400px, 100%)) - 20px - 20px - 20px - 10px)) ); }*/
     to {
         transform: translateX( calc(-110%) );
     }
@@ -40,7 +34,6 @@ body {
     from {
         transform: translateX( calc(-110%) );
     }
-    /*from { transform: translateX( calc(-(max(100px, min(400px, 100%)) - 20px - 20px - 20px - 10px)) ); }*/
     to {
         transform: translateX(0);
     }
@@ -53,7 +46,6 @@ body {
     margin: 5px 0 5px 0;
 
     width: max(100px, min(400px, 100%));
-    /*max-height: calc(80% - 20px - 20px);*/
     overflow: scroll;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -78,22 +70,18 @@ body {
 .ai-chat-tool-dialogue-my {
     position: relative;
     align-self: flex-end;
-    /*background: rgba(0, 0, 0, 0.5);*/
     color: white;
 }
 .ai-chat-tool-dialogue-my-light {
-    /*background: rgba(64,170,29,0.9);*/
     color: white;
 }
 
 .ai-chat-tool-dialogue-ai {
     position: relative;
     align-self: flex-start;
-    /*background: rgba(0, 0, 0, 0.5);*/
     color: white;
 }
 .ai-chat-tool-dialogue-ai-light {
-    /*background: rgba(233, 233, 235, 0.9);*/
     color: black;
 }
 
@@ -129,7 +117,6 @@ body {
 }
 
 .ai-highlight {
-    /*background-color: rgba(0, 0, 0, 0.5);*/
     color: darkturquoise;
     cursor: default;
     transition: all 0.1s;
@@ -137,6 +124,4 @@ body {
 
 .ai-highlight:hover {
     cursor: pointer;
-    /*background-color: white;*/
-    /*color: black;*/
 }

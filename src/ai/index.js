@@ -274,8 +274,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                     let endTime = regionCards[i].endTime;
                     let motionStudy = realityEditor.motionStudy.getMotionStudyByFrame(frameId);
                     if (motionStudy === undefined) continue;
-                    let _cloneDataStart = motionStudy.humanPoseAnalyzer.getDataByTimestamp(startTime);
-                    let _cloneDataEnd = motionStudy.humanPoseAnalyzer.getDataByTimestamp(endTime);
+                    let _cloneDataStart = motionStudy.humanPoseAnalyzer.getClonesByTimestamp(startTime);
+                    let _cloneDataEnd = motionStudy.humanPoseAnalyzer.getClonesByTimestamp(endTime);
                 }
             }
         }
@@ -380,31 +380,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
         
         // todo Steve: below 4 doesn't work
-        searchTextArea.addEventListener('mousedown', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('mouseup', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('mousemove', (e) => {e.stopPropagation();});
+        searchTextArea.addEventListener('pointerdown', (e) => {e.stopPropagation();});
+        searchTextArea.addEventListener('pointerup', (e) => {e.stopPropagation();});
+        searchTextArea.addEventListener('pointermove', (e) => {e.stopPropagation();});
         searchTextArea.addEventListener('contextmenu', (e) => {
             e.stopPropagation();
         })
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'g' || e.key === 'G') {
-                // console.log('%c G clicked', 'color: red');
-            }
-        })
-
-        searchTextArea.addEventListener('focus', () => {
-            // console.log('focus');
-            // realityEditor.device.keyboardEvents.openKeyboard();
-        });
-
-        searchTextArea.addEventListener('blur', () => {
-            // console.log('blur');
-            // realityEditor.device.keyboardEvents.closeKeyboard();
-        });
 
         searchTextArea.addEventListener('keydown', (e) => {
-            // todo Steve: bug: press g/G still focuses the camera to target. Is it b/c remote operator event listener is added later than searchTextBar listener? Figure out how the orders & layers work
             e.stopPropagation();
             adjustTextAreaSize();
             

@@ -2422,7 +2422,7 @@ realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = f
     let worldId = realityEditor.worldObjects.getBestWorldObject();
     let ip = worldId.ip;
     let port = realityEditor.network.getPort(worldId);
-    let route = '/ai-start';
+    let route = '/ai/init';
 
     this.postData(realityEditor.network.getURL(ip, port, route),
         {
@@ -2460,7 +2460,7 @@ realityEditor.network.postQuestionToAI = function(conversation, extra) {
     let worldId = realityEditor.worldObjects.getBestWorldObject();
     let ip = worldId.ip;
     let port = realityEditor.network.getPort(worldId);
-    let route = '/ai';
+    let route = '/ai/question';
     
     this.postData(realityEditor.network.getURL(ip, port, route), 
         {
