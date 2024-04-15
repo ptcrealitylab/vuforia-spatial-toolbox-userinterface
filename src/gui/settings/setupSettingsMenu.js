@@ -117,7 +117,10 @@ createNameSpace('realityEditor.gui.settings.setupSettingsMenu');
                         enablePoseTrackingTimeout = setTimeout(enablePoseTracking, 100);
                         return;
                     }
-                    realityEditor.app.appFunctionCall("enablePoseTracking", {ip: bestWorldObject.ip});
+                    realityEditor.app.appFunctionCall("enablePoseTracking", {
+                        ip: bestWorldObject.ip,
+                        port: bestWorldObject.port.toString(),
+                    });
 
                     let recordButton = document.getElementById('recordPointCloudsButton');
                     if (!recordButton) {
