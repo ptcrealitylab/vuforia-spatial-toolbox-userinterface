@@ -654,6 +654,17 @@ realityEditor.gui.ar.utilities.isIdentityMatrix = function(matrix, precision) {
 };
 
 /**
+ * Checks if 2 matrices are equal strictly, without any rounding
+ * @param {Array.<number>} m1
+ * @param {Array.<number>} m2
+ * @return {boolean}
+ */
+realityEditor.gui.ar.utilities.isEqualStrict = function(m1, m2) {
+    if (m1.length !== m2.length) return false;
+    return m1.every((val, index) => val === m2[index]);
+}
+
+/**
  * Updates the averageScale property of the object by averaging the scale properties of all its frames and nodes
  * @todo move to another file
  * @param object
