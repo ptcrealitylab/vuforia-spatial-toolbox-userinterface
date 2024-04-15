@@ -257,14 +257,12 @@ createNameSpace("realityEditor.avatar.draw");
         // for laser beams coming from other devices, draw to the worldPosition
         // for laser beams from this device, draw to the (screenX, screenY) where the user touches
         let endScreenXY = null;
-        let ratio = 1;
+        let lineEndThicknessRatio = 1;
         if (endWorldPosition) {
             let camWorldPos = new THREE.Vector3();
             realityEditor.gui.threejsScene.getInternals().getCamera().getWorldPosition(camWorldPos);
-            let linkStartZ = camWorldPos;
-            let linkEndZ = endWorldPosition;
-            let linkDistance = linkStartZ.sub(linkEndZ).length();
-            ratio = quadraticRemap(linkDistance, 0, 20000, 0.05, 1);
+            let linkDistance = camWorldPos.sub(endWorldPosition).length();
+            lineEndThicknessRatio = quadraticRemap(linkDistance, 0, 20000, 0.1, 1);
             endScreenXY = realityEditor.gui.threejsScene.getScreenXY(endWorldPosition);
         } else if (screenX && screenY) {
             endScreenXY = {
@@ -272,7 +270,7 @@ createNameSpace("realityEditor.avatar.draw");
                 y: screenY
             };
             let linkDistance = Math.sqrt(Math.pow((screenX - linkStartPos[0]), 2) + Math.pow((screenY - linkStartPos[1]), 2));
-            ratio = quadraticRemap(linkDistance, 0, 10000, 0.05, 1);
+            lineEndThicknessRatio = quadraticRemap(linkDistance, 0, 10000, 0.1, 1);
         } else {
             return;
         }
@@ -285,11 +283,12 @@ createNameSpace("realityEditor.avatar.draw");
             linkObjects[objectKey] = { ballAnimationCount: 0 };
         }
 
-        if (realityEditor.avatar.isDesktop()) {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 2.5, 2.5 * ratio, linkObjects[objectKey], timeCorrection, lightColorArr, colorArr, 1, 1, 1);
-        } else {
-            realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, 7.5, 7.5 * ratio, linkObjects[objectKey], timeCorrection, lightColorArr, colorArr, 1, 1, 1);
-        }
+        // for unknown reason, using the default line width looks much thinner in AR mode and needs to be compensated for
+        let arModeScaleFactor = 5.0;
+        let lineWeight = 1.5 * (realityEditor.device.environment.isARMode() ? arModeScaleFactor : 1.0);
+        // thinner lines outside of AR mode are a little overwhelming if they're too fast
+        let lineSpeed = realityEditor.device.environment.isARMode() ? 1.0 : 0.5;
+        realityEditor.gui.ar.lines.drawLine(linkCanvasInfo.ctx, linkStartPos, linkEndPos, lineWeight, lineWeight * lineEndThicknessRatio, linkObjects[objectKey], timeCorrection, lightColorArr, colorArr, lineSpeed, 1, 1);
     }
     
     function HSLStrToRGBArr(hslStr) {

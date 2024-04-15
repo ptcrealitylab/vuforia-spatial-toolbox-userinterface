@@ -335,7 +335,7 @@ createNameSpace("realityEditor.device.videoRecording");
     }
     
     function onStopVirtualizerRecording(recordingId, deviceId) {
-        const baseUrl = `https://toolboxedge.net/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
+        const baseUrl = `https://spatial.ptc.io/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
         privateState.virtualizerCallback(baseUrl, recordingId, deviceId);
     }
 

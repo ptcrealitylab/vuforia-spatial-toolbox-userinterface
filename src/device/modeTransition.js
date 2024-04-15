@@ -32,6 +32,11 @@ let prevMatrices = {
     function initService() {
         currentMode = getInitialMode();
 
+        // disables AR<>VR slider if not in the Toolbox AR app
+        if (!realityEditor.device.environment.isWithinToolboxApp()) {
+            return;
+        }
+
         // set up the pinch gesture to transition from AR to VR mode
         let pinchGestureRecognizer = new PinchGestureRecognizer();
 
@@ -143,6 +148,7 @@ let prevMatrices = {
 
     // the pinch gesture or the slider component can both trigger the transition using this
     function setTransitionPercent(percent) {
+        if (!realityEditor.device.environment.isWithinToolboxApp()) return;
         if (percent < 0.01) {
             switchToAR();
         } else {

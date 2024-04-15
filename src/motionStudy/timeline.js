@@ -51,7 +51,6 @@ export class Timeline {
         this.scrolled = false;
         container.appendChild(this.canvas);
 
-        this.poses = [];
         this.width = -1;
         this.displayRegion = null;
         this.height = boardHeight + boardStart + needlePad + minimapHeight;
@@ -126,7 +125,6 @@ export class Timeline {
     }
 
     reset() {
-        this.poses = [];
         this.displayRegion = null;
         this.highlightRegion = null;
         this.highlightStartTime = -1;
@@ -334,79 +332,128 @@ export class Timeline {
         return x / this.pixelsPerMs + this.timeMin;
     }
 
+    /**
+     * @param {number} time
+     * @return {boolean}
+     */
     isHighlight(time) {
         if (!this.highlightRegion) {
-            return false;
+            return true;
         }
         return time >= this.highlightRegion.startTime &&
             time <= this.highlightRegion.endTime;
     }
-    
+
     rowIndexToRowY(index) {
         return boardStart + rowPad + (rowHeight + rowPad) * index;
     }
 
     drawPoses() {
-        if (this.poses.length < 1) {
-            return;
+        let hpa = realityEditor.motionStudy.getActiveHumanPoseAnalyzer();
+        for (let spaghetti of Object.values(hpa.historyLines[hpa.activeLens.name].all)) {
+            this.drawSpaghettiPoses(spaghetti.points);
         }
+        this.rowIndex += 1;
+    }
 
-        let lastPoseTime = this.poses[0].time;
+    /**
+     * Convert an rgba color array to a css color string
+     * @param {number[4]} rgba
+     * @return {string}
+     */
+    rgbaToString(rgba) {
+        return `rgba(${Math.round(rgba[0])}, ${Math.round(rgba[1])}, ${Math.round(rgba[2])}, ${Math.round(rgba[3])})`;
+    }
+
+    /**
+     * Approximate equality between two rgba color arrays
+     * @param {number[4]} rgba1
+     * @param {number[4]} rgba2
+     * @return boolean
+     */
+    rgbaEquals(rgba1, rgba2) {
+        for (let i = 0; i < 4; i++) {
+            if (Math.round(rgba1[i]) !== Math.round(rgba2[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Dim, brighten, or keep an rgba color array the same based on whether
+     * `time` is highlighted
+     * @param {number} time
+     * @param {number[4]} rgba
+     * @return {number[4]}
+     */
+    recolorPoseForHighlight(time, rgba) {
+        if (!this.highlightRegion) {
+            return rgba;
+        }
+        const dim = 0.6;
+        const bri = 1.3;
+        if (this.isHighlight(time)) {
+            return [
+                Math.min(rgba[0] * bri, 255),
+                Math.min(rgba[1] * bri, 255),
+                Math.min(rgba[2] * bri, 255),
+                Math.min(rgba[3] * bri, 255),
+            ];
+        }
+        return [
+            rgba[0] * dim,
+            rgba[1] * dim,
+            rgba[2] * dim,
+            rgba[3] * dim,
+        ];
+    }
+
+    drawSpaghettiPoses(poses) {
+        let lastPose = poses[0];
+        let lastPoseTime = lastPose.timestamp;
         let startSectionTime = lastPoseTime;
         const maxPoseDelayLenience = 500;
 
         const rowY = this.rowIndexToRowY(this.rowIndex);
-        this.rowIndex += 1;
 
         const timeMax = this.timeMin + this.widthMs;
 
-        let baseFill = 'hsl(120, 80%, 50%)';
-        let baseFretFill = 'hsl(120, 100%, 66%)';
-        let highlightFill = 'hsl(60, 100%, 50%)';
-        let highlightFretFill = 'hsl(60, 100%, 66%)';
-
-        let drawFrets = false && this.pixelsPerMs * 100 > 5;
-
-        if (this.highlightRegion) {
-            baseFill = 'hsl(120, 50%, 25%)';
-        }
-
-        let highlight = this.isHighlight(lastPoseTime);
-        for (const pose of this.poses) {
-            if (pose.time < this.timeMin) {
-                startSectionTime = pose.time;
-                lastPoseTime = pose.time;
+        for (const pose of poses) {
+            if (pose.timestamp < this.timeMin) {
+                startSectionTime = pose.timestamp;
+                lastPose = pose;
+                lastPoseTime = lastPose.timestamp;
                 continue;
             }
-            if (pose.time > this.timeMin + this.widthMs) {
+            if (pose.timestamp > this.timeMin + this.widthMs) {
                 break;
             }
-            const newHighlight = this.isHighlight(pose.time);
-            const isHighlightSwap = highlight !== newHighlight;
-            const isGap = pose.time - lastPoseTime > maxPoseDelayLenience;
-            if (!isGap &&
-                !isHighlightSwap) {
-                lastPoseTime = pose.time;
+            const isGap = pose.timestamp - lastPoseTime > maxPoseDelayLenience;
+            const poseColor = this.recolorPoseForHighlight(pose.timestamp, pose.originalColor);
+            const lastPoseColor = this.recolorPoseForHighlight(lastPose.timestamp, lastPose.originalColor);
+            const isColorSwap = !this.rgbaEquals(poseColor, lastPoseColor);
+            if (!isGap && !isColorSwap) {
+                lastPose = pose;
+                lastPoseTime = lastPose.timestamp;
                 continue;
             }
-            this.gfx.fillStyle =
-                highlight ?
-                highlightFill :
-                baseFill;
+            this.gfx.fillStyle = this.rgbaToString(lastPoseColor);
             // When swapping highlight allow the pose section to clip on the
             // right side at the highlight region border
-            let clippedRightTime = lastPoseTime;
-            if (isHighlightSwap && !isGap) {
-                if (newHighlight) {
-                    clippedRightTime = this.highlightRegion.startTime;
-                } else {
-                    clippedRightTime = this.highlightRegion.endTime;
+            if (isColorSwap && !isGap && this.highlightRegion) {
+                // Swap point is either due to the start or the end, whichever
+                // is between the two poses
+                if (lastPoseTime < this.highlightRegion.startTime &&
+                    this.highlightRegion.startTime < pose.timestamp) {
+                    lastPoseTime = this.highlightRegion.startTime;
                 }
-
-                lastPoseTime = clippedRightTime;
+                if (lastPoseTime < this.highlightRegion.endTime &&
+                    this.highlightRegion.endTime < pose.timestamp) {
+                    lastPoseTime = this.highlightRegion.endTime;
+                }
             }
 
-            highlight = newHighlight;
             const startX = this.timeToX(startSectionTime);
             const endX = this.timeToX(lastPoseTime);
             this.gfx.fillRect(
@@ -416,25 +463,23 @@ export class Timeline {
                 rowHeight
             );
 
-            if (isHighlightSwap && !isGap) {
-                // When swapping highlight extend the pose section
+            if (isColorSwap && !isGap) {
+                // When swapping color extend the pose section
                 // leftwards down to the highlight region border
                 startSectionTime = lastPoseTime;
             } else {
-                startSectionTime = pose.time;
+                startSectionTime = pose.timestamp;
             }
-            lastPoseTime = pose.time;
+            lastPose = pose;
+            lastPoseTime = pose.timestamp;
         }
 
         if (timeMax - lastPoseTime < maxPoseDelayLenience) {
             lastPoseTime = timeMax;
         }
 
-        highlight = this.isHighlight((startSectionTime + lastPoseTime) / 2);
-        this.gfx.fillStyle =
-            highlight ?
-            highlightFill :
-            baseFill;
+        const lastPoseColor = this.recolorPoseForHighlight(lastPose.timestamp, lastPose.originalColor);
+        this.gfx.fillStyle = this.rgbaToString(lastPoseColor);
         const startX = this.timeToX(startSectionTime);
         const endX = this.timeToX(lastPoseTime);
         this.gfx.fillRect(
@@ -443,29 +488,6 @@ export class Timeline {
             endX - startX,
             rowHeight
         );
-
-
-        if (drawFrets) {
-            for (const pose of this.poses) {
-                if (pose.time < this.timeMin) {
-                    continue;
-                }
-                if (pose.time > this.timeMin + this.widthMs) {
-                    break;
-                }
-                highlight = this.isHighlight(pose.time);
-                this.gfx.fillStyle = highlight ?
-                    highlightFretFill :
-                    baseFretFill;
-
-                this.gfx.beginPath();
-                const x = this.timeToX(pose.time);
-                const y = rowY + rowHeight / 2;
-                this.gfx.arc(x, y, rowHeight / 5, 0, 2 * Math.PI);
-                this.gfx.closePath();
-                this.gfx.fill();
-            }
-        }
     }
 
     drawPinnedRegionCards() {
@@ -716,40 +738,6 @@ export class Timeline {
         }
 
         event.stopPropagation();
-    }
-
-    appendPose(pose) {
-        if (this.poses.length > 0) {
-            const lastPose = this.poses.at(-1);
-            if (lastPose.time < pose.time) {
-                this.poses.push(pose);
-            } else {
-                let foundPlace = false;
-                // Not sorted, need to find where to put the new pose
-                // Note that linear search should outperform binary search here
-                // since we expect any disorder to be limited
-                for (let i = this.poses.length - 2; i >= 0; i--) {
-                    const otherPose = this.poses[i];
-                    if (otherPose.time > pose.time) {
-                        continue;
-                    }
-                    foundPlace = true;
-                    // Insert into list following otherPose
-                    this.poses.splice(i + 1, 0, pose);
-                    break;
-                }
-                // Insert at very beginning
-                if (!foundPlace) {
-                    this.poses.splice(0, 0, pose);
-                }
-            }
-        } else {
-            this.poses.push(pose);
-        }
-
-        if (this.timeMin < 0) {
-            this.timeMin = pose.time - this.widthMs / 2;
-        }
     }
 
     updatePointer(event) {
