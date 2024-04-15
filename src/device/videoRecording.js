@@ -309,6 +309,7 @@ createNameSpace("realityEditor.device.videoRecording");
             console.log(`Starting virtualizer recording on ${bestWorldObject.ip} with ${networkId} and ${networkSecret}`);
             realityEditor.app.appFunctionCall("enablePoseTracking", {
                 ip: bestWorldObject.ip,
+                port: bestWorldObject.port.toString(),
                 networkId,
                 networkSecret,
             });
