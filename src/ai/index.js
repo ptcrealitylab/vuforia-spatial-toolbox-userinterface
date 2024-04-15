@@ -4,8 +4,16 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 (function(exports) {
     
-    let question1 = '';
+    let aiPrompt = '';
     let categorize_prompt = 'Which one of the following items best describes my question? 1. "summary", 2. "debug", 3. "tools", 4. "pdf", 5. "tool content", 6. "not relevant". You can only return one of these items in string.';
+    let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
+
+    function registerCallback(functionName, callback) {
+        if (!callbackHandler) {
+            callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
+        }
+        callbackHandler.registerCallback(functionName, callback);
+    }
     
     function setupSystemEventListeners() {
         map.setupEventListeners();
@@ -13,10 +21,19 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
             onFrameAdded(params, avatarId);
         });
+        realityEditor.network.registerCallback('frameAdded', (params) => {
+            onFrameAdded(params, params.additionalInfo.avatarName);
+        });
         // todo Steve: add tool reposition event triggering for the user who added the tool themselves
+        realityEditor.network.registerCallback('frameRepositioned', (params) => {
+            onFrameRepositioned(params, params.additionalInfo.avatarName);
+        });
         realityEditor.device.registerCallback('vehicleDeleted', (params) => {
             let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
-            onVehicleDeleted(params, avatarId);
+            onFrameDeleted(params, avatarId);
+        });
+        realityEditor.network.registerCallback('vehicleDeleted', (params) => {
+            onFrameDeleted(params, params.additionalInfo.avatarName);
         });
     }
     
@@ -24,7 +41,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
         let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
         let frameDirection = cameraPosition.clone().sub(framePosition).normalize();
-        realityEditor.device.desktopCamera.focusVirtualCamera(framePosition, frameDirection);
+        callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
+            pos: {x: framePosition.x, y: framePosition.y, z: framePosition.z},
+            dir: {x: frameDirection.x, y: frameDirection.y, z: frameDirection.z}
+        });
     }
     
     function onFrameAdded(params, avatarId = 'Anonymous id') {
@@ -50,13 +70,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         // let newInfo = `${avatarId} added ${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         // let newInfo = `The user ${avatarName} id:${avatarId} added a tool ${frameType} id:${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
-        question1 += `\n${newInfo}`;
+        aiPrompt += `\n${newInfo}`;
     }
     
     function onFrameRepositioned(params, avatarId = 'Anonymous id') {
         let objectId = params.objectKey;
         let frameId = params.frameKey;
-        let frameType = params.frameType;
+        let frameType = params.additionalInfo.frameType;
         let frame = realityEditor.getFrame(objectId, frameId);
 
         let m = frame.ar.matrix;
@@ -75,10 +95,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         map.addToMap(frameId, frameType, frameScrambledId);
         let newInfo = `User ${avatarScrambledId} repositioned a ${frameScrambledId} tool at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         // let newInfo = `The user ${avatarName} id:${avatarId} repositioned a tool ${frameType} id:${frameId} at ${timestamp} to (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
-        question1 += `\n${newInfo}`;
+        aiPrompt += `\n${newInfo}`;
     }
     
-    function onVehicleDeleted(params, avatarId = 'Anonymous id') {
+    function onFrameDeleted(params, avatarId = 'Anonymous id') {
         if (params.objectKey && params.frameKey && !params.nodeKey) { // only send message about frames, not nodes
             let frameId = params.frameKey;
             let frameType = params.additionalInfo.frameType;
@@ -91,7 +111,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             map.addToMap(frameId, frameType, frameScrambledId);
             let newInfo = `User ${avatarScrambledId} deleted a ${frameScrambledId} tool at ${timestamp}`;
             // let newInfo = `The user ${avatarName} id:${avatarId} deleted a tool ${frameType} id:${frameId} at ${timestamp}`;
-            question1 += `\n${newInfo}`;
+            aiPrompt += `\n${newInfo}`;
         }
     }
     
@@ -124,7 +144,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         map.addToMap(avatarId, avatarName, avatarScrambledId);
         map.addToMap(frameId, frameType, frameScrambledId);
         let newInfo = `User ${avatarScrambledId} opened a ${frameScrambledId} tool at ${timestamp} ${additionalDescription}`;
-        question1 += `\n${newInfo}`;
+        aiPrompt += `\n${newInfo}`;
     }
 
     function onClose(envelope, avatarId = 'Anonymous id') {
@@ -146,7 +166,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         map.addToMap(avatarId, avatarName, avatarScrambledId);
         map.addToMap(frameId, frameType, frameScrambledId);
         let newInfo = `User ${avatarScrambledId} closed a ${frameScrambledId} tool at ${timestamp}`;
-        question1 += `\n${newInfo}`;
+        aiPrompt += `\n${newInfo}`;
     }
 
     function onBlur(envelope, avatarId = 'Anonymous id') {
@@ -169,7 +189,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         map.addToMap(frameId, frameType, frameScrambledId);
         let newInfo = `User ${avatarScrambledId} minimized a ${frameScrambledId} tool at ${timestamp}`;
         // let newInfo = `The user ${avatarName} id:${avatarId} minimized a tool ${frameType} id:${frame.uuid} at ${timestamp}`;
-        question1 += `\n${newInfo}`;
+        aiPrompt += `\n${newInfo}`;
     }
     
     function onAvatarChangeName(oldName, _newName) {
@@ -177,10 +197,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let _timestamp = getFormattedTime();
         if (oldName === null) {
             // let newInfo = `User ${newName} joined the space at ${timestamp}`;
-            // question1 += `\n${newInfo}`;
+            // aiPrompt += `\n${newInfo}`;
         } else {
             // let newInfo = `User ${oldName} has changed their name to ${newName}`;
-            // question1 += `\n${newInfo}`;
+            // aiPrompt += `\n${newInfo}`;
         }
     }
     
@@ -201,8 +221,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         'Shift': false,
         'Enter': false,
     };
-    let INCLUDE_TEST_HISTORY_MESSAGE = true;
-    let PAST_MESSAGES_INCLUDED = 20 - (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
+    let PAST_MESSAGES_INCLUDED = 20;
     let map;
     
     function initService() {
@@ -213,7 +232,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         searchTextArea.style.display = 'none'; // initially, before inputting endpoint and api key, hide the search text area
         dialogueContainer = document.getElementById('ai-chat-tool-dialogue-container');
 
-        map = realityEditor.ai.map;
+        map = realityEditor.ai.mapping;
         
         scrollToBottom();
         initTextAreaSize();
@@ -285,16 +304,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         let maxDialogueLength = Math.min(PAST_MESSAGES_INCLUDED, dialogueLengthTotal);
         let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
         let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
-        // firstDialogueIndex += (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
         let conversation = {};
         for (let i = firstDialogueIndex; i < lastDialogueIndex; i++) {
             let child = dialogueContainer.children[i];
-            let conversationObjectIndex = i + (INCLUDE_TEST_HISTORY_MESSAGE ? 1 : 0);
+            let conversationObjectIndex = i;
             if (child.classList.contains('ai-chat-tool-dialogue-my')) {
                 if (i === lastDialogueIndex - 1) { // last dialogue, need to include the categorize question here
-                    // conversation[conversationObjectIndex] = { role: "user", content: `${child.innerText}`, extra: `${categorize_prompt}` };
                     conversation[conversationObjectIndex] = { role: "user", 
-                        content: `${question1}\n${map.preprocess(child.innerHTML)}`, 
+                        content: `${aiPrompt}\n${map.preprocess(child.innerHTML)}`, 
                         extra: `${categorize_prompt}`, 
                         communicationToolInfo: {
                             authorAll,
@@ -307,9 +324,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             } else if (child.classList.contains('ai-chat-tool-dialogue-ai')) {
                 conversation[conversationObjectIndex] = { role: "assistant", content: `${map.preprocess(child.innerHTML)}` };
             }
-        }
-        if (INCLUDE_TEST_HISTORY_MESSAGE) {
-            // conversation[0] = { role: "user", content: `${question1}` };
         }
         // todo Steve: include extra information here to provide to ai
         let extra = {
@@ -379,13 +393,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             // adjustTextAreaSize();
         });
         
-        // todo Steve: below 4 doesn't work
         searchTextArea.addEventListener('pointerdown', (e) => {e.stopPropagation();});
         searchTextArea.addEventListener('pointerup', (e) => {e.stopPropagation();});
         searchTextArea.addEventListener('pointermove', (e) => {e.stopPropagation();});
-        searchTextArea.addEventListener('contextmenu', (e) => {
-            e.stopPropagation();
-        })
+        searchTextArea.addEventListener('contextmenu', (e) => {e.stopPropagation();});
 
         searchTextArea.addEventListener('keydown', (e) => {
             e.stopPropagation();
@@ -425,9 +436,14 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             }
         });
 
+        window.addEventListener('blur', () => {
+            keyPressed['Enter'] = false;
+            keyPressed['Shift'] = false;
+        });
+
         dialogueContainer.addEventListener('wheel', (e) => {
             e.stopPropagation();
-        })
+        });
 
         window.addEventListener('resize', () => {
             adjustTextAreaSize();
@@ -514,6 +530,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     exports.initService = initService;
+    exports.registerCallback = registerCallback;
     exports.askQuestion = askQuestion;
     exports.getAnswer = getAnswer;
     exports.getToolAnswer = getToolAnswer;
@@ -523,7 +540,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.onBlur = onBlur;
     exports.onFrameAdded = onFrameAdded;
     exports.onFrameRepositioned = onFrameRepositioned;
-    exports.onVehicleDeleted = onVehicleDeleted;
+    exports.onFrameDeleted = onFrameDeleted;
     exports.onAvatarChangeName = onAvatarChangeName;
     exports.showDialogue = showDialogue;
     exports.hideDialogue = hideDialogue;

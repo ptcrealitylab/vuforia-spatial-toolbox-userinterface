@@ -1,4 +1,11 @@
-createNameSpace("realityEditor.ai.map");
+createNameSpace("realityEditor.ai.mapping");
+
+/**
+ * @fileOverview realityEditor.ai.mapping
+ * When a new "spatial action" (eg: add/reposition/delete/open/minimize/close a tool, avatar name change, etc) takes place,
+ * add a mapping of the corresponding {id, name, scrambled id (crc.js encoded id)} as a reference.
+ * These mappings will be used later to convert between ids and human-readable names when prompting & getting answer from the AI chatbot.
+ */
 
 (function(exports) {
     
@@ -129,4 +136,4 @@ createNameSpace("realityEditor.ai.map");
     exports.preprocess = preprocess;
     exports.postprocess = postprocess;
     
-}(realityEditor.ai.map));
+}(realityEditor.ai.mapping));

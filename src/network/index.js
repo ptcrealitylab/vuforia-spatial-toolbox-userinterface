@@ -699,12 +699,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, avatar
             
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
             // todo Steve: added a new frame
-            let params = {
-                objectKey: objectKey,
-                frameKey: frameKey,
-                frameType: origin.frames[frameKey].src,
-            };
-            realityEditor.ai.onFrameAdded(params, avatarName);
+            realityEditor.network.callbackHandler.triggerCallbacks('frameAdded', {objectKey: objectKey, frameKey: frameKey, frameType: origin.frames[frameKey].src, nodeKey: null, additionalInfo: {avatarName: avatarName}});
 
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
@@ -754,17 +749,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey, avatar
             // delete origin.frames[frameKey];
             let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
-            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
-        
-            // todo Steve: deleted a frame
-            let params = {
-                objectKey: objectKey,
-                frameKey: frameKey,
-                additionalInfo: {
-                    frameType: frameType,
-                },
-            }
-            realityEditor.ai.onVehicleDeleted(params, avatarName);
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType, avatarName: avatarName}});
         }
     }
 };
@@ -1027,15 +1012,6 @@ realityEditor.network.onAction = function (action) {
                 realityEditor.network.reloadFrame(thisAction.reloadFrame.object, thisAction.reloadFrame.frame, thisAction);
             }, 500);
         }
-        
-        // todo Steve: repositioned a frame
-        let params = {
-            objectKey: thisFrame.objectId,
-            frameKey: thisFrame.uuid,
-            frameType: thisFrame.src,
-        };
-        let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor);
-        realityEditor.ai.onFrameRepositioned(params, avatarId);
     }
 
     if (typeof thisAction.reloadNode !== "undefined") {
@@ -1238,6 +1214,11 @@ realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMess
             if (!thisFrame.hasOwnProperty(thisKey)) continue;
             if (propertiesToIgnore) {
                 if (propertiesToIgnore.indexOf(thisKey) > -1) continue;
+                
+                if (thisFrame.ar.x !== res.ar.x || thisFrame.ar.y !== res.ar.y || !realityEditor.gui.ar.utilities.isEqualStrict(thisFrame.ar.matrix, res.ar.matrix)) {
+                    // todo Steve: find a way to store & compare the original & updated positions of the frame, and trigger framePosition event here
+                    realityEditor.network.callbackHandler.triggerCallbacks('frameRepositioned', {objectKey: thisFrame.objectId, frameKey: thisFrame.uuid, nodeKey: null, additionalInfo: {frameType: thisFrame.src, avatarName: realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor)}});
+                }
 
                 // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
                 if (thisKey === 'ar' &&

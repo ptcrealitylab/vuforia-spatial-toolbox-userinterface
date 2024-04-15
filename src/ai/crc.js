@@ -1,5 +1,12 @@
 createNameSpace("realityEditor.ai.crc");
 
+/**
+ * @fileOverview realityEditor.ai.crc
+ * Contains a method to convert a tool / avatar id (eg: _WORLD_sessionDPjwiU0r_P4jnv2zz9aaspatialDraw1rXagcg6zvdk0)
+ * into a 6-digit alphanumeric "scrambled id" (eg: 2yM7oX). 
+ * The scrambled id is semantic-agnostic, so that AI process it as a whole unique id.
+ */
+
 (function(exports) {
 
     // generate crc32 and checksum
