@@ -1217,7 +1217,7 @@ realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMess
                 
                 if (thisFrame.ar.x !== res.ar.x || thisFrame.ar.y !== res.ar.y || !realityEditor.gui.ar.utilities.isEqualStrict(thisFrame.ar.matrix, res.ar.matrix)) {
                     // todo Steve: find a way to store & compare the original & updated positions of the frame, and trigger framePosition event here
-                    realityEditor.network.callbackHandler.triggerCallbacks('frameRepositioned', {objectKey: thisFrame.objectId, frameKey: thisFrame.uuid, nodeKey: null, additionalInfo: {frameType: thisFrame.src, avatarName: realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor)}});
+                    // realityEditor.network.callbackHandler.triggerCallbacks('frameRepositioned', {objectKey: thisFrame.objectId, frameKey: thisFrame.uuid, nodeKey: null, additionalInfo: {frameType: thisFrame.src, avatarName: realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor)}});
                 }
 
                 // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
