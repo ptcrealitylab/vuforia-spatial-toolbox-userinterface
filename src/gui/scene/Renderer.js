@@ -2,7 +2,7 @@ import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
 import { VRButton } from '../../../thirdPartyCode/three/VRButton.module.js';
-import { Camera } from './Camera.js'
+import { Camera, WebXRCamera } from './Camera.js'
 import AnchoredGroup from './AnchoredGroup.js'
 
 /**
@@ -126,6 +126,8 @@ class Renderer {
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
+        this.#renderer.xr.enabled = true;
+        document.body.appendChild( VRButton.createButton( this.#renderer ) );
 
         this.#scene = new THREE.Scene();
 
@@ -133,6 +135,11 @@ class Renderer {
         // we use this for headsets, in order to change the deviceScale
         this.#globalScale = new GlobalScale(1000, 0.001);
         this.#scene.add(this.#globalScale.getNode());
+
+        const boxgeom = new THREE.BoxGeometry(100,100,100);
+        const boxmat = new THREE.MeshBasicMaterial();
+        const boxobj = new THREE.Mesh(boxgeom, boxmat);
+        this.#globalScale.getNode().add(boxobj);
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             this.#renderer.setSize(width, height);
@@ -174,10 +181,9 @@ class Renderer {
     add(obj) {
         if (obj instanceof Camera) {
             if (this.#camera) {
-                this.#globalScale.getNode().remove(this.#camera.getInternalObject());
+                this.#scene.remove(this.#camera.getInternalObject());
             }
-            this.#globalScale.getNode().add(obj.getInternalObject());
-            this.#camera = obj;
+            this.#scene.add(obj.getInternalObject());
         } else if (obj instanceof AnchoredGroup) {
             this.#globalScale.getNode().add(obj.getInternalObject());
         } else if (obj instanceof THREE.Object3D) {
@@ -190,7 +196,19 @@ class Renderer {
      * @returns {boolean}
      */
     isInWebXRMode() {
-        return this.#renderer.xr.isPresenting;
+        return this.webXRAvailable() && this.#renderer.xr.isPresenting;
+    }
+
+    webXRAvailable() {
+        return this.#renderer.xr && this.#renderer.xr.enabled === true;
+    }
+
+    /**
+     * 
+     * @param {Camera} camera 
+     */
+    setCamera(camera) {
+        this.#camera = camera;
     }
 
     render() {

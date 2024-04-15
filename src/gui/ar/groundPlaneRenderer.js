@@ -95,7 +95,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
             realityEditor.gui.threejsScene.getInternals().getGlobalScale().addListener((globalScale) => {
-                gridHelper.setSizesAndDistance(gridSquareSizeInMm * globalScale.getGlobalScale(), gridRegionSizeInMm * globalScale.getGlobalScale(), maxVisibilityDistanceInMm * globalScale.getGlobalScale());
+                gridHelper.setSizesAndDistance(gridSquareSizeInMm, gridRegionSizeInMm, maxVisibilityDistanceInMm * (1000 * globalScale.getSceneScale()));
             });
         }
 

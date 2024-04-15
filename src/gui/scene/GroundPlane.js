@@ -21,7 +21,7 @@ class GroundPlane {
         const material = new THREE.MeshBasicMaterial({color: 0x88ffff, side: THREE.DoubleSide, wireframe: true});
         this.#plane = new THREE.Mesh(geometry, material);
         // plane.rotateX(Math.PI/2);
-        this.#plane.visible = false;
+        //this.#plane.visible = false;
         // plane.position.set(0, -10, 0); // todo Steve: figure out a way to raycast on mesh first & if no results, raycast on ground plane next. Figure out a way to do it in one go (possibly using depth tests & stuff), instead of using 2 raycasts, to improve performance
         this.#plane.name = 'groundPlaneCollider';
     }
