@@ -239,6 +239,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         adjustTextAreaSize();
         setupEventListeners();
         setupSystemEventListeners();
+        hideEndpointApiKeyAndShowSearchTextArea();
     }
     
     function authorSetToString(authorSet) {
