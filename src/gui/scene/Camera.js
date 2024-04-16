@@ -1,5 +1,4 @@
 import * as THREE from "../../../thirdPartyCode/three/three.module.js"
-import { Renderer } from "./Renderer.js";
 import {setMatrixFromArray} from "./utils.js"
 
 /**
@@ -243,7 +242,7 @@ class WebXRCamera extends Camera {
     /**
      * 
      * @param {string} name 
-     * @param {Renderer} renderer 
+     * @param {import('./Renderer.js').Renderer} renderer 
      */
     constructor(name, renderer) {
         /** @type {THREE.ArrayCamera} */

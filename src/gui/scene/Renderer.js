@@ -2,7 +2,7 @@ import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
 import { VRButton } from '../../../thirdPartyCode/three/VRButton.module.js';
-import { Camera, WebXRCamera } from './Camera.js'
+import { Camera } from './Camera.js'
 import AnchoredGroup from './AnchoredGroup.js'
 
 /**
