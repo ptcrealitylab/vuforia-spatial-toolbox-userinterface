@@ -277,7 +277,6 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         });
     }
 
-    if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames
     realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
     
     var objectKey;
