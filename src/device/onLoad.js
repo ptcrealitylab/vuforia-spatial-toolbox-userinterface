@@ -69,6 +69,8 @@ realityEditor.device.loaded = false;
  */
 realityEditor.device.onload = async function () {
 
+    realityEditor.gui.modal.createNotificationContainer();
+
     // Initialize some global variables for the device session
     this.cout('Running on platform: ' + globalStates.platform);
     if (globalStates.platform !== 'iPad' && globalStates.platform !== 'iPhone' && globalStates.platform !== 'iPod touch') {
