@@ -89,8 +89,7 @@ realityEditor.device.onload = async function () {
 
         let message = 'Network Offline: Showing last known state. Most functionality is disabled.';
         // showBannerNotification removes notification after set time so no additional function is needed
-        let offlineNotificationUI = realityEditor.gui.modal.showBannerNotification(message, 'offlineUIcontainer', 'offlineUItext', 5000);
-        document.body.appendChild(offlineNotificationUI);
+        realityEditor.gui.modal.showBannerNotification(message, 'offlineUIcontainer', 'offlineUItext', 5000);
     });
 
     // set up the global canvas for drawing the links
@@ -154,14 +153,14 @@ realityEditor.device.onload = async function () {
         realityEditor.gui.recentlyUsedBar.initService();
         realityEditor.gui.envelopeIconRenderer.initService();
         realityEditor.gui.search.initService();
+        realityEditor.ai.initService();
     } catch (initError) {
         // show an error message rather than crash entirely; otherwise Vuforia Engine will never start
         console.error('error in initService functions, might lead to corrupted app state', initError);
         try {
             let initializeMessage = 'Error initializing. Restart app or contact support.';
             // showBannerNotification removes notification after set time so no additional function is needed
-            let initializeUI = realityEditor.gui.modal.showBannerNotification(initializeMessage, 'initializeUIContainer', 'initializeText', 5000);
-            document.body.appendChild(initializeUI);
+            realityEditor.gui.modal.showBannerNotification(initializeMessage, 'initializeErrorUI', 'initializeErrorText', 5000);
         } catch (alertError) {
             alert(`Error initializing. Restart app or contact support. ${initError}, ${alertError}`);
         }

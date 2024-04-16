@@ -57,6 +57,10 @@ window.objects = {}; // TODO: this is a duplicate definition from src/objects.js
 // the code will run correctly without this assuming you call:
 //  createNameSpace("realityEditor.[module].[etc]")  correctly at the top of each file
 window.realityEditor = {
+    ai: {
+        mapping: {},
+        crc: {},
+    },
     app: {
         callbacks: {},
         promises: {},
