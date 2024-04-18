@@ -126,7 +126,7 @@ class Renderer {
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
-        if (this.renderer.xr) {
+        if (this.#renderer.xr && !realityEditor.device.environment.isARMode()) {
             this.#renderer.xr.enabled = true;
             document.body.appendChild( VRButton.createButton( this.#renderer ) );
         }
