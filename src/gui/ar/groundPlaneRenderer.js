@@ -90,13 +90,11 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
+            // scene scale is in milimeters
             gridHelper = new InfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
             gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
             realityEditor.gui.threejsScene.addToScene(gridHelper, {occluded: true});
-            realityEditor.gui.threejsScene.getInternals().getGlobalScale().addListener((globalScale) => {
-                gridHelper.setSizesAndDistance(gridSquareSizeInMm, gridRegionSizeInMm, maxVisibilityDistanceInMm * (1000 * globalScale.getSceneScale()));
-            });
         }
 
         // don't show origin on devices that don't support AR tracking, because it's to help debug the groundplane tracker

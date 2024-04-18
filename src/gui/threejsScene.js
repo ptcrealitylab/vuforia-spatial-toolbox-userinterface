@@ -74,12 +74,12 @@ import {setMatrixFromArray} from "./scene/utils.js";
     var threejsContainer;
 
     /**
-     * @type {Camera}
+     * @type {DefaultCamera}
      */
     var defaultCamera;
 
     /**
-     * @type {WebXRCamera}
+     * @type {WebXRCamera|null}
      */
     var webXRCamera;
 
@@ -95,7 +95,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         mainRenderer = new Renderer(domElement);
 
         defaultCamera = new DefaultCamera("Default Camera", window.innerWidth / window.innerHeight);
-        webXRCamera = null;
+        webXRCamera = null; // can only be initilized if we have a webxr session
         mainRenderer.add(defaultCamera); // Normally not needed, but needed in order to add child objects relative to camera
         mainRenderer.setCamera(defaultCamera);
 

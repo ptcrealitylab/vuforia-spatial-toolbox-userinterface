@@ -126,8 +126,10 @@ class Renderer {
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
-        this.#renderer.xr.enabled = true;
-        document.body.appendChild( VRButton.createButton( this.#renderer ) );
+        if (this.renderer.xr) {
+            this.#renderer.xr.enabled = true;
+            document.body.appendChild( VRButton.createButton( this.#renderer ) );
+        }
 
         this.#scene = new THREE.Scene();
 
@@ -135,11 +137,6 @@ class Renderer {
         // we use this for headsets, in order to change the deviceScale
         this.#globalScale = new GlobalScale(1000, 0.001);
         this.#scene.add(this.#globalScale.getNode());
-
-        const boxgeom = new THREE.BoxGeometry(100,100,100);
-        const boxmat = new THREE.MeshBasicMaterial();
-        const boxobj = new THREE.Mesh(boxgeom, boxmat);
-        this.#globalScale.getNode().add(boxobj);
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             this.#renderer.setSize(width, height);
