@@ -432,7 +432,7 @@ createNameSpace("realityEditor.avatar");
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
-                worldIntersectPoint = raycastIntersects[0].point;
+                worldIntersectPoint = raycastIntersects[0].scenePoint;
                 
             // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
@@ -440,7 +440,7 @@ createNameSpace("realityEditor.avatar");
                 raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
                 groundPlane.updateWorldMatrix(true, false);
                 if (raycastIntersects.length > 0) {
-                    worldIntersectPoint = raycastIntersects[0].point;
+                    worldIntersectPoint = raycastIntersects[0].scenePoint;
                 }
             }
 

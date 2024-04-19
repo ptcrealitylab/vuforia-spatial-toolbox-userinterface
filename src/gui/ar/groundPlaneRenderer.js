@@ -192,9 +192,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             if (raycastIntersects.length === 0) { return; }
 
             // transform the world coordinate into the groundplane coordinate system
-            gridHelper.worldToLocal(raycastIntersects[0].point);
+            gridHelper.worldToLocal(raycastIntersects[0].scenePoint);
 
-            target.position.set(raycastIntersects[0].point.x, 0, raycastIntersects[0].point.z);
+            target.position.set(raycastIntersects[0].scenePoint.x, 0, raycastIntersects[0].scenePoint.z);
         }
     }
 
