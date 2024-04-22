@@ -237,11 +237,16 @@ class DefaultCamera extends Camera {
     }
 }
 
-class XRCamera extends Camera {
+class WebXRCamera extends Camera {
 
+    /**
+     * 
+     * @param {string} name 
+     * @param {import('./Renderer.js').Renderer} renderer 
+     */
     constructor(name, renderer) {
         /** @type {THREE.ArrayCamera} */
-        const camera = renderer.xr.getCamera();
+        const camera = renderer.getInternalRenderer().xr.getCamera();
         camera.layers.enable(LayerConfig.LAYER_SCAN);
         camera.layers.enable(LayerConfig.LAYER_BACKGROUND);
         for (const cameraEntry of camera.cameras) {
@@ -253,4 +258,4 @@ class XRCamera extends Camera {
     }
 }
 
-export {Camera, DefaultCamera, XRCamera, LayerConfig};
+export {Camera, DefaultCamera, WebXRCamera, LayerConfig};
