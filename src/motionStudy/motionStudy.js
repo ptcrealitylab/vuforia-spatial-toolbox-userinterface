@@ -121,6 +121,7 @@ export class MotionStudy {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.show();
         }
+        this.updateVideoPlayerShowHideButtonText();
     }
 
     /**
@@ -534,13 +535,24 @@ export class MotionStudy {
         this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
             if (this.videoPlayer.isShown()) {
                 this.videoPlayer.hide();
-                this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
             } else {
                 this.videoPlayer.show();
-                this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
             }
+            this.updateVideoPlayerShowHideButtonText();
         });
         this.container.appendChild(this.videoPlayerShowHideButton);
+    }
+
+    updateVideoPlayerShowHideButtonText() {
+        if (!this.videoPlayerShowHideButton || !this.videoPlayer) {
+            return;
+        }
+
+        if (this.videoPlayer.isShown()) {
+            this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
+        } else {
+            this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+        }
     }
 
     addRegionCard(regionCard) {
