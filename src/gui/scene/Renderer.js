@@ -1,9 +1,9 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
-import { VRButton } from '../../../thirdPartyCode/three/VRButton.module.js';
-import { Camera } from './Camera.js'
-import AnchoredGroup from './AnchoredGroup.js'
+import { WebXRVRButton } from './WebXRVRButton.js';
+import { Camera } from './Camera.js';
+import AnchoredGroup from './AnchoredGroup.js';
 
 /**
  * @typedef {number} pixels
@@ -128,7 +128,10 @@ class Renderer {
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
         if (this.#renderer.xr && !realityEditor.device.environment.isARMode()) {
             this.#renderer.xr.enabled = true;
-            document.body.appendChild( VRButton.createButton( this.#renderer ) );
+            if (realityEditor.gui.getMenuBar) {
+                const menuBar = realityEditor.gui.getMenuBar();
+                menuBar.addItemToMenu(realityEditor.gui.MENU.Develop, WebXRVRButton.createButton(this.#renderer));
+            }
         }
 
         this.#scene = new THREE.Scene();
