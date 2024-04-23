@@ -1710,6 +1710,7 @@ Logic Interface CSS
     background-color: rgba(0,0,0,0.7);
     margin: auto;
     width: max-content;
+    max-width: 50%;
     border-radius: 10px;
     word-wrap: normal;
 }
