@@ -240,6 +240,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         setupEventListeners();
         setupSystemEventListeners();
         hideEndpointApiKeyAndShowSearchTextArea();
+
+        let endPoint = '';
+        let apiKey = '';
+        realityEditor.network.postAiApiKeys(endPoint, apiKey, true);
     }
     
     function authorSetToString(authorSet) {
