@@ -31,7 +31,8 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                 if (worldId === null || worldId === undefined || cachedOcclusionObject === null || cachedOcclusionObject === undefined) {
                     worldId = realityEditor.sceneGraph.getWorldId();
                     if (worldId === null) return;
-                    cachedOcclusionObject = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldId);
+                    let cachedOcclusionObjectTemp = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldId);
+                    cachedOcclusionObject = [cachedOcclusionObjectTemp.children[0], cachedOcclusionObjectTemp.children[1]];
                 }
                 if (realityEditor.sceneGraph.getGroundPlaneNode() !== undefined) {
                     let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
@@ -589,6 +590,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             wireframe: true
         });
         clothMesh = new THREE.Mesh(clothGeometry, material);
+        clothMesh.name = 'clothMesh';
         // clothMesh.visible = false;
         realityEditor.gui.threejsScene.addToScene(clothMesh, {layers: 1});
 
@@ -702,9 +704,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
 
     // when porting to userInterface repo, don't have to include the mesh bvh and raycaster (?). Or maybe instantiate a specific raycaster just for raycasting for cloth simulation, everytime we instantiate a new cloth (?)
     const raycaster = new THREE.Raycaster();
-    raycaster.layers.enable(0);
-    raycaster.layers.enable(1);
-    raycaster.layers.enable(2);
+    raycaster.layers.enable(3);
     let COLLIDE_THRESHOLD = 50; // 0.05 seems like a perfect threshold: too big then it skips some collision; too small it causes some particle jittering
 
     function simulateCloth(particles, constraints, pins, winds, initVolume, volume) {
@@ -744,7 +744,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
             tmpPos.y -= raycastPosOffset;
             raycaster.set(tmpPos, particleDir);
             raycaster.firstHitOnly = true;
-            result = raycaster.intersectObjects([cachedOcclusionObject], true);
+            result = raycaster.intersectObjects(cachedOcclusionObject, true);
 
             if (result.length !== 0) {
                 result[0].point.applyMatrix4(inverseGroundPlaneMatrix);
