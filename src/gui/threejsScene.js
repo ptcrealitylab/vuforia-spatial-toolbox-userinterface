@@ -11,8 +11,8 @@ import { ViewFrustum, frustumVertexShader, frustumFragmentShader, MAX_VIEW_FRUST
 import { MapShaderSettingsUI } from "../measure/mapShaderSettingsUI.js";
 import GroundPlane from "./scene/GroundPlane.js";
 import AnchoredGroup from "./scene/AnchoredGroup.js";
-import { DefaultCamera, LayerConfig } from "./scene/Camera.js";
-import Renderer from "./scene/Renderer.js";
+import { WebXRCamera, DefaultCamera, LayerConfig } from "./scene/Camera.js";
+import { Renderer } from "./scene/Renderer.js";
 import {setMatrixFromArray} from "./scene/utils.js";
 
 (function(exports) {
@@ -74,9 +74,14 @@ import {setMatrixFromArray} from "./scene/utils.js";
     var threejsContainer;
 
     /**
-     * @type {Camera}
+     * @type {DefaultCamera}
      */
-    var mainCamera;
+    var defaultCamera;
+
+    /**
+     * @type {WebXRCamera|null}
+     */
+    var webXRCamera;
 
     /**
      * @type {Renderer}
@@ -89,8 +94,10 @@ import {setMatrixFromArray} from "./scene/utils.js";
         const domElement = document.getElementById('mainThreejsCanvas');
         mainRenderer = new Renderer(domElement);
 
-        mainCamera = new DefaultCamera("mainCamera", window.innerWidth / window.innerHeight);
-        mainRenderer.add(mainCamera); // Normally not needed, but needed in order to add child objects relative to camera
+        defaultCamera = new DefaultCamera("Default Camera", window.innerWidth / window.innerHeight);
+        webXRCamera = null; // can only be initilized if we have a webxr session
+        mainRenderer.add(defaultCamera); // Normally not needed, but needed in order to add child objects relative to camera
+        mainRenderer.setCamera(defaultCamera);
 
         // create a parent 3D object to contain all the non-world-aligned three js objects
         // we can apply the transform to this object and all of its children objects will be affected
@@ -144,7 +151,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
 
     // use this helper function to update the camera matrix using the camera matrix from the sceneGraph
     function setCameraPosition(matrix) {
-        mainCamera.setCameraMatrixFromArray(matrix);
+        defaultCamera.setCameraMatrixFromArray(matrix);
         if (customMaterials) {
             let forwardVector = realityEditor.gui.ar.utilities.getForwardVector(matrix);
             customMaterials.updateCameraDirection(new THREE.Vector3(forwardVector[0], forwardVector[1], forwardVector[2]));
@@ -157,7 +164,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         const sceneSizeInMeters = 100; // not actually infinite, but relative to any area target this should cover it
 
         isGroundPlanePositionSet = true;
-        groundPlane = new GroundPlane(1000 * sceneSizeInMeters, 1000 * sceneSizeInMeters);
+        groundPlane = new GroundPlane(sceneSizeInMeters / mainRenderer.getGlobalScale().getSceneScale());
         addToScene(groundPlane.getInternalObject(), {occluded: true});
 
         let areaTargetNavmesh = null;
@@ -186,7 +193,25 @@ import {setMatrixFromArray} from "./scene/utils.js";
         const deltaTime = Date.now() - lastFrameTime; // In ms
         lastFrameTime = Date.now();
 
-        cssRenderer.render(mainRenderer.getInternalScene(), mainCamera.getInternalObject());
+        const globalScale = mainRenderer.getGlobalScale();
+        if (mainRenderer.isInWebXRMode()) {
+            // 1 meter is 1 device unit
+            if (globalScale.getDeviceScale() !== 1) {
+                globalScale.setDeviceScale(1);
+                webXRCamera = new WebXRCamera("WebXR Camera", mainRenderer);
+                mainRenderer.setCamera(webXRCamera);
+                console.log("webXR camera")
+            }
+        } else {
+            // 1 meter is 1000 device units
+            if (globalScale.getDeviceScale() !== 1000) {
+                globalScale.setDeviceScale(1000);
+                mainRenderer.setCamera(defaultCamera);
+                console.log("default camera")
+            }
+        }
+
+        cssRenderer.render(mainRenderer.getInternalScene(), mainRenderer.getCamera().getInternalObject());
         
         // additional modules, e.g. spatialCursor, should trigger their update function with an animationCallback
         animationCallbacks.forEach(callback => {
@@ -194,7 +219,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         });
 
         if (globalStates.realProjectionMatrix && globalStates.realProjectionMatrix.length > 0) {
-            mainCamera.setProjectionMatrixFromArray(globalStates.realProjectionMatrix);
+            defaultCamera.setProjectionMatrixFromArray(globalStates.realProjectionMatrix);
             isProjectionMatrixSet = true;
         }
 
@@ -292,9 +317,9 @@ import {setMatrixFromArray} from "./scene/utils.js";
         }
         if (parentToCamera) {
             if (attach) {
-                mainCamera.attach(obj);
+                defaultCamera.attach(obj);
             } else {
-                mainCamera.add(obj);
+                defaultCamera.add(obj);
             }
         } else if (worldObjectId) {
             if (attach) {
@@ -657,7 +682,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
             - ( clientY / window.innerHeight ) * 2 + 1,
             0
         );
-        distanceRaycastVector.unproject(mainCamera.getInternalObject());
+        distanceRaycastVector.unproject(mainRenderer.getCamera().getInternalObject());
         distanceRaycastVector.normalize();
         distanceRaycastResultPosition.set(0, 0, 0).add(distanceRaycastVector.multiplyScalar(distance));
         return distanceRaycastResultPosition;
@@ -1066,7 +1091,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
      * @returns {TransformControls}
      */
     function addTransformControlsTo(object, options, onChange, onDraggingChanged) {
-        let transformControls = new TransformControls(mainCamera.getInternalObject(), mainRenderer.getInternalCanvas());
+        let transformControls = new TransformControls(defaultCamera.getInternalObject(), mainRenderer.getInternalCanvas());
         if (options && typeof options.hideX !== 'undefined') {
             transformControls.showX = !options.hideX;
         }
@@ -1091,10 +1116,10 @@ import {setMatrixFromArray} from "./scene/utils.js";
         return transformControls;
     }
 
-    exports.getScreenXY = (meshPosition) => mainCamera.getScreenXY(meshPosition);
+    exports.getScreenXY = (meshPosition) => mainRenderer.getCamera().getScreenXY(meshPosition);
 
     
-    exports.isPointOnScreen = (pointPosition) => mainCamera.isPointOnScreen(pointPosition);
+    exports.isPointOnScreen = (pointPosition) => mainRenderer.getCamera().isPointOnScreen(pointPosition);
 
     // gets the position relative to groundplane (common coord system for threejsScene)
     exports.getToolPosition = function(toolId) {

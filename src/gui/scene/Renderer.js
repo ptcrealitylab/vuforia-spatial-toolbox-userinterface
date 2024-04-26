@@ -1,14 +1,102 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
-import { Camera } from './Camera.js'
-import AnchoredGroup from './AnchoredGroup.js'
+import { WebXRVRButton } from './WebXRVRButton.js';
+import { Camera } from './Camera.js';
+import AnchoredGroup from './AnchoredGroup.js';
 
 /**
- * @typedef {number} {pixels}
+ * @typedef {number} pixels
+ * @typedef {number} DeviceUnitsPerMeter
+ * @typedef {number} MetersPerSceneUnit
+ * @typedef {number} DeviceUnitsPerSceneUnit
+ * @typedef {number} SceneUnitsPerDeviceUnit
+ * @typedef {number} SceneUnits
+ * @typedef {(globalScale: GlobalScale) => void} GlobalScaleListener
  * @typedef {{a: number, b: number, c: number, normal: THREE.Vector3, materialIndex: number}} Face
- * @typedef {{distance: number, distanceToRay?: number|undefined, point: THREE.Vector3, index?: number | undefined, face?: Face | null | undefined, faceIndex?: number | undefined, object: THREE.Object3D, uv?: THREE.Vector2 | undefined, uv1?: THREE.Vector2 | undefined, normal?: THREE.Vector3, instanceId?: number | undefined, pointOnLine?: THREE.Vector3, batchId?: number}} Intersection
+ * @typedef {{distance: number, distanceToRay?: number|undefined, point: THREE.Vector3, index?: number | undefined, face?: Face | null | undefined, faceIndex?: number | undefined, object: THREE.Object3D, uv?: THREE.Vector2 | undefined, uv1?: THREE.Vector2 | undefined, normal?: THREE.Vector3, instanceId?: number | undefined, pointOnLine?: THREE.Vector3, batchId?: number, scenePoint: THREE.Vector3, sceneDistance: SceneUnits}} Intersection
  */
+
+class GlobalScale {
+    /** @type {DeviceUnitsPerMeter} */
+    #deviceScale;
+
+    /** @type {MetersPerSceneUnit} */
+    #sceneScale;
+
+    /** @type {THREE.Group} */
+    #node;
+
+    /** @type {GlobalScaleListener[]} */
+    #listeners;
+    
+    /**
+     * 
+     * @param {DeviceUnitsPerMeter} deviceScale 
+     * @param {MetersPerSceneUnit} sceneScale 
+     */
+    constructor(deviceScale, sceneScale) {
+        this.#deviceScale = deviceScale;
+        this.#sceneScale = sceneScale;
+        this.#listeners = [];
+
+        this.#node = new THREE.Group();
+        this.#node.name = "worldScaleNode";
+        this.#node.scale.setScalar(this.getGlobalScale());
+    }
+
+    getDeviceScale() {
+        return this.#deviceScale;
+    }
+
+    /**
+     * 
+     * @param {DeviceUnitsPerMeter} scale 
+     */
+    setDeviceScale(scale) {
+        this.#deviceScale = scale;
+        this.#node.scale.setScalar(this.getGlobalScale());
+        this.#notifyListeners();
+    }
+
+    getSceneScale() {
+        return this.#sceneScale;
+    }
+
+    /**
+     * 
+     * @returns {DeviceUnitsPerSceneUnit}
+     */
+    getGlobalScale() {
+        return this.#deviceScale * this.#sceneScale;
+    }
+
+    /**
+     * 
+     * @returns {SceneUnitsPerDeviceUnit}
+     */
+    getInvGlobalScale() {
+        return 1.0 / this.getGlobalScale();
+    }
+
+    getNode() {
+        return this.#node;
+    }
+
+    /**
+     * 
+     * @param {GlobalScaleListener} func 
+     */
+    addListener(func) {
+        this.#listeners.push(func);
+    }
+
+    #notifyListeners() {
+        for (const listener of this.#listeners) {
+            listener(this);
+        }
+    }
+}
 
 /**
  * Manages the rendering of the main scene
@@ -25,18 +113,33 @@ class Renderer {
 
     /** @type {THREE.Raycaster} */
     #raycaster
-    
+
+    /** @type {GlobalScale} */
+    #globalScale
+
     /**
      * 
      * @param {HTMLCanvasElement} domElement 
      */
     constructor(domElement) {
-        this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: false});
+        this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
         this.#renderer.outputEncoding = THREE.sRGBEncoding;
+        if (this.#renderer.xr && !realityEditor.device.environment.isARMode()) {
+            this.#renderer.xr.enabled = true;
+            if (realityEditor.gui.getMenuBar) {
+                const menuBar = realityEditor.gui.getMenuBar();
+                menuBar.addItemToMenu(realityEditor.gui.MENU.Develop, WebXRVRButton.createButton(this.#renderer));
+            }
+        }
 
         this.#scene = new THREE.Scene();
+
+        // in the webbrowser we work with milimeters so 1000 browserunits are 1 meter and 0.001 meter is one scene unit (effectively canceling each other out)
+        // we use this for headsets, in order to change the deviceScale
+        this.#globalScale = new GlobalScale(1000, 0.001);
+        this.#scene.add(this.#globalScale.getNode());
 
         realityEditor.device.layout.onWindowResized(({width, height}) => {
             this.#renderer.setSize(width, height);
@@ -62,13 +165,13 @@ class Renderer {
     #setupLighting() {
         // This doesn't seem to work with the area target model material, but adding it for everything else
         let ambLight = new THREE.AmbientLight(0xffffff, 0.3);
-        this.#scene.add(ambLight);
+        this.#globalScale.getNode().add(ambLight);
 
         // attempts to light the scene evenly with directional lights from each side, but mostly from the top
         let dirLightTopDown = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLightTopDown.position.set(0, 1, 0); // top-down
         dirLightTopDown.lookAt(0, 0, 0);
-        this.#scene.add(dirLightTopDown);
+        this.#globalScale.getNode().add(dirLightTopDown);
     }
 
     /**
@@ -81,12 +184,31 @@ class Renderer {
                 this.#scene.remove(this.#camera.getInternalObject());
             }
             this.#scene.add(obj.getInternalObject());
-            this.#camera = obj;
         } else if (obj instanceof AnchoredGroup) {
-            this.#scene.add(obj.getInternalObject());
+            this.#globalScale.getNode().add(obj.getInternalObject());
         } else if (obj instanceof THREE.Object3D) {
-            this.#scene.add(obj)
+            this.#globalScale.getNode().add(obj)
         }
+    }
+
+    /**
+     * 
+     * @returns {boolean}
+     */
+    isInWebXRMode() {
+        return this.webXRAvailable() && this.#renderer.xr.isPresenting;
+    }
+
+    webXRAvailable() {
+        return this.#renderer.xr && this.#renderer.xr.enabled === true;
+    }
+
+    /**
+     * 
+     * @param {Camera} camera 
+     */
+    setCamera(camera) {
+        this.#camera = camera;
     }
 
     render() {
@@ -118,7 +240,7 @@ class Renderer {
      * @returns {THREE.Object3D|undefined}
      */
     getObjectByName(name) {
-        return this.#scene.getObjectByName(name);
+        return this.#globalScale.getNode().getObjectByName(name);
     }
     
     /**
@@ -130,7 +252,7 @@ class Renderer {
         if (name === undefined) return;
         /** @type {THREE.Object3D[]} */
         const objects = [];
-        this.#scene.traverse((object) => {
+        this.#globalScale.getNode().traverse((object) => {
             if (object.name === name) objects.push(object);
         })
         return objects;
@@ -161,9 +283,12 @@ class Renderer {
         objectsToCheck.forEach(obj => {
             this.#raycaster.layers.mask = this.#raycaster.layers.mask | obj.layers.mask;
         });
-        let results = this.#raycaster.intersectObjects( objectsToCheck || this.#scene.children, true );
+        let results = this.#raycaster.intersectObjects( objectsToCheck || this.#globalScale.getNode().children, true );
         results.forEach(intersection => {
             intersection.rayDirection = this.#raycaster.ray.direction;
+            intersection.scenePoint = intersection.point.clone();
+            intersection.scenePoint.multiplyScalar(this.#globalScale.getInvGlobalScale());
+            intersection.sceneDistance = intersection.distance / this.#globalScale.getGlobalScale();
         });
         return results;
     }
@@ -185,6 +310,13 @@ class Renderer {
     }
 
     /**
+     * @returns {GlobalScale}
+     */
+    getGlobalScale() {
+        return this.#globalScale;
+    }
+
+    /**
      * 
      * @returns {THREE.Scene}
      */
@@ -201,4 +333,4 @@ class Renderer {
     }
 }
 
-export default Renderer;
+export { Renderer, GlobalScale };

@@ -2,6 +2,7 @@
 // modified by Ben Reynolds (breynolds@ptc.com) on July 21, 2022 to remove everything except the module imports and exports
 // modified by Steve Xie (kaxie@ptc.com) on Jan 27, 2023 to add thickness support for the Infinite Grid custom shader
 // modified by Rik de Leeuw (rdeleeuw@ptc.com) on Nov 30, 2023 disable zwrite and puch to ZFar
+// modified by Rik de Leeuw (rdeleeuw@ptc.com) on Feb 5, 2024 add runtime scaling
 
 import {
     DoubleSide,
@@ -119,6 +120,12 @@ class InfiniteGridHelper extends Mesh {
 
         this.frustumCulled = false;
 
+    }
+
+    setSizesAndDistance(size1, size2, distance) {
+        this.material.uniforms.uSize1.value = size1;
+        this.material.uniforms.uSize2.value = size2;
+        this.material.uniforms.uDistance.value = distance;
     }
 
 }

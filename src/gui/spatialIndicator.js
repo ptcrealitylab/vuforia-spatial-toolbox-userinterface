@@ -172,7 +172,7 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
                 let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
                 inverseGroundPlaneMatrix.invert();
-                raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+                raycastIntersects[0].scenePoint.applyMatrix4(inverseGroundPlaneMatrix);
                 let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
                 worldIntersectPoint = {
                     point: raycastIntersects[0].point,

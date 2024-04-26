@@ -352,7 +352,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
             inverseGroundPlaneMatrix.invert();
-            let intersect1 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+            let intersect1 = raycastIntersects[0].scenePoint.clone().applyMatrix4(inverseGroundPlaneMatrix);
 
             // transpose of the inverse of the ground-plane model-view matrix
             let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
@@ -370,7 +370,7 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             // compared to worldIntersectPoint, threejsSceneIntersectPoint returns the intersect point in three js container object coordinates
             realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix)
             inverseGroundPlaneMatrix.invert();
-            let intersect2 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+            let intersect2 = raycastIntersects[0].scenePoint.clone().applyMatrix4(inverseGroundPlaneMatrix);
 
             threejsIntersectPoint = {
                 x: intersect2.x,
