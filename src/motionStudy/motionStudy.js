@@ -155,7 +155,9 @@ export class MotionStudy {
         this.resetPatchVisibility();
         // Reset the highlight region (and any animation)
         this.setHighlightRegion(null);
-        this.videoPlayer.hide();
+        if (this.videoPlayer) {
+            this.videoPlayer.hide();
+        }
     }
 
     /**
