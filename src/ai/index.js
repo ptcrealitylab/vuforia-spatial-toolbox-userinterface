@@ -248,11 +248,11 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         realityEditor.network.postAiApiKeys(endPoint, apiKey, true);
 
         // TODO: figure out better place to initialize and make use of the apiOrchestrator
-        apiOrchestrator = new IframeAPIOrchestrator();
+        apiOrchestrator = new IframeAPIOrchestrator(map);
         console.log(apiOrchestrator);
-        setTimeout(() => {
-            console.log(apiOrchestrator.getSpatialServiceRegistry());
-        }, 5000);
+        // setTimeout(() => {
+        //     console.log(apiOrchestrator.getSpatialServiceRegistry());
+        // }, 5000);
     }
     
     function authorSetToString(authorSet) {
@@ -317,7 +317,11 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
                     let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
                     console.log(node);
                     let userProfile = node.publicData.userProfile;
-                    connectedUsers.push(userProfile.name || 'Anonymous User');
+                    let cursorState = node.publicData.cursorState;
+                    connectedUsers.push({
+                        name: userProfile.name || 'Anonymous User',
+                        spatialCursorPosition: [cursorState.matrix.elements[12], cursorState.matrix.elements[13], cursorState.matrix.elements[14]]
+                    });
                 }
             } catch (e) {
                 console.log('error getting username of connected user', object)
@@ -342,6 +346,11 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
             //     chatAll
             // }
         }
+    }
+
+    // NOTE: this isn't used currently
+    function askAssistantQuestion() {
+        realityEditor.network.postQuestionToAssistant(getMostRecentMessage());
     }
 
     function askQuestionComplex() {
@@ -443,6 +452,53 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         //  but since the processed answer got fed straight into the ai prompt, not sure if this is a good idea, or the names need to be converted to ids again, and fed back to the ai
         let html = map.postprocess(answer);
         pushAIDialogue(html);
+    }
+
+    function getAnswerComplex(answer, apiAnswer) {
+        // extract the API calls if needed
+        const OLD_METHOD = false;
+        if (OLD_METHOD) {
+            let apiMatches = parseApisFromString(answer);
+            if (apiMatches.length > 0) {
+                console.log('!! apiMatches !!');
+                console.log(apiMatches);
+
+                apiOrchestrator.processApiMatches(apiMatches);
+            }
+        } else {
+            apiOrchestrator.processApiAnswer(apiAnswer);
+        }
+        
+        // first postprocess to get the spatial links to tools
+        let html = map.postprocess(answer);
+        
+        pushAIDialogue(html);
+    }
+    
+    function parseApisFromString(input) {
+        // Extract all matches like [[id1][id2][id3]] or [[id2][id3]]
+        // const regex = /\[\[(.*?)\]\]?\[\[(.*?)\]\]\[\[(.*?)\]\]/g;
+        const pattern = /\[\[(.*?)\]\[(.*?)\]\]/g;
+
+        const matches = Array.from(input.matchAll(pattern));
+
+        // Map over the matches to format them into an array of objects
+        const results = matches.map(match => {
+            // return {
+            //     applicationType: match[1] ? match[1] : null,
+            //     applicationId: match[2],
+            //     apiName: match[3]
+            // };
+
+            // Create an object with applicationId and apiName from the captures
+            return {
+                applicationId: match[1],
+                apiName: match[2]
+            };
+        });
+
+        // Return the results array, or an empty array if no matches were found
+        return results;
     }
     
     function getToolAnswer(category, tools) {
@@ -609,6 +665,8 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         dialogueContainer.append(d);
         realityEditor.avatar.network.sendAiDialogue(realityEditor.avatar.getMyAvatarNodeInfo(), d.outerHTML);
         scrollToBottom();
+        
+        // askAssistantQuestion();
 
         // askQuestion();
         askQuestionComplex();
@@ -637,6 +695,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     exports.registerCallback = registerCallback;
     exports.askQuestion = askQuestion;
     exports.getAnswer = getAnswer;
+    exports.getAnswerComplex = getAnswerComplex;
     exports.getToolAnswer = getToolAnswer;
     exports.pushDialogueFromOtherUser = pushDialogueFromOtherUser;
     exports.onOpen = onOpen;

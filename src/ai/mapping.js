@@ -35,6 +35,7 @@ createNameSpace("realityEditor.ai.mapping");
     let threeMap = new ThreeMap();
     
     function addToMap(key, value, scrambledKey) {
+        console.log(`threeMap.set(${key}, ${value}, ${scrambledKey}`);
         threeMap.set(key, value, scrambledKey);
     }
     

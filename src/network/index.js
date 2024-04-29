@@ -2410,7 +2410,7 @@ realityEditor.network.postAiApiKeys = async function(endpoint, azureApiKey, isIn
         },
         function (err, res) {
             if (err) {
-                console.warn('postNewNode error:', err);
+                console.warn('/ai/init error:', err);
             } else {
                 if (res.answer === 'success') {
                     // change ai search text area to the actual search text area
@@ -2436,6 +2436,40 @@ realityEditor.network.postAiApiKeys = async function(endpoint, azureApiKey, isIn
         });
 }
 
+// NOTE: this isn't used currently
+realityEditor.network.postQuestionToAssistant = async function(mostRecentMessage) {
+    let route = '/ai/assistant';
+
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+
+    this.postData(realityEditor.network.getURL(ip, port, route),
+        {
+            mostRecentMessage: mostRecentMessage,
+            // pastMessages: pastMessages,
+            // interactionLog: interactionLog,
+            // toolAPIs: toolAPIs,
+            // connectedUsers: connectedUsers,
+            // extra: extra,
+        },
+        function (err, res) {
+            console.log(res);
+            if (err) {
+                console.warn('ai/assistant error:', err);
+            } else {
+                if (res.tools !== undefined) {
+                    realityEditor.ai.getToolAnswer(res.category, res.tools);
+                } else {
+                    realityEditor.ai.getAnswer(res.category, res.answer);
+                }
+            }
+        });
+
+    // TODO: update the URL to match the old postQuestionToAI implementation if you want to use cloud proxy
+
+}
+
 realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra) {
     let route = '/ai/questionComplex';
 
@@ -2455,13 +2489,15 @@ realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage
         function (err, res) {
             console.log(res);
             if (err) {
-                console.warn('postNewNode error:', err);
+                console.warn('ai/questionComplex error:', err);
             } else {
-                if (res.tools !== undefined) {
-                    realityEditor.ai.getToolAnswer(res.category, res.tools);
-                } else {
-                    realityEditor.ai.getAnswer(res.category, res.answer);
-                }
+                // if (res.tools !== undefined) {
+                //     realityEditor.ai.getToolAnswer(res.category, res.tools);
+                // } else {
+                // realityEditor.ai.getAnswer(res.category, res.answer);
+                console.log(res.answer, res.apiAnswer);
+                realityEditor.ai.getAnswerComplex(res.answer, res.apiAnswer);
+                // }
             }
         });
 
@@ -2482,7 +2518,7 @@ realityEditor.network.postQuestionToAI = async function(conversation, extra) {
         },
         function (err, res) {
             if (err) {
-                console.warn('postNewNode error:', err);
+                console.warn('ai/question error:', err);
             } else {
                 if (res.tools !== undefined) {
                     realityEditor.ai.getToolAnswer(res.category, res.tools);
