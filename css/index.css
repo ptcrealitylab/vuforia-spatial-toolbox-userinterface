@@ -2477,4 +2477,5 @@ Logic Interface CSS
     top: 130px;
     left: 20px;
     padding: 10px;
+    visibility: hidden; /* todo: this component is only for debugging. make visible if needed */
 }

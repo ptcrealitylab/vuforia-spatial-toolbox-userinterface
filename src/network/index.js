@@ -2382,9 +2382,23 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
 
-realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = false) {
+function findWorldId() {
+    return new Promise((resolve) => {
+        let worldId = undefined;
+        let intervalId = setInterval(() => {
+            worldId = realityEditor.worldObjects.getBestWorldObject();
+            if (worldId !== undefined) {
+                clearInterval(intervalId);
+                resolve(worldId);
+            }
+        }, 100)
+    });
+}
+
+realityEditor.network.postAiApiKeys = async function(endpoint, azureApiKey, isInit = false) {
     if (endpoint === undefined || azureApiKey === undefined) return;
     let worldId = realityEditor.worldObjects.getBestWorldObject();
+    worldId = await findWorldId();
     let ip = worldId.ip;
     let port = realityEditor.network.getPort(worldId);
     let route = '/ai/init';
@@ -2400,6 +2414,7 @@ realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = f
             } else {
                 if (res.answer === 'success') {
                     // change ai search text area to the actual search text area
+                    console.log('ai init success');
                     realityEditor.ai.hideEndpointApiKeyAndShowSearchTextArea();
                     if (isInit) {
                         // todo Steve: broadcast this message to all avatars, and have them spin up their own Azure GPT-3.5 with the same API keys
@@ -2421,26 +2436,80 @@ realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = f
         });
 }
 
+realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra) {
+    let route = '/ai/questionComplex';
+
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+
+    this.postData(realityEditor.network.getURL(ip, port, route),
+        {
+            mostRecentMessage: mostRecentMessage,
+            pastMessages: pastMessages,
+            interactionLog: interactionLog,
+            toolAPIs: toolAPIs,
+            connectedUsers: connectedUsers,
+            extra: extra,
+        },
+        function (err, res) {
+            console.log(res);
+            if (err) {
+                console.warn('postNewNode error:', err);
+            } else {
+                if (res.tools !== undefined) {
+                    realityEditor.ai.getToolAnswer(res.category, res.tools);
+                } else {
+                    realityEditor.ai.getAnswer(res.category, res.answer);
+                }
+            }
+        });
+
+    // TODO: update the URL to match the old postQuestionToAI implementation if you want to use cloud proxy
+};
+
 realityEditor.network.postQuestionToAI = async function(conversation, extra) {
     let route = '/ai/question';
     
-    const response = await fetch(window.location.origin + route, {
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        method: 'POST',
-        body: JSON.stringify({
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+
+    this.postData(realityEditor.network.getURL(ip, port, route),
+        {
             conversation: conversation,
             extra: extra,
-        })
-    });
-    const res = await response.json();
-    if (res.tools !== undefined) {
-        realityEditor.ai.getToolAnswer(res.category, res.tools);
-    } else {
-        realityEditor.ai.getAnswer(res.category, res.answer);
-    }
+        },
+        function (err, res) {
+            if (err) {
+                console.warn('postNewNode error:', err);
+            } else {
+                if (res.tools !== undefined) {
+                    realityEditor.ai.getToolAnswer(res.category, res.tools);
+                } else {
+                    realityEditor.ai.getAnswer(res.category, res.answer);
+                }
+            }
+        });
+
+    // TODO: re-enable this part if you want to use cloud proxy
+    // const response = await fetch(window.location.origin + route, {
+    //     headers: {
+    //         'Accept': 'application/json',
+    //         'Content-Type': 'application/json'
+    //     },
+    //     method: 'POST',
+    //     body: JSON.stringify({
+    //         conversation: conversation,
+    //         extra: extra,
+    //     })
+    // });
+    // const res = await response.json();
+    // if (res.tools !== undefined) {
+    //     realityEditor.ai.getToolAnswer(res.category, res.tools);
+    // } else {
+    //     realityEditor.ai.getAnswer(res.category, res.answer);
+    // }
 }
 
 /**
