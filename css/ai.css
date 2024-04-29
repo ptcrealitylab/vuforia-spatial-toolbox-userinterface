@@ -49,6 +49,10 @@
     overflow: scroll;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    background-color: rgba(0,0,0,0.5);
+    &:hover {
+        background-color: rgba(0,0,0,0.7);
+    }
 }
 #ai-chat-tool-dialogue-container::-webkit-scrollbar {
     display: none;
