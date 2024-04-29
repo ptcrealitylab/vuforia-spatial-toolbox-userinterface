@@ -1,12 +1,14 @@
 createNameSpace("realityEditor.ai");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
 
 (function(exports) {
     
     let aiPrompt = '';
     let categorize_prompt = 'Which one of the following items best describes my question? 1. "summary", 2. "debug", 3. "tools", 4. "pdf", 5. "tool content", 6. "not relevant". You can only return one of these items in string.';
     let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
+    let apiOrchestrator = null;
 
     function registerCallback(functionName, callback) {
         if (!callbackHandler) {
@@ -240,6 +242,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         setupEventListeners();
         setupSystemEventListeners();
         hideEndpointApiKeyAndShowSearchTextArea();
+
+        let endPoint = '';
+        let apiKey = '';
+        realityEditor.network.postAiApiKeys(endPoint, apiKey, true);
+
+        // TODO: figure out better place to initialize and make use of the apiOrchestrator
+        apiOrchestrator = new IframeAPIOrchestrator();
+        console.log(apiOrchestrator);
+        setTimeout(() => {
+            console.log(apiOrchestrator.getSpatialServiceRegistry());
+        }, 5000);
     }
     
     function authorSetToString(authorSet) {
@@ -260,7 +273,96 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
         return authorSetString;
     }
-    
+
+    function getPastMessages() {
+        let dialogueLengthTotal = dialogueContainer.children.length;
+        let maxDialogueLength = Math.min(PAST_MESSAGES_INCLUDED, dialogueLengthTotal);
+        let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
+        let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
+        let conversation = {};
+        for (let i = firstDialogueIndex; i < lastDialogueIndex; i++) {
+            let child = dialogueContainer.children[i];
+            let conversationObjectIndex = i;
+            if (child.classList.contains('ai-chat-tool-dialogue-my')) {
+                if (i === lastDialogueIndex - 1) { // last dialogue, need to include the categorize question here
+                    // conversation[conversationObjectIndex] = { role: "user",
+                    //     content: `${aiPrompt}\n${map.preprocess(child.innerHTML)}`,
+                    //     extra: `${categorize_prompt}`,
+                    //     communicationToolInfo: {
+                    //         authorAll,
+                    //         chatAll
+                    //     }
+                    // };
+                } else {
+                    conversation[conversationObjectIndex] = {role: "user", content: `${map.preprocess(child.innerHTML)}`};
+                }
+            } else if (child.classList.contains('ai-chat-tool-dialogue-ai')) {
+                conversation[conversationObjectIndex] = { role: "assistant", content: `${map.preprocess(child.innerHTML)}` };
+            }
+        }
+        return conversation;
+    }
+
+    function getToolAPIRegistry() {
+        return apiOrchestrator.getSpatialServiceRegistry();
+    }
+
+    function getConnectedUsers() {
+        let connectedUsers = [];
+        realityEditor.forEachObject((object, _objectId) => {
+            try {
+                if (realityEditor.avatar.utils.isAvatarObject(object)) {
+                    // avatarObjects.push(object);
+                    let avatarNodePath = realityEditor.avatar.utils.getAvatarNodeInfo(object);
+                    let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
+                    console.log(node);
+                    let userProfile = node.publicData.userProfile;
+                    connectedUsers.push(userProfile.name || 'Anonymous User');
+                }
+            } catch (e) {
+                console.log('error getting username of connected user', object)
+            }
+        });
+        return connectedUsers;
+    }
+
+    function getInteractionLog() {
+        return aiPrompt;
+    }
+
+    function getMostRecentMessage() {
+        if (dialogueContainer.childElementCount === 0) return null;
+        let mostRecentMessageDiv = dialogueContainer.lastChild;
+        return {
+            role: "user",
+            content: `${map.preprocess(mostRecentMessageDiv.innerHTML)}`,
+            // extra: `${categorize_prompt}`,
+            // communicationToolInfo: {
+            //     authorAll,
+            //     chatAll
+            // }
+        }
+    }
+
+    function askQuestionComplex() {
+        let mostRecentMessage = getMostRecentMessage();
+        let pastMessages = getPastMessages();
+        let interactionLog = getInteractionLog();
+        let toolAPIs = getToolAPIRegistry();
+        let connectedUsers = getConnectedUsers();
+
+        console.log('pastMessages', pastMessages);
+        console.log('mostRecentMessage', mostRecentMessage);
+        console.log('interactionLog', interactionLog);
+        console.log('toolAPIs', toolAPIs);
+
+        let extra = {
+            worldObjectId: realityEditor.worldObjects.getBestWorldObject().objectId,
+        }
+        // console.log(conversation);
+        realityEditor.network.postQuestionComplexToAI(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra);
+    }
+
     function askQuestion() {
         let authorAll = [];
         let chatAll = [];
@@ -508,7 +610,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         realityEditor.avatar.network.sendAiDialogue(realityEditor.avatar.getMyAvatarNodeInfo(), d.outerHTML);
         scrollToBottom();
 
-        askQuestion();
+        // askQuestion();
+        askQuestionComplex();
     }
 
     function pushAIDialogue(html) {
