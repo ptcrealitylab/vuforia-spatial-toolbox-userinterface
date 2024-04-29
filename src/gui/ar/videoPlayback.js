@@ -343,7 +343,7 @@ class VideoPlayer extends Followable {
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
         }
         if (!this.manuallyHidden) {
-            this.pointCloud.visible = true;
+            this.visible = true;
         }
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
     }
@@ -359,21 +359,28 @@ class VideoPlayer extends Followable {
     isShown() {
         return !this.manuallyHidden &&
             this.pointCloud &&
-            this.pointCloud.visible;
+            this.visible;
+    }
+
+    set visible(value) {
+        this.phone.visible = value;
+        if (this.pointCloud) {
+            this.pointCloud.visible = value;
+        }
+    }
+
+    get visible() {
+        return this.phone.visible;
     }
 
     show() {
         this.manuallyHidden = false;
-        if (this.pointCloud) {
-            this.pointCloud.visible = true;
-        }
+        this.visible = true;
     }
 
     hide() {
         this.manuallyHidden = true;
-        if (this.pointCloud) {
-            this.pointCloud.visible = false;
-        }
+        this.visible = false;
     }
 
     render() {
