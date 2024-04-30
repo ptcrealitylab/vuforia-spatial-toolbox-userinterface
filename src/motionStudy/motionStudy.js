@@ -568,14 +568,21 @@ export class MotionStudy {
         for (let pinnedRegionCard of this.pinnedRegionCards) {
             if ((Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
                (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
-                // New region card already exists in the list
-                regionCard.remove();
+                // New region card already exists in the list, remove it but
+                // harvest it for data
+                regionCard.remove()
 
-                // New region card may have an updated label
+                // pinned was created earlier and missed data
+                if (pinnedRegionCard.poses.length <= regionCard.poses.length) {
+                    pinnedRegionCard.setPoses(regionCard.poses);
+                }
+
+                const removedLabel = regionCard.getLabel();
+                // Removed region card may have an updated label
                 // TODO have better criteria than starting with Step
-                const newLabel = regionCard.labelElement.textContent;
-                if (newLabel && !newLabel.startsWith('Step ')) {
-                    pinnedRegionCard.setLabel(newLabel);
+                if (pinnedRegionCard.getLabel().startsWith('Step ') &&
+                    removedLabel && !removedLabel.startsWith('Step ')) {
+                    pinnedRegionCard.setLabel(removedLabel);
                 }
                 return;
             }
