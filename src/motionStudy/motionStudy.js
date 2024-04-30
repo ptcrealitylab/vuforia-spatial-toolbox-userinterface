@@ -376,6 +376,10 @@ export class MotionStudy {
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);
         }
+
+        if (this.lastHydratedData) {
+            this.hydrateMotionStudy(this.lastHydratedData);
+        }
     }
 
     updateStepVisibility(recordingState) {
