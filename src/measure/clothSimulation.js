@@ -32,6 +32,7 @@ import { CSS2DObject } from '../../thirdPartyCode/three/CSS2DRenderer.js';
                     worldId = realityEditor.sceneGraph.getWorldId();
                     if (worldId === null) return;
                     let cachedOcclusionObjectTemp = realityEditor.gui.threejsScene.getObjectForWorldRaycasts(worldId);
+                    if (cachedOcclusionObjectTemp === undefined) return;
                     cachedOcclusionObject = [cachedOcclusionObjectTemp.children[0], cachedOcclusionObjectTemp.children[1]];
                 }
                 if (realityEditor.sceneGraph.getGroundPlaneNode() !== undefined) {
