@@ -631,7 +631,7 @@ void main () {
     vFBOPosColor = inverse(view) * actualCam;
     vFBOPosColor.a = 1.;
     
-    if (vFBOPosColor.xyz == uCollidePosition) { // todo Steve new 11: directly compare the position here and see if it works
+    if (vFBOPosColor.xyz == uCollidePosition) {
         vIndex = 1.;
     } else {
         vIndex = 0.;

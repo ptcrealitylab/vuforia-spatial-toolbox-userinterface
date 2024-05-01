@@ -159,7 +159,6 @@ window.realityEditor = {
             vertexShader: {},
         }
     },
-    splatting: {},
     statusPage: {},
     spatialCapture: {},
     avatar: {
