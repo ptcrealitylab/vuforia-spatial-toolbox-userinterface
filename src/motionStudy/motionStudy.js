@@ -577,12 +577,11 @@ export class MotionStudy {
                     pinnedRegionCard.setPoses(regionCard.poses);
                 }
 
-                const removedLabel = regionCard.getLabel();
                 // Removed region card may have an updated label
                 // TODO have better criteria than starting with Step
-                if (pinnedRegionCard.getLabel().startsWith('Step ') &&
-                    removedLabel && !removedLabel.startsWith('Step ')) {
-                    pinnedRegionCard.setLabel(removedLabel);
+                const newLabel = regionCard.getLabel();
+                if (newLabel && !newLabel.startsWith('Step ')) {
+                    pinnedRegionCard.setLabel(newLabel);
                 }
                 return;
             }
