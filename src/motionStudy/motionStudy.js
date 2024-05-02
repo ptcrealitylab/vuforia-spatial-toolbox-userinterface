@@ -494,14 +494,24 @@ export class MotionStudy {
                 this.videoStartTime = parseFloat(matches[1]);
             }
             this.videoPlayer.hide();
-            this.videoPlayer.colorVideo.controls = true;
-            this.videoPlayer.colorVideo.style.display = '';
-            this.videoPlayer.colorVideo.classList.add('analytics-video');
+            const colorVideo = this.videoPlayer.colorVideo;
+
+            colorVideo.style.display = '';
+            colorVideo.classList.add('analytics-video');
+            // TODO(hobinjk): need way to differentiate iPhone video (portrait)
+            // from iPad (landscape)
+            // if (isPortrait) {
+            //     colorVideo.classList.add('analytics-video-portrait');
+            // }
             this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
 
             this.createVideoPlayerShowHideButton();
 
-            this.container.appendChild(this.videoPlayer.colorVideo);
+            const videoPlayerBackground = document.createElement('div');
+            videoPlayerBackground.classList.add('analytics-video-background');
+            this.container.appendChild(videoPlayerBackground);
+
+            this.container.appendChild(colorVideo);
         }
 
         if (data.valueAddWasteTime) {
