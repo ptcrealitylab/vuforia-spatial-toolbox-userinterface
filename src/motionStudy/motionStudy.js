@@ -566,8 +566,11 @@ export class MotionStudy {
         // switching from live to historical clone source
         const tolerance = 500;
         for (let pinnedRegionCard of this.pinnedRegionCards) {
-            if ((Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
-               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
+            const sameTimes = (Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
+               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance);
+            const sameLabel = pinnedRegionCard.getLabel() &&
+                (pinnedRegionCard.getLabel() === regionCard.getLabel());
+            if (sameTimes || sameLabel) {
                 // New region card already exists in the list, remove it but
                 // harvest it for data
                 regionCard.remove()
