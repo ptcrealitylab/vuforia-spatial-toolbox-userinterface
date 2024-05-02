@@ -531,6 +531,8 @@ export class MotionStudy {
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
+
+        this.sortPinnedRegionCards();
     }
 
     createVideoPlayerShowHideButton() {
@@ -642,6 +644,37 @@ export class MotionStudy {
         // }, patchTolerance);
     }
 
+    /**
+     * Bubble sort pinned region cards along with their elements because we
+     * want to modify the html as little as possible (reducing chance of losing
+     * the current edit cursor, and providing vaguely better perf)
+     */
+    sortPinnedRegionCards() {
+        for (let i = this.pinnedRegionCards.length - 1; i >= 0; i--) {
+            const bubblingCard = this.pinnedRegionCards[i];
+            let insertBeforeThisCard = null;
+            let insertBeforeThisIndex = 0;
+            for (let j = i - 1; j >= 0; j--) {
+                const card = this.pinnedRegionCards[j];
+                if (card.startTime < bubblingCard.startTime) {
+                    // Sorted
+                    break;
+                }
+                insertBeforeThisCard = card;
+                insertBeforeThisIndex = j;
+            }
+            if (insertBeforeThisCard) {
+                this.pinnedRegionCardsContainer.insertBefore(bubblingCard.element, insertBeforeThisCard.element);
+                // Remove bubblingCard from its current index
+                this.pinnedRegionCards.splice(i, 1);
+                // Insert it into the list at its new index
+                this.pinnedRegionCards.splice(insertBeforeThisIndex, 0, bubblingCard);
+                // Process the new element at index `i` since it changed
+                i++;
+            }
+        }
+    }
+
     writeMotionStudyData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
@@ -695,6 +728,8 @@ export class MotionStudy {
             this.writeMotionStudyData();
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
+
+            this.sortPinnedRegionCards();
         }, 750);
     }
 
