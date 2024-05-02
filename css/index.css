@@ -2049,7 +2049,7 @@ Logic Interface CSS
     bottom: calc(320px + 91px); /* guess at video top */
 }
 
-.analytics-video {
+.analytics-video, .analytics-video-background {
     position: absolute;
     left: 35px;
     bottom: calc(320px - 66px - 66px + 14px);
@@ -2057,9 +2057,18 @@ Logic Interface CSS
     height: 151px;
 
     z-index: 2900;
-    transform: translateZ(2900px);
+    transform: translateZ(2900px) rotate(180deg);
 
     pointer-events: all;
+}
+
+.analytics-video-background {
+    background-color: rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+
+.analytics-video-portrait {
+    transform: translateZ(2900px) rotate(-90deg) scale(calc(151 / 268));
 }
 
 .analytics-video-toggle {
