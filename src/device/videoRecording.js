@@ -299,7 +299,7 @@ createNameSpace("realityEditor.device.videoRecording");
     //////////////////////////////////////////
 
     // Captures color, depth, and pose data.
-    function startVirtualizerRecording() {
+    function startVirtualizerRecording(callback) {
         const bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
         const onSettings = (serverUrl, networkId, networkSecret) => {
             privateState.virtualizerData = {
@@ -316,7 +316,8 @@ createNameSpace("realityEditor.device.videoRecording");
                 networkSecret,
             });
             setTimeout(() => {
-                realityEditor.app.appFunctionCall('startVirtualizerRecording', {});
+                realityEditor.app.appFunctionCall('startVirtualizerRecording', {}, 'realityEditor.device.videoRecording.onVirtualizerRecordingError("__ARG1__", "__ARG2__");');
+                privateState.virtualizerErrorCallback = callback;
             }, 1000);
         }
 
@@ -333,13 +334,23 @@ createNameSpace("realityEditor.device.videoRecording");
     }
 
     function stopVirtualizerRecording(callback) {
-        realityEditor.app.appFunctionCall('stopVirtualizerRecording', {}, 'realityEditor.device.videoRecording.onStopVirtualizerRecording("__ARG1__", "__ARG2__");');
-        privateState.virtualizerCallback = callback;
+        if (realityEditor.device.environment.isDesktop()) {
+            privateState.virtualizerCallback('Unable to record on desktop');
+        } else {
+            realityEditor.app.appFunctionCall('stopVirtualizerRecording', {}, 'realityEditor.device.videoRecording.onStopVirtualizerRecording("__ARG1__", "__ARG2__", "__ARG3__", "__ARG4__");');
+            privateState.virtualizerCallback = callback;
+        }
     }
-    
-    function onStopVirtualizerRecording(recordingId, deviceId) {
+
+    function onStopVirtualizerRecording(error, recordingId, deviceId, orientation) {
         const baseUrl = `https://${privateState.virtualizerData.serverUrl}/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
-        privateState.virtualizerCallback(baseUrl, recordingId, deviceId);
+        privateState.virtualizerCallback(error, baseUrl, recordingId, deviceId, orientation);
+    }
+
+    function onVirtualizerRecordingError(error) {
+        if (privateState.virtualizerErrorCallback) {
+            privateState.virtualizerErrorCallback(error);
+        }
     }
 
     //////////////////////////////////////////
@@ -358,5 +369,6 @@ createNameSpace("realityEditor.device.videoRecording");
     exports.startVirtualizerRecording = startVirtualizerRecording;
     exports.stopVirtualizerRecording = stopVirtualizerRecording;
     exports.onStopVirtualizerRecording = onStopVirtualizerRecording;
-    
+    exports.onVirtualizerRecordingError = onVirtualizerRecordingError;
+
 }(realityEditor.device.videoRecording));

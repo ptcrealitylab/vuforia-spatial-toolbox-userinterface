@@ -1971,14 +1971,22 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
     if (typeof msgContent.virtualizerRecording !== "undefined") {
         if (msgContent.virtualizerRecording) {
-            realityEditor.device.videoRecording.startVirtualizerRecording();
+            realityEditor.device.videoRecording.startVirtualizerRecording((error) => {
+                const thisMsg = {
+                    virtualizerRecordingError: error,
+                };
+                globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
+           });
+
         } else {
-            realityEditor.device.videoRecording.stopVirtualizerRecording((baseUrl, recordingId, deviceId) => {
+            realityEditor.device.videoRecording.stopVirtualizerRecording((error, baseUrl, recordingId, deviceId, orientation) => {
                 const thisMsg = {
                     virtualizerRecordingData: {
+                        error,
                         baseUrl,
                         recordingId,
-                        deviceId
+                        deviceId,
+                        orientation,
                     }
                 };
                 globalDOMCache["iframe" + msgContent.frame].contentWindow.postMessage(JSON.stringify(thisMsg), '*');
