@@ -49,6 +49,7 @@ export class RegionCard {
         this.accentColor = '';
         // If a region card has control over the timeline's displayed points
         this.displayActive = false;
+        this.updated = true;
         this.onPointerOver = this.onPointerOver.bind(this);
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);

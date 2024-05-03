@@ -517,6 +517,10 @@ export class MotionStudy {
             this.titleInput.textContent = data.title;
         }
 
+        for (let pinnedRegionCard of this.pinnedRegionCards) {
+            pinnedRegionCard.updated = false;
+        }
+
         for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
@@ -531,6 +535,14 @@ export class MotionStudy {
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
+
+        this.pinnedRegionCards = this.pinnedRegionCards.filter(pinnedRegionCard => {
+            if (pinnedRegionCard.updated) {
+                return true;
+            }
+            pinnedRegionCard.remove();
+            return false;
+        });
 
         this.sortPinnedRegionCards();
     }
@@ -576,6 +588,8 @@ export class MotionStudy {
                 // New region card already exists in the list, remove it but
                 // harvest it for data
                 regionCard.remove()
+
+                pinnedRegionCard.updated = true;
 
                 // pinned was created earlier and missed data
                 if (pinnedRegionCard.poses.length <= regionCard.poses.length) {
