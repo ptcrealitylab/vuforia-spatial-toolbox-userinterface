@@ -1921,23 +1921,32 @@ Logic Interface CSS
 
 #analytics-step-label-container {
     position: absolute;
-    bottom: calc(48px + 128px + 26px);
+    bottom: calc(32px + 128px + 26px);
     left: calc(50% + 12px + 64px + 24px);
     pointer-events: all;
 }
 
-.analytics-step {
-    text-align: left;
-    display: block;
-    color: white;
-    background-color: #000000a0;
-    padding: 10px;
-    max-width: 20vw;
-    cursor: pointer;
+#analytics-step-label-container > .analytics-region-card {
+    position: relative;
+    transform: none;
+    top: auto;
+    left: auto;
 }
 
-.analytics-step-label-container-active {
-    border: 1px solid white;
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-label {
+    display: block;
+}
+
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-button-container {
+    display: none;
+}
+
+#analytics-step-label-container > .analytics-region-card.analytics-region-card-no-windchill > .analytics-region-card-windchill {
+    display: none;
+}
+
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-windchill {
+    display: block;
 }
 
 #analytics-step-file {
@@ -2034,6 +2043,10 @@ Logic Interface CSS
     position: relative;
     margin: 10px 0;
     transform: translateZ(3000px);
+}
+
+.analytics-region-card.analytics-region-card-no-windchill > .analytics-region-card-windchill {
+    display: none;
 }
 
 .analytics-pinned-region-cards-container {
