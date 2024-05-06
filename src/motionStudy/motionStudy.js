@@ -498,11 +498,13 @@ export class MotionStudy {
 
             colorVideo.style.display = '';
             colorVideo.classList.add('analytics-video');
-            // TODO(hobinjk): need way to differentiate iPhone video (portrait)
-            // from iPad (landscape)
-            // if (isPortrait) {
-            //     colorVideo.classList.add('analytics-video-portrait');
-            // }
+
+            // This could expand to cover all the various orientations but for
+            // now we just care about iPad (landscape) vs iPhone
+            const isPortrait = parseInt(data.orientation) === 1;
+            if (isPortrait) {
+                colorVideo.classList.add('analytics-video-portrait');
+            }
             this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
 
             this.createVideoPlayerShowHideButton();
