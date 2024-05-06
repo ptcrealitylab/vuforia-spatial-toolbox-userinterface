@@ -497,6 +497,7 @@ export class MotionStudy {
             const colorVideo = this.videoPlayer.colorVideo;
 
             colorVideo.style.display = '';
+            colorVideo.controls = true;
             colorVideo.classList.add('analytics-video');
 
             // This could expand to cover all the various orientations but for
