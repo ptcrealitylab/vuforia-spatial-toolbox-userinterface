@@ -1,0 +1,115 @@
+import {windchillBaseUrl, windchillUsername, windchillPassword} from './config.js';
+import {MPMAPI} from './MPMAPI.js';
+
+const WRITE_DELAY = 10000;
+
+/**
+ * High-level operations implemented on top of MPMAPI
+ */
+export class Windchill {
+    /**
+     * @param {string} baseUrl - Base url of windchill instance
+     * @param {string} username
+     * @param {string} password
+     */
+    constructor(baseUrl = windchillBaseUrl, username = windchillUsername, password = windchillPassword) {
+        this.api = new MPMAPI(baseUrl, username, password);
+        this.writing = false;
+        this.writeTimeout = null;
+    }
+
+    /**
+     * @return {Array<ProcessPlan>}
+     */
+    async getProcessPlans(nameFilter) {
+        const data = await this.api.getProcessPlans(`Name eq '${nameFilter}'`);
+        const plans = data.value;
+        return plans.map(plan => {
+            return {
+                id: plan.ID,
+                name: plan.Name,
+                checkOutState: plan.CheckoutState,
+            };
+        });
+    }
+
+    async getOperations(processPlanId) {
+        const data = await this.api.getOperations(processPlanId);
+        let components = data.Components;
+        const steps = [];
+        for (const component of components) {
+            let id = component.OperationHolder.ID;
+            let laborTimeSeconds = component.OperationHolder.LaborTime.Value;
+            let description = component.OperationHolder.Description;
+            let name = component.OperationHolder.Name;
+
+            steps.push({
+                id,
+                laborTimeSeconds,
+                name,
+                description,
+            });
+        }
+        return steps;
+    }
+
+    async writeProcessPlanData(plan, regionCards) {
+        if (this.writeTimeout) {
+            clearTimeout(this.writeTimeout);
+        }
+        this.writeTimeout = setTimeout(async () => {
+            if (this.writing) {
+                return;
+            }
+            try {
+                this.writing = true;
+                // Get a checked out operation inside of a checked out process
+                // plan. Makes sure to pass checked-out ids if they ever change
+                let coPlan = await this.api.checkOutProcessPlan(plan.id);
+                let coPlanOps = await this.getOperations(coPlan.id);
+                for (let coPlanOp of coPlanOps) {
+                    const regionCard = regionCards.find(card => {
+                        return (card.step && (card.step.id === coPlanOp.id));
+                    });
+                    if (!regionCard) {
+                        continue;
+                    }
+
+                    let coPlanCoOp = await this.api.checkOutOperation(coPlanOp.id);
+                    // Forces regionCard to calculate summary statistics
+                    regionCard.getMotionSummaryText();
+                    const vaPercents = regionCard.getValueAddWasteTimePercents();
+                    let valueAdd = null;
+                    let waste = null;
+                    if (vaPercents) {
+                        valueAdd = Math.round(vaPercents.valuePercent);
+                        waste = Math.round(vaPercents.wastePercent);
+                    }
+
+                    // Build a deep link on top of the existing window
+                    // location. Expected to include toolId pointing to the
+                    // motionStudy and a fragment identifier for the card
+                    let url = new URL(window.location);
+                    let params = new URLSearchParams(url.search);
+                    params.set('toolId', regionCard.motionStudy.frame);
+                    url.search = params.toString();
+                    url.hash = regionCard.step.id;
+                    await this.api.patchVariables(coPlanCoOp.id, {
+                        URL: url.toString(),
+                        DistanceTraveled: (regionCard.distanceMm / 1000).toString(),
+                        Duration: Math.round(regionCard.durationMs),
+                        ValueAdd: valueAdd,
+                        Waste: waste,
+                        // TODO REBA statistics
+                    });
+                    await this.api.checkInOperation(coPlanCoOp.id);
+                }
+                await this.api.checkInProcessPlan(coPlan.id);
+            } catch (e) {
+                console.error('Unrecoverable error persisting to MPMLink', e);
+            } finally {
+                this.writing = false;
+            }
+        }, WRITE_DELAY);
+    }
+}
