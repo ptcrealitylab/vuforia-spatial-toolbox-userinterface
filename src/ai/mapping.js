@@ -44,15 +44,27 @@ createNameSpace("realityEditor.ai.mapping");
     }
     
     // preprocess the historical message that got fed into ai prompt, to replace actual names with id names
+    // function preprocess(html) {
+    //     // take the inner html, and convert id's back to scrambled id's, and replace name's with scrambled id's
+    //     let resultHTML = new DOMParser().parseFromString(html, 'text/html');
+    //     threeMap.idToScrambledId.forEach((value, key) => {
+    //         let spans = [...resultHTML.querySelectorAll(`span[data-id="${key}"]`)];
+    //         spans.forEach(span => {
+    //             span.textContent = value;
+    //         });
+    //     })
+    //     return resultHTML.body.innerText;
+    // }
+
     function preprocess(html) {
         // take the inner html, and convert id's back to scrambled id's, and replace name's with scrambled id's
         let resultHTML = new DOMParser().parseFromString(html, 'text/html');
-        threeMap.idToScrambledId.forEach((value, key) => {
-            let spans = [...resultHTML.querySelectorAll(`span[data-id="${key}"]`)];
-            spans.forEach(span => {
-                span.textContent = value;
-            });
-        })
+        // threeMap.idToScrambledId.forEach((value, key) => {
+        //     let spans = [...resultHTML.querySelectorAll(`span[data-id="${key}"]`)];
+        //     spans.forEach(span => {
+        //         span.textContent = value;
+        //     });
+        // })
         return resultHTML.body.innerText;
     }
     
@@ -78,6 +90,37 @@ createNameSpace("realityEditor.ai.mapping");
         return d;
     }
     
+    function postprocessBen(text) {
+
+        if (!text.trim()) {
+            console.log('error: post processing but no text');
+            return;
+        }
+        let html = text.replace(/\n/g, '<br>');
+
+        // threeMap.scrambledIdToId.forEach((value, key) => {
+        //     let regex = new RegExp(`${key}`, 'g');
+        //     if (html.match(regex)) {
+        //         html = html.replace(regex, `<span class='ai-highlight' data-id=${value}>${threeMap.idToName.get(value)}</span>`); // convert name back to actual id, for mouse click --> line animation
+        //     }
+        // });
+        
+        for (const [id, name] of threeMap.idToName.entries()) {
+            console.log(`id: ${id}, name: ${name}`);
+
+            let regex = new RegExp(`${name}`, 'g');
+            if (html.match(regex)) {
+                html = html.replace(regex, `<span class='ai-highlight' data-id=${id}>${name}</span>`); // convert name back to actual id, for mouse click --> line animation
+            }
+        }
+
+        let d = document.createElement('div');
+        d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai');
+        d.innerHTML = html;
+
+        return d;
+    }
+    
     function setupEventListeners() {
         let currentDiv = null;
 
@@ -95,6 +138,9 @@ createNameSpace("realityEditor.ai.mapping");
         dialogueContainer.addEventListener('mouseover', (e) => {
             currentDiv = e.target;
             if (currentDiv.classList.contains('ai-highlight')) {
+                if (currentDiv.dataset.id.includes('_part_')) {
+                    // console.log('mouseover part', currentDiv);
+                }
                 if (currentDiv.dataset.id.match(avatarRegex)) {
                     // todo Steve: make a line link to the corresponding avatar icon? Or turn camera to the avatar cube?
                 } else if (currentDiv.dataset.id.match(toolRegex)) {
@@ -136,5 +182,6 @@ createNameSpace("realityEditor.ai.mapping");
     exports.printMap = printMap;
     exports.preprocess = preprocess;
     exports.postprocess = postprocess;
+    exports.postprocessBen = postprocessBen;
     
 }(realityEditor.ai.mapping));

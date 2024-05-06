@@ -952,8 +952,7 @@ async function main(initialFilePath) {
         }, 500);
     }
 
-    const frame = (now) => {
-
+    function render(now) {
         // obtain camera pose from Toolbox scene graph 
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
         let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
@@ -1016,7 +1015,7 @@ async function main(initialFilePath) {
                     realityEditor.spatialCursor.gsToggleRaycast(false);
                     break FBORendering;
                 }
-                realityEditor.spatialCursor.gsToggleRaycast(true);
+                realityEditor.spatialCursor.gsToggleRaycast(false);
                 // render to frame buffer object texture
                 gl.uniform1i(u_uIsGSRaycasting, 1);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
@@ -1055,8 +1054,12 @@ async function main(initialFilePath) {
         }
         fps.innerText = Math.round(avgFps) + " fps";
         lastFrame = now;
+    }
+
+    function frame(now) {
+        render(now)
         window.requestAnimationFrame(frame);
-    };
+    }
 
     frame();
 

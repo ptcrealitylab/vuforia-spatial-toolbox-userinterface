@@ -1781,8 +1781,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
                 realityEditor.gui.ar.positioning.setVehicleScale(activeVehicle, 3.0);
             }
-            if (globalDOMCache[msgContent.frame]) {
-                globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+
+            if (msgContent.showWindowTitleBar) {
+                realityEditor.gui.ar.positioning.addTitleBarToTool(msgContent.object, msgContent.frame);
+            } else {
+                if (globalDOMCache[msgContent.frame]) {
+                    globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+                }
             }
         } else {
             if (globalDOMCache[msgContent.frame]) {
@@ -2396,7 +2401,10 @@ function findWorldId() {
 }
 
 realityEditor.network.postAiApiKeys = async function(endpoint, azureApiKey, isInit = false) {
-    if (endpoint === undefined || azureApiKey === undefined) return;
+    if (!endpoint || !azureApiKey) {
+        console.warn('cant post API keys because endpoint or api key is invalid');
+        return;
+    }
     let worldId = realityEditor.worldObjects.getBestWorldObject();
     worldId = await findWorldId();
     let ip = worldId.ip;
@@ -2470,8 +2478,9 @@ realityEditor.network.postQuestionToAssistant = async function(mostRecentMessage
 
 }
 
-realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra) {
-    let route = '/ai/questionComplex';
+realityEditor.network.postQuestionChainToAI = async function(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra) {
+    // let route = '/ai/questionChain';
+    let route = '/ai/questionAgents';
 
     let worldId = realityEditor.worldObjects.getBestWorldObject();
     let ip = worldId.ip;
@@ -2489,15 +2498,104 @@ realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage
         function (err, res) {
             console.log(res);
             if (err) {
-                console.warn('ai/questionComplex error:', err);
+                console.warn('ai/questionAgents error:', err);
             } else {
                 // if (res.tools !== undefined) {
                 //     realityEditor.ai.getToolAnswer(res.category, res.tools);
                 // } else {
                 // realityEditor.ai.getAnswer(res.category, res.answer);
-                console.log(res.answer, res.apiAnswer);
-                realityEditor.ai.getAnswerComplex(res.answer, res.apiAnswer);
+                console.log(res.answer);
+                realityEditor.ai.getAnswerChain(res.answer);
                 // }
+            }
+        });
+
+    // TODO: update the URL to match the old postQuestionToAI implementation if you want to use cloud proxy
+};
+
+realityEditor.network.postFunctionResultToAI = async function(functionCallId, functionResult) {
+    let route = '/ai/continue-query';  //'/ai/questionComplex';
+
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+    
+    return new Promise((resolve, reject) => {
+
+        this.postData(realityEditor.network.getURL(ip, port, route),
+            { functionCallId, result: functionResult },
+            function (err, res) {
+                // console.log(res);
+                if (err) {
+                    console.warn('ai/continue-query error:', err);
+                    reject(err);
+                } else {
+                    resolve(res);
+                }
+            });
+
+    });
+};
+
+realityEditor.network.queryAIStatus = async function(functionCallId) {
+    let route = `/ai/query-status?functionCallId=${functionCallId}`;
+    // const res = await fetch(`/ai/query-status?functionCallId=${functionCallId}`);
+
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+    
+    return await fetch(realityEditor.network.getURL(ip, port, route));
+
+    // return new Promise(async (resolve, reject) => {
+    //    
+    //     const res = 
+    //
+    //     this.postData(,
+    //         { functionCallId, functionResult },
+    //         function (err, res) {
+    //             // console.log(res);
+    //             if (err) {
+    //                 console.warn('ai/function-result error:', err);
+    //                 reject(err);
+    //             } else {
+    //                 resolve(res);
+    //             }
+    //         });
+    //
+    // });
+};
+
+realityEditor.network.postQuestionComplexToAI = async function(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, myUser, simplifiedDataModel, extra) {
+    let route = '/ai/query';  //'/ai/questionComplex';
+
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+
+    this.postData(realityEditor.network.getURL(ip, port, route),
+        {
+            mostRecentMessage: mostRecentMessage,
+            pastMessages: pastMessages,
+            interactionLog: interactionLog,
+            toolAPIs: toolAPIs,
+            connectedUsers: connectedUsers,
+            myUser: myUser,
+            simplifiedDataModel: simplifiedDataModel,
+            extra: extra,
+        },
+        function (err, res) {
+            console.log(res);
+            if (err) {
+                console.warn('ai/questionComplex error:', err);
+            } else {
+                if (res.functionCallId) {
+                    realityEditor.ai.handleFunctionCall(res.functionCallId, res.fnName, res.fnArgs);
+                } else {
+                    console.log(res.answer, res.apiAnswer);
+                    // realityEditor.ai.getAnswerComplex(res.answer, res.apiAnswer);
+                    realityEditor.ai.displayAnswer(res.answer);
+                }
             }
         });
 
@@ -3422,14 +3520,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
         setTimeout(function() {
-            var trueSize = {
-                width: globalDOMCache['iframe' + activeKey].clientWidth,
-                height: globalDOMCache['iframe' + activeKey].clientHeight
-            };
-
-            var cornerPadding = 24;
-            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding*2 + 'px';
-            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding*2 + 'px';
+            realityEditor.gui.ar.positioning.updateTitleBarIfNeeded(objectKey, activeKey);
+            realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, activeKey);
         }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 

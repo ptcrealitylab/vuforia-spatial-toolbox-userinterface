@@ -441,9 +441,25 @@ class LineToFrameAnimation {
         // if we stop hovering, draw a receding animation back to the last hovered icon element
         if (!this.hoveredFrameId && !this.lastAnimationPositions) return;
 
-        let frameScreenPosition = this.hoveredFrameId ?
-            realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
-            this.lastAnimationPositions.frame;
+        let frameScreenPosition = {
+            x: 0,
+            y: 0
+        };
+        
+        if (this.hoveredFrameId.includes('_part_')) {
+            // console.log('todo: ben implement part screen position');
+            let partInfo = realityEditor.ai.getPartInfo(this.hoveredFrameId);
+            if (partInfo) {
+                // let position = partInfo.position;
+                // let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+                let partPosition = new realityEditor.gui.threejsScene.THREE.Vector3(partInfo.position.x, partInfo.position.y, partInfo.position.z);
+                frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(partPosition);
+            }
+        } else {
+            frameScreenPosition = this.hoveredFrameId ?
+                realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
+                this.lastAnimationPositions.frame;
+        }
 
         let lineStartX = 0;
         let lineStartY = 0;

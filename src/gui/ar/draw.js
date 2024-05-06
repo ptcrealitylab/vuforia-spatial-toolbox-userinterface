@@ -1179,6 +1179,19 @@ realityEditor.gui.ar.draw.drawTransformed = function (objectKey, activeKey, acti
                 let modelViewMatrix = [];
                 utilities.multiplyMatrix(modelMatrix, realityEditor.sceneGraph.getViewMatrix(), modelViewMatrix);
 
+                // the lookAt method isn't perfect – it has a singularity as you approach top or bottom
+                // so let's correct the scale and remove the rotation
+                let scale = realityEditor.sceneGraph.getSceneNodeById(activeKey).getVehicleScale();
+
+                modelViewMatrix[0] = scale;
+                modelViewMatrix[5] = -scale;
+                modelViewMatrix[10] = scale;
+
+                // ensure we preserve the scale from before
+                    // let transformMatrix = utils.newIdentityMatrix();
+                    // [0, 5, 10].forEach(index => transformMatrix[index] = scale);
+                    // utils.multiplyMatrix(transformMatrix, correspondingModelMatrix, scaledModelMatrix);
+
                 // In AR mode, we need to use this lookAt method, because camera up vec doesn't always match scene up vec
                 if (realityEditor.device.environment.isARMode()) {
                     utilities.multiplyMatrix(modelViewMatrix, globalStates.projectionMatrix, finalMatrix);

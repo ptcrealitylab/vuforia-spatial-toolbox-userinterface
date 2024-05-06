@@ -9,6 +9,12 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     let categorize_prompt = 'Which one of the following items best describes my question? 1. "summary", 2. "debug", 3. "tools", 4. "pdf", 5. "tool content", 6. "not relevant". You can only return one of these items in string.';
     let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
     let apiOrchestrator = null;
+    
+    let partMap = {};
+    
+    function getPartInfo(partId) {
+        return partMap[partId];
+    }
 
     function registerCallback(functionName, callback) {
         if (!callbackHandler) {
@@ -40,13 +46,30 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     }
     
     function focusOnFrame(frameKey) {
-        let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
-        let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
-        let frameDirection = cameraPosition.clone().sub(framePosition).normalize();
-        callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
-            pos: {x: framePosition.x, y: framePosition.y, z: framePosition.z},
-            dir: {x: frameDirection.x, y: frameDirection.y, z: frameDirection.z}
-        });
+        if (frameKey.includes('_part_')) {
+            // special case for parts
+            let partInfo = partMap[frameKey];
+            if (partInfo) {
+                console.log(partInfo);
+                let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+                let partPosition = new THREE.Vector3(partInfo.position.x, partInfo.position.y - floorOffset, partInfo.position.z);
+                // let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
+                let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+                let partDirection = cameraPosition.clone().sub(partPosition).normalize();
+                callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
+                    pos: {x: partPosition.x, y: partPosition.y, z: partPosition.z},
+                    dir: {x: partDirection.x, y: partDirection.y, z: partDirection.z}
+                });
+            }
+        } else {
+            let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
+            let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+            let frameDirection = cameraPosition.clone().sub(framePosition).normalize();
+            callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
+                pos: {x: framePosition.x, y: framePosition.y, z: framePosition.z},
+                dir: {x: frameDirection.x, y: frameDirection.y, z: frameDirection.z}
+            });
+        }
     }
     
     function onFrameAdded(params, avatarId = 'Anonymous id') {
@@ -70,6 +93,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         map.addToMap(avatarId, avatarName, avatarScrambledId);
         map.addToMap(frameId, frameType, frameScrambledId);
         let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+        console.log(newInfo);
         // let newInfo = `${avatarId} added ${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         // let newInfo = `The user ${avatarName} id:${avatarId} added a tool ${frameType} id:${frameId} at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
         aiPrompt += `\n${newInfo}`;
@@ -243,9 +267,17 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         setupSystemEventListeners();
         hideEndpointApiKeyAndShowSearchTextArea();
 
-        let endPoint = '';
-        let apiKey = '';
-        realityEditor.network.postAiApiKeys(endPoint, apiKey, true);
+        let credentials = {
+            gpt4o: {
+                endPoint: '',
+                apiKey: ''
+            },
+            gpt4andOlder: {
+                endPoint: '',
+                apiKey: ''
+            }
+        }
+        realityEditor.network.postAiApiKeys(credentials.gpt4o.endPoint, credentials.gpt4o.apiKey, true);
 
         // TODO: figure out better place to initialize and make use of the apiOrchestrator
         apiOrchestrator = new IframeAPIOrchestrator(map);
@@ -253,6 +285,56 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         // setTimeout(() => {
         //     console.log(apiOrchestrator.getSpatialServiceRegistry());
         // }, 5000);
+        
+        apiOrchestrator.handleSpecialCase('getPartNamesAndPositions', (res, toolName, toolId, parameterInfo, functionArgs) => {
+            console.log('apiOrchestrator special case', res);
+
+            if (res && res.length) {
+                res.forEach(part => {
+                    // let timestamp = getFormattedTime();
+                    let partId = makeSafeString(`${toolId}_part_${part.name}`); 
+                    let partName = part.name;
+                    // let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+                    // let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+                    let partScrambledId = realityEditor.ai.crc.generateChecksum(partId);
+                    map.addToMap(partId, partName, partScrambledId);
+                    // map.addToMap(frameId, frameType, frameScrambledId);
+                    // let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
+                    // console.log(newInfo);
+                    
+                    partMap[partId] = {
+                        name: partName,
+                        position: {
+                            x: part.x,
+                            y: part.y,
+                            z: part.z
+                        }
+                    };
+                });
+            }
+
+        });
+
+        apiOrchestrator.handleSpecialCase('setPartPosition', (res, toolName, toolId, parameterInfo, functionArgs) => {
+            console.log('apiOrchestrator setPartPosition special case', res);
+            
+            let partName = functionArgs.partName;
+            if (!partName || !res) return;
+            let partId = makeSafeString(`${toolId}_part_${partName}`);
+
+            partMap[partId] = {
+                name: partName,
+                position: {
+                    x: res.x,
+                    y: res.y,
+                    z: res.z
+                }
+            };
+        });
+    }
+
+    function makeSafeString(input) {
+        return input.replace(/\s+/g, '_');
     }
     
     function authorSetToString(authorSet) {
@@ -274,11 +356,12 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         return authorSetString;
     }
 
-    function getPastMessages() {
+    function getPastMessages(maxNumberOfPastMessages) {
         let dialogueLengthTotal = dialogueContainer.children.length;
-        let maxDialogueLength = Math.min(PAST_MESSAGES_INCLUDED, dialogueLengthTotal);
-        let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
-        let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (PAST_MESSAGES_INCLUDED >= dialogueLengthTotal ? 0 : 1);
+        let pastMessagesIncluded = typeof maxNumberOfPastMessages === 'number' ? maxNumberOfPastMessages : PAST_MESSAGES_INCLUDED;
+        let maxDialogueLength = Math.min(pastMessagesIncluded, dialogueLengthTotal);
+        let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (pastMessagesIncluded >= dialogueLengthTotal ? 0 : 1);
+        let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (pastMessagesIncluded >= dialogueLengthTotal ? 0 : 1);
         let conversation = {};
         for (let i = firstDialogueIndex; i < lastDialogueIndex; i++) {
             let child = dialogueContainer.children[i];
@@ -320,7 +403,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
                     let cursorState = node.publicData.cursorState;
                     connectedUsers.push({
                         name: userProfile.name || 'Anonymous User',
-                        spatialCursorPosition: [cursorState.matrix.elements[12], cursorState.matrix.elements[13], cursorState.matrix.elements[14]]
+                        spatialCursorPosition: [Math.round(cursorState.matrix.elements[12]), Math.round(cursorState.matrix.elements[13]), Math.round(cursorState.matrix.elements[14])]
                     });
                 }
             } catch (e) {
@@ -328,6 +411,78 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
             }
         });
         return connectedUsers;
+    }
+
+    function getMyUser() {
+        let myAvatarId = realityEditor.avatar.getMyAvatarId();
+        let myAvatarObject = realityEditor.getObject(myAvatarId);
+        if (!myAvatarObject) return null;
+        let avatarNodePath = realityEditor.avatar.utils.getAvatarNodeInfo(myAvatarObject);
+        let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
+        let userProfile = node.publicData.userProfile;
+        let cursorState = node.publicData.cursorState;
+        // return realityEditor.avatar.utils.getAvatarName();
+        return {
+            name: userProfile.name || 'Anonymous User',
+            spatialCursorPosition: [
+                parseFloat(cursorState.matrix.elements[12].toFixed(2)),
+                parseFloat(cursorState.matrix.elements[13].toFixed(2)),
+                parseFloat(cursorState.matrix.elements[14].toFixed(2))]
+        };
+    }
+    
+    function getSimplifiedDataModel() {
+        let dataModel = {
+            objects: {}
+        };
+        
+        realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
+            let object = realityEditor.getObject(objectKey);
+            if (realityEditor.avatar.utils.isAvatarObject(object)) return; // skip avatar objects in this summary
+            let frame = realityEditor.getFrame(objectKey, frameKey);
+            if (typeof dataModel.objects[objectKey] === 'undefined') {
+                // let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
+                let objectWorldPosition = realityEditor.sceneGraph.getWorldPosition(objectKey);
+                objectWorldPosition.x = Math.round(objectWorldPosition.x);
+                objectWorldPosition.y = Math.round(objectWorldPosition.y);
+                objectWorldPosition.z = Math.round(objectWorldPosition.z);
+                dataModel.objects[objectKey] = {
+                    // objectId: objectKey,
+                    objectType: object.type,
+                    worldPosition: objectWorldPosition,
+                    // worldMatrix: objectSceneNode.worldMatrix.map(elt => {
+                    //     return parseFloat(elt.toFixed(2));
+                    // }),
+                    // localMatrix: objectSceneNode.localMatrix,
+                    childApplications: {}
+                };
+            }
+            if (typeof dataModel.objects[objectKey].childApplications[frameKey] === 'undefined') {
+                // let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
+                let frameWorldPosition = realityEditor.sceneGraph.getWorldPosition(frameKey);
+                frameWorldPosition.x = Math.round(frameWorldPosition.x);
+                frameWorldPosition.y = Math.round(frameWorldPosition.y);
+                frameWorldPosition.z = Math.round(frameWorldPosition.z);
+                dataModel.objects[objectKey].childApplications[frameKey] = {
+                    // applicationId: frame.uuid,
+                    applicationType: frame.src,
+                    worldPosition: frameWorldPosition,
+                    // worldMatrix: frameSceneNode.worldMatrix.map(elt => {
+                    //     return parseFloat(elt.toFixed(2));
+                    // }),
+                    // localMatrix: frameSceneNode.localMatrix,
+                }
+
+                // let timestamp = getFormattedTime();
+                // let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+                // let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+                let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameKey);
+                // map.addToMap(avatarId, avatarName, avatarScrambledId);
+                map.addToMap(frameKey, frame.src, frameScrambledId);
+            }
+        });
+        
+        return dataModel;
     }
 
     function getInteractionLog() {
@@ -348,17 +503,15 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         }
     }
 
-    // NOTE: this isn't used currently
-    function askAssistantQuestion() {
-        realityEditor.network.postQuestionToAssistant(getMostRecentMessage());
-    }
-
     function askQuestionComplex() {
         let mostRecentMessage = getMostRecentMessage();
         let pastMessages = getPastMessages();
+        console.log(`selected ${Object.keys(pastMessages).length} past messages. Total length = ${Object.values(pastMessages).map(message => message.content).reduce((total, current) => total + current.length, 0)}`);
         let interactionLog = getInteractionLog();
         let toolAPIs = getToolAPIRegistry();
         let connectedUsers = getConnectedUsers();
+        let simplifiedDataModel = getSimplifiedDataModel();
+        let myUser = getMyUser();
 
         console.log('pastMessages', pastMessages);
         console.log('mostRecentMessage', mostRecentMessage);
@@ -369,7 +522,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
             worldObjectId: realityEditor.worldObjects.getBestWorldObject().objectId,
         }
         // console.log(conversation);
-        realityEditor.network.postQuestionComplexToAI(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, extra);
+        realityEditor.network.postQuestionComplexToAI(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, myUser, simplifiedDataModel, extra);
     }
 
     function askQuestion() {
@@ -475,6 +628,34 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         pushAIDialogue(html);
     }
     
+    function displayAnswer(answer) {
+        // let html = map.postprocess(answer);
+        // console.log(map.postprocessBen(answer));
+        let html = map.postprocessBen(answer);
+        pushAIDialogue(html);
+    }
+    
+    function getAnswerChain(answer) {
+        // extract the API calls if needed
+        // const OLD_METHOD = false;
+        // if (OLD_METHOD) {
+        //     let apiMatches = parseApisFromString(answer);
+        //     if (apiMatches.length > 0) {
+        //         console.log('!! apiMatches !!');
+        //         console.log(apiMatches);
+        //
+        //         apiOrchestrator.processApiMatches(apiMatches);
+        //     }
+        // } else {
+        //     apiOrchestrator.processApiAnswer(apiAnswer);
+        // }
+
+        // first postprocess to get the spatial links to tools
+        let html = map.postprocess(answer);
+
+        pushAIDialogue(html);
+    }
+    
     function parseApisFromString(input) {
         // Extract all matches like [[id1][id2][id3]] or [[id2][id3]]
         // const regex = /\[\[(.*?)\]\]?\[\[(.*?)\]\]\[\[(.*?)\]\]/g;
@@ -517,6 +698,10 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     
     function showDialogue() {
         aiContainer.style.animation = `slideToRight 0.2s ease-in forwards`;
+        setTimeout(() => {
+            let searchArea = document.getElementById('searchTextArea');
+            searchArea.focus();
+        }, 500);
     }
     
     function hideDialogue() {
@@ -670,6 +855,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
 
         // askQuestion();
         askQuestionComplex();
+        // askQuestionChain();
     }
 
     function pushAIDialogue(html) {
@@ -691,11 +877,55 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
         resetTextAreaSize();
     }
 
+    async function handleFunctionCall(functionCallId, fnName, fnArgs) {
+
+        // perform the function on the client side
+        let functionResult = await apiOrchestrator.processFunctionCall(fnName, fnArgs);
+        console.log('handleFunctionCall got result', functionResult);
+        
+        // Send the result back to the server
+        let res = await realityEditor.network.postFunctionResultToAI(functionCallId, functionResult);
+        console.log(res);
+
+        // await fetch('/ai/function-result', {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify({ functionCallId, result: functionResult })
+        // });
+
+        // Wait for the server to process the result and provide the final response
+        // const res = await fetch(`/ai/query-status?functionCallId=${functionCallId}`);
+        // let res = await realityEditor.network.queryAIStatus(functionCallId);
+
+        // const res = await response.json();
+        if (res.functionCallId) {
+            await realityEditor.ai.handleFunctionCall(res.functionCallId, res.fnName, res.fnArgs);
+        } else {
+            console.log(res.answer, res.apiAnswer);
+            // realityEditor.ai.getAnswerComplex(res.answer, res.apiAnswer);
+            realityEditor.ai.displayAnswer(res.answer);
+            // displayResult(result.answer);
+        }
+    }
+    //
+    // async function addLine(args) {
+    //     const { start, end } = args;
+    //     return `Line drawn from (${start.x},${start.y},${start.z}) to (${end.x},${end.y},${end.z})`;
+    // }
+    //
+    // function displayResult(answer) {
+    //     // Display the final answer to the user
+    //     console.log('Final Answer:', answer);
+    // }
+
     exports.initService = initService;
     exports.registerCallback = registerCallback;
     exports.askQuestion = askQuestion;
     exports.getAnswer = getAnswer;
     exports.getAnswerComplex = getAnswerComplex;
+    exports.displayAnswer = displayAnswer;
+    exports.handleFunctionCall = handleFunctionCall;
+    exports.getAnswerChain = getAnswerChain;
     exports.getToolAnswer = getToolAnswer;
     exports.pushDialogueFromOtherUser = pushDialogueFromOtherUser;
     exports.onOpen = onOpen;
@@ -709,5 +939,6 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     exports.hideDialogue = hideDialogue;
     exports.hideEndpointApiKeyAndShowSearchTextArea = hideEndpointApiKeyAndShowSearchTextArea;
     exports.focusOnFrame = focusOnFrame;
+    exports.getPartInfo = getPartInfo;
     
 }(realityEditor.ai));

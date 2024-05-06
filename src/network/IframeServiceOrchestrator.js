@@ -9,6 +9,8 @@ export class IframeAPIOrchestrator {
         // this creates uuids for specific things that can be operated on by the ai interface
         this.mapEncoder = mapEncoder;
 
+        this.specialCaseHandlers = {};
+
         this.listenForAPIDefinitions();
 
         realityEditor.device.registerCallback('vehicleDeleted', this.onVehicleDeleted.bind(this));
@@ -124,6 +126,80 @@ export class IframeAPIOrchestrator {
         // jsonObjects.forEach(apiRequest => {
         //    
         // });
+    }
+    
+    async processFunctionCall(functionName, functionArgs) {
+        return new Promise((resolve, reject) => {
+
+            // iterate over all applicationName/applicationId pairs within the registry to find the first one that contains a matching functionName
+            let matchingTool = null;
+            Object.keys(this.apiRegistry).forEach(applicationName => {
+                let appRegistry = this.apiRegistry[applicationName];
+                Object.keys(appRegistry).forEach(applicationId => {
+                    let applicationAPIs = appRegistry[applicationId];
+                    if (typeof applicationAPIs[functionName] !== 'undefined' && !matchingTool) {
+                        matchingTool = {
+                            name: applicationName,
+                            id: applicationId
+                        };
+                    }
+                });
+            });
+            
+            if (matchingTool) {
+                console.log(`found matching API on application ID: ${matchingTool.id}: ${functionName}`);
+                let apiInfo = this.apiRegistry[matchingTool.name][matchingTool.id][functionName];
+                this.triggerFunctionCall(matchingTool.name, matchingTool.id, functionName, apiInfo.parameterInfo, functionArgs).then(res => {
+                    if (typeof this.specialCaseHandlers[functionName] !== 'undefined') {
+                        this.specialCaseHandlers[functionName].forEach(handler => {
+                            handler(res, matchingTool.name, matchingTool.id, apiInfo.parameterInfo, functionArgs);
+                        });
+                    }
+                    console.log(res);
+                    resolve(res);
+                }).catch(err => {
+                    console.warn(err);
+                    reject(err);
+                }).finally(() => {
+                    console.log('API invocation is done.');
+                });
+            } else {
+                console.warn('found no matching tool for this API... what should we do now?');
+                reject('found no matching tool for this API... what should we do now?');
+            }
+        });
+    }
+
+    async triggerFunctionCall(applicationName, applicationId, apiName, parameterInfo, apiArguments) {
+        console.log(parameterInfo);
+        const parameters = parameterInfo.map(param => {
+            return apiArguments[param.name];
+            // // match structure 1
+            // let matchingArgument = apiArguments.find(thisArg => {
+            //     return thisArg && typeof thisArg[param.name] !== 'undefined'; // thisArgName === param.name;
+            // });
+            // if (matchingArgument) {
+            //     return matchingArgument[param.name];
+            // }
+            //
+            // // match structure 2
+            // matchingArgument = apiArguments.find(thisArg => {
+            //     return thisArg && thisArg.name === param.name; // thisArgName === param.name;
+            // });
+            // if (matchingArgument && typeof matchingArgument.value !== 'undefined') {
+            //     return matchingArgument.value;
+            // }
+            //
+            // return prompt(`Enter value for ${param.name} (${param.type}):`);
+        });
+
+        try {
+            let apiHandler = this.apiRegistry[applicationName][applicationId][apiName];
+            const result = await apiHandler.call(parameters);
+            return result;
+        } catch (error) {
+            console.warn('API call failed:', error);
+        }
     }
 
     extractJsonObjects(inputString) {
@@ -261,6 +337,11 @@ export class IframeAPIOrchestrator {
         }
 
         this.container.innerHTML = ''; // Clear existing UI
+        
+        let titleDiv = document.createElement('div');
+        titleDiv.innerText = 'API List (Debugger)';
+        
+        
         Object.keys(this.apiRegistry).forEach(applicationName => {
             Object.keys(this.apiRegistry[applicationName]).forEach(applicationId => {
                 const apis = this.apiRegistry[applicationName][applicationId];
@@ -317,4 +398,11 @@ export class IframeAPIOrchestrator {
     getSpatialServiceRegistry() {
         return JSON.parse(JSON.stringify(this.apiRegistry)); // return a deep copy to omit the function handler and prevent tampering
     }
+
+    handleSpecialCase(apiName, handler) {
+        if (typeof this.specialCaseHandlers[apiName] === 'undefined') {
+            this.specialCaseHandlers[apiName] = [];
+        }
+        this.specialCaseHandlers[apiName].push(handler);
+    } 
 }
