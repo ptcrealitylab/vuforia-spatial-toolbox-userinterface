@@ -926,6 +926,17 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function gsToggleActive(active) {
         gsActive = active;
     }
+    let gsRaycast = false;
+    function isGSRaycast() {
+        return gsRaycast;
+    }
+    function gsToggleRaycast(active) {
+        gsRaycast = active;
+    }
+    let gsPosition = null;
+    function gsSetPosition(position) {
+        gsPosition = position;
+    }
 
     /**
      * Pointer Snap Mode makes the spatial cursor snap to the pointer position,
@@ -938,6 +949,34 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
+        if (gsActive && gsRaycast) {
+            if (gsPosition === null) {
+                return {};
+            }
+            let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
+            if (!gpNode) {
+                gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+            }
+            let newCamMatrix = cameraNode.getMatrixRelativeTo(gpNode);
+            let cInP = new THREE.Vector3(newCamMatrix[12], newCamMatrix[13], newCamMatrix[14]); // camera in ground plane coords
+            let offset = new THREE.Vector3().subVectors(cInP, gsPosition)
+            let n = offset.clone().normalize();
+            let d = offset.length();
+            let rd = n.clone().negate();
+            
+            // multiply/divide by global scale to make sure it's the same scale as the regular raycast results in Renderer.js getRaycastIntersects()
+            let globalScale = realityEditor.gui.threejsScene.getInternals().getGlobalScale();
+            
+            return {
+                point: gsPosition,
+                scenePoint: gsPosition.clone().multiplyScalar(globalScale.getInvGlobalScale()),
+                normalVector: n,
+                distance: d,
+                sceneDistance: d / globalScale.getGlobalScale(),
+                rayDirection: rd,
+            }
+        }
         let worldIntersectPoint = null;
         let objectsToCheck = [];
         // top priority is to raycast against the world mesh
@@ -1123,6 +1162,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getRaycastCoordinates = getRaycastCoordinates;
     exports.isGSActive = isGSActive;
     exports.gsToggleActive = gsToggleActive;
+    exports.isGSRaycast = isGSRaycast;
+    exports.gsToggleRaycast = gsToggleRaycast;
+    exports.gsSetPosition = gsSetPosition;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
