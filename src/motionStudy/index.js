@@ -102,6 +102,7 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
             if (activeFrame === msgData.frame) {
                 activeFrame = noneFrame;
             }
+            realityEditor.app.disableHumanTracking();
         });
 
         realityEditor.network.addPostMessageHandler('analyticsFocus', (msgData) => {
