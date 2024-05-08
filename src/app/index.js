@@ -413,8 +413,7 @@ realityEditor.app.stopVideoRecording = function (videoId) {
 };
 
 /**
- * Enable human tracking, telling the app to submit frames to the human
- * tracking MediaPipe graph.
+ * Enable human tracking, telling the app to submit camera frames to the human pose tracking.
  */
 realityEditor.app.enableHumanTracking = function () {
     this.appFunctionCall('enableHumanTracking', null, null);
@@ -427,6 +426,20 @@ realityEditor.app.enableHumanTracking = function () {
 realityEditor.app.disableHumanTracking = function () {
     this.appFunctionCall('disableHumanTracking', null, null);
     realityEditor.humanPose.deleteLocalHumanObjects();
+};
+
+/**
+ * Enable anonymisation of a single person whose pose is currently tracked in a recorded 3D video.
+ */
+realityEditor.app.enablePersonAnonymization = function () {
+    this.appFunctionCall('enablePersonAnonymization', null, null);
+};
+
+/**
+ * Disable anonymisation of a tracked person.
+ */
+realityEditor.app.disablePersonAnonymization = function () {
+    this.appFunctionCall('disablePersonAnonymization', null, null);
 };
 
 /**
