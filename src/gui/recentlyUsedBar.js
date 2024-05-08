@@ -395,10 +395,12 @@ class RecentlyUsedBar {
      * animations
      * @param {string} frameId
      * @param {boolean} startFromSearch
+     * @param {boolean} startFromAI
+     * @param {object} aiStartPos
      * @return {LineToFrameAnimation}
      */
-    createAnimation(frameId, startFromSearch) {
-        let animation = new LineToFrameAnimation(this.ctx, frameId, startFromSearch);
+    createAnimation(frameId, startFromSearch, startFromAI, aiStartPos) {
+        let animation = new LineToFrameAnimation(this.ctx, frameId, startFromSearch, startFromAI, aiStartPos);
         this.animations.push(animation);
         return animation;
     }
@@ -409,10 +411,12 @@ class RecentlyUsedBar {
 }
 
 class LineToFrameAnimation {
-    constructor(ctx, hoveredFrameId, startFromSearch) {
+    constructor(ctx, hoveredFrameId, startFromSearch, startFromAI, aiStartPos) {
         this.ctx = ctx;
         this.hoveredFrameId = hoveredFrameId;
         this.startFromSearch = startFromSearch;
+        this.startFromAI = startFromAI;
+        this.aiStartPos = aiStartPos;
         this.hoverAnimationPercent = 0;
         this.hoverAnimationDurationMs = 100; // speed of the slowest part of the line
         this.lastAnimationPositions = null;
@@ -446,6 +450,9 @@ class LineToFrameAnimation {
         if (this.startFromSearch) {
             lineStartX = window.innerWidth / 2;
             lineStartY = 115;
+        } else if (this.startFromAI) {
+            lineStartX = this.aiStartPos.x;
+            lineStartY = this.aiStartPos.y;
         } else {
             let iconElt = recentlyUsedBar.getIcon(this.hoveredFrameId);
             if (this.hoveredFrameId && !iconElt) {

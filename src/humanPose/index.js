@@ -505,10 +505,15 @@ import {Pose} from "./Pose.js";
         }
         nameIdMap = {}
     }
+    
+    function returnHumanPoseObjects() {
+        return humanPoseObjects;
+    }
 
     exports.initService = initService;
     exports.loadHistory = loadHistory;
     exports.deleteLocalHumanObjects = deleteLocalHumanObjects;
+    exports.returnHumanPoseObjects = returnHumanPoseObjects;
 
 }(realityEditor.humanPose));
 

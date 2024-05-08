@@ -59,49 +59,61 @@ realityEditor.network.state = {
     proxySecret : null
 }
 
-realityEditor.network.desktopURLSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n"],
-        "expected": ["n", "s"],
-    }
-}
+realityEditor.network.desktopURLSchema = new ToolSocket.Schema([
+    new ToolSocket.Schema.StringValidator('n', {minLength: 1, maxLength: 25, pattern: /^[A-Za-z0-9_]*$/, required: true, expected: true}),
+    new ToolSocket.Schema.StringValidator('i', {minLength: 1, maxLength: 25, pattern: /^[A-Za-z0-9_]*$/}),
+    new ToolSocket.Schema.GroupValidator('s', [
+        new ToolSocket.Schema.StringValidator('s', {minLength: 0, maxLength: 45, pattern: /^[A-Za-z0-9_]*$/, required: true, expected: true}),
+        new ToolSocket.Schema.NullValidator('s'),
+        new ToolSocket.Schema.UndefinedValidator('s')
+    ], {expected: true}),
+    new ToolSocket.Schema.StringValidator('server', {minLength: 0, maxLength: 2000, pattern: /^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]/}),
+    new ToolSocket.Schema.StringValidator('protocol', {minLength: 1, maxLength: 20, enum: ["spatialtoolbox", "ws", "wss", "http", "https"]}),
+]);
 
-realityEditor.network.urlSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n", "i"],
-        "expected": ["n", "i", "s"],
-    }
-}
-
-realityEditor.network.qrSchema = {
-    "type": "object",
-    "items": {
-        "properties": {
-            "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
-            "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
-            "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
-            "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
-        },
-        "required": ["n", "server","protocol"],
-        "expected": ["n", "server", "protocol", "s"],
-    }
-}
+// realityEditor.network.desktopURLSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n"],
+//         "expected": ["n", "s"],
+//     }
+// }
+//
+// realityEditor.network.urlSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "i": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n", "i"],
+//         "expected": ["n", "i", "s"],
+//     }
+// }
+//
+// realityEditor.network.qrSchema = {
+//     "type": "object",
+//     "items": {
+//         "properties": {
+//             "n": {"type": "string", "minLength": 1, "maxLength": 25, "pattern": "^[A-Za-z0-9_]*$"},
+//             "s": {"type": ["string", "null", "undefined"], "minLength": 0, "maxLength": 45, "pattern": "^[A-Za-z0-9_]*$"},
+//             "server" : {"type": "string", "minLength": 0, "maxLength": 2000, "pattern": "^[A-Za-z0-9~!@$%^&*()-_=+|;:,.]"},
+//             "protocol" : {"type": "string", "minLength": 1, "maxLength": 20, "enum": ["spatialtoolbox", "ws", "wss", "http", "https"]}
+//         },
+//         "required": ["n", "server","protocol"],
+//         "expected": ["n", "server", "protocol", "s"],
+//     }
+// }
 
 /**
  * if the main site is opened with https, we will assume that the main server is running https
@@ -649,8 +661,9 @@ realityEditor.network.checkIfNewServer = function (serverIP) {
  * @param {Objects} origin - the local copy of the Object
  * @param {Objects} remote - the copy of the Object downloaded from the server
  * @param {string} objectKey
+ * @param {string} avatarName
  */
-realityEditor.network.updateObject = function (origin, remote, objectKey) {
+realityEditor.network.updateObject = function (origin, remote, objectKey, avatarName) {
     origin.x = remote.x;
     origin.y = remote.y;
     origin.scale = remote.scale;
@@ -685,6 +698,8 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             origin.frames[frameKey].uuid = frameKey;
             
             realityEditor.network.initializeDownloadedFrame(objectKey, frameKey, origin.frames[frameKey]);
+            // todo Steve: added a new frame
+            realityEditor.network.callbackHandler.triggerCallbacks('frameAdded', {objectKey: objectKey, frameKey: frameKey, frameType: origin.frames[frameKey].src, nodeKey: null, additionalInfo: {avatarName: avatarName}});
 
         } else {
             origin.frames[frameKey].visualization = remote.frames[frameKey].visualization;
@@ -734,7 +749,7 @@ realityEditor.network.updateObject = function (origin, remote, objectKey) {
             // delete origin.frames[frameKey];
             let frameType = origin.frames[frameKey].src;
             realityEditor.gui.ar.draw.deleteFrame(objectKey, frameKey);
-            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType}});
+            realityEditor.network.callbackHandler.triggerCallbacks('vehicleDeleted', {objectKey: objectKey, frameKey: frameKey, nodeKey: null, additionalInfo: {frameType: frameType, avatarName: avatarName}});
         }
     }
 };
@@ -892,7 +907,7 @@ realityEditor.network.onAction = function (action) {
             action: action
         };
     }
-
+    
     if (thisAction.lastEditor === globalStates.tempUuid) {
         return;
     }
@@ -977,7 +992,8 @@ realityEditor.network.onAction = function (action) {
                     }
                 }
                 
-                realityEditor.network.updateObject(objects[objectKey], res, objectKey);
+                let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor);
+                realityEditor.network.updateObject(objects[objectKey], res, objectKey, avatarId);
 
                 _this.cout("got object");
 
@@ -1198,6 +1214,11 @@ realityEditor.network.reloadFrame = function(objectKey, frameKey, fullActionMess
             if (!thisFrame.hasOwnProperty(thisKey)) continue;
             if (propertiesToIgnore) {
                 if (propertiesToIgnore.indexOf(thisKey) > -1) continue;
+                
+                if (thisFrame.ar.x !== res.ar.x || thisFrame.ar.y !== res.ar.y || !realityEditor.gui.ar.utilities.isEqualStrict(thisFrame.ar.matrix, res.ar.matrix)) {
+                    // todo Steve: find a way to store & compare the original & updated positions of the frame, and trigger framePosition event here
+                    // realityEditor.network.callbackHandler.triggerCallbacks('frameRepositioned', {objectKey: thisFrame.objectId, frameKey: thisFrame.uuid, nodeKey: null, additionalInfo: {frameType: thisFrame.src, avatarName: realityEditor.avatar.getAvatarObjectKeyFromSessionId(thisAction.lastEditor)}});
+                }
 
                 // TODO: this is a temp fix to just ignore ar.x and ar.y but still send scale... find a more general way
                 if (thisKey === 'ar' &&
@@ -2104,33 +2125,9 @@ realityEditor.network.onInternalPostMessage = function (e) {
 
         // create UI if needed
         let errorNotificationUI = document.getElementById('errorNotificationUI');
-        let textContainer = document.getElementById('errorNotificationText');
         if (!errorNotificationUI) {
-            errorNotificationUI = document.createElement('div');
-            errorNotificationUI.id = 'errorNotificationUI';
-            errorNotificationUI.classList.add('statusBar-tbr');
-            document.body.appendChild(errorNotificationUI);
-
-            textContainer = document.createElement('div');
-            textContainer.id = 'errorNotificationText';
-            errorNotificationUI.classList.add('statusBarText-tbr');
-            errorNotificationUI.appendChild(textContainer);
+            realityEditor.gui.modal.showBannerNotification(errorMessageText, 'errorNotificationUI', 'errorNotificationText', messageTime);
         }
-
-        // show and populate with message
-        errorNotificationUI.classList.add('statusBar-tbr');
-        errorNotificationUI.classList.remove('statusBarHidden');
-        textContainer.innerHTML = errorMessageText;
-
-        setTimeout(function () {
-            // let errorNotificationUI = document.getElementById('errorNotificationUI');
-            if (!errorNotificationUI) {
-                return;
-            } // no need to hide it if it doesn't exist
-
-            errorNotificationUI.classList.add('statusBarHidden');
-            errorNotificationUI.classList.remove('statusBar-tbr');
-        }, messageTime);
     }
 
     if (typeof msgContent.setPinned !== "undefined") {
@@ -2376,6 +2373,67 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
 
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
+
+realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = false) {
+    if (endpoint === undefined || azureApiKey === undefined) return;
+    let worldId = realityEditor.worldObjects.getBestWorldObject();
+    let ip = worldId.ip;
+    let port = realityEditor.network.getPort(worldId);
+    let route = '/ai/init';
+
+    this.postData(realityEditor.network.getURL(ip, port, route),
+        {
+            endpoint: endpoint,
+            azureApiKey: azureApiKey,
+        },
+        function (err, res) {
+            if (err) {
+                console.warn('postNewNode error:', err);
+            } else {
+                if (res.answer === 'success') {
+                    // change ai search text area to the actual search text area
+                    realityEditor.ai.hideEndpointApiKeyAndShowSearchTextArea();
+                    if (isInit) {
+                        // todo Steve: broadcast this message to all avatars, and have them spin up their own Azure GPT-3.5 with the same API keys
+                        //  subsequently triggered avatars' postAiApiKeys have isInit set to false, thus not triggering infinite loop of calling other avatars to trigger the same function
+                        //  still need to consider the edge case where 2 avatars submit the same req at the same time, what's gon happen? Are they gon trigger an infinite loop of this function call?
+                        //  ALSO NEED TO CONSIDER: if someone in the session already logged in with ai, people who joined later how do they know how to join?
+                        
+                        // todo Steve: currently, one edge case: when a user later join the session, before subscribing all the avatars & get the ai api keys,
+                        //  they input another ai api key. This way, even later users might get either api keys, maybe activating 2 different kinds of azure gpt instances
+                        //  solution: need to store this info in the session storage, and once set, don't update it. This way later user will get this info faster, and cannot modify it
+                        // console.log(`Broadcast endpoint and apikey to other avatars: ${endpoint}, ${azureApiKey}`);
+                        realityEditor.avatar.network.sendAiApiKeys(realityEditor.avatar.getMyAvatarNodeInfo(), {
+                            endpoint: endpoint,
+                            azureApiKey: azureApiKey,
+                        });
+                    }
+                }
+            }
+        });
+}
+
+realityEditor.network.postQuestionToAI = async function(conversation, extra) {
+    let route = '/ai/question';
+    
+    const response = await fetch(window.location.origin + route, {
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({
+            conversation: conversation,
+            extra: extra,
+        })
+    });
+    const res = await response.json();
+    if (res.tools !== undefined) {
+        realityEditor.ai.getToolAnswer(res.category, res.tools);
+    } else {
+        realityEditor.ai.getAnswer(res.category, res.answer);
+    }
+}
 
 /**
  * When the settings menu posts up its new state to the rest of the application, refresh/update all settings
@@ -2803,6 +2861,7 @@ realityEditor.network.postData = function (url, body, callback) {
 
         if (request.status >= 200 && request.status <= 299) {
             try {
+                // console.log(request);
                 callback(null, JSON.parse(request.responseText));
             } catch (e) {
                 callback({status: request.status, error: e, failure: true}, null);

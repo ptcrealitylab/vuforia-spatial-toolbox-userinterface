@@ -90,6 +90,7 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
         // create an infinite grid that fades into the distance, along the groundplane
         if (!gridHelper) {
             const colorGrid = new THREE.Color(realityEditor.device.environment.variables.groundWireframeColor);
+            // scene scale is in milimeters
             gridHelper = new InfiniteGridHelper(gridSquareSizeInMm, gridRegionSizeInMm, 0.075, colorGrid, maxVisibilityDistanceInMm);
             gridHelper.name = 'groundPlaneVisualizer';
             gridHelper.layers.set(LayerConfig.LAYER_BACKGROUND);
@@ -191,9 +192,9 @@ createNameSpace("realityEditor.gui.ar.groundPlaneRenderer");
             if (raycastIntersects.length === 0) { return; }
 
             // transform the world coordinate into the groundplane coordinate system
-            gridHelper.worldToLocal(raycastIntersects[0].point);
+            gridHelper.worldToLocal(raycastIntersects[0].scenePoint);
 
-            target.position.set(raycastIntersects[0].point.x, 0, raycastIntersects[0].point.z);
+            target.position.set(raycastIntersects[0].scenePoint.x, 0, raycastIntersects[0].scenePoint.z);
         }
     }
 

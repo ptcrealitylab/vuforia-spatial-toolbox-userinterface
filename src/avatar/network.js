@@ -164,6 +164,14 @@ createNameSpace("realityEditor.avatar.network");
             lastSentCursorState = cursorState;
         }
     }
+    
+    function sendAiDialogue(keys, aiDialogueHTML) {
+        realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.aiDialogue, aiDialogueHTML);
+    }
+    
+    function sendAiApiKeys(keys, aiApiKeys) {
+        realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.aiApiKeys, aiApiKeys);
+    }
 
     /**
      * Helper function to provide insight into the fps limiter
@@ -181,13 +189,14 @@ createNameSpace("realityEditor.avatar.network");
     /**
      * write the user profile into the avatar object's storage node
      * @param {Object} keys - where to store avatar's data
-     * @param {Object} userProfile - contains name, providerId, lockOnMode, etc.
+     * @param {Object} userProfile - contains name, providerId, lockOnMode, sessionId, etc.
      */
     function sendUserProfile(keys, userProfile) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.userProfile, {
             name: userProfile.name,
             providerId: userProfile.providerId,
-            lockOnMode: userProfile.lockOnMode
+            lockOnMode: userProfile.lockOnMode,
+            sessionId: userProfile.sessionId
         });
     }
 
@@ -251,6 +260,8 @@ createNameSpace("realityEditor.avatar.network");
     exports.sendTouchState = sendTouchState;
     exports.sendSpatialCursorState = sendSpatialCursorState;
     exports.sendUserProfile = sendUserProfile;
+    exports.sendAiDialogue = sendAiDialogue;
+    exports.sendAiApiKeys = sendAiApiKeys;
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
     exports.addPendingAvatarInitialization = addPendingAvatarInitialization;
     exports.subscribeToAvatarPublicData = subscribeToAvatarPublicData;

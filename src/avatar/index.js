@@ -18,7 +18,6 @@ createNameSpace("realityEditor.avatar");
 
     let linkCanvas = null, linkCanvasCtx = null;
     let linkCanvasNeedsClear = true;
-    let menuBarHeight;
     
     let myAvatarId = null;
     let myAvatarObject = null;
@@ -73,6 +72,11 @@ createNameSpace("realityEditor.avatar");
     let isDesktop = false;
 
     function initService() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'g' || e.key === 'G') {
+                console.log(connectedAvatarUserProfiles);
+            }
+        })
         network = realityEditor.avatar.network;
         draw = realityEditor.avatar.draw;
         iconMenu = realityEditor.avatar.iconMenu;
@@ -114,7 +118,6 @@ createNameSpace("realityEditor.avatar");
             isDesktop = realityEditor.device.environment.isDesktop();
             addLinkCanvas();
             resizeLinkCanvas();
-            translateLinkCanvas();
             window.addEventListener('resize', () => {
                 realityEditor.avatar.setLinkCanvasNeedsClear(true);
                 resizeLinkCanvas();
@@ -213,6 +216,12 @@ createNameSpace("realityEditor.avatar");
         });
     }
     
+    // todo Steve: a function that subscribes to different users, so that whenever me / another user perform some actions, the user info should be included as part of the info in the action message,
+    //  eg: when added a frame, realityEditor.gui.pocket.callbackHandler.triggerCallbacks('frameAdded', callback) should include who added the frame in the callback parameter.
+    //  very similar to the function above 'getUserDetails'
+    
+    // todo Steve: object.json, last editor
+    
     function addLinkCanvas() {
         let linkCanvasContainer = document.createElement('div');
         linkCanvasContainer.className = 'link-canvas-container';
@@ -225,8 +234,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvas = document.createElement('canvas');
         linkCanvas.className = 'link-canvas';
         linkCanvas.style.position = 'absolute';
-        menuBarHeight = realityEditor.device.environment.variables.screenTopOffset;
-        linkCanvas.style.top = `${menuBarHeight}px`;
+        linkCanvas.style.top = '0';
         linkCanvas.style.left = '0';
         linkCanvas.style.zIndex = '3001';
         linkCanvasContainer.appendChild(linkCanvas);
@@ -237,16 +245,12 @@ createNameSpace("realityEditor.avatar");
     function resizeLinkCanvas() {
         if (linkCanvas !== undefined) {
             linkCanvas.width = window.innerWidth;
-            linkCanvas.height = window.innerHeight - menuBarHeight;
+            linkCanvas.height = window.innerHeight;
         }
-    }
-    
-    function translateLinkCanvas() {
-        linkCanvasCtx.translate(0, -menuBarHeight);
     }
 
     function clearLinkCanvas() {
-        linkCanvasCtx.clearRect(0, menuBarHeight, window.innerWidth, window.innerHeight - menuBarHeight);
+        linkCanvasCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         linkCanvasNeedsClear = false;
     }
 
@@ -309,7 +313,7 @@ createNameSpace("realityEditor.avatar");
 
         if (typeof avatarObjects[objectKey] !== 'undefined') { return; }
         avatarObjects[objectKey] = object; // keep track of which avatar objects we've processed so far
-        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null);
+        connectedAvatarUserProfiles[objectKey] = new utils.UserProfile(null, '', null, globalStates.tempUuid);
 
         function finalizeAvatar() {
             // There is a race between object discovery here and object
@@ -393,6 +397,9 @@ createNameSpace("realityEditor.avatar");
 
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
             const userProfile = msgContent.publicData.userProfile;
+            if (avatarNames[msgContent.object] !== userProfile.name) {
+                realityEditor.ai.onAvatarChangeName(avatarNames[msgContent.object], userProfile.name);
+            }
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
                 connectedAvatarUserProfiles[msgContent.object] = new utils.UserProfile(null, '', null);
@@ -405,6 +412,18 @@ createNameSpace("realityEditor.avatar");
             iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
             debugDataReceived();
         };
+        
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiDialogue] = (msgContent) => {
+            // console.log(msgContent.publicData.aiDialogue);
+            console.log("push other's ai dialogue");
+            realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
+        }
+        
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
+            let endpoint = msgContent.publicData.aiApiKeys.endpoint;
+            let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
+            realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false);
+        }
 
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
 
@@ -439,7 +458,7 @@ createNameSpace("realityEditor.avatar");
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
-                worldIntersectPoint = raycastIntersects[0].point;
+                worldIntersectPoint = raycastIntersects[0].scenePoint;
                 
             // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
@@ -447,7 +466,7 @@ createNameSpace("realityEditor.avatar");
                 raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
                 groundPlane.updateWorldMatrix(true, false);
                 if (raycastIntersects.length > 0) {
-                    worldIntersectPoint = raycastIntersects[0].point;
+                    worldIntersectPoint = raycastIntersects[0].scenePoint;
                 }
             }
 
@@ -524,7 +543,10 @@ createNameSpace("realityEditor.avatar");
      */
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
+        realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name);
         connectedAvatarUserProfiles[myAvatarId].name = name;
+        let sessionId = globalStates.tempUuid;
+        connectedAvatarUserProfiles[myAvatarId].sessionId = sessionId;
         draw.updateAvatarName(myAvatarId, name);
         iconMenu.renderAvatarIconList(connectedAvatarUserProfiles);
 
@@ -596,6 +618,9 @@ createNameSpace("realityEditor.avatar");
             myAvatarTouchState = touchState;
         }
 
+        // snaps the spatial cursor to the beam endpoint on all devices until you stop the beam
+        realityEditor.spatialCursor.updatePointerSnapMode(true);
+
         debugDataSent();
     }
 
@@ -620,6 +645,9 @@ createNameSpace("realityEditor.avatar");
             // stop showing your own beam
             myAvatarTouchState = touchState;
         }
+
+        // ensure that on non-desktop devices, the spatial cursor position resets to center of view
+        realityEditor.spatialCursor.updatePointerSnapMode(false);
 
         debugDataSent();
     }
@@ -716,6 +744,30 @@ createNameSpace("realityEditor.avatar");
             return utils.getColor(realityEditor.getObject(objectKey));
         }
     }
+
+    function getAvatarObjectKeyFromSessionId(sessionId) {
+        for (let objectKey in connectedAvatarUserProfiles) {
+            if (!connectedAvatarUserProfiles[objectKey]) {
+                return;
+            }
+            let userProfile = connectedAvatarUserProfiles[objectKey];
+            if (userProfile.sessionId !== sessionId) {
+                continue;
+            }
+            return objectKey;
+        }
+    }
+    
+    function getAvatarNameFromObjectKey(objectKey) {
+        if (!connectedAvatarUserProfiles[objectKey]) {
+            return;
+        }
+        return connectedAvatarUserProfiles[objectKey].name;
+    }
+    
+    function getMyAvatarNodeInfo() {
+        return utils.getAvatarNodeInfo(myAvatarObject);
+    }
     
     function getLinkCanvasInfo() {
         return {
@@ -739,6 +791,8 @@ createNameSpace("realityEditor.avatar");
     exports.toggleDebugMode = toggleDebugMode;
     exports.getMyAvatarColor = getMyAvatarColor;
     exports.getAvatarColorFromProviderId = getAvatarColorFromProviderId;
+    exports.getAvatarObjectKeyFromSessionId = getAvatarObjectKeyFromSessionId;
+    exports.getAvatarNameFromObjectKey = getAvatarNameFromObjectKey;
     exports.setMyUsername = setMyUsername; // this sets it preemptively if it doesn't exist yet
     exports.writeUsername = writeUsername; // this propagates the data if it already exists
     exports.writeMyLockOnMode = writeMyLockOnMode;
@@ -749,5 +803,6 @@ createNameSpace("realityEditor.avatar");
     exports.getConnectedAvatarList = () => { return connectedAvatarUserProfiles; };
     exports.setLinkCanvasNeedsClear = (value) => { linkCanvasNeedsClear = value; };
     exports.getMyAvatarId = () => {  return myAvatarId; };
+    exports.getMyAvatarNodeInfo = getMyAvatarNodeInfo;
 
 }(realityEditor.avatar));

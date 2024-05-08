@@ -34,6 +34,10 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     // contains spatial cursors of other users – updated by their avatar's publicData
     let otherSpatialCursors = {};
 
+    // pointerSnapMode only affects non-desktop devices:
+    // snaps the cursor to the pointer position if true, resets to center of viewport if false
+    let pointerSnapMode = false;
+
     let clock = new THREE.Clock();
     
     // offset the spatial cursor with the worldIntersectPoint to avoid clipping plane issues
@@ -360,7 +364,11 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         const ADD_SEARCH_TOOL_WITH_CURSOR = false;
         
-        document.addEventListener('pointerdown', () => {
+        document.addEventListener('pointerdown', (e) => {
+            if (!isFlying) {
+                screenX = e.pageX;
+                screenY = e.pageY;
+            }
             // make the spatial cursor inner white circle pulse
             innerRadiusSpeed += 0.15;
         })
@@ -535,7 +543,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             screenY = lastScreenY;
         });
 
-        document.addEventListener('mousemove', (e) => {
+        document.addEventListener('pointermove', (e) => {
             if (!isFlying) {
                 screenX = e.pageX;
                 screenY = e.pageY;
@@ -643,7 +651,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         try {
             // for iPhone usage, keep spatial cursor at the center of the screen
-            if (!realityEditor.device.environment.isDesktop()) {
+            if (!realityEditor.device.environment.isDesktop() && !pointerSnapMode) {
                 screenX = window.innerWidth / 2;
                 screenY = window.innerHeight / 2;
             }
@@ -784,6 +792,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicator1.renderOrder = 4;
         indicator1.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator1.material.depthWrite = false;
+        indicator1.name = "spatialCursor indicator1";
         realityEditor.gui.threejsScene.addToScene(indicator1);
     }
     
@@ -793,6 +802,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         indicator2.renderOrder = 3;
         indicator2.material.depthTest = false; // fixes visual glitch by preventing occlusion from area target
         indicator2.material.depthWrite = false;
+        indicator2.name = "spatialCursor indicator2";
         realityEditor.gui.threejsScene.addToScene(indicator2);
     }
 
@@ -916,9 +926,57 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     function gsToggleActive(active) {
         gsActive = active;
     }
+    let gsRaycast = false;
+    function isGSRaycast() {
+        return gsRaycast;
+    }
+    function gsToggleRaycast(active) {
+        gsRaycast = active;
+    }
+    let gsPosition = null;
+    function gsSetPosition(position) {
+        gsPosition = position;
+    }
+
+    /**
+     * Pointer Snap Mode makes the spatial cursor snap to the pointer position,
+     * even on AR devices where the cursor otherwise snaps to the middle of the screen
+     * @param {boolean} active
+     */
+    function updatePointerSnapMode(active) {
+        pointerSnapMode = active;
+    }
 
     let projectedZ = null;
     function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
+        if (gsActive && gsRaycast) {
+            if (gsPosition === null) {
+                return {};
+            }
+            let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
+            let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
+            if (!gpNode) {
+                gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE);
+            }
+            let newCamMatrix = cameraNode.getMatrixRelativeTo(gpNode);
+            let cInP = new THREE.Vector3(newCamMatrix[12], newCamMatrix[13], newCamMatrix[14]); // camera in ground plane coords
+            let offset = new THREE.Vector3().subVectors(cInP, gsPosition)
+            let n = offset.clone().normalize();
+            let d = offset.length();
+            let rd = n.clone().negate();
+            
+            // multiply/divide by global scale to make sure it's the same scale as the regular raycast results in Renderer.js getRaycastIntersects()
+            let globalScale = realityEditor.gui.threejsScene.getInternals().getGlobalScale();
+            
+            return {
+                point: gsPosition,
+                scenePoint: gsPosition.clone().multiplyScalar(globalScale.getInvGlobalScale()),
+                normalVector: n,
+                distance: d,
+                sceneDistance: d / globalScale.getGlobalScale(),
+                rayDirection: rd,
+            }
+        }
         let worldIntersectPoint = null;
         let objectsToCheck = [];
         // top priority is to raycast against the world mesh
@@ -943,12 +1001,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         }
 
         // we successfully raycast against the mesh and/or groundplane – calculate the intersect point coordinates
-        projectedZ = raycastIntersects[0].distance;
+        projectedZ = raycastIntersects[0].sceneDistance;
         let groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
         let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
         realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
         inverseGroundPlaneMatrix.invert();
-        raycastIntersects[0].point.applyMatrix4(inverseGroundPlaneMatrix);
+        raycastIntersects[0].scenePoint.applyMatrix4(inverseGroundPlaneMatrix);
         let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
         // check if the camera & normalVector face the same direction. If so, invert the normalVector to face towards the camera
         let normalVector = raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize();
@@ -958,9 +1016,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             normalVector.negate();
         }
         worldIntersectPoint = {
-            point: raycastIntersects[0].point,
+            point: raycastIntersects[0].scenePoint,
             normalVector: normalVector,
-            distance: raycastIntersects[0].distance,
+            distance: raycastIntersects[0].sceneDistance,
             isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
         }
         return worldIntersectPoint; // these are relative to the world object
@@ -1104,6 +1162,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.getRaycastCoordinates = getRaycastCoordinates;
     exports.isGSActive = isGSActive;
     exports.gsToggleActive = gsToggleActive;
+    exports.isGSRaycast = isGSRaycast;
+    exports.gsToggleRaycast = gsToggleRaycast;
+    exports.gsSetPosition = gsSetPosition;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
     exports.getOrientedCursorIfItWereAtScreenCenter = getOrientedCursorIfItWereAtScreenCenter;
@@ -1119,4 +1180,5 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.setCursorPosition = setCursorPosition;
     exports.setCursorStyle = setCursorStyle;
     exports.isCursorOnValidPosition = isCursorOnValidPosition;
+    exports.updatePointerSnapMode = updatePointerSnapMode;
 }(realityEditor.spatialCursor));

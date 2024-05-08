@@ -344,39 +344,52 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             objectsToCheck.push(realityEditor.gui.threejsScene.getGroundPlaneCollider().getInternalObject());
         }
 
-        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, objectsToCheck);
-        if (raycastIntersects.length > 0) {
-            projectedZ = raycastIntersects[0].distance;
-
-            // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
-            let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
-            inverseGroundPlaneMatrix.invert();
-            let intersect1 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
-
-            // transpose of the inverse of the ground-plane model-view matrix
-            let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
-
+        if (realityEditor.spatialCursor.isGSActive()) {
+            let result = realityEditor.spatialCursor.getRaycastCoordinates(event.pageX, event.pageY);
             worldIntersectPoint = {
-                x: intersect1.x,
-                y: intersect1.y,
-                z: intersect1.z,
-                // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
-                normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
-                // the ray direction is just a vector, so we don't need the transpose matrix
-                rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
+                x: result.point.x,
+                y: result.point.y,
+                z: result.point.z,
+                normalVector: result.normalVector,
+                rayDirection: result.rayDirection,
             };
-            
-            // compared to worldIntersectPoint, threejsSceneIntersectPoint returns the intersect point in three js container object coordinates
-            realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix)
-            inverseGroundPlaneMatrix.invert();
-            let intersect2 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+            projectedZ = result.distance;
+        } else {
 
-            threejsIntersectPoint = {
-                x: intersect2.x,
-                y: intersect2.y,
-                z: intersect2.z,
-            };
+            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(event.pageX, event.pageY, objectsToCheck);
+            if (raycastIntersects.length > 0) {
+                projectedZ = raycastIntersects[0].distance;
+
+                // multiply intersect, which is in ROOT coordinates, by the relative world matrix (ground plane) to ROOT
+                let inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneModelViewMatrix())
+                inverseGroundPlaneMatrix.invert();
+                let intersect1 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+
+                // transpose of the inverse of the ground-plane model-view matrix
+                let trInvGroundPlaneMat = inverseGroundPlaneMatrix.clone().transpose();
+
+                worldIntersectPoint = {
+                    x: intersect1.x,
+                    y: intersect1.y,
+                    z: intersect1.z,
+                    // NOTE: to transform a normal, you must multiply by the transpose of the inverse of the model-view matrix
+                    normalVector: raycastIntersects[0].face.normal.clone().applyMatrix4(trInvGroundPlaneMat).normalize(),
+                    // the ray direction is just a vector, so we don't need the transpose matrix
+                    rayDirection: raycastIntersects[0].rayDirection.clone().applyMatrix4(inverseGroundPlaneMatrix).normalize()
+                };
+
+                // compared to worldIntersectPoint, threejsSceneIntersectPoint returns the intersect point in three js container object coordinates
+                realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix)
+                inverseGroundPlaneMatrix.invert();
+                let intersect2 = raycastIntersects[0].point.clone().applyMatrix4(inverseGroundPlaneMatrix);
+
+                threejsIntersectPoint = {
+                    x: intersect2.x,
+                    y: intersect2.y,
+                    z: intersect2.z,
+                };
+            }
         }
     }
     let eventData = {
@@ -641,13 +654,43 @@ realityEditor.device.disablePinchToScale = function() {
 };
 
 /**
+ * This system allows any number of modules to mark with a flag that they're
+ * currently claiming the pointer events for a camera control mode.
+ * @type {Set<string>}
+ */
+realityEditor.device.manualCameraControlFlags = new Set();
+/**
+ * @param {string} flagName - the name of the module/reason that the pointer is claimed by
+ */
+realityEditor.device.setFlagForPointerOccupiedByCamera = function(flagName) {
+    realityEditor.device.manualCameraControlFlags.add(flagName);
+};
+/**
+ * @param {string} flagName - provide the same name used in setFlagForPointerOccupiedByCamera, to release the pointer
+ */
+realityEditor.device.clearFlagForPointerOccupiedByCamera = function(flagName) {
+    realityEditor.device.manualCameraControlFlags.delete(flagName);
+};
+/**
+ * @return {boolean}
+ */
+realityEditor.device.isPointerOccupiedByCameraControl = function() {
+    return realityEditor.device.manualCameraControlFlags.size > 0;
+};
+
+/**
  * @return {boolean} If the event is intended to control the camera and not the
- *   AR elements
+ *   AR elements, avatar pointer beams, or other pointer interactions
  */
 realityEditor.device.isMouseEventCameraControl = function(event) {
-  // If mouse events are enabled ignore right clicks and middle clicks
-  return realityEditor.device.environment.requiresMouseEvents() &&
-    (event.button === 2 || event.button === 1);
+    // first check if anything is manually taking claim over the pointer events
+    if (realityEditor.device.isPointerOccupiedByCameraControl()) {
+        return true;
+    }
+    // If mouse events are enabled ignore right clicks and middle clicks
+    // otherwise the pointer is presumed to not be being used for camera controls
+    return realityEditor.device.environment.requiresMouseEvents() &&
+        (event.button === 2 || event.button === 1);
 };
 
 /**

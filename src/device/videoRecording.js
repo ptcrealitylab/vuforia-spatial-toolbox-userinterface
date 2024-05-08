@@ -301,14 +301,17 @@ createNameSpace("realityEditor.device.videoRecording");
     // Captures color, depth, and pose data.
     function startVirtualizerRecording() {
         const bestWorldObject = realityEditor.worldObjects.getBestWorldObject();
-        const onSettings = (networkId, networkSecret) => {
+        const onSettings = (serverUrl, networkId, networkSecret) => {
             privateState.virtualizerData = {
+                serverUrl,
                 networkId,
                 networkSecret
             }
             console.log(`Starting virtualizer recording on ${bestWorldObject.ip} with ${networkId} and ${networkSecret}`);
             realityEditor.app.appFunctionCall("enablePoseTracking", {
                 ip: bestWorldObject.ip,
+                port: bestWorldObject.port.toString(),
+                serverUrl,
                 networkId,
                 networkSecret,
             });
@@ -321,10 +324,10 @@ createNameSpace("realityEditor.device.videoRecording");
         if (window.location.host.split(':')[0] !== localSettingsHost.split(':')[0]) {
             const networkId = /\/n\/([^/]+)/.exec(window.location.pathname)[1];
             const networkSecret = /\/s\/([^/]+)/.exec(window.location.pathname)[1];
-            onSettings(networkId, networkSecret);
+            onSettings(window.location.host, networkId, networkSecret);
         } else {
             fetch((realityEditor.network.useHTTPS ? 'https' : 'http') + `://${localSettingsHost}/hardwareInterface/edgeAgent/settings`).then(res => res.json()).then(settings => {
-                onSettings(settings.networkUUID, settings.networkSecret);
+                onSettings(settings.serverUrl, settings.networkUUID, settings.networkSecret);
             });
         }
     }
@@ -335,7 +338,7 @@ createNameSpace("realityEditor.device.videoRecording");
     }
     
     function onStopVirtualizerRecording(recordingId, deviceId) {
-        const baseUrl = `https://toolboxedge.net/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
+        const baseUrl = `https://${privateState.virtualizerData.serverUrl}/stable/n/${privateState.virtualizerData.networkId}/s/${privateState.virtualizerData.networkSecret}`;
         privateState.virtualizerCallback(baseUrl, recordingId, deviceId);
     }
 

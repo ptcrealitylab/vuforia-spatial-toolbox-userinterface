@@ -151,9 +151,9 @@ createNameSpace("realityEditor.device.tracking");
         // showBannerNotification removes notification after set time so no additional function is needed
         let trackingStatusUI = document.getElementById('trackingStatusUI');
         if (!trackingStatusUI) {
-            trackingStatusUI = realityEditor.gui.modal.showBannerNotification(readableStatus, 'trackingStatusUI', 'trackingStatusText', 5000);
-            trackingStatusUI.addEventListener('pointerup', statusBarPointerUp);
-            document.body.appendChild(trackingStatusUI);
+            realityEditor.gui.modal.showBannerNotification(readableStatus, 'trackingStatusUI', 'trackingStatusText', 5000);
+            let trackingStatusNotification = document.getElementById('trackingStatusUI');
+            trackingStatusNotification.addEventListener('pointerup', statusBarPointerUp);
         }
     }
 

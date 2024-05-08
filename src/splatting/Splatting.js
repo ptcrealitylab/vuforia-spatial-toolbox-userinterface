@@ -5,10 +5,14 @@
  *  Use of the original version of this source code is governed by a license
  *  that can be found in the LICENSE_splat file in the thirdPartyCode directory.
  */
+import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 
 let gsInitialized = false;
 let gsActive = false;
 let gsContainer;
+let gsSettingsPanel;
+let isGSRaycasting = false;
 
 /** iPhoneVerticalFOV, projectionMatrixFrom(), makePerspective() come from desktopAdapter in remote operator addon. */
 
@@ -43,16 +47,16 @@ function projectionMatrixFrom(vFOV, aspect, near, far) {
     var width = aspect * height;
     var left = -0.5 * width;
     // return makePerspective( left, left + width, top, top - height, near, far );
-    
+
     // conversion to the convention used in GS rendering here
     let mat = makePerspective( left, left + width, top, top - height, near, far );
-   
+
     // flip y and z axes
     mat[4] *= -1; mat[5] *= -1; mat[6] *= -1; mat[7] *= -1;
     mat[8] *= -1; mat[9] *= -1; mat[10] *= -1; mat[11] *= -1;
     // mm to meter units
     mat[14] *= 0.001;
-    
+
     return mat;
 }
 
@@ -555,12 +559,25 @@ uniform highp usampler2D u_texture;
 uniform mat4 projection, view;
 uniform vec2 focal;
 uniform vec2 viewport;
+uniform vec2 uMouse;
+
+// visibility settings
+uniform bool uToggleBoundary;
+uniform float uWorldLowAlpha;
+
+uniform int uCollideIndex;
+uniform vec3 uCollidePosition;
+uniform bool uShouldDraw;
 
 in vec2 position;
 in int index;
 
 out vec4 vColor;
+out vec4 vFBOPosColor;
 out vec2 vPosition;
+out vec4 vDebug2;
+out float vShouldDisplay;
+out float vIndex;
 
 void main () {
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
@@ -570,6 +587,7 @@ void main () {
     float clip = 1.2 * pos2d.w;
     if (pos2d.z < -clip || pos2d.x < -clip || pos2d.x > clip || pos2d.y < -clip || pos2d.y > clip) {
         gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+        vShouldDisplay = 0.;
         return;
     }
 
@@ -599,10 +617,38 @@ void main () {
     vPosition = position;
 
     vec2 vCenter = vec2(pos2d) / pos2d.w;
+    
+    
+    // implement accurate mouse raycasting
+    float majorAxisOffset = dot(uMouse - vCenter, normalize(majorAxis)) / ( abs(position.x) * length(majorAxis / viewport) );
+    float minorAxisOffset = dot(uMouse - vCenter, normalize(minorAxis)) / ( abs(position.y) * length(minorAxis / viewport) );
+    vec4 actualCam = cam;
+    vec4 offset1 = vec4(majorAxisOffset * (abs(position.x) * majorAxis / viewport), 0., 0.);
+    offset1 = inverse(projection) * (offset1 * pos2d.w);
+    vec4 offset2 = vec4(minorAxisOffset * (abs(position.y) * minorAxis / viewport), 0., 0.);
+    offset2 = inverse(projection) * (offset2 * pos2d.w);
+    actualCam = actualCam + offset1 + offset2;
+    vFBOPosColor = inverse(view) * actualCam;
+    vFBOPosColor.a = 1.;
+    
+    if (vFBOPosColor.xyz == uCollidePosition) {
+        vIndex = 1.;
+    } else {
+        vIndex = 0.;
+    }
+    
+    bool isOutOfAlpha = uToggleBoundary ? vColor.a < uWorldLowAlpha : false;
+    vShouldDisplay = 1.;
+    if (!isOutOfAlpha) {
+        vShouldDisplay = 1.;
+    } else {
+        vShouldDisplay = 0.;
+    }
+    
     gl_Position = vec4(
         vCenter
         + position.x * majorAxis / viewport
-        + position.y * minorAxis / viewport, 0.0, 1.0);
+        + position.y * minorAxis / viewport, (vShouldDisplay == 1. ? 0. : 2.), 1.0);
 }
 `.trim();
 
@@ -610,16 +656,46 @@ const fragmentShaderSource = `
 #version 300 es
 precision highp float;
 
+uniform bool uShouldDraw;
+
+uniform bool uIsGSRaycasting;
+
 in vec4 vColor;
+in vec4 vFBOPosColor;
 in vec2 vPosition;
+in float vShouldDisplay;
+in float vIndex;
 
 out vec4 fragColor;
 
 void main () {
+    
+    if (uIsGSRaycasting) {
+        fragColor = vFBOPosColor; // correct color w/o index
+        return;
+    }
+    
+    if (!uShouldDraw) {
+        discard;
+    }
+    
     float A = -dot(vPosition, vPosition);
     if (A < -4.0) discard;
     float B = exp(A) * vColor.a;
-    fragColor = vec4(B * vColor.rgb, B);
+    
+    vec3 col = vShouldDisplay > 0.5 ? B * vColor.rgb : vec3(0.); // original color
+    float a = vShouldDisplay > 0.5 ? B : 0.; // original alpha
+    
+    bool isMouseCollided = vIndex > 0.5 ? true : false;
+    
+    if ( isMouseCollided && (vShouldDisplay > 0.5) ) {
+        // disable splat highlighting for now
+        // col = vec3(1.);
+        // a = 1.;
+    }
+    
+    fragColor = vec4(col, a);
+    return;
 }
 
 `.trim();
@@ -635,7 +711,7 @@ async function main(initialFilePath) {
     if (req.status != 200) {
         throw new Error(req.status + " Unable to load " + req.url);
     }
-    
+
     const reader = req.body.getReader();
     // calculate number of splats in the scene 
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
@@ -652,7 +728,7 @@ async function main(initialFilePath) {
         ),
     );
 
-    const fps = document.getElementById("gsFps");   
+    const fps = document.getElementById("gsFps");
     const canvas = document.getElementById("gsCanvas");
 
     const gl = canvas.getContext("webgl2", {
@@ -697,6 +773,12 @@ async function main(initialFilePath) {
     const u_viewport = gl.getUniformLocation(program, "viewport");
     const u_focal = gl.getUniformLocation(program, "focal");
     const u_view = gl.getUniformLocation(program, "view");
+    const u_mouse = gl.getUniformLocation(program, "uMouse");
+    const u_collidePosition = gl.getUniformLocation(program, "uCollidePosition");
+    const u_shouldDraw = gl.getUniformLocation(program, "uShouldDraw");
+    const u_uIsGSRaycasting = gl.getUniformLocation(program, "uIsGSRaycasting");
+    const u_toggleBoundary = gl.getUniformLocation(program, "uToggleBoundary");
+    const u_worldLowAlpha = gl.getUniformLocation(program, "uWorldLowAlpha");
 
     // positions
     const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -709,6 +791,7 @@ async function main(initialFilePath) {
     gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
 
     var texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
     var u_textureLocation = gl.getUniformLocation(program, "u_texture");
@@ -723,8 +806,52 @@ async function main(initialFilePath) {
 
     let projectionMatrix;
 
+    // set up an off-screen frame buffer object texture
+    let offscreenTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, offscreenTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, innerWidth, innerHeight, 0, gl.RGBA, gl.FLOAT, null);
+    // Set texture parameters as needed
+    // Check and enable the EXT_color_buffer_float extension in WebGL2
+    const extColorBufferFloat = gl.getExtension('EXT_color_buffer_float');
+    if (!extColorBufferFloat) {
+        console.error('32-bit floating point linear filtering not supported');
+    }
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // create frame buffer object
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, offscreenTexture, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+        console.error('Framebuffer is incomplete');
+        console.log(gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+        return;
+    }
+
+    let resizeId = null;
+    const onResizeEnd = () => {
+        // delete, create, and bind the new texture for FBO
+        gl.deleteTexture(offscreenTexture);
+        offscreenTexture = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0 + 1);
+        gl.bindTexture(gl.TEXTURE_2D, offscreenTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, innerWidth, innerHeight, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, offscreenTexture, 0);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error('Framebuffer is incomplete');
+            console.log(gl.checkFramebufferStatus(gl.FRAMEBUFFER));
+        }
+    }
+
     const resize = () => {
-        
+
         const canvas = document.getElementById("gsCanvas");
         canvas.width = window.innerWidth / downsample;
         canvas.height = window.innerHeight / downsample;
@@ -745,6 +872,13 @@ async function main(initialFilePath) {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
+
+        if (resizeId !== null) {
+            clearTimeout(resizeId);
+        }
+        resizeId = setTimeout(() => {
+            onResizeEnd();
+        }, 150);
     };
 
     window.addEventListener("resize", resize);
@@ -766,32 +900,32 @@ async function main(initialFilePath) {
         } else if (e.data.texdata) {
             const { texdata, texwidth, texheight } = e.data;
             // console.log(texdata)
+            gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texParameteri(
-            gl.TEXTURE_2D,
-            gl.TEXTURE_WRAP_S,
-            gl.CLAMP_TO_EDGE,
+                gl.TEXTURE_2D,
+                gl.TEXTURE_WRAP_S,
+                gl.CLAMP_TO_EDGE,
             );
             gl.texParameteri(
-            gl.TEXTURE_2D,
-            gl.TEXTURE_WRAP_T,
-            gl.CLAMP_TO_EDGE,
+                gl.TEXTURE_2D,
+                gl.TEXTURE_WRAP_T,
+                gl.CLAMP_TO_EDGE,
             );
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    
+
             gl.texImage2D(
-            gl.TEXTURE_2D,
-            0,
-            gl.RGBA32UI,
-            texwidth,
-            texheight,
-            0,
-            gl.RGBA_INTEGER,
-            gl.UNSIGNED_INT,
-            texdata,
+                gl.TEXTURE_2D,
+                0,
+                gl.RGBA32UI,
+                texwidth,
+                texheight,
+                0,
+                gl.RGBA_INTEGER,
+                gl.UNSIGNED_INT,
+                texdata,
             );
-            gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
         } else if (e.data.depthIndex) {
             const { depthIndex, _viewProj } = e.data;
@@ -805,6 +939,18 @@ async function main(initialFilePath) {
     let lastFrame = 0;
     let avgFps = 0;
     // let start = 0;
+
+    let isLowFPS = false;
+    let lowFPSId = null;
+    function lowFPSMode() {
+        isLowFPS = true;
+        if (lowFPSId !== null) {
+            clearTimeout(lowFPSId);
+        }
+        lowFPSId = setTimeout(() => {
+            isLowFPS = false;
+        }, 500);
+    }
 
     const frame = (now) => {
 
@@ -859,6 +1005,41 @@ async function main(initialFilePath) {
         if (vertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
             document.getElementById("gsSpinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
+            gl.uniform2fv(u_mouse, new Float32Array(uMouse));
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.uniform1i(u_shouldDraw, 0);
+            FBORendering: if (isGSRaycasting && !isLowFPS) {
+                // if average FPS is lower than 40, then switch back to default ray-casting method
+                if (avgFps < 30) {
+                    // console.warn('Low FPS, stop gs raycasting for now.');
+                    lowFPSMode();
+                    realityEditor.spatialCursor.gsToggleRaycast(false);
+                    break FBORendering;
+                }
+                realityEditor.spatialCursor.gsToggleRaycast(true);
+                // render to frame buffer object texture
+                gl.uniform1i(u_uIsGSRaycasting, 1);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+                gl.viewport(0, 0, innerWidth, innerHeight);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+                // read the texture
+                const pixelBuffer = new Float32Array(4); // 4 components for RGBA
+                gl.readPixels(Math.floor(uMouseScreen[0]), Math.floor(innerHeight - uMouseScreen[1]), 1, 1, gl.RGBA, gl.FLOAT, pixelBuffer);
+                gl.uniform3fv(u_collidePosition, new Float32Array([pixelBuffer[0], pixelBuffer[1], pixelBuffer[2]]));
+                vWorld.set(pixelBuffer[0], pixelBuffer[1], pixelBuffer[2]);
+                vWorld.x = (vWorld.x / scaleF - offset_x) / SCALE;
+                vWorld.y = (vWorld.y / scaleF - offset_y) / SCALE - floorOffset;
+                vWorld.z = (vWorld.z / scaleF - offset_z) / SCALE;
+                if (pixelBuffer[3] !== 0) {
+                    realityEditor.spatialCursor.gsSetPosition(vWorld);
+                }
+            }
+            // render to screen
+            gl.uniform1i(u_uIsGSRaycasting, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, innerWidth, innerHeight);
+            gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
         } else {
@@ -901,6 +1082,58 @@ async function main(initialFilePath) {
         fr.readAsArrayBuffer(file);
     };
     */
+
+    let uMouse = [0, 0];
+    let uMouseScreen = [0, 0];
+    let uLastMouse = [0, 0];
+    let uLastMouseScreen = [0, 0];
+    let vWorld = new THREE.Vector3();
+    window.addEventListener("pointermove", (e) => {
+        if (isFlying) return;
+        uMouseScreen = [e.clientX, e.clientY];
+        uMouse = [(e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1];
+    })
+    // add fly mode support
+    let isFlying = false;
+    realityEditor.device.keyboardEvents.registerCallback('enterFlyMode', function (params) {
+        isFlying = params.isFlying;
+        let mousePosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
+        uLastMouseScreen = [mousePosition.x, mousePosition.y];
+        uLastMouse = [(mousePosition.x / innerWidth) * 2 - 1, -(mousePosition.y / innerHeight) * 2 + 1]
+        uMouseScreen = [innerWidth / 2, innerHeight / 2];
+        uMouse = [0, 0];
+    });
+    realityEditor.device.keyboardEvents.registerCallback('enterNormalMode', function (params) {
+        isFlying = params.isFlying;
+        uMouseScreen[0] = uLastMouseScreen[0];
+        uMouseScreen[1] = uLastMouseScreen[1];
+        uMouse[0] = uLastMouse[0];
+        uMouse[1] = uLastMouse[1];
+    });
+
+    // lil GUI settings
+    gsSettingsPanel = new GUI({width: 300});
+    gsSettingsPanel.domElement.style.zIndex = '10001';
+    gsSettingsPanel.domElement.style.display = 'none';
+    let uToggleBoundary = true;
+    let uWorldLowAlpha = 0.3;
+    const folder = gsSettingsPanel.addFolder('Visibility');
+    let settings = {
+        "toggle boundary": uToggleBoundary,
+        "world low alpha": uWorldLowAlpha,
+    }
+    folder.add(settings, 'toggle boundary').onChange((value) => {
+        uToggleBoundary = value;
+        gl.uniform1f(u_toggleBoundary, uToggleBoundary ? 1 : 0);
+    });
+    gl.uniform1f(u_toggleBoundary, uToggleBoundary ? 1 : 0);
+    let d1 = folder.add(settings, 'world low alpha', 0, 1).onChange((value) => {
+        uWorldLowAlpha = value;
+        gl.uniform1f(u_worldLowAlpha, uWorldLowAlpha);
+    });
+    d1.step(0.1);
+    gl.uniform1f(u_worldLowAlpha, uWorldLowAlpha);
+    folder.close();
 
     const preventDefault = (e) => {
         e.preventDefault();
@@ -954,6 +1187,7 @@ window.addEventListener("keydown", e => {
         if(gsActive)
         {
             realityEditor.gui.threejsScene.enableExternalSceneRendering(true);
+            realityEditor.spatialCursor.gsToggleActive(true);
             callbacks.onSplatShown.forEach(cb => {
                 cb();
             });
@@ -961,6 +1195,7 @@ window.addEventListener("keydown", e => {
         else
         {
             realityEditor.gui.threejsScene.disableExternalSceneRendering(true);
+            realityEditor.spatialCursor.gsToggleActive(false);
             callbacks.onSplatHidden.forEach(cb => {
                 cb();
             });
@@ -1010,5 +1245,14 @@ export default {
     },
     onSplatHidden(callback) {
         callbacks.onSplatHidden.push(callback);
-    }
+    },
+    toggleGSRaycast(flag) {
+        isGSRaycasting = flag;
+    },
+    showGSSettingsPanel() {
+        gsSettingsPanel.domElement.style.display = 'flex';
+    },
+    hideGSSettingsPanel() {
+        gsSettingsPanel.domElement.style.display = 'none';
+    },
 }

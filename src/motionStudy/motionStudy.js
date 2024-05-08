@@ -121,6 +121,7 @@ export class MotionStudy {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.show();
         }
+        this.updateVideoPlayerShowHideButtonText();
     }
 
     /**
@@ -154,6 +155,9 @@ export class MotionStudy {
         this.resetPatchVisibility();
         // Reset the highlight region (and any animation)
         this.setHighlightRegion(null);
+        if (this.videoPlayer) {
+            this.videoPlayer.hide();
+        }
     }
 
     /**
@@ -293,13 +297,7 @@ export class MotionStudy {
      */
     bulkRenderHistoricalPoses(poses) {
         if (realityEditor.humanPose.draw.is2DPoseRendered()) return;
-        poses.forEach(pose => {
-            this.timeline.appendPose({
-                time: pose.timestamp,
-            });
-        });
         this.humanPoseAnalyzer.bulkHistoricalPosesUpdated(poses);
-
     }
 
     /**
@@ -377,6 +375,10 @@ export class MotionStudy {
         this.loadingHistory = false;
         if (region && !fromSpaghetti) {
             this.humanPoseAnalyzer.setDisplayRegion(region);
+        }
+
+        if (this.lastHydratedData) {
+            this.hydrateMotionStudy(this.lastHydratedData);
         }
     }
 
@@ -515,6 +517,10 @@ export class MotionStudy {
             this.titleInput.textContent = data.title;
         }
 
+        for (let pinnedRegionCard of this.pinnedRegionCards) {
+            pinnedRegionCard.updated = false;
+        }
+
         for (let desc of data.regionCards) {
             let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
             if (poses.length === 0) {
@@ -529,6 +535,16 @@ export class MotionStudy {
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
+
+        this.pinnedRegionCards = this.pinnedRegionCards.filter(pinnedRegionCard => {
+            if (pinnedRegionCard.updated) {
+                return true;
+            }
+            pinnedRegionCard.remove();
+            return false;
+        });
+
+        this.sortPinnedRegionCards();
     }
 
     createVideoPlayerShowHideButton() {
@@ -539,13 +555,24 @@ export class MotionStudy {
         this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
             if (this.videoPlayer.isShown()) {
                 this.videoPlayer.hide();
-                this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
             } else {
                 this.videoPlayer.show();
-                this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
             }
+            this.updateVideoPlayerShowHideButtonText();
         });
         this.container.appendChild(this.videoPlayerShowHideButton);
+    }
+
+    updateVideoPlayerShowHideButtonText() {
+        if (!this.videoPlayerShowHideButton || !this.videoPlayer) {
+            return;
+        }
+
+        if (this.videoPlayer.isShown()) {
+            this.videoPlayerShowHideButton.textContent = 'Hide Spatial Video';
+        } else {
+            this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+        }
     }
 
     addRegionCard(regionCard) {
@@ -553,14 +580,25 @@ export class MotionStudy {
         // switching from live to historical clone source
         const tolerance = 500;
         for (let pinnedRegionCard of this.pinnedRegionCards) {
-            if ((Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
-               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance)) {
-                // New region card already exists in the list
-                regionCard.remove();
+            const sameTimes = (Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
+               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance);
+            const sameLabel = pinnedRegionCard.getLabel() &&
+                (pinnedRegionCard.getLabel() === regionCard.getLabel());
+            if (sameTimes || sameLabel) {
+                // New region card already exists in the list, remove it but
+                // harvest it for data
+                regionCard.remove()
 
-                // New region card may have an updated label
+                pinnedRegionCard.updated = true;
+
+                // pinned was created earlier and missed data
+                if (pinnedRegionCard.poses.length <= regionCard.poses.length) {
+                    pinnedRegionCard.setPoses(regionCard.poses);
+                }
+
+                // Removed region card may have an updated label
                 // TODO have better criteria than starting with Step
-                const newLabel = regionCard.labelElement.textContent;
+                const newLabel = regionCard.getLabel();
                 if (newLabel && !newLabel.startsWith('Step ')) {
                     pinnedRegionCard.setLabel(newLabel);
                 }
@@ -620,6 +658,37 @@ export class MotionStudy {
         // }, patchTolerance);
     }
 
+    /**
+     * Bubble sort pinned region cards along with their elements because we
+     * want to modify the html as little as possible (reducing chance of losing
+     * the current edit cursor, and providing vaguely better perf)
+     */
+    sortPinnedRegionCards() {
+        for (let i = this.pinnedRegionCards.length - 1; i >= 0; i--) {
+            const bubblingCard = this.pinnedRegionCards[i];
+            let insertBeforeThisCard = null;
+            let insertBeforeThisIndex = 0;
+            for (let j = i - 1; j >= 0; j--) {
+                const card = this.pinnedRegionCards[j];
+                if (card.startTime < bubblingCard.startTime) {
+                    // Sorted
+                    break;
+                }
+                insertBeforeThisCard = card;
+                insertBeforeThisIndex = j;
+            }
+            if (insertBeforeThisCard) {
+                this.pinnedRegionCardsContainer.insertBefore(bubblingCard.element, insertBeforeThisCard.element);
+                // Remove bubblingCard from its current index
+                this.pinnedRegionCards.splice(i, 1);
+                // Insert it into the list at its new index
+                this.pinnedRegionCards.splice(insertBeforeThisIndex, 0, bubblingCard);
+                // Process the new element at index `i` since it changed
+                i++;
+            }
+        }
+    }
+
     writeMotionStudyData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
@@ -673,6 +742,8 @@ export class MotionStudy {
             this.writeMotionStudyData();
 
             regionCard.switchContainer(this.pinnedRegionCardsContainer);
+
+            this.sortPinnedRegionCards();
         }, 750);
     }
 

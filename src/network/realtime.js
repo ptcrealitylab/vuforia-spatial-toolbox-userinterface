@@ -68,7 +68,7 @@ createNameSpace("realityEditor.network.realtime");
     }
 
     function createDesktopSocket() {
-        desktopSocket = io.connect();
+        desktopSocket = new ToolSocket();
         const subscribe = () => {
             let identifier = 'unused';
             const worldObject = realityEditor.worldObjects.getBestWorldObject();
@@ -774,21 +774,28 @@ createNameSpace("realityEditor.network.realtime");
      * @param {function|undefined} onConnect - optional .on('connect') callback
      */
     function createSocketInSet(setName, socketIP, onConnect) {
-        let tsIo = new ToolSocket.Io();
-        let ioObject = tsIo.connect(socketIP);
+        let url;
+        try {
+            url = new URL(socketIP);
+        } catch (e) {
+            console.error(`Failed to create URL from socketIP: ${socketIP}`, e);
+            return;
+        }
+        url.protocol = url.protocol.replace('http', 'ws');
+        let socket = new ToolSocket.Io(url);
         if (DEBUG) {
-            console.log('createSocketInSet', setName, socketIP, ioObject);
+            console.log('createSocketInSet', setName, socketIP, socket);
         }
         createSocketSet(setName);
         if(!sockets[setName]) sockets[setName] = {};
-        sockets[setName][socketIP] = ioObject;
+        sockets[setName][socketIP] = socket;
 
         if (onConnect) {
-            ioObject.on('connect', function() {
+            socket.on('connect', function() {
                 if (DEBUG) {
                     console.log('createSocketInSet connected', setName, socketIP);
                 }
-                onConnect(ioObject);
+                onConnect(socket);
             });
         }
     }

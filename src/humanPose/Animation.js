@@ -113,7 +113,6 @@ export class Animation {
     clear() {
         if (this.videoPlayer) {
             this.stopVideoPlayback();
-            this.videoPlayer.hide();
         }
     }
 
