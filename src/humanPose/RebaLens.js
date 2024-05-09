@@ -20,10 +20,10 @@ export class RebaLens extends MotionStudyLens {
         } 
         const rebaData = Reba.calculateForPose(pose);
         pose.forEachJoint(joint => {
-            joint.rebaScore = rebaData.scores[joint.name];
-            joint.rebaColor = rebaData.colors[joint.name];
-            joint.rebaScoreOverall = rebaData.overallRebaScore; // not really used, overallRebaScore from REBA Ergonomics (Overall) is propagated into stats  
-            joint.rebaColorOverall = rebaData.overallRebaColor;
+            joint.rebaScore = rebaData.jointScores[joint.name];
+            joint.rebaColor = rebaData.jointColors[joint.name];
+            joint.rebaScoreOverall = rebaData.overallScore; // not really used, overallRebaScore from REBA Ergonomics (Overall) is propagated into stats  
+            joint.rebaColorOverall = rebaData.overallColor;
         });
         pose.forEachBone(bone => {
             bone.rebaScore = rebaData.boneScores[bone.name];

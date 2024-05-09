@@ -23,12 +23,12 @@ export class OverallRebaLens extends MotionStudyLens {
         }
         const rebaData = Reba.calculateForPose(pose);
         pose.forEachJoint(joint => {
-            joint.overallRebaScore = rebaData.overallRebaScore;
-            joint.overallRebaColor = rebaData.overallRebaColor;
+            joint.overallRebaScore = rebaData.overallScore;
+            joint.overallRebaColor = rebaData.overallColor;
         });
         pose.forEachBone(bone => {
-            bone.overallRebaScore = rebaData.overallRebaScore;
-            bone.overallRebaColor = rebaData.overallRebaColor;
+            bone.overallRebaScore = rebaData.overallScore;
+            bone.overallRebaColor = rebaData.overallColor;
         });
         return true;
     }

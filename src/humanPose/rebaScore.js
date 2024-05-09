@@ -1,6 +1,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
+import {ErgonomicsData} from "./ErgonomicsData.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
@@ -67,24 +68,24 @@ function angleBetween(vector1, vector2) {
  * Starting with score=1
  * +1 for forward bending > 20 degrees or backward bending > 5 degrees
  * +1 if side bending or twisting wrt shoulders
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The ergonomicsData to calculate the score and color for.
  */
-function neckReba(rebaData) {
+function neckReba(data) {
     let neckScore = 1;
     let neckColor = MotionStudyColors.undefined;
 
     // NOTE: not checking if all needed joints have a valid position (head and neck joints are always valid)
 
-    const headUp = rebaData.orientations.head.up;
-    const headForward = rebaData.orientations.head.forward;
+    const headUp = data.orientations.head.up;
+    const headForward = data.orientations.head.forward;
     
     // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
-    const upMisalignmentAngle = angleBetween(headUp, rebaData.orientations.chest.up);
+    const upMisalignmentAngle = angleBetween(headUp, data.orientations.chest.up);
     // all vectors are normalised, so dot() == cos(angle between vectors) 
-    const forwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward);  
-    const backwardBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.forward.clone().negate());
-    const rightBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right);
-    const leftBendingAlignment = headUp.clone().dot(rebaData.orientations.chest.right.clone().negate());
+    const forwardBendingAlignment = headUp.clone().dot(data.orientations.chest.forward);  
+    const backwardBendingAlignment = headUp.clone().dot(data.orientations.chest.forward.clone().negate());
+    const rightBendingAlignment = headUp.clone().dot(data.orientations.chest.right);
+    const leftBendingAlignment = headUp.clone().dot(data.orientations.chest.right.clone().negate());
 
     // Check for bending
     let sideBend = false;
@@ -103,7 +104,7 @@ function neckReba(rebaData) {
     }
     
     // Check for twisting of more degrees than bendingThreshold from straight ahead
-    const twistRightAngle = angleBetween(headForward, rebaData.orientations.chest.right); // Angle from full twist right
+    const twistRightAngle = angleBetween(headForward, data.orientations.chest.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
     const twist = (twistRightAngle < (90 - REBA_CONFIG.neckTwistAngleThresholds[0]) || twistLeftAngle < (90 - REBA_CONFIG.neckTwistAngleThresholds[0]));
 
@@ -132,8 +133,8 @@ function neckReba(rebaData) {
         JOINTS.RIGHT_EAR,
         JOINTS.NOSE
     ].forEach(joint => {
-        rebaData.scores[joint] = neckScore;
-        rebaData.colors[joint] = neckColor;
+        data.jointScores[joint] = neckScore;
+        data.jointColors[joint] = neckColor;
     });
 
     [JOINT_CONNECTIONS.headNeck,
@@ -143,8 +144,8 @@ function neckReba(rebaData) {
         JOINT_CONNECTIONS.eyeNoseLeft,
         JOINT_CONNECTIONS.eyeNoseRight
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = neckScore;
-        rebaData.boneColors[getBoneName(bone)] = neckColor;
+        data.boneScores[getBoneName(bone)] = neckScore;
+        data.boneColors[getBoneName(bone)] = neckColor;
     });
     
 }
@@ -156,23 +157,23 @@ function neckReba(rebaData) {
  * +1 for forward or backwards bending > 20 degrees
  * +1 for forward or backwards bending > 60 degrees
  * +1 if side bending or twisting shoulders wrt hips
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The data to calculate the score and color for.
  */
-function trunkReba(rebaData) {
+function trunkReba(data) {
     let trunkScore = 1;
     let trunkColor = MotionStudyColors.undefined;
     
     // Comparisons should be relative to directions determined by hips
     // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
-    const chestUp = rebaData.orientations.chest.up;
-    const chestForward = rebaData.orientations.chest.forward;
+    const chestUp = data.orientations.chest.up;
+    const chestForward = data.orientations.chest.forward;
     const up = new THREE.Vector3(0, 1, 0);
     const upMisalignmentAngle = angleBetween(chestUp, up);
     // all vectors are normalised, so dot() == cos(angle between vectors) 
-    const forwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward);
-    const backwardBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.forward.clone().negate());
-    const rightBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right);
-    const leftBendingAlignment = chestUp.clone().dot(rebaData.orientations.hips.right.clone().negate());
+    const forwardBendingAlignment = chestUp.clone().dot(data.orientations.hips.forward);
+    const backwardBendingAlignment = chestUp.clone().dot(data.orientations.hips.forward.clone().negate());
+    const rightBendingAlignment = chestUp.clone().dot(data.orientations.hips.right);
+    const leftBendingAlignment = chestUp.clone().dot(data.orientations.hips.right.clone().negate());
     
     // Check for bending
     let sideBend = false;
@@ -191,7 +192,7 @@ function trunkReba(rebaData) {
     }
     
     // Check for twisting of more than twistThreshold from straight ahead
-    const twistRightAngle = angleBetween(chestForward, rebaData.orientations.hips.right); // Angle from full twist right
+    const twistRightAngle = angleBetween(chestForward, data.orientations.hips.right); // Angle from full twist right
     const twistLeftAngle = 180 - twistRightAngle;
     const twist = (twistRightAngle < (90 - REBA_CONFIG.trunkTwistAngleThresholds[0]) || twistLeftAngle < (90 - REBA_CONFIG.trunkTwistAngleThresholds[0]));
 
@@ -216,8 +217,8 @@ function trunkReba(rebaData) {
         JOINTS.NAVEL,
         JOINTS.PELVIS,
     ].forEach(joint => {
-        rebaData.scores[joint] = trunkScore;
-        rebaData.colors[joint] = trunkColor;
+        data.jointScores[joint] = trunkScore;
+        data.jointColors[joint] = trunkColor;
     });
     
     [JOINT_CONNECTIONS.neckChest,
@@ -228,8 +229,8 @@ function trunkReba(rebaData) {
         JOINT_CONNECTIONS.chestLeft,
         JOINT_CONNECTIONS.hipSpan,
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = trunkScore;
-        rebaData.boneColors[getBoneName(bone)] = trunkColor;
+        data.boneScores[getBoneName(bone)] = trunkScore;
+        data.boneColors[getBoneName(bone)] = trunkColor;
     });
 }
 
@@ -239,9 +240,9 @@ function trunkReba(rebaData) {
  * +1 for knee bending > 30 degrees
  * +1 for knee bending > 60 degrees
  * +1 if one leg is raised above other (+1 applied to both legs)
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The data to calculate the score and color for.
  */
-function legsReba(rebaData) {
+function legsReba(data) {
     let leftLegScore = 1;
     let leftLegColor = MotionStudyColors.undefined;
     let rightLegScore = 1;
@@ -250,9 +251,9 @@ function legsReba(rebaData) {
     // Check for unilateral bearing of the body weight
     let _onelegged = false;
     // check if all needed joints have a valid position
-    if (rebaData.jointValidities[JOINTS.LEFT_ANKLE] &&
-        rebaData.jointValidities[JOINTS.RIGHT_ANKLE]) {
-        const footHeightDifference = Math.abs(rebaData.joints[JOINTS.RIGHT_ANKLE].y - rebaData.joints[JOINTS.LEFT_ANKLE].y);
+    if (data.jointValidities[JOINTS.LEFT_ANKLE] &&
+        data.jointValidities[JOINTS.RIGHT_ANKLE]) {
+        const footHeightDifference = Math.abs(data.joints[JOINTS.RIGHT_ANKLE].y - data.joints[JOINTS.LEFT_ANKLE].y);
         // Height difference for leg raise is not specified in REBA standard
         if (footHeightDifference > REBA_CONFIG.footHeightDifferenceThresholds[0]) {
             leftLegScore++;  // this raises score of both legs, so max() works correctly in neckLegTrunkScore()
@@ -264,13 +265,13 @@ function legsReba(rebaData) {
 
     /* left leg */
     // check if all needed joints have a valid position
-    if (rebaData.jointValidities[JOINTS.LEFT_KNEE] &&
-        rebaData.jointValidities[JOINTS.LEFT_ANKLE] &&
-        rebaData.jointValidities[JOINTS.LEFT_HIP]) {
+    if (data.jointValidities[JOINTS.LEFT_KNEE] &&
+        data.jointValidities[JOINTS.LEFT_ANKLE] &&
+        data.jointValidities[JOINTS.LEFT_HIP]) {
     
         // calculate knee angle
-        const leftKneeUp = rebaData.joints[JOINTS.LEFT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_KNEE]);
-        const leftFootUp = rebaData.joints[JOINTS.LEFT_KNEE].clone().sub(rebaData.joints[JOINTS.LEFT_ANKLE]);
+        const leftKneeUp = data.joints[JOINTS.LEFT_HIP].clone().sub(data.joints[JOINTS.LEFT_KNEE]);
+        const leftFootUp = data.joints[JOINTS.LEFT_KNEE].clone().sub(data.joints[JOINTS.LEFT_ANKLE]);
         const leftKneeUpAngle = angleBetween(leftKneeUp, leftFootUp);
         
         // Check for knee bending
@@ -294,12 +295,12 @@ function legsReba(rebaData) {
     }
 
     /* right leg */
-    if (rebaData.jointValidities[JOINTS.RIGHT_KNEE] &&
-        rebaData.jointValidities[JOINTS.RIGHT_ANKLE] &&
-        rebaData.jointValidities[JOINTS.RIGHT_HIP]) {
+    if (data.jointValidities[JOINTS.RIGHT_KNEE] &&
+        data.jointValidities[JOINTS.RIGHT_ANKLE] &&
+        data.jointValidities[JOINTS.RIGHT_HIP]) {
 
-        const rightKneeUp = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.RIGHT_KNEE]);
-        const rightFootUp = rebaData.joints[JOINTS.RIGHT_KNEE].clone().sub(rebaData.joints[JOINTS.RIGHT_ANKLE]);
+        const rightKneeUp = data.joints[JOINTS.RIGHT_HIP].clone().sub(data.joints[JOINTS.RIGHT_KNEE]);
+        const rightFootUp = data.joints[JOINTS.RIGHT_KNEE].clone().sub(data.joints[JOINTS.RIGHT_ANKLE]);
         const rightKneeUpAngle = angleBetween(rightKneeUp, rightFootUp);
 
         if (rightKneeUpAngle > REBA_CONFIG.legBendAngleThresholds[0]) {
@@ -325,30 +326,30 @@ function legsReba(rebaData) {
         JOINTS.LEFT_KNEE,
         JOINTS.LEFT_ANKLE,
     ].forEach(joint => {
-        rebaData.scores[joint] = leftLegScore;
-        rebaData.colors[joint] = leftLegColor;
+        data.jointScores[joint] = leftLegScore;
+        data.jointColors[joint] = leftLegColor;
     });
     
     [JOINTS.RIGHT_HIP,
         JOINTS.RIGHT_KNEE,
         JOINTS.RIGHT_ANKLE,
     ].forEach(joint => {
-        rebaData.scores[joint] = rightLegScore;
-        rebaData.colors[joint] = rightLegColor;
+        data.jointScores[joint] = rightLegScore;
+        data.jointColors[joint] = rightLegColor;
     });
     
     [JOINT_CONNECTIONS.hipKneeLeft,
         JOINT_CONNECTIONS.kneeAnkleLeft,
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = leftLegScore;
-        rebaData.boneColors[getBoneName(bone)] = leftLegColor;
+        data.boneScores[getBoneName(bone)] = leftLegScore;
+        data.boneColors[getBoneName(bone)] = leftLegColor;
     });
     
     [JOINT_CONNECTIONS.hipKneeRight,
         JOINT_CONNECTIONS.kneeAnkleRight,
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = rightLegScore;
-        rebaData.boneColors[getBoneName(bone)] = rightLegColor;
+        data.boneScores[getBoneName(bone)] = rightLegScore;
+        data.boneColors[getBoneName(bone)] = rightLegColor;
     });
 }
 
@@ -362,31 +363,31 @@ function legsReba(rebaData) {
  * +1 if arm is abducted
  * -1 if arm is aligned with gravity and it is raised > 45 degrees from trunk
  * Cannot implement: -1 if arm is supported
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The data to calculate the score and color for.
  */
-function upperArmReba(rebaData) {
+function upperArmReba(data) {
     let leftArmScore = 1;
     let leftArmColor = MotionStudyColors.undefined;
     let rightArmScore = 1;
     let rightArmColor = MotionStudyColors.undefined;
     
     // Angles for upper arm should be measured relative to trunk direction
-    const chestDown = rebaData.orientations.chest.up.clone().negate();
+    const chestDown = data.orientations.chest.up.clone().negate();
     const down = new THREE.Vector3(0, -1, 0);
     
     /* left uppper arm */
     // check if all needed joints have a valid position
-    if (rebaData.jointValidities[JOINTS.LEFT_ELBOW] && rebaData.jointValidities[JOINTS.LEFT_SHOULDER]) {
+    if (data.jointValidities[JOINTS.LEFT_ELBOW] && data.jointValidities[JOINTS.LEFT_SHOULDER]) {
         // calculate arm angles
-        const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]); 
+        const leftUpperArmDown = data.joints[JOINTS.LEFT_ELBOW].clone().sub(data.joints[JOINTS.LEFT_SHOULDER]); 
         const leftArmAngle = angleBetween(leftUpperArmDown, chestDown);
-        const leftShoulderAngle = angleBetween(rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const leftShoulderAngle = angleBetween(data.joints[JOINTS.LEFT_SHOULDER].clone().sub(data.joints[JOINTS.NECK]), data.orientations.chest.up);
         const leftArmGravityAngle = angleBetween(leftUpperArmDown, down);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
-        const flexionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
-        const extensionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
-        const rightAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right);
-        const leftAbductionAlignment = leftUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
+        const flexionAlignment = leftUpperArmDown.clone().dot(data.orientations.chest.forward);
+        const extensionAlignment = leftUpperArmDown.clone().dot(data.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = leftUpperArmDown.clone().dot(data.orientations.chest.right);
+        const leftAbductionAlignment = leftUpperArmDown.clone().dot(data.orientations.chest.right.clone().negate());
 
         let abduction = false;
         let gravityAlign = false;
@@ -433,16 +434,16 @@ function upperArmReba(rebaData) {
     }
 
     /* right uppper arm */
-    if (rebaData.jointValidities[JOINTS.RIGHT_ELBOW] && rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]) {
-        const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+    if (data.jointValidities[JOINTS.RIGHT_ELBOW] && data.jointValidities[JOINTS.RIGHT_SHOULDER]) {
+        const rightUpperArmDown = data.joints[JOINTS.RIGHT_ELBOW].clone().sub(data.joints[JOINTS.RIGHT_SHOULDER]);
         const rightArmAngle = angleBetween(rightUpperArmDown, chestDown);
-        const rightShoulderAngle = angleBetween(rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.NECK]), rebaData.orientations.chest.up);
+        const rightShoulderAngle = angleBetween(data.joints[JOINTS.RIGHT_SHOULDER].clone().sub(data.joints[JOINTS.NECK]), data.orientations.chest.up);
         const rightArmGravityAngle = angleBetween(rightUpperArmDown, down);
         // all vectors are normalised, so dot() == cos(angle between vectors) 
-        const flexionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward);
-        const extensionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.forward.clone().negate());
-        const rightAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right);
-        const leftAbductionAlignment = rightUpperArmDown.clone().dot(rebaData.orientations.chest.right.clone().negate());
+        const flexionAlignment = rightUpperArmDown.clone().dot(data.orientations.chest.forward);
+        const extensionAlignment = rightUpperArmDown.clone().dot(data.orientations.chest.forward.clone().negate());
+        const rightAbductionAlignment = rightUpperArmDown.clone().dot(data.orientations.chest.right);
+        const leftAbductionAlignment = rightUpperArmDown.clone().dot(data.orientations.chest.right.clone().negate());
 
         let abduction = false;
         let gravityAlign = false;
@@ -487,24 +488,24 @@ function upperArmReba(rebaData) {
         }
     }
     
-    rebaData.scores[JOINTS.LEFT_SHOULDER] = leftArmScore;
-    rebaData.colors[JOINTS.LEFT_SHOULDER] = leftArmColor;
-    rebaData.scores[JOINTS.RIGHT_SHOULDER] = rightArmScore;
-    rebaData.colors[JOINTS.RIGHT_SHOULDER] = rightArmColor;
+    data.jointScores[JOINTS.LEFT_SHOULDER] = leftArmScore;
+    data.jointColors[JOINTS.LEFT_SHOULDER] = leftArmColor;
+    data.jointScores[JOINTS.RIGHT_SHOULDER] = rightArmScore;
+    data.jointColors[JOINTS.RIGHT_SHOULDER] = rightArmColor;
     
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmColor;
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmColor;
+    data.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmScore;
+    data.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmColor;
+    data.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmScore;
+    data.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmColor;
 }
 
 /**
  * Sets the score and color for the lower arms reba.
  * Starting with score=1
  * +1 for elbow bent < 60 or > 100 degrees
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The data to calculate the score and color for.
  */
-function lowerArmReba(rebaData) {
+function lowerArmReba(data) {
     let leftArmScore = 1;
     let leftArmColor = MotionStudyColors.undefined;
     let rightArmScore = 1;
@@ -512,14 +513,14 @@ function lowerArmReba(rebaData) {
 
     /* left lower arm */
     // check if all needed joints have a valid position
-    if (rebaData.jointValidities[JOINTS.LEFT_WRIST] && 
-        rebaData.jointValidities[JOINTS.LEFT_ELBOW] &&
-        rebaData.jointValidities[JOINTS.LEFT_SHOULDER]
+    if (data.jointValidities[JOINTS.LEFT_WRIST] && 
+        data.jointValidities[JOINTS.LEFT_ELBOW] &&
+        data.jointValidities[JOINTS.LEFT_SHOULDER]
         ) {
 
         // calculate elbow angle
-        const leftForearmDown = rebaData.joints[JOINTS.LEFT_WRIST].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]);
-        const leftUpperArmDown = rebaData.joints[JOINTS.LEFT_ELBOW].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]);
+        const leftForearmDown = data.joints[JOINTS.LEFT_WRIST].clone().sub(data.joints[JOINTS.LEFT_ELBOW]);
+        const leftUpperArmDown = data.joints[JOINTS.LEFT_ELBOW].clone().sub(data.joints[JOINTS.LEFT_SHOULDER]);
         const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
     
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
@@ -539,13 +540,13 @@ function lowerArmReba(rebaData) {
     
     /* right lower arm */
     // check if all needed joints have a valid position
-    if (rebaData.jointValidities[JOINTS.RIGHT_WRIST] && 
-        rebaData.jointValidities[JOINTS.RIGHT_ELBOW] &&
-        rebaData.jointValidities[JOINTS.RIGHT_SHOULDER]
+    if (data.jointValidities[JOINTS.RIGHT_WRIST] && 
+        data.jointValidities[JOINTS.RIGHT_ELBOW] &&
+        data.jointValidities[JOINTS.RIGHT_SHOULDER]
         ) {
 
-        const rightForearmDown = rebaData.joints[JOINTS.RIGHT_WRIST].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]);
-        const rightUpperArmDown = rebaData.joints[JOINTS.RIGHT_ELBOW].clone().sub(rebaData.joints[JOINTS.RIGHT_SHOULDER]);
+        const rightForearmDown = data.joints[JOINTS.RIGHT_WRIST].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]);
+        const rightUpperArmDown = data.joints[JOINTS.RIGHT_ELBOW].clone().sub(data.joints[JOINTS.RIGHT_SHOULDER]);
         const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
 
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
@@ -563,15 +564,15 @@ function lowerArmReba(rebaData) {
         }
     }
     
-    rebaData.scores[JOINTS.LEFT_ELBOW] = leftArmScore;
-    rebaData.colors[JOINTS.LEFT_ELBOW] = leftArmColor;
-    rebaData.scores[JOINTS.RIGHT_ELBOW] = rightArmScore;
-    rebaData.colors[JOINTS.RIGHT_ELBOW] = rightArmColor;
+    data.jointScores[JOINTS.LEFT_ELBOW] = leftArmScore;
+    data.jointColors[JOINTS.LEFT_ELBOW] = leftArmColor;
+    data.jointScores[JOINTS.RIGHT_ELBOW] = rightArmScore;
+    data.jointColors[JOINTS.RIGHT_ELBOW] = rightArmColor;
     
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmColor;
-    rebaData.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmScore;
-    rebaData.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmColor;
+    data.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmScore;
+    data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmColor;
+    data.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmScore;
+    data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmColor;
 }
 
 /**
@@ -579,9 +580,9 @@ function lowerArmReba(rebaData) {
  * Starting with score=1
  * +1 for wrist flexion/extention > 15 degrees
  * +1 if bending from midline or twisting wrt elbow
- * @param {RebaData} rebaData The rebaData to calculate the score and color for.
+ * @param {ErgonomicsData} data The data to calculate the score and color for.
  */
-function wristReba(rebaData) {
+function wristReba(data) {
     let leftWristScore = 1;
     let leftWristColor = MotionStudyColors.undefined;
     let rightWristScore = 1;
@@ -591,20 +592,20 @@ function wristReba(rebaData) {
     /* left wrist */
     // checking if hand has a real pose (eg. it was detected or it is not just dummy hands for pose with JOINTS_V1 schema)
     //          if hand is a valid pose 
-    const leftHandIsValid = (rebaData.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).length() > 1e-6) &&
-                            rebaData.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP];
+    const leftHandIsValid = (data.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_WRIST]).length() > 1e-6) &&
+                            data.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP];
 
     // check if all needed joints have a valid position
     if ((TRACK_HANDS && leftHandIsValid) &&  
-        rebaData.jointValidities[JOINTS.LEFT_WRIST] &&
-        rebaData.jointValidities[JOINTS.LEFT_ELBOW]
+        data.jointValidities[JOINTS.LEFT_WRIST] &&
+        data.jointValidities[JOINTS.LEFT_ELBOW]
         ) {
     
         // compute main direction vectors
-        const leftHandDirection = rebaData.joints[JOINTS.LEFT_MIDDLE_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.LEFT_WRIST]).normalize();
-        const leftHandPinky2Index = rebaData.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.LEFT_PINKY_MCP]).normalize();
-        const leftForearmDirection = rebaData.joints[JOINTS.LEFT_WRIST].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
-        const leftUpperarmDirection = rebaData.joints[JOINTS.LEFT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_ELBOW]).normalize();
+        const leftHandDirection = data.joints[JOINTS.LEFT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_WRIST]).normalize();
+        const leftHandPinky2Index = data.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_PINKY_MCP]).normalize();
+        const leftForearmDirection = data.joints[JOINTS.LEFT_WRIST].clone().sub(data.joints[JOINTS.LEFT_ELBOW]).normalize();
+        const leftUpperarmDirection = data.joints[JOINTS.LEFT_SHOULDER].clone().sub(data.joints[JOINTS.LEFT_ELBOW]).normalize();
 
         // check if wrist position is outside +-15 deg, then +1
         const leftHandUp = new THREE.Vector3(); 
@@ -646,18 +647,18 @@ function wristReba(rebaData) {
         
 
     /* right wrist */
-    const rightHandIsValid = (rebaData.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).length() > 1e-6) &&
-                              rebaData.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP];
+    const rightHandIsValid = (data.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_WRIST]).length() > 1e-6) &&
+                              data.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP];
 
     if ((TRACK_HANDS && rightHandIsValid) &&  
-        rebaData.jointValidities[JOINTS.RIGHT_WRIST] &&
-        rebaData.jointValidities[JOINTS.RIGHT_ELBOW]
+        data.jointValidities[JOINTS.RIGHT_WRIST] &&
+        data.jointValidities[JOINTS.RIGHT_ELBOW]
         ) {
         // compute main direction vectors
-        const rightHandDirection = rebaData.joints[JOINTS.RIGHT_MIDDLE_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.RIGHT_WRIST]).normalize();
-        const rightHandPinky2Index = rebaData.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(rebaData.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();
-        const rightForearmDirection = rebaData.joints[JOINTS.RIGHT_WRIST].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
-        const rightUpperarmDirection = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.RIGHT_ELBOW]).normalize();
+        const rightHandDirection = data.joints[JOINTS.RIGHT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_WRIST]).normalize();
+        const rightHandPinky2Index = data.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();
+        const rightForearmDirection = data.joints[JOINTS.RIGHT_WRIST].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]).normalize();
+        const rightUpperarmDirection = data.joints[JOINTS.RIGHT_SHOULDER].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]).normalize();
 
         // check if wrist position is outside +-15 deg, then +1 
         const rightHandUp = new THREE.Vector3(); 
@@ -705,8 +706,8 @@ function wristReba(rebaData) {
         JOINTS.LEFT_RING_FINGER_MCP, JOINTS.LEFT_RING_FINGER_PIP, JOINTS.LEFT_RING_FINGER_DIP, JOINTS.LEFT_RING_FINGER_TIP,
         JOINTS.LEFT_PINKY_MCP, JOINTS.LEFT_PINKY_PIP, JOINTS.LEFT_PINKY_DIP, JOINTS.LEFT_PINKY_TIP
     ].forEach(joint => {
-        rebaData.scores[joint] = leftWristScore;
-        rebaData.colors[joint] = leftWristColor;
+        data.jointScores[joint] = leftWristScore;
+        data.jointColors[joint] = leftWristColor;
     });
 
     [JOINT_CONNECTIONS.thumb1Left, JOINT_CONNECTIONS.thumb2Left, JOINT_CONNECTIONS.thumb3Left, JOINT_CONNECTIONS.thumb4Left,
@@ -716,8 +717,8 @@ function wristReba(rebaData) {
        JOINT_CONNECTIONS.pinky1Left, JOINT_CONNECTIONS.pinky2Left, JOINT_CONNECTIONS.pinky3Left, JOINT_CONNECTIONS.pinky4Left,
        JOINT_CONNECTIONS.handSpan1Left, JOINT_CONNECTIONS.handSpan2Left, JOINT_CONNECTIONS.handSpan3Left
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = leftWristScore;
-        rebaData.boneColors[getBoneName(bone)] = leftWristColor;
+        data.boneScores[getBoneName(bone)] = leftWristScore;
+        data.boneColors[getBoneName(bone)] = leftWristColor;
     });
 
     [JOINTS.RIGHT_WRIST, JOINTS.RIGHT_THUMB_CMC, JOINTS.RIGHT_THUMB_MCP, JOINTS.RIGHT_THUMB_IP, JOINTS.RIGHT_THUMB_TIP,
@@ -726,8 +727,8 @@ function wristReba(rebaData) {
         JOINTS.RIGHT_RING_FINGER_MCP, JOINTS.RIGHT_RING_FINGER_PIP, JOINTS.RIGHT_RING_FINGER_DIP, JOINTS.RIGHT_RING_FINGER_TIP,
         JOINTS.RIGHT_PINKY_MCP, JOINTS.RIGHT_PINKY_PIP, JOINTS.RIGHT_PINKY_DIP, JOINTS.RIGHT_PINKY_TIP
     ].forEach(joint => {
-        rebaData.scores[joint] = rightWristScore;
-        rebaData.colors[joint] = rightWristColor;
+        data.jointScores[joint] = rightWristScore;
+        data.jointColors[joint] = rightWristColor;
     });
 
     [JOINT_CONNECTIONS.thumb1Right, JOINT_CONNECTIONS.thumb2Right, JOINT_CONNECTIONS.thumb3Right, JOINT_CONNECTIONS.thumb4Right,
@@ -737,8 +738,8 @@ function wristReba(rebaData) {
         JOINT_CONNECTIONS.pinky1Right, JOINT_CONNECTIONS.pinky2Right, JOINT_CONNECTIONS.pinky3Right, JOINT_CONNECTIONS.pinky4Right,
         JOINT_CONNECTIONS.handSpan1Right, JOINT_CONNECTIONS.handSpan2Right, JOINT_CONNECTIONS.handSpan3Right
     ].forEach(bone => {
-        rebaData.boneScores[getBoneName(bone)] = rightWristScore;
-        rebaData.boneColors[getBoneName(bone)] = rightWristColor;
+        data.boneScores[getBoneName(bone)] = rightWristScore;
+        data.boneColors[getBoneName(bone)] = rightWristColor;
     });
     
 }
@@ -754,23 +755,10 @@ function getOverallRebaColor(rebaScore) {
     return startColor.clone().lerpHSL(endColor, rebaFrac);
 }
 
-function calculateReba(rebaData) {
-    // call all helper functions to annotate the individual scores of each bone
-    neckReba(rebaData);
-    trunkReba(rebaData);
-    legsReba(rebaData);
-    upperArmReba(rebaData);
-    lowerArmReba(rebaData);
-    wristReba(rebaData);
-
-    rebaData.overallRebaScore = overallRebaCalculation(rebaData);
-    rebaData.overallRebaColor = getOverallRebaColor(rebaData.overallRebaScore);
-}
-
-function neckLegTrunkScore(rebaData) {
-    const neck = rebaData.scores[JOINTS.NECK];
-    const legs = Math.max(rebaData.scores[JOINTS.LEFT_HIP], rebaData.scores[JOINTS.RIGHT_HIP]);
-    const trunk = rebaData.scores[JOINTS.CHEST];
+function neckLegTrunkScore(data) {
+    const neck = data.jointScores[JOINTS.NECK];
+    const legs = Math.max(data.jointScores[JOINTS.LEFT_HIP], data.jointScores[JOINTS.RIGHT_HIP]);
+    const trunk = data.jointScores[JOINTS.CHEST];
 
     let key = `${neck},${legs},${trunk}`;
     
@@ -839,10 +827,10 @@ function neckLegTrunkScore(rebaData) {
     return scoreTable[key];
 }
 
-function armAndWristScore(rebaData) {
-    const lowerArm = Math.max(rebaData.scores[JOINTS.LEFT_ELBOW], rebaData.scores[JOINTS.RIGHT_ELBOW]);
-    const wrist = Math.max(rebaData.scores[JOINTS.LEFT_WRIST], rebaData.scores[JOINTS.RIGHT_WRIST]);
-    const upperArm = Math.max(rebaData.scores[JOINTS.LEFT_SHOULDER], rebaData.scores[JOINTS.RIGHT_SHOULDER]);
+function armAndWristScore(data) {
+    const lowerArm = Math.max(data.jointScores[JOINTS.LEFT_ELBOW], data.jointScores[JOINTS.RIGHT_ELBOW]);
+    const wrist = Math.max(data.jointScores[JOINTS.LEFT_WRIST], data.jointScores[JOINTS.RIGHT_WRIST]);
+    const upperArm = Math.max(data.jointScores[JOINTS.LEFT_SHOULDER], data.jointScores[JOINTS.RIGHT_SHOULDER]);
 
     let key = `${lowerArm},${wrist},${upperArm}`;
 
@@ -887,12 +875,12 @@ function armAndWristScore(rebaData) {
     return scoreTable[key];
 }
 
-function overallRebaCalculation(rebaData) {
+function overallRebaCalculation(data) {
     const forceScore = 0; // We cannot calculate this at the moment, ranges from 0 - 3
-    let scoreA = neckLegTrunkScore(rebaData) + forceScore;
+    let scoreA = neckLegTrunkScore(data) + forceScore;
     
     const couplingScore = 0; // We cannot calculate this at the moment, ranges from 0 - 3
-    let scoreB = armAndWristScore(rebaData) + couplingScore;
+    let scoreB = armAndWristScore(data) + couplingScore;
     
     // Effective output range is 1 - 11, since scoreA and scoreB are 1 - 9
     const scoreTable = [
@@ -914,96 +902,32 @@ function overallRebaCalculation(rebaData) {
 }
 
 /**
- * @typedef {Object} Orientation
- * @property {Vector3} forward The forward direction of the orientation
- * @property {Vector3} up The up direction of the orientation
- * @property {Vector3} right The right direction of the orientation
+ * Calculates REBA scores for individual body parts and for the whole pose. Derives colors for those scores.
+ * @param {ErgonomicsData} data The base ergonomics data which are used in calculations and the results are stored in this object.
  */
+function calculateReba(data) {
+    // call all helper functions to annotate the individual scores of each bone
+    neckReba(data);
+    trunkReba(data);
+    legsReba(data);
+    upperArmReba(data);
+    lowerArmReba(data);
+    wristReba(data);
 
-/**
- * @typedef {Object} RebaData
- * @property {number} overallRebaScore The overall reba score of the pose
- * @property {Color} overallRebaColor The overall reba color of the pose
- * @property {Object.<string, Vector3>} joints The joints of the pose
- * @property {Object.<string, number>} scores The scores of the pose
- * @property {Object.<string, Color>} colors The colors of the pose
- * @property {Object.<string, number>} boneScores The bone scores of the pose
- * @property {Object.<string, Color>} boneColors The bone colors of the pose
- * @property {Object.<string, Orientation>} orientations The orientations of the pose
- */
-
-/**
- * Generates a rebaData object from a pose
- * @param {Pose} pose The pose to extract the rebaData from
- * @return {RebaData} The rebaData object
- */
-function extractRebaData(pose) {
-    let rebaData = {
-        overallRebaScore: 0,
-        overallRebaColor: MotionStudyColors.undefined,
-        joints: {},
-        jointValidities: {},
-        scores: {},
-        colors: {},
-        boneScores: {},
-        boneColors: {},
-        orientations: {
-            head: {
-                forward: new THREE.Vector3(),
-                up: new THREE.Vector3(),
-                right: new THREE.Vector3()
-            },
-            chest: {
-                forward: new THREE.Vector3(),
-                up: new THREE.Vector3(),
-                right: new THREE.Vector3()
-            },
-            hips: {
-                forward: new THREE.Vector3(),
-                up: new THREE.Vector3(),
-                right: new THREE.Vector3()
-            }
-        }
-    };
-    for (let jointId of Object.values(JOINTS)) {
-        rebaData.joints[jointId] = pose.getJoint(jointId).position;
-        rebaData.jointValidities[jointId] = pose.getJoint(jointId).valid;
-        rebaData.scores[jointId] = 0;
-        rebaData.colors[jointId] = MotionStudyColors.undefined;
-    }
-    for (let boneId of Object.keys(JOINT_CONNECTIONS)) {
-        rebaData.boneScores[boneId] = 0;
-        rebaData.boneColors[boneId] = MotionStudyColors.undefined;
-    }
-    
-    // make sure these coord systems have orthogonal axes
-    rebaData.orientations.head.up = rebaData.joints[JOINTS.HEAD].clone().sub(rebaData.joints[JOINTS.NECK]).normalize();
-    rebaData.orientations.head.forward = rebaData.joints[JOINTS.NOSE].clone().sub(rebaData.joints[JOINTS.HEAD]).normalize();
-    rebaData.orientations.head.right = rebaData.orientations.head.forward.clone().cross(rebaData.orientations.head.up).normalize();
-    rebaData.orientations.head.forward = rebaData.orientations.head.up.clone().cross(rebaData.orientations.head.right).normalize();  // make perpendicular
-    
-    rebaData.orientations.chest.up = rebaData.joints[JOINTS.NECK].clone().sub(rebaData.joints[JOINTS.CHEST]).normalize();
-    rebaData.orientations.chest.right = rebaData.joints[JOINTS.RIGHT_SHOULDER].clone().sub(rebaData.joints[JOINTS.LEFT_SHOULDER]).normalize();
-    rebaData.orientations.chest.forward = rebaData.orientations.chest.up.clone().cross(rebaData.orientations.chest.right).normalize();
-    rebaData.orientations.chest.right = rebaData.orientations.chest.forward.clone().cross(rebaData.orientations.chest.up).normalize();  // make perpendicular
-    
-    rebaData.orientations.hips.up = new THREE.Vector3(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up)
-    rebaData.orientations.hips.right = rebaData.joints[JOINTS.RIGHT_HIP].clone().sub(rebaData.joints[JOINTS.LEFT_HIP]).normalize();
-    rebaData.orientations.hips.forward = rebaData.orientations.hips.up.clone().cross(rebaData.orientations.hips.right).normalize();
-    rebaData.orientations.hips.right = rebaData.orientations.hips.forward.clone().cross(rebaData.orientations.hips.up).normalize();  // make perpendicular
-
-    return rebaData;
+    data.overallScore = overallRebaCalculation(data);
+    data.overallColor = getOverallRebaColor(data.overallScore);
 }
 
 /**
  * Calculates the Reba score for a given pose
  * @param {Pose} pose The pose to calculate the score for
- * @return {RebaData} The rebaData object
+ * @return {ErgonomicsData} The ergonomicsData object
  */
 function calculateForPose(pose) {
-    const rebaData = extractRebaData(pose);
-    calculateReba(rebaData);
-    return rebaData;
+    let ergonomicsData = new ErgonomicsData(pose);
+    ergonomicsData.calculate();
+    calculateReba(ergonomicsData);
+    return ergonomicsData;
 }
 
 export {
