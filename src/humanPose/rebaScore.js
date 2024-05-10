@@ -1,7 +1,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {ErgonomicsData} from "./ErgonomicsData.js";
+import {ErgonomicsData, angleBetween} from "./ErgonomicsData.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
@@ -51,16 +51,6 @@ const REBA_CONFIG = Object.assign({}, REBA_CONFIG_DEFAULT);
  */
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
-}
-
-/**
- * Calculates the angle between two vectors in degrees.
- * @param {THREE.Vector3} vector1 The first vector.
- * @param {THREE.Vector3} vector2 The second vector.
- * @return {number} The angle between the two vectors in degrees [0, +180].
- */
-function angleBetween(vector1, vector2) {
-    return vector1.angleTo(vector2) * 180 / Math.PI;
 }
 
 /**
@@ -270,9 +260,7 @@ function legsReba(data) {
         data.jointValidities[JOINTS.LEFT_HIP]) {
     
         // calculate knee angle
-        const leftKneeUp = data.joints[JOINTS.LEFT_HIP].clone().sub(data.joints[JOINTS.LEFT_KNEE]);
-        const leftFootUp = data.joints[JOINTS.LEFT_KNEE].clone().sub(data.joints[JOINTS.LEFT_ANKLE]);
-        const leftKneeUpAngle = angleBetween(leftKneeUp, leftFootUp);
+        const leftKneeUpAngle = angleBetween(data.orientations.leftUpperLeg.up,  data.orientations.leftLowerLeg.up);
         
         // Check for knee bending
         if (leftKneeUpAngle > REBA_CONFIG.legBendAngleThresholds[0]) {
@@ -299,9 +287,7 @@ function legsReba(data) {
         data.jointValidities[JOINTS.RIGHT_ANKLE] &&
         data.jointValidities[JOINTS.RIGHT_HIP]) {
 
-        const rightKneeUp = data.joints[JOINTS.RIGHT_HIP].clone().sub(data.joints[JOINTS.RIGHT_KNEE]);
-        const rightFootUp = data.joints[JOINTS.RIGHT_KNEE].clone().sub(data.joints[JOINTS.RIGHT_ANKLE]);
-        const rightKneeUpAngle = angleBetween(rightKneeUp, rightFootUp);
+        const rightKneeUpAngle = angleBetween(data.orientations.rightUpperLeg.up,  data.orientations.rightLowerLeg.up);
 
         if (rightKneeUpAngle > REBA_CONFIG.legBendAngleThresholds[0]) {
             rightLegScore++; // +1 for greater than 30 degrees
@@ -379,7 +365,7 @@ function upperArmReba(data) {
     // check if all needed joints have a valid position
     if (data.jointValidities[JOINTS.LEFT_ELBOW] && data.jointValidities[JOINTS.LEFT_SHOULDER]) {
         // calculate arm angles
-        const leftUpperArmDown = data.joints[JOINTS.LEFT_ELBOW].clone().sub(data.joints[JOINTS.LEFT_SHOULDER]); 
+        const leftUpperArmDown = data.orientations.leftUpperArm.up.clone().negate(); 
         const leftArmAngle = angleBetween(leftUpperArmDown, chestDown);
         const leftShoulderAngle = angleBetween(data.joints[JOINTS.LEFT_SHOULDER].clone().sub(data.joints[JOINTS.NECK]), data.orientations.chest.up);
         const leftArmGravityAngle = angleBetween(leftUpperArmDown, down);
@@ -435,7 +421,7 @@ function upperArmReba(data) {
 
     /* right uppper arm */
     if (data.jointValidities[JOINTS.RIGHT_ELBOW] && data.jointValidities[JOINTS.RIGHT_SHOULDER]) {
-        const rightUpperArmDown = data.joints[JOINTS.RIGHT_ELBOW].clone().sub(data.joints[JOINTS.RIGHT_SHOULDER]);
+        const rightUpperArmDown = data.orientations.rightUpperArm.up.clone().negate();
         const rightArmAngle = angleBetween(rightUpperArmDown, chestDown);
         const rightShoulderAngle = angleBetween(data.joints[JOINTS.RIGHT_SHOULDER].clone().sub(data.joints[JOINTS.NECK]), data.orientations.chest.up);
         const rightArmGravityAngle = angleBetween(rightUpperArmDown, down);
@@ -519,9 +505,7 @@ function lowerArmReba(data) {
         ) {
 
         // calculate elbow angle
-        const leftForearmDown = data.joints[JOINTS.LEFT_WRIST].clone().sub(data.joints[JOINTS.LEFT_ELBOW]);
-        const leftUpperArmDown = data.joints[JOINTS.LEFT_ELBOW].clone().sub(data.joints[JOINTS.LEFT_SHOULDER]);
-        const leftElbowAngle = angleBetween(leftForearmDown, leftUpperArmDown);
+        const leftElbowAngle = angleBetween(data.orientations.leftLowerArm.up, data.orientations.leftUpperArm.up);
     
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
         if (leftElbowAngle < REBA_CONFIG.lowerArmBendAngleThresholds[0] || leftElbowAngle > REBA_CONFIG.lowerArmBendAngleThresholds[1]) {
@@ -545,9 +529,7 @@ function lowerArmReba(data) {
         data.jointValidities[JOINTS.RIGHT_SHOULDER]
         ) {
 
-        const rightForearmDown = data.joints[JOINTS.RIGHT_WRIST].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]);
-        const rightUpperArmDown = data.joints[JOINTS.RIGHT_ELBOW].clone().sub(data.joints[JOINTS.RIGHT_SHOULDER]);
-        const rightElbowAngle = angleBetween(rightForearmDown, rightUpperArmDown);
+        const rightElbowAngle = angleBetween(data.orientations.rightLowerArm.up, data.orientations.rightUpperArm.up);
 
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
         if (rightElbowAngle < REBA_CONFIG.lowerArmBendAngleThresholds[0] || rightElbowAngle > REBA_CONFIG.lowerArmBendAngleThresholds[1]) {
@@ -602,15 +584,15 @@ function wristReba(data) {
         ) {
     
         // compute main direction vectors
-        const leftHandDirection = data.joints[JOINTS.LEFT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_WRIST]).normalize();
-        const leftHandPinky2Index = data.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_PINKY_MCP]).normalize();
-        const leftForearmDirection = data.joints[JOINTS.LEFT_WRIST].clone().sub(data.joints[JOINTS.LEFT_ELBOW]).normalize();
-        const leftUpperarmDirection = data.joints[JOINTS.LEFT_SHOULDER].clone().sub(data.joints[JOINTS.LEFT_ELBOW]).normalize();
+        //const leftHandDirection = data.joints[JOINTS.LEFT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_WRIST]).normalize();
+        const leftHandPinky2Index = data.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_PINKY_MCP]).normalize(); // TODO
+        const leftForearmDirection = data.orientations.leftLowerArm.up.clone().negate();
+        const leftUpperarmDirection = data.orientations.leftUpperArm.up;
 
         // check if wrist position is outside +-15 deg, then +1
-        const leftHandUp = new THREE.Vector3(); 
-        leftHandUp.crossVectors(leftHandPinky2Index, leftHandDirection).normalize();   // note: swapped order compared to right hand
-        const wristPositionAngle = angleBetween(leftHandUp, leftForearmDirection) - 90;
+        //const leftHandUp = new THREE.Vector3(); 
+        //leftHandUp.crossVectors(leftHandPinky2Index, leftHandDirection).normalize();   // note: swapped order compared to right hand
+        const wristPositionAngle = angleBetween(data.orientations.leftHand.forward, leftForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > REBA_CONFIG.wristFrontBendAngleThresholds[0]) {
             leftWristScore++;
         }
@@ -622,9 +604,9 @@ function wristReba(data) {
 
         // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
-        const leftElbowAxis = new THREE.Vector3(); // direction towards the body
-        leftElbowAxis.crossVectors(leftForearmDirection, leftUpperarmDirection).normalize(); // note: swapped order compared to right hand
-        const wristTwistAngle = angleBetween(leftElbowAxis, leftHandPinky2Index);
+        //const leftElbowAxis = new THREE.Vector3(); // direction towards the body
+        //leftElbowAxis.crossVectors(leftForearmDirection, leftUpperarmDirection).normalize(); // note: swapped order compared to right hand
+        const wristTwistAngle = angleBetween(data.orientations.leftLowerArm.right, leftHandPinky2Index);
         const twist = (wristTwistAngle > REBA_CONFIG.wristTwistAngleThresholds[0]);
 
         // +1 for twisting or side-bending
@@ -632,7 +614,7 @@ function wristReba(data) {
             leftWristScore++; 
         }
 
-        //console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
+        console.log(`Left wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)};  wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
@@ -655,15 +637,15 @@ function wristReba(data) {
         data.jointValidities[JOINTS.RIGHT_ELBOW]
         ) {
         // compute main direction vectors
-        const rightHandDirection = data.joints[JOINTS.RIGHT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_WRIST]).normalize();
-        const rightHandPinky2Index = data.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();
-        const rightForearmDirection = data.joints[JOINTS.RIGHT_WRIST].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]).normalize();
-        const rightUpperarmDirection = data.joints[JOINTS.RIGHT_SHOULDER].clone().sub(data.joints[JOINTS.RIGHT_ELBOW]).normalize();
+        //const rightHandDirection = data.joints[JOINTS.RIGHT_MIDDLE_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_WRIST]).normalize();
+        const rightHandPinky2Index = data.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();  // TODO
+        const rightForearmDirection = data.orientations.rightLowerArm.up.clone().negate();
+        const rightUpperarmDirection = data.orientations.rightUpperArm.up;
 
         // check if wrist position is outside +-15 deg, then +1 
-        const rightHandUp = new THREE.Vector3(); 
-        rightHandUp.crossVectors(rightHandDirection, rightHandPinky2Index).normalize();
-        const wristPositionAngle = angleBetween(rightHandUp, rightForearmDirection) - 90;
+        /*const rightHandUp = new THREE.Vector3(); 
+        rightHandUp.crossVectors(rightHandDirection, rightHandPinky2Index).normalize();*/
+        const wristPositionAngle = angleBetween(data.orientations.rightHand.forward, rightForearmDirection) - 90;
         if (Math.abs(wristPositionAngle) > REBA_CONFIG.wristFrontBendAngleThresholds[0]) {
             rightWristScore++;
         }
@@ -675,9 +657,9 @@ function wristReba(data) {
 
         // check if the hand is twisted (palm up)
         // the twist angle limit is not specified in REBA definition (120 deg chosen by us to score when there is definitive twist)
-        const rightElbowAxis = new THREE.Vector3(); // direction towards the body
-        rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
-        const wristTwistAngle = angleBetween(rightElbowAxis, rightHandPinky2Index);
+        //const rightElbowAxis = new THREE.Vector3(); // direction towards the body
+        //rightElbowAxis.crossVectors(rightUpperarmDirection, rightForearmDirection).normalize();
+        const wristTwistAngle = angleBetween(data.orientations.rightLowerArm.right.clone().negate(), rightHandPinky2Index);
         const twist = (wristTwistAngle > REBA_CONFIG.wristTwistAngleThresholds[0]);
  
         // +1 for twisting or side-bending
@@ -685,7 +667,7 @@ function wristReba(data) {
             rightWristScore++; 
         }
 
-        //console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
+        console.log(`Right wrist: wristPositionAngle=${wristPositionAngle.toFixed(0)}; wristBendAngle=${wristBendAngle.toFixed(0)}; wristTwistAngle=${wristTwistAngle.toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 

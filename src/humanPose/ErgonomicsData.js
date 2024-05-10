@@ -4,6 +4,17 @@ import {JOINT_CONNECTIONS, JOINTS} from './constants.js';
 
 
 /**
+ * Calculates the angle between two vectors in degrees.
+ * @param {THREE.Vector3} vector1 The first vector.
+ * @param {THREE.Vector3} vector2 The second vector.
+ * @return {number} The angle between the two vectors in degrees [0, +180].
+ */
+export function angleBetween(vector1, vector2) {
+    return vector1.angleTo(vector2) * 180 / Math.PI;
+}
+
+
+/**
  * @typedef {Object} Orientation
  * @property {Vector3} forward The forward direction of the orientation
  * @property {Vector3} up The up direction of the orientation
@@ -189,4 +200,6 @@ export class ErgonomicsData {
         this.orientations.rightUpperLeg.forward.crossVectors(this.orientations.rightUpperLeg.up,this.orientations.rightUpperLeg.right).normalize();   
         
     }
+    
 }
+
