@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {JOINT_CONNECTIONS, JOINTS} from './constants.js';
+import {JOINT_CONNECTIONS, JOINTS, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 
 
 /**
@@ -48,14 +48,14 @@ export class ErgonomicsData {
         this.boneColors = {};
         this.overallScore = 0;
         this.overallColor = MotionStudyColors.undefined;
-        // right handed coord systems for key body parts
+        // orientations of individual body parts (expressed as right-handed local coord systems)
         this.orientations = {
             head: {
                 forward: new THREE.Vector3(),
                 up: new THREE.Vector3(),
                 right: new THREE.Vector3()
             },
-            chest: {
+            trunk: {
                 forward: new THREE.Vector3(),
                 up: new THREE.Vector3(),
                 right: new THREE.Vector3()
@@ -118,7 +118,7 @@ export class ErgonomicsData {
             }
         };
         this.angles = {};
-        this.offsets = {};
+        this.offsets = {};  // values have the type of THREE.Vector3()
 
         for (let jointId of Object.values(JOINTS)) {
             this.joints[jointId] = pose.getJoint(jointId).position;
@@ -134,24 +134,27 @@ export class ErgonomicsData {
 
     calculate() {
         this.calculateOrientations();
+        this.calculateAngles();
+        this.calculateOffsets();
     }
     
     calculateOrientations() {
         // make sure all coord systems have orthogonal and unit axes
-        this.orientations.head.up.subVectors(this.joints[JOINTS.HEAD],this.joints[JOINTS.NECK]).normalize();
-        this.orientations.head.forward.subVectors(this.joints[JOINTS.NOSE], this.joints[JOINTS.HEAD]).normalize();
-        this.orientations.head.right.crossVectors(this.orientations.head.forward, this.orientations.head.up).normalize();
-        this.orientations.head.forward.crossVectors(this.orientations.head.up, this.orientations.head.right).normalize();  // make perpendicular
-        
-        this.orientations.chest.up.subVectors(this.joints[JOINTS.NECK], this.joints[JOINTS.CHEST]).normalize();
-        this.orientations.chest.right.subVectors(this.joints[JOINTS.RIGHT_SHOULDER], this.joints[JOINTS.LEFT_SHOULDER]).normalize();
-        this.orientations.chest.forward.crossVectors(this.orientations.chest.up, this.orientations.chest.right).normalize();
-        this.orientations.chest.right.crossVectors(this.orientations.chest.forward, this.orientations.chest.up).normalize();  // make perpendicular
-        
+        // hips are considered a root of the whole body
         this.orientations.hips.up.set(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up), hence given a vector opposite to gravity
         this.orientations.hips.right.subVectors(this.joints[JOINTS.RIGHT_HIP], this.joints[JOINTS.LEFT_HIP]).normalize();
         this.orientations.hips.forward.crossVectors(this.orientations.hips.up, this.orientations.hips.right).normalize();
         this.orientations.hips.right.crossVectors(this.orientations.hips.forward, this.orientations.hips.up).normalize();  // make perpendicular
+
+        this.orientations.trunk.up.subVectors(this.joints[JOINTS.NECK], this.joints[JOINTS.CHEST]).normalize();
+        this.orientations.trunk.right.subVectors(this.joints[JOINTS.RIGHT_SHOULDER], this.joints[JOINTS.LEFT_SHOULDER]).normalize();
+        this.orientations.trunk.forward.crossVectors(this.orientations.trunk.up, this.orientations.trunk.right).normalize();
+        this.orientations.trunk.right.crossVectors(this.orientations.trunk.forward, this.orientations.trunk.up).normalize();  // make perpendicular
+        
+        this.orientations.head.up.subVectors(this.joints[JOINTS.HEAD],this.joints[JOINTS.NECK]).normalize();
+        this.orientations.head.forward.subVectors(this.joints[JOINTS.NOSE], this.joints[JOINTS.HEAD]).normalize();
+        this.orientations.head.right.crossVectors(this.orientations.head.forward, this.orientations.head.up).normalize();
+        this.orientations.head.forward.crossVectors(this.orientations.head.up, this.orientations.head.right).normalize();  // make perpendicular
         
         this.orientations.leftLowerArm.up.subVectors(this.joints[JOINTS.LEFT_ELBOW], this.joints[JOINTS.LEFT_WRIST]).normalize(); // aligned with the bone
         this.orientations.leftUpperArm.up.subVectors(this.joints[JOINTS.LEFT_SHOULDER], this.joints[JOINTS.LEFT_ELBOW]).normalize(); // aligned with the bone
@@ -199,6 +202,61 @@ export class ErgonomicsData {
         this.orientations.rightUpperLeg.right.copy(this.orientations.rightLowerLeg.right) // same direction
         this.orientations.rightUpperLeg.forward.crossVectors(this.orientations.rightUpperLeg.up,this.orientations.rightUpperLeg.right).normalize();   
         
+    }
+
+    calculateAngles() {
+
+        /* trunk */
+        const up = new THREE.Vector3(0, 1, 0);  // opposite to the gravity vector
+        this.angles[ERGO_ANGLES.TRUNK_BEND] = angleBetween(this.orientations.trunk.up, up);
+        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.forward, this.orientations.hips.right); // Angle from full twist right  //TODO
+
+        /* head */
+        this.angles[ERGO_ANGLES.HEAD_BEND] = angleBetween(this.orientations.head.up, this.orientations.trunk.up);
+        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.forward, this.orientations.trunk.right); // Angle from full twist right  //TODO
+
+        /* legs */
+        this.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND] = angleBetween(this.orientations.leftUpperLeg.up,  this.orientations.leftLowerLeg.up);
+        this.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND] = angleBetween(this.orientations.rightUpperLeg.up,  this.orientations.rightLowerLeg.up);
+
+        /* upper arms */
+        // Angles for upper arn are primarily measured relative to trunk direction rather than gravity direction
+        const down = new THREE.Vector3(0, -1, 0);    // the gravity vector
+        const trunkDown = this.orientations.trunk.up.clone().negate();
+        const leftUpperArmDown = this.orientations.leftUpperArm.up.clone().negate();
+        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE] = angleBetween(leftUpperArmDown, trunkDown);
+        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY] = angleBetween(leftUpperArmDown, down);
+        this.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.LEFT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+
+        const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
+        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
+        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY] = angleBetween(rightUpperArmDown, down);
+        this.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.RIGHT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+
+        /* lower arms */
+        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
+        const leftHandPinky2Index = this.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(this.joints[JOINTS.LEFT_PINKY_MCP]).normalize(); // TODO: replace by hand axis
+        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, leftHandPinky2Index);  // when both in direction towards the body, the angle is zero
+
+        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = angleBetween(this.orientations.rightLowerArm.up, this.orientations.rightUpperArm.up);
+        const rightHandPinky2Index = this.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(this.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();  // TODO
+        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), rightHandPinky2Index); // when both in direction towards the body, the angle is zero
+
+        /* hands */
+        const leftForearmDirection = this.orientations.leftLowerArm.up.clone().negate();
+        // wrist flexion/extention 
+        this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftForearmDirection) - 90;   // TODO: has a right sign?
+        // side bend of hand from midline of lower arm
+        this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);   // TODO: has a right sign?
+
+        const rightForearmDirection = this.orientations.rightLowerArm.up.clone().negate();
+        this.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND] = angleBetween(this.orientations.rightHand.forward, rightForearmDirection) - 90;   // TODO: has a right sign?
+        this.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND]  = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);   // TODO: has a right sign?
+
+    }
+
+    calculateOffsets() {
+        this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT] = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_ANKLE], this.joints[JOINTS.LEFT_ANKLE]);
     }
     
 }
