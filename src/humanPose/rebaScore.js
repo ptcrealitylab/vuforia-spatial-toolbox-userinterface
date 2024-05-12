@@ -1,7 +1,6 @@
-import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {ErgonomicsData, angleBetween} from "./ErgonomicsData.js";
+import {ErgonomicsData} from "./ErgonomicsData.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
@@ -576,7 +575,7 @@ function wristReba(data) {
             leftWristScore++; 
         }
 
-        //console.log(`Left wrist: frontBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND].toFixed(0)};  sideBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
+        console.log(`Left wrist: frontBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND].toFixed(0)};  sideBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
@@ -617,7 +616,7 @@ function wristReba(data) {
             rightWristScore++; 
         }
 
-        //console.log(`Right wrist: frontBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND].toFixed(0)}; sideBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
+        console.log(`Right wrist: frontBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND].toFixed(0)}; sideBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 

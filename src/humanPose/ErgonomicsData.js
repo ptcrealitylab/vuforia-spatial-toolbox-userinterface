@@ -168,7 +168,7 @@ export class ErgonomicsData {
         this.orientations.leftHand.up.subVectors(this.joints[JOINTS.LEFT_WRIST], this.joints[JOINTS.LEFT_MIDDLE_FINGER_MCP]).normalize(); // aligned with fingers (opposite to their direction)
         this.orientations.leftHand.right.subVectors(this.joints[JOINTS.LEFT_INDEX_FINGER_MCP], this.joints[JOINTS.LEFT_PINKY_MCP]).normalize(); // across palm (from pinky to index finger)
         this.orientations.leftHand.forward.crossVectors(this.orientations.leftHand.up,this.orientations.leftHand.right).normalize();  // from the back of the hand
-        this.orientations.leftHand.right.subVectors(this.orientations.leftHand.forward, this.orientations.leftHand.up).normalize();  // make perpendicular
+        this.orientations.leftHand.right.crossVectors(this.orientations.leftHand.forward, this.orientations.leftHand.up).normalize();  // make perpendicular
 
         this.orientations.rightLowerArm.up.subVectors(this.joints[JOINTS.RIGHT_ELBOW], this.joints[JOINTS.RIGHT_WRIST]).normalize(); // aligned with the bone
         this.orientations.rightUpperArm.up.subVectors(this.joints[JOINTS.RIGHT_SHOULDER], this.joints[JOINTS.RIGHT_ELBOW]).normalize(); // aligned with the bone
@@ -182,7 +182,7 @@ export class ErgonomicsData {
         this.orientations.rightHand.up.subVectors(this.joints[JOINTS.RIGHT_WRIST], this.joints[JOINTS.RIGHT_MIDDLE_FINGER_MCP]).normalize(); // aligned with fingers (opposite to their direction)
         this.orientations.rightHand.right.subVectors(this.joints[JOINTS.RIGHT_PINKY_MCP], this.joints[JOINTS.RIGHT_INDEX_FINGER_MCP]).normalize(); // across palm (from index finger to pinky)
         this.orientations.rightHand.forward.crossVectors(this.orientations.rightHand.up,this.orientations.rightHand.right).normalize();  // from the back of the hand
-        this.orientations.rightHand.right.subVectors(this.orientations.rightHand.forward, this.orientations.rightHand.up).normalize();  // make perpendicular
+        this.orientations.rightHand.right.crossVectors(this.orientations.rightHand.forward, this.orientations.rightHand.up).normalize();  // make perpendicular
 
         this.orientations.leftLowerLeg.up.subVectors(this.joints[JOINTS.LEFT_KNEE], this.joints[JOINTS.LEFT_ANKLE]).normalize(); // aligned with the bone
         this.orientations.leftUpperLeg.up.subVectors(this.joints[JOINTS.LEFT_HIP], this.joints[JOINTS.LEFT_KNEE]).normalize(); // aligned with the bone
@@ -235,24 +235,24 @@ export class ErgonomicsData {
 
         /* lower arms */
         this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
-        const leftHandPinky2Index = this.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(this.joints[JOINTS.LEFT_PINKY_MCP]).normalize(); // TODO: replace by hand axis
-        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, leftHandPinky2Index);  // when both in direction towards the body, the angle is zero
+        // Twist of hand wrt. rotation axis of elbow. When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
+        // When the both vectors have 180deg angle between them there is the maximum twist.
+        // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
+        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);  
 
         this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = angleBetween(this.orientations.rightLowerArm.up, this.orientations.rightUpperArm.up);
-        const rightHandPinky2Index = this.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(this.joints[JOINTS.RIGHT_PINKY_MCP]).normalize();  // TODO
-        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), rightHandPinky2Index); // when both in direction towards the body, the angle is zero
+        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
 
         /* hands */
-        const leftForearmDirection = this.orientations.leftLowerArm.up.clone().negate();
-        // wrist flexion/extention 
-        this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftForearmDirection) - 90;   // TODO: has a right sign?
-        // side bend of hand from midline of lower arm
-        this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = 90 - angleBetween(leftHandPinky2Index, leftForearmDirection);   // TODO: has a right sign?
+        const leftLowerArmDirection = this.orientations.leftLowerArm.up.clone().negate();
+        // Front bend of hand from midline of lower arm (wrist flexion/extention). The angle is positive when extending in the back-of-hand direction and negative when flexing in the palm direction.
+        this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftLowerArmDirection) - 90;
+        // Side bend of hand from midline of lower arm. The angle is positive when the hand bends in 'thumb' direction and negative when in the opposite direction.
+        this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = angleBetween(this.orientations.leftHand.right, leftLowerArmDirection) - 90;   
 
-        const rightForearmDirection = this.orientations.rightLowerArm.up.clone().negate();
-        this.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND] = angleBetween(this.orientations.rightHand.forward, rightForearmDirection) - 90;   // TODO: has a right sign?
-        this.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND]  = 90 - angleBetween(rightHandPinky2Index, rightForearmDirection);   // TODO: has a right sign?
-
+        const rightLowerArmDirection = this.orientations.rightLowerArm.up.clone().negate();
+        this.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND] = angleBetween(this.orientations.rightHand.forward, rightLowerArmDirection) - 90;
+        this.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND]  = angleBetween(this.orientations.rightHand.right.clone().negate(), rightLowerArmDirection) - 90; // negated to have a symmetrical definition of the angle for left and right hand
     }
 
     calculateOffsets() {
