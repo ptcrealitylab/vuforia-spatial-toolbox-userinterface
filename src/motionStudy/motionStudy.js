@@ -494,14 +494,27 @@ export class MotionStudy {
                 this.videoStartTime = parseFloat(matches[1]);
             }
             this.videoPlayer.hide();
-            this.videoPlayer.colorVideo.controls = true;
-            this.videoPlayer.colorVideo.style.display = '';
-            this.videoPlayer.colorVideo.classList.add('analytics-video');
+            const colorVideo = this.videoPlayer.colorVideo;
+
+            colorVideo.style.display = '';
+            colorVideo.controls = true;
+            colorVideo.classList.add('analytics-video');
+
+            // This could expand to cover all the various orientations but for
+            // now we just care about iPad (landscape) vs iPhone
+            const isPortrait = parseInt(data.orientation) === 1;
+            if (isPortrait) {
+                colorVideo.classList.add('analytics-video-portrait');
+            }
             this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
 
             this.createVideoPlayerShowHideButton();
 
-            this.container.appendChild(this.videoPlayer.colorVideo);
+            const videoPlayerBackground = document.createElement('div');
+            videoPlayerBackground.classList.add('analytics-video-background');
+            this.container.appendChild(videoPlayerBackground);
+
+            this.container.appendChild(colorVideo);
         }
 
         if (data.valueAddWasteTime) {
