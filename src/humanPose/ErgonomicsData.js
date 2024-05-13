@@ -4,7 +4,7 @@ import {JOINT_CONNECTIONS, JOINTS, ERGO_ANGLES, ERGO_OFFSETS} from './constants.
 
 
 /**
- * Calculates the angle between two vectors in degrees.
+ * Calculates the angle between two vectors in degrees. The vector don't need to have the unit length.
  * @param {THREE.Vector3} vector1 The first vector.
  * @param {THREE.Vector3} vector2 The second vector.
  * @return {number} The angle between the two vectors in degrees [0, +180].
@@ -139,9 +139,9 @@ export class ErgonomicsData {
     }
     
     calculateOrientations() {
-        // make sure all coord systems have orthogonal and unit axes
-        // hips are considered a root of the whole body
-        this.orientations.hips.up.set(0, 1, 0); // Hips do not really have an up direction (i.e., even when sitting, the hips are always up), hence given a vector opposite to gravity
+        // make sure all coord systems have orthogonal and unit axes (order: forward, up, right)
+        // Hips are defined as a root of the whole body. Their up direction is defined as the vector opposite to gravity.
+        this.orientations.hips.up.set(0, 1, 0);
         this.orientations.hips.right.subVectors(this.joints[JOINTS.RIGHT_HIP], this.joints[JOINTS.LEFT_HIP]).normalize();
         this.orientations.hips.forward.crossVectors(this.orientations.hips.up, this.orientations.hips.right).normalize();
         this.orientations.hips.right.crossVectors(this.orientations.hips.forward, this.orientations.hips.up).normalize();  // make perpendicular
@@ -208,7 +208,20 @@ export class ErgonomicsData {
 
         /* trunk */
         const up = new THREE.Vector3(0, 1, 0);  // opposite to the gravity vector
+        // Overall bend angle from upright direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.TRUNK_BEND] = angleBetween(this.orientations.trunk.up, up);
+        // Projection of trunk direction to sagittal/median plane of body where normal is this.orientations.hips.right. Assumes that both vectors have unit length
+        const trunkUpSagittalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.right.clone().multiplyScalar(this.orientations.hips.right.dot(this.orientations.trunk.up)));
+        // Front bend angle fro upright direction. The angle is positive when bending forwards and negative when bending backwards.
+        this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = angleBetween(trunkUpSagittalProjection, up);
+        if (trunkUpSagittalProjection.dot(this.orientations.hips.forward) < 0) {
+            this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] *= -1;
+        }
+        //this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND]
+
+        console.log(`Trunk: bendAngle=${this.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND].toFixed(0)}deg`);
+    
+
         this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.forward, this.orientations.hips.right); // Angle from full twist right  //TODO
 
         /* head */

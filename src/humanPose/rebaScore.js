@@ -575,7 +575,7 @@ function wristReba(data) {
             leftWristScore++; 
         }
 
-        console.log(`Left wrist: frontBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND].toFixed(0)};  sideBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
+        //console.log(`Left wrist: frontBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND].toFixed(0)};  sideBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
@@ -616,7 +616,7 @@ function wristReba(data) {
             rightWristScore++; 
         }
 
-        console.log(`Right wrist: frontBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND].toFixed(0)}; sideBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
+        //console.log(`Right wrist: frontBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND].toFixed(0)}; sideBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
 
@@ -855,9 +855,12 @@ function calculateReba(data) {
  * @return {ErgonomicsData} The ergonomicsData object
  */
 function calculateForPose(pose) {
+    const startTime = Date.now();
     let ergonomicsData = new ErgonomicsData(pose);
     ergonomicsData.calculate();
     calculateReba(ergonomicsData);
+    const elapsedTimeMs = Date.now() - startTime;
+    //console.log(`REBA calculation time: ${elapsedTimeMs}ms`);
     return ergonomicsData;
 }
 

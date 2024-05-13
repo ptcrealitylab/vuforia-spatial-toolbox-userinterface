@@ -524,8 +524,8 @@ export function getBoneName(bone) {
 /** Angle types/names in ErgonomicsData. */
 export const ERGO_ANGLES = {
     TRUNK_BEND: 'trunk_bend_angle',
-    //trunkFrontBendAngle
-    //trunkSideBendAngle
+    TRUNK_FRONT_BEND: 'trunk_front_bend_angle',
+    TRUNK_SIDE_BEND: 'trunk_side_bend_angle',
     TRUNK_TWIST: 'trunk_twist_angle',
     HEAD_BEND: 'head_bend_angle',
     //headFrontBendAngle
