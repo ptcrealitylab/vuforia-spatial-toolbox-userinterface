@@ -487,7 +487,7 @@ export class MotionStudy {
 
         this.lastHydratedData = data;
 
-        if (!this.videoPlayer && data.videoUrls) {
+        if (!this.videoPlayer && data.videoUrls && false) {
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
             let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
             if (matches && matches[1]) {
