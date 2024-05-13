@@ -335,7 +335,7 @@ createNameSpace("realityEditor.device.videoRecording");
 
     function stopVirtualizerRecording(callback) {
         if (realityEditor.device.environment.isDesktop()) {
-            privateState.virtualizerCallback('Unable to record on desktop');
+            callback('Unable to record on desktop');
         } else {
             realityEditor.app.appFunctionCall('stopVirtualizerRecording', {}, 'realityEditor.device.videoRecording.onStopVirtualizerRecording("__ARG1__", "__ARG2__", "__ARG3__", "__ARG4__");');
             privateState.virtualizerCallback = callback;
