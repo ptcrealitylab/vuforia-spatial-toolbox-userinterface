@@ -3,7 +3,7 @@
  * It keeps track of the positions of each joint in the pose.
  * It also keeps track of the timestamp of when the pose was recorded.
  */
-import {JOINT_CONNECTIONS, JOINTS, LEFT_HAND_JOINTS, RIGHT_HAND_JOINTS} from "./constants.js";
+import {JOINT_CONNECTIONS, JOINTS, LEFT_HAND_JOINTS, RIGHT_HAND_JOINTS, TRACK_HANDS} from "./constants.js";
 
 export class Pose {
     /**
@@ -84,9 +84,25 @@ export class Pose {
                       JOINTS.RIGHT_ELBOW, JOINTS.RIGHT_WRIST, ...RIGHT_HAND_JOINTS
                      ];
 
+        // threshold per-joint confidence
         limbJoints.forEach((jointName) => {
             this.joints[jointName].valid = (this.joints[jointName].confidence >= jointConfidenceThreshold);
         });
+
+        // check if hands have a dummy pose (eg. it was not detected or it is not just dummy hands for pose with JOINTS_V1 schema)
+        // check if hand tracking is disabled
+        if (this.joints[JOINTS.LEFT_INDEX_FINGER_MCP].position.clone().sub(this.joints[JOINTS.LEFT_WRIST].position).length() <= 1e-6 || !TRACK_HANDS) {
+            // hand is not valid
+            LEFT_HAND_JOINTS.forEach((jointName) => {
+                this.joints[jointName].valid = false;
+            });
+        }
+        if (this.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].position.clone().sub(this.joints[JOINTS.RIGHT_WRIST].position).length() <= 1e-6 || !TRACK_HANDS) {
+            // hand is not valid
+            RIGHT_HAND_JOINTS.forEach((jointName) => {
+                this.joints[jointName].valid = false;
+            });
+        }
 
         // when knees are not valid, whole legs are invalid including ankles
         if (!this.joints[JOINTS.LEFT_KNEE].valid) {

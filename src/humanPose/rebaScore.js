@@ -63,8 +63,6 @@ function neckReba(data) {
     let neckScore = 1;
     let neckColor = MotionStudyColors.undefined;
 
-    // NOTE: not checking if all needed joints have a valid position (head and neck joints are always valid)
-
     const headUp = data.orientations.head.up;
     // all vectors are normalised, so dot() == cos(angle between vectors) 
     const forwardBendingAlignment = headUp.clone().dot(data.orientations.trunk.forward);  
@@ -146,8 +144,6 @@ function neckReba(data) {
 function trunkReba(data) {
     let trunkScore = 1;
     let trunkColor = MotionStudyColors.undefined;
-
-    // NOTE: not checking if all needed joints have a valid position (trunk/torso joints are always valid)
     
     // Comparisons should be relative to directions determined by hips
     const trunkUp = data.orientations.trunk.up;
@@ -230,9 +226,7 @@ function legsReba(data) {
 
     // Check for unilateral bearing of the body weight
     let _onelegged = false;
-    // check if all needed joints have a valid position
-    if (data.jointValidities[JOINTS.LEFT_ANKLE] &&
-        data.jointValidities[JOINTS.RIGHT_ANKLE]) {
+    if(data.offsets.hasOwnProperty(ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT)) {
         const footHeightDifference = Math.abs(data.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT].y);
         // Height difference for leg raise is not specified in REBA standard
         if (footHeightDifference > REBA_CONFIG.footHeightDifferenceThresholds[0]) {
@@ -244,11 +238,7 @@ function legsReba(data) {
     }
 
     /* left leg */
-    // check if all needed joints have a valid position
-    if (data.jointValidities[JOINTS.LEFT_KNEE] &&
-        data.jointValidities[JOINTS.LEFT_ANKLE] &&
-        data.jointValidities[JOINTS.LEFT_HIP]) {
-        
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_LOWER_LEG_BEND)) {
         // Check for knee bending
         if (data.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND] > REBA_CONFIG.lowerLegBendAngleThresholds[0]) {
             leftLegScore++; // +1 for greater than 30 degrees
@@ -270,9 +260,7 @@ function legsReba(data) {
     }
 
     /* right leg */
-    if (data.jointValidities[JOINTS.RIGHT_KNEE] &&
-        data.jointValidities[JOINTS.RIGHT_ANKLE] &&
-        data.jointValidities[JOINTS.RIGHT_HIP]) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_LOWER_LEG_BEND)) {
 
         if (data.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND] > REBA_CONFIG.lowerLegBendAngleThresholds[0]) {
             rightLegScore++; // +1 for greater than 30 degrees
@@ -343,8 +331,8 @@ function upperArmReba(data) {
     let rightArmColor = MotionStudyColors.undefined;
     
     /* left uppper arm */
-    // check if all needed joints have a valid position
-    if (data.jointValidities[JOINTS.LEFT_ELBOW] && data.jointValidities[JOINTS.LEFT_SHOULDER]) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_UPPER_ARM_RAISE) && data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_SHOULDER_RAISE)) {
         // calculate arm angles
         const leftUpperArmDown = data.orientations.leftUpperArm.up.clone().negate(); 
         // all vectors are normalised, so dot() == cos(angle between vectors) 
@@ -398,7 +386,8 @@ function upperArmReba(data) {
     }
 
     /* right uppper arm */
-    if (data.jointValidities[JOINTS.RIGHT_ELBOW] && data.jointValidities[JOINTS.RIGHT_SHOULDER]) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE) && data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_SHOULDER_RAISE)) {
         const rightUpperArmDown = data.orientations.rightUpperArm.up.clone().negate();
         // all vectors are normalised, so dot() == cos(angle between vectors) 
         const flexionAlignment = rightUpperArmDown.clone().dot(data.orientations.trunk.forward);
@@ -473,12 +462,7 @@ function lowerArmReba(data) {
     let rightArmColor = MotionStudyColors.undefined;
 
     /* left lower arm */
-    // check if all needed joints have a valid position
-    if (data.jointValidities[JOINTS.LEFT_WRIST] && 
-        data.jointValidities[JOINTS.LEFT_ELBOW] &&
-        data.jointValidities[JOINTS.LEFT_SHOULDER]
-        ) {
-    
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_LOWER_ARM_BEND)) {
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
         if (data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] < REBA_CONFIG.lowerArmBendAngleThresholds[0] || data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] > REBA_CONFIG.lowerArmBendAngleThresholds[1]) {
             leftArmScore++; // +1 for left elbow bent < 60 or > 100 degrees
@@ -495,11 +479,7 @@ function lowerArmReba(data) {
     }
     
     /* right lower arm */
-    // check if all needed joints have a valid position
-    if (data.jointValidities[JOINTS.RIGHT_WRIST] && 
-        data.jointValidities[JOINTS.RIGHT_ELBOW] &&
-        data.jointValidities[JOINTS.RIGHT_SHOULDER]
-        ) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_LOWER_ARM_BEND)) {
 
         // Standard REBA calculation marks arms straight down as higher score (can be confusing for new users)
         if (data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] < REBA_CONFIG.lowerArmBendAngleThresholds[0] || data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] > REBA_CONFIG.lowerArmBendAngleThresholds[1]) {
@@ -542,16 +522,10 @@ function wristReba(data) {
 
 
     /* left wrist */
-    // checking if hand has a real pose (eg. it was detected or it is not just dummy hands for pose with JOINTS_V1 schema)
-    //          if hand is a valid pose 
-    const leftHandIsValid = (data.joints[JOINTS.LEFT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.LEFT_WRIST]).length() > 1e-6) &&
-                            data.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP];
-
     // check if all needed joints have a valid position
-    if ((TRACK_HANDS && leftHandIsValid) &&  
-        data.jointValidities[JOINTS.LEFT_WRIST] &&
-        data.jointValidities[JOINTS.LEFT_ELBOW]
-        ) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_HAND_FRONT_BEND) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_HAND_SIDE_BEND) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_LOWER_ARM_TWIST)) {
 
         // check if wrist position is outside +-15 deg, then +1
         if (Math.abs(data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND]) > REBA_CONFIG.wristFrontBendAngleThresholds[0]) {
@@ -584,15 +558,10 @@ function wristReba(data) {
         }
     }
         
-
     /* right wrist */
-    const rightHandIsValid = (data.joints[JOINTS.RIGHT_INDEX_FINGER_MCP].clone().sub(data.joints[JOINTS.RIGHT_WRIST]).length() > 1e-6) &&
-                              data.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP];
-
-    if ((TRACK_HANDS && rightHandIsValid) &&  
-        data.jointValidities[JOINTS.RIGHT_WRIST] &&
-        data.jointValidities[JOINTS.RIGHT_ELBOW]
-        ) {
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_HAND_FRONT_BEND) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_HAND_SIDE_BEND) &&
+        data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST)) {
 
         // check if wrist position is outside +-15 deg, then +1 
         if (Math.abs(data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND]) > REBA_CONFIG.wristFrontBendAngleThresholds[0]) {

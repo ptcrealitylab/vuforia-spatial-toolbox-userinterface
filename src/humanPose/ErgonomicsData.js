@@ -117,8 +117,12 @@ export class ErgonomicsData {
                 right: new THREE.Vector3()
             }
         };
-        this.angles = {};   // values have the float type
-        this.offsets = {};  // values have the type of THREE.Vector3()
+        // Keys are defined in ERGO_ANGLES and values have the float type.
+        // If a key is not defined, a respective angle could not be calculated.
+        this.angles = {}; 
+        // Keys are defined in ERGO_OFFSETS and values have the type of THREE.Vector3().
+        // If a key is not defined, a respective offset could not be calculated.
+        this.offsets = {};  
 
         for (let jointId of Object.values(JOINTS)) {
             this.joints[jointId] = pose.getJoint(jointId).position;
@@ -209,6 +213,7 @@ export class ErgonomicsData {
     calculateAngles() {
 
         /* trunk */
+        // NOTE: not checking if all needed joints have a valid position (head and neck joints are always valid)
         const up = new THREE.Vector3(0, 1, 0);  // opposite to the gravity vector
         // Overall bend angle from upright direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.TRUNK_BEND] = angleBetween(this.orientations.trunk.up, up);
@@ -232,6 +237,7 @@ export class ErgonomicsData {
         //             sideBendAngle=${this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg`);
 
         /* head */
+        // NOTE: not checking if all needed joints have a valid position (head and neck joints are always valid)
         // Overall bend angle from trunk up direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.HEAD_BEND] = angleBetween(this.orientations.head.up, this.orientations.trunk.up);
         // Projection of head direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
@@ -255,98 +261,137 @@ export class ErgonomicsData {
 
         /* legs */
         // Bend angle between lower and upper leg (only positive range [0, 180]deg). The angle is zero when a leg is straight.
-        this.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND] = angleBetween(this.orientations.leftUpperLeg.up,  this.orientations.leftLowerLeg.up);
+        if (this.jointValidities[JOINTS.LEFT_KNEE] &&
+            this.jointValidities[JOINTS.LEFT_ANKLE] &&
+            this.jointValidities[JOINTS.LEFT_HIP]) {  // check if all needed joints have a valid position
+            this.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND] = angleBetween(this.orientations.leftUpperLeg.up,  this.orientations.leftLowerLeg.up);
+        }
         
-        this.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND] = angleBetween(this.orientations.rightUpperLeg.up,  this.orientations.rightLowerLeg.up);
+        if (this.jointValidities[JOINTS.RIGHT_KNEE] &&
+            this.jointValidities[JOINTS.RIGHT_ANKLE] &&
+            this.jointValidities[JOINTS.RIGHT_HIP]) {  // check if all needed joints have a valid position
+            this.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND] = angleBetween(this.orientations.rightUpperLeg.up,  this.orientations.rightLowerLeg.up);
+        }
 
         /* upper arms */
-        // Angles for upper arn are primarily measured relative to trunk direction rather than gravity direction
+        // Angles for upper arm are primarily measured relative to trunk direction rather than the gravity direction
         const down = new THREE.Vector3(0, -1, 0);    // the gravity vector
         const trunkDown = this.orientations.trunk.up.clone().negate();
-        const leftUpperArmDown = this.orientations.leftUpperArm.up.clone().negate();
-        // Overall raise angle from trunk down direction (only positive range [0, 180]deg)
-        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE] = angleBetween(leftUpperArmDown, trunkDown);
-        // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
-        const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
-        // Front raise angle from trunk down direction. The angle is positive when raising forwards and negative when raising backwards.
-        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
-        if (leftArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
-            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] *= -1;
+        if (this.jointValidities[JOINTS.LEFT_ELBOW] && this.jointValidities[JOINTS.LEFT_SHOULDER]) { // check if all needed joints have a valid position
+            const leftUpperArmDown = this.orientations.leftUpperArm.up.clone().negate();
+            // Overall raise angle from trunk down direction (only positive range [0, 180]deg)
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE] = angleBetween(leftUpperArmDown, trunkDown);
+            // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
+            const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
+            // Front raise angle from trunk down direction. The angle is positive when raising forwards and negative when raising backwards.
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
+            if (leftArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] *= -1;
+            }
+            // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
+            const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
+            // Side raise angle from trunk down direction. The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
+            if (leftArmDownFrontalProjection.dot(this.orientations.trunk.right.clone().negate()) < 0) {  // negated to have a symmetrical definition of the angle for left and right arm
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] *= -1;
+            }
+            // Overall raise angle from gravity direction (only positive range [0, 180]deg)
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY] = angleBetween(leftUpperArmDown, down);
+            // Angle between shoulder line and trunk direction (normally 90 deg in the rest pose). The angle is <90deg when the shoulder is raised.
+            this.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.LEFT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+            //console.log(`Left upper arm: raiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
+            //             sideRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
         }
-        // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
-        const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
-        // Side raise angle from trunk down direction. The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
-        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
-        if (leftArmDownFrontalProjection.dot(this.orientations.trunk.right.clone().negate()) < 0) {  // negated to have a symmetrical definition of the angle for left and right arm
-            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] *= -1;
-        }
-        // Overall raise angle from gravity direction (only positive range [0, 180]deg)
-        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY] = angleBetween(leftUpperArmDown, down);
-        // Angle between shoulder line and trunk direction (normally 90 deg in the rest pose). The angle is <90deg when the shoulder is raised.
-        this.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.LEFT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
-        //console.log(`Left upper arm: raiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
-        //             sideRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
 
-        const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
-        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
-        const rightArmDownSagittalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(rightUpperArmDown)));
-        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
-        if (rightArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
-            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] *= -1;
+        if (this.jointValidities[JOINTS.RIGHT_ELBOW] && this.jointValidities[JOINTS.RIGHT_SHOULDER]) { // check if all needed joints have a valid position
+            const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
+            const rightArmDownSagittalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(rightUpperArmDown)));
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
+            if (rightArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] *= -1;
+            }
+            const rightArmDownFrontalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(rightUpperArmDown)));
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
+            if (rightArmDownFrontalProjection.dot(this.orientations.trunk.right) < 0) {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] *= -1;
+            }
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY] = angleBetween(rightUpperArmDown, down);
+            this.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.RIGHT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+            //console.log(`Right upper arm: raiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
+            //             sideRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
         }
-        const rightArmDownFrontalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(rightUpperArmDown)));
-        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
-        if (rightArmDownFrontalProjection.dot(this.orientations.trunk.right) < 0) {
-            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] *= -1;
-        }
-        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY] = angleBetween(rightUpperArmDown, down);
-        this.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.RIGHT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
-        //console.log(`Right upper arm: raiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
-        //             sideRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
 
 
         /* lower arms */
         // Bend angle between lower and upper arm (only positive range [0, 180]deg). The angle is zero when an arm is straight.
-        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
-        // Twist of hand wrt. rotation axis of elbow. When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
-        // When the both vectors have 180deg angle between them there is the maximum twist.
-        // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
-        this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);  
+        if (this.jointValidities[JOINTS.LEFT_WRIST] && this.jointValidities[JOINTS.LEFT_ELBOW] && this.jointValidities[JOINTS.LEFT_SHOULDER]) {   // check if all needed joints have a valid position
+            this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
 
-        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = angleBetween(this.orientations.rightLowerArm.up, this.orientations.rightUpperArm.up);
-        this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
+            if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP]) {
+                // Twist of hand wrt. rotation axis of elbow. When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
+                // When the both vectors have 180deg angle between them there is the maximum twist.
+                // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
+                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);
+            } 
+        } 
+
+        if (this.jointValidities[JOINTS.RIGHT_WRIST] && this.jointValidities[JOINTS.RIGHT_ELBOW] && this.jointValidities[JOINTS.RIGHT_SHOULDER]) {   // check if all needed joints have a valid position
+            this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = angleBetween(this.orientations.rightLowerArm.up, this.orientations.rightUpperArm.up);
+            
+            if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP]) {
+                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
+            }
+        }
 
         /* hands */
-        const leftLowerArmDirection = this.orientations.leftLowerArm.up.clone().negate();
-        // Front bend of hand from midline of lower arm (wrist flexion/extention). The angle is positive when extending in the back-of-hand direction and negative when flexing in the palm direction.
-        this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftLowerArmDirection) - 90;
-        // Side bend of hand from midline of lower arm. The angle is positive when the hand bends in 'thumb' direction and negative when in the opposite direction.
-        this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = angleBetween(this.orientations.leftHand.right, leftLowerArmDirection) - 90;   
+        if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP] &&
+            this.jointValidities[JOINTS.LEFT_WRIST] && this.jointValidities[JOINTS.LEFT_ELBOW]) {  // check if all needed joints have a valid position
+            const leftLowerArmDirection = this.orientations.leftLowerArm.up.clone().negate();
+            // Front bend of hand from midline of lower arm (wrist flexion/extention). The angle is positive when extending in the back-of-hand direction and negative when flexing in the palm direction.
+            this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftLowerArmDirection) - 90;
+            // Side bend of hand from midline of lower arm. The angle is positive when the hand bends in 'thumb' direction and negative when in the opposite direction.
+            this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = angleBetween(this.orientations.leftHand.right, leftLowerArmDirection) - 90;
+        }   
 
-        const rightLowerArmDirection = this.orientations.rightLowerArm.up.clone().negate();
-        this.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND] = angleBetween(this.orientations.rightHand.forward, rightLowerArmDirection) - 90;
-        this.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND]  = angleBetween(this.orientations.rightHand.right.clone().negate(), rightLowerArmDirection) - 90; // negated to have a symmetrical definition of the angle for left and right hand
+        if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP] &&
+            this.jointValidities[JOINTS.RIGHT_WRIST] && this.jointValidities[JOINTS.RIGHT_ELBOW]) {  // check if all needed joints have a valid position
+            const rightLowerArmDirection = this.orientations.rightLowerArm.up.clone().negate();
+            this.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND] = angleBetween(this.orientations.rightHand.forward, rightLowerArmDirection) - 90;
+            this.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND]  = angleBetween(this.orientations.rightHand.right.clone().negate(), rightLowerArmDirection) - 90; // negated to have a symmetrical definition of the angle for left and right hand
+        } 
     }
 
     calculateOffsets() {
         // 3D offset from left to right ankle. Used to check if the feet are the same height.
-        this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT] = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_ANKLE], this.joints[JOINTS.LEFT_ANKLE]);
+        if (this.jointValidities[JOINTS.LEFT_ANKLE] &&
+            this.jointValidities[JOINTS.RIGHT_ANKLE]) {   // check if all needed joints have a valid position
+            this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT] = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_ANKLE], this.joints[JOINTS.LEFT_ANKLE]);
+            //console.log(`footHeightDifference=${Math.abs(this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT].y.toFixed(0))}mm`);
+        }
         
         // 3D offset from pelvis to a wrist is defined wrt. local CS of hips (not WCS as joint positions). This uses deliberately hips CS rather than trunk CS.
         // Used to check the extent of reaches by hands.
         const rotWorldToHips = new THREE.Matrix3().set(this.orientations.hips.forward.x, this.orientations.hips.forward.y, this.orientations.hips.forward.z,
                                            this.orientations.hips.up.x, this.orientations.hips.up.y, this.orientations.hips.up.z, 
                                            this.orientations.hips.right.x, this.orientations.hips.right.y, this.orientations.hips.right.z); 
-        let leftWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.LEFT_WRIST], this.joints[JOINTS.PELVIS]);
-        this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST] = leftWristOffsetInWorld.applyMatrix3(rotWorldToHips);
+        if (this.jointValidities[JOINTS.LEFT_WRIST] &&
+            this.jointValidities[JOINTS.PELVIS]) {   // check if all needed joints have a valid position
+            let leftWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.LEFT_WRIST], this.joints[JOINTS.PELVIS]);
+            this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST] = leftWristOffsetInWorld.applyMatrix3(rotWorldToHips);
+             //console.log(`leftWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].z.toFixed(0)}]; 
+             //        leftWristDistance=${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].length().toFixed(0)}mm`);
+               
+        }
         
-        let rightWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_WRIST], this.joints[JOINTS.PELVIS]);
-        this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST] = rightWristOffsetInWorld.applyMatrix3(rotWorldToHips);
-        /*console.log(`footHeightDifference=${Math.abs(this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT].y.toFixed(0))}mm; 
-                     leftWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].z.toFixed(0)}]; 
-                     leftWristDistance=${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].length().toFixed(0)}mm;
-                     rightWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].z.toFixed(0)}]; 
+        if (this.jointValidities[JOINTS.RIGHT_WRIST] &&
+            this.jointValidities[JOINTS.PELVIS]) {   // check if all needed joints have a valid position
+            let rightWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_WRIST], this.joints[JOINTS.PELVIS]);
+            this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST] = rightWristOffsetInWorld.applyMatrix3(rotWorldToHips);
+            /*console.log(`rightWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].z.toFixed(0)}]; 
                      rightWristDistance=${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].length().toFixed(0)}mm`);*/
+        }
+        
     }
     
 }
