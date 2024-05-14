@@ -555,7 +555,7 @@ export const ERGO_ANGLES = {
 
 /** 3D offset types/names in ErgonomicsData. */
 export const ERGO_OFFSETS = {
-    //PELVIS_TO_LEFT_WRIST: 'pelvis_to_left_wrist_offset',
-    //PELVIS_TO_RIGHT_WRIST: 'pelvis_to_right_wrist_offset',
+    PELVIS_TO_LEFT_WRIST: 'pelvis_to_left_wrist_offset',
+    PELVIS_TO_RIGHT_WRIST: 'pelvis_to_right_wrist_offset',
     LEFT_TO_RIGHT_FOOT: 'left_to_right_foot_offset'
 };

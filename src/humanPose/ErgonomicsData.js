@@ -117,7 +117,7 @@ export class ErgonomicsData {
                 right: new THREE.Vector3()
             }
         };
-        this.angles = {};
+        this.angles = {};   // values have the float type
         this.offsets = {};  // values have the type of THREE.Vector3()
 
         for (let jointId of Object.values(JOINTS)) {
@@ -329,7 +329,24 @@ export class ErgonomicsData {
     }
 
     calculateOffsets() {
+        // 3D offset from left to right ankle. Used to check if the feet are the same height.
         this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT] = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_ANKLE], this.joints[JOINTS.LEFT_ANKLE]);
+        
+        // 3D offset from pelvis to a wrist is defined wrt. local CS of hips (not WCS as joint positions). This uses deliberately hips CS rather than trunk CS.
+        // Used to check the extent of reaches by hands.
+        const rotWorldToHips = new THREE.Matrix3().set(this.orientations.hips.forward.x, this.orientations.hips.forward.y, this.orientations.hips.forward.z,
+                                           this.orientations.hips.up.x, this.orientations.hips.up.y, this.orientations.hips.up.z, 
+                                           this.orientations.hips.right.x, this.orientations.hips.right.y, this.orientations.hips.right.z); 
+        let leftWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.LEFT_WRIST], this.joints[JOINTS.PELVIS]);
+        this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST] = leftWristOffsetInWorld.applyMatrix3(rotWorldToHips);
+        
+        let rightWristOffsetInWorld = new THREE.Vector3().subVectors(this.joints[JOINTS.RIGHT_WRIST], this.joints[JOINTS.PELVIS]);
+        this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST] = rightWristOffsetInWorld.applyMatrix3(rotWorldToHips);
+        /*console.log(`footHeightDifference=${Math.abs(this.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT].y.toFixed(0))}mm; 
+                     leftWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].z.toFixed(0)}]; 
+                     leftWristDistance=${this.offsets[ERGO_OFFSETS.PELVIS_TO_LEFT_WRIST].length().toFixed(0)}mm;
+                     rightWristOffset=[${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].x.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].y.toFixed(0)}, ${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].z.toFixed(0)}]; 
+                     rightWristDistance=${this.offsets[ERGO_OFFSETS.PELVIS_TO_RIGHT_WRIST].length().toFixed(0)}mm`);*/
     }
     
 }
