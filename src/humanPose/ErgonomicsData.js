@@ -159,6 +159,7 @@ export class ErgonomicsData {
         this.orientations.leftLowerArm.up.subVectors(this.joints[JOINTS.LEFT_ELBOW], this.joints[JOINTS.LEFT_WRIST]).normalize(); // aligned with the bone
         this.orientations.leftUpperArm.up.subVectors(this.joints[JOINTS.LEFT_SHOULDER], this.joints[JOINTS.LEFT_ELBOW]).normalize(); // aligned with the bone
         // given by rotation axis of elbow; direction towards the torso
+        // TODO: handle the case when leftUpperArm.up and leftLowerArm.up are collinear
         this.orientations.leftLowerArm.right.crossVectors(this.orientations.leftUpperArm.up,this.orientations.leftLowerArm.up).normalize();
         this.orientations.leftLowerArm.forward.crossVectors(this.orientations.leftLowerArm.up,this.orientations.leftLowerArm.right).normalize();
         
@@ -173,6 +174,7 @@ export class ErgonomicsData {
         this.orientations.rightLowerArm.up.subVectors(this.joints[JOINTS.RIGHT_ELBOW], this.joints[JOINTS.RIGHT_WRIST]).normalize(); // aligned with the bone
         this.orientations.rightUpperArm.up.subVectors(this.joints[JOINTS.RIGHT_SHOULDER], this.joints[JOINTS.RIGHT_ELBOW]).normalize(); // aligned with the bone
         // given by rotation axis of elbow; direction away from the torso
+        // TODO: handle the case when rightUpperArm.up and rightLowerArm.up are collinear
         this.orientations.rightLowerArm.right.crossVectors(this.orientations.rightUpperArm.up,this.orientations.rightLowerArm.up).normalize();
         this.orientations.rightLowerArm.forward.crossVectors(this.orientations.rightLowerArm.up,this.orientations.rightLowerArm.right).normalize();
         
@@ -210,26 +212,51 @@ export class ErgonomicsData {
         const up = new THREE.Vector3(0, 1, 0);  // opposite to the gravity vector
         // Overall bend angle from upright direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.TRUNK_BEND] = angleBetween(this.orientations.trunk.up, up);
-        // Projection of trunk direction to sagittal/median plane of body where normal is this.orientations.hips.right. Assumes that both vectors have unit length
+        // Projection of trunk direction to sagittal/median plane of body where normal is this.orientations.hips.right. This assumes that both vectors have unit length.
         const trunkUpSagittalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.right.clone().multiplyScalar(this.orientations.hips.right.dot(this.orientations.trunk.up)));
-        // Front bend angle fro upright direction. The angle is positive when bending forwards and negative when bending backwards.
+        // Front bend angle from upright direction. The angle is positive when bending forwards and negative when bending backwards.
         this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = angleBetween(trunkUpSagittalProjection, up);
         if (trunkUpSagittalProjection.dot(this.orientations.hips.forward) < 0) {
             this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] *= -1;
         }
-        //this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND]
-
-        console.log(`Trunk: bendAngle=${this.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND].toFixed(0)}deg`);
-    
-
-        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.forward, this.orientations.hips.right); // Angle from full twist right  //TODO
+        // Projection of trunk direction to frontal plane of body where normal is this.orientations.hips.forward. This assumes that both vectors have unit length.
+        const trunkUpFrontalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.forward.clone().multiplyScalar(this.orientations.hips.forward.dot(this.orientations.trunk.up)));
+        // Side bend angle from upright direction. The angle is positive when bending to the right and negative when bending to the left.
+        this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] = angleBetween(trunkUpFrontalProjection, up);
+        if (trunkUpFrontalProjection.dot(this.orientations.hips.right) < 0) {
+            this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] *= -1;
+        }
+        // Twist angle wrt hips forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.right, this.orientations.hips.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the trunk
+        //console.log(`Trunk: bendAngle=${this.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND].toFixed(0)}deg;
+        //             sideBendAngle=${this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg`);
 
         /* head */
+        // Overall bend angle from trunk up direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.HEAD_BEND] = angleBetween(this.orientations.head.up, this.orientations.trunk.up);
-        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.forward, this.orientations.trunk.right); // Angle from full twist right  //TODO
+        // Projection of head direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
+        const headUpSagittalProjection = this.orientations.head.up.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(this.orientations.head.up)));
+        // Front bend angle from trunk up direction. The angle is positive when bending forwards and negative when bending backwards.
+        this.angles[ERGO_ANGLES.HEAD_FRONT_BEND] = angleBetween(headUpSagittalProjection, this.orientations.trunk.up);
+        if (headUpSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
+            this.angles[ERGO_ANGLES.HEAD_FRONT_BEND] *= -1;
+        }
+        // Projection of head direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
+        const headUpFrontalProjection = this.orientations.head.up.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(this.orientations.head.up)));
+        // Side bend angle from trunk up direction. The angle is positive when bending to the right and negative when bending to the left.
+        this.angles[ERGO_ANGLES.HEAD_SIDE_BEND] = angleBetween(headUpFrontalProjection, this.orientations.trunk.up);
+        if (headUpFrontalProjection.dot(this.orientations.trunk.right) < 0) {
+            this.angles[ERGO_ANGLES.HEAD_SIDE_BEND] *= -1;
+        }
+        // Twist angle wrt trunk forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.right, this.orientations.trunk.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the head
+        //console.log(`Head: bendAngle=${this.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.HEAD_FRONT_BEND].toFixed(0)}deg;
+        //             sideBendAngle=${this.angles[ERGO_ANGLES.HEAD_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg`);
 
         /* legs */
+        // Bend angle between lower and upper leg (only positive range [0, 180]deg). The angle is zero when a leg is straight.
         this.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND] = angleBetween(this.orientations.leftUpperLeg.up,  this.orientations.leftLowerLeg.up);
+        
         this.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND] = angleBetween(this.orientations.rightUpperLeg.up,  this.orientations.rightLowerLeg.up);
 
         /* upper arms */
@@ -237,16 +264,49 @@ export class ErgonomicsData {
         const down = new THREE.Vector3(0, -1, 0);    // the gravity vector
         const trunkDown = this.orientations.trunk.up.clone().negate();
         const leftUpperArmDown = this.orientations.leftUpperArm.up.clone().negate();
+        // Overall raise angle from trunk down direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE] = angleBetween(leftUpperArmDown, trunkDown);
+        // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
+        const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
+        // Front raise angle from trunk down direction. The angle is positive when raising forwards and negative when raising backwards.
+        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
+        if (leftArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] *= -1;
+        }
+        // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
+        const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
+        // Side raise angle from trunk down direction. The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
+        this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
+        if (leftArmDownFrontalProjection.dot(this.orientations.trunk.right.clone().negate()) < 0) {  // negated to have a symmetrical definition of the angle for left and right arm
+            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] *= -1;
+        }
+        // Overall raise angle from gravity direction (only positive range [0, 180]deg)
         this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY] = angleBetween(leftUpperArmDown, down);
+        // Angle between shoulder line and trunk direction (normally 90 deg in the rest pose). The angle is <90deg when the shoulder is raised.
         this.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.LEFT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+        //console.log(`Left upper arm: raiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
+        //             sideRaiseAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
 
         const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
         this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
+        const rightArmDownSagittalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(rightUpperArmDown)));
+        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
+        if (rightArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] *= -1;
+        }
+        const rightArmDownFrontalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(rightUpperArmDown)));
+        this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
+        if (rightArmDownFrontalProjection.dot(this.orientations.trunk.right) < 0) {
+            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] *= -1;
+        }
         this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY] = angleBetween(rightUpperArmDown, down);
         this.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE] = angleBetween(this.joints[JOINTS.RIGHT_SHOULDER].clone().sub(this.joints[JOINTS.NECK]), this.orientations.trunk.up);
+        //console.log(`Right upper arm: raiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE].toFixed(0)}deg; frontRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE].toFixed(0)}deg;
+        //             sideRaiseAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE].toFixed(0)}deg; gravityAngle=${this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_GRAVITY].toFixed(0)}deg`);
+
 
         /* lower arms */
+        // Bend angle between lower and upper arm (only positive range [0, 180]deg). The angle is zero when an arm is straight.
         this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
         // Twist of hand wrt. rotation axis of elbow. When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
         // When the both vectors have 180deg angle between them there is the maximum twist.

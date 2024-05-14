@@ -528,19 +528,19 @@ export const ERGO_ANGLES = {
     TRUNK_SIDE_BEND: 'trunk_side_bend_angle',
     TRUNK_TWIST: 'trunk_twist_angle',
     HEAD_BEND: 'head_bend_angle',
-    //headFrontBendAngle
-    //headSideBendAngle
+    HEAD_FRONT_BEND: 'head_front_bend_angle',
+    HEAD_SIDE_BEND: 'head_side_bend_angle',
     HEAD_TWIST: 'head_twist_angle',
     LEFT_LOWER_LEG_BEND: 'left_lower_leg_bend_angle',
     RIGHT_LOWER_LEG_BEND: 'right_lower_leg_bend_angle',
     LEFT_UPPER_ARM_RAISE: 'left_upper_arm_raise_angle',
-    //upper_arm_frontRaiseAngle
-    //upper_arm_sideRaiseAngle
+    LEFT_UPPER_ARM_FRONT_RAISE: 'left_upper_arm_front_raise_angle',
+    LEFT_UPPER_ARM_SIDE_RAISE: 'left_upper_arm_side_raise_angle',
     LEFT_UPPER_ARM_GRAVITY: 'left_upper_arm_gravity_angle',
     LEFT_SHOULDER_RAISE: 'left_shoulder_raise_angle',
     RIGHT_UPPER_ARM_RAISE: 'right_upper_arm_raise_angle',
-    //upper_arm_frontRaiseAngle
-    //upper_arm_sideRaiseAngle
+    RIGHT_UPPER_ARM_FRONT_RAISE: 'right_upper_arm_front_raise_angle',
+    RIGHT_UPPER_ARM_SIDE_RAISE: 'right_upper_arm_side_raise_angle',
     RIGHT_UPPER_ARM_GRAVITY: 'right_upper_arm_gravity_angle',
     RIGHT_SHOULDER_RAISE: 'right_shoulder_raise_angle',
     LEFT_LOWER_ARM_BEND: 'left_lower_arm_bend_angle',

@@ -90,16 +90,14 @@ function neckReba(data) {
     }
     
     // Check for twisting of more degrees than bendingThreshold from straight ahead
-    const twistRightAngle = data.angles[ERGO_ANGLES.HEAD_TWIST]; // Angle from full twist right
-    const twistLeftAngle = 180 - twistRightAngle;
-    const twist = (twistRightAngle < (90 - REBA_CONFIG.neckTwistAngleThresholds[0]) || twistLeftAngle < (90 - REBA_CONFIG.neckTwistAngleThresholds[0]));
+    const twist = (Math.abs(data.angles[ERGO_ANGLES.HEAD_TWIST]) > REBA_CONFIG.neckTwistAngleThresholds[0]);
 
     // +1 for twisting or side-bending
     if (sideBend || twist) {
         neckScore++; 
     }
 
-    //console.log(`Neck: bendAngle=${data.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg;  twistRightAngle=${data.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
+    //console.log(`Neck: bendAngle=${data.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
     
     neckScore = clamp(neckScore, 1, REBA_CONFIG.neckScoreLevels[2] - 1);
 
@@ -176,16 +174,14 @@ function trunkReba(data) {
     }
     
     // Check for twisting of more than twistThreshold from straight ahead
-    const twistRightAngle = data.angles[ERGO_ANGLES.TRUNK_TWIST]; // Angle from full twist right
-    const twistLeftAngle = 180 - twistRightAngle;
-    const twist = (twistRightAngle < (90 - REBA_CONFIG.trunkTwistAngleThresholds[0]) || twistLeftAngle < (90 - REBA_CONFIG.trunkTwistAngleThresholds[0]));
+    const twist = (Math.abs(data.angles[ERGO_ANGLES.TRUNK_TWIST]) > REBA_CONFIG.trunkTwistAngleThresholds[0]);
 
     // +1 for twisting or side-bending
     if (sideBend || twist) {
         trunkScore++; 
     }
 
-    // console.log(`Trunk: bendAngle=${data.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg;  twistRightAngle=${data.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
+    //console.log(`Trunk: bendAngle=${data.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
     
     trunkScore = clamp(trunkScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
 
