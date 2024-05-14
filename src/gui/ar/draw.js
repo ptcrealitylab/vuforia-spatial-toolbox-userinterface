@@ -277,7 +277,10 @@ realityEditor.gui.ar.draw.update = function (visibleObjects) {
         });
     }
 
-    //if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) { return; } // don't recompute multiple times between a single animation frames (not compatible with WebXR)
+    if (!realityEditor.gui.ar.draw.frameNeedsToBeRendered) {
+        console.log('nope i tired');
+        return;
+    } // don't recompute multiple times between a single animation frames (not compatible with WebXR)
     realityEditor.gui.ar.draw.frameNeedsToBeRendered = false; // gets set back to true by requestAnimationFrame code
     
     var objectKey;
