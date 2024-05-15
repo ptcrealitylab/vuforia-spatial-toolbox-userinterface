@@ -8,7 +8,7 @@ import {ErgonomicsData} from "./ErgonomicsData.js";
 
 /** Calculations assume human poses defined in Y-up CS and in milimeter units. */
 
-/** Default configuration of thresholds for REBA calculation and visualisation. */
+/** Default configuration of thresholds for REBA calculation and visualisation (according to published REBA standard). */
 const REBA_CONFIG_DEFAULT = Object.freeze({
     neckFrontBendAngleThresholds: [5, 20],  // degrees
     neckTwistAngleThresholds: [20],  // degrees
@@ -37,6 +37,38 @@ const REBA_CONFIG_DEFAULT = Object.freeze({
     wristScoreLevels: [2, 3, 4],
     overallScoreLevels: [4, 8, 13]
 });
+
+/** Custom configuration of thresholds for REBA calculation and visualisation (for Volvo). */
+/*
+const REBA_CONFIG_CUSTOM1 = Object.freeze({
+    neckFrontBendAngleThresholds: [5, 20],  // degrees
+    neckTwistAngleThresholds: [20],  // degrees
+    trunkFrontBendAngleThresholds: [5, 20, 45],  // degrees  (changed)
+    trunkTwistAngleThresholds: [25],  // degrees
+    lowerLegBendAngleThresholds: [30, 60],  // degrees
+    upperArmFrontRaiseAngleThresholds: [20, 60, 90], // degrees  (changed)
+    upperArmGravityAngleThresholds: [20], // degrees
+    shoulderRaiseAngleThresholds: [80], // degrees
+    lowerArmBendAngleThresholds: [0, 120], // degrees (changed)
+    wristFrontBendAngleThresholds: [20], // degrees  (changed)
+    wristSideBendAngleThresholds: [30], // degrees
+    wristTwistAngleThresholds: [120],  // degrees
+    footHeightDifferenceThresholds: [100], // mm
+
+    // Definitions of score ranges for different levels of strain for each body part.
+    // Minimum score is always 1 and maximum score is the last entry in the threshold list
+    // Example with 3 levels of strain: 1 (low), 2-3 (medium), 4-5 (high)
+    //    trunkScoreLevels: [2, 4, 6]   
+    // This is used for assigning colours for visualising levels of REBA scores.
+    neckScoreLevels: [2, 3, 4],
+    trunkScoreLevels: [3, 4, 6],   // (changed)
+    legScoreLevels: [2, 3, 5], 
+    upperArmScoreLevels: [3, 4, 7],  // (changed)
+    lowerArmScoreLevels: [2, 3],
+    wristScoreLevels: [2, 3, 4],
+    overallScoreLevels: [4, 8, 13]
+});
+*/
 
 /** Modifiable configuration of thresholds for REBA calculation. */
 const REBA_CONFIG = Object.assign({}, REBA_CONFIG_DEFAULT);
