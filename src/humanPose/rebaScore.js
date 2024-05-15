@@ -1,4 +1,4 @@
-import {JOINT_CONNECTIONS, JOINTS, getBoneName, TRACK_HANDS, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
+import {JOINT_CONNECTIONS, JOINTS, getBoneName, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
 import {ErgonomicsData} from "./ErgonomicsData.js";
 
@@ -820,11 +820,11 @@ function calculateReba(data) {
  * @return {ErgonomicsData} The ergonomicsData object
  */
 function calculateForPose(pose) {
-    const startTime = Date.now();
+    //const startTime = Date.now();
     let ergonomicsData = new ErgonomicsData(pose);
     ergonomicsData.calculate();
     calculateReba(ergonomicsData);
-    const elapsedTimeMs = Date.now() - startTime;
+    //const elapsedTimeMs = Date.now() - startTime;
     //console.log(`REBA calculation time: ${elapsedTimeMs}ms`);
     return ergonomicsData;
 }
