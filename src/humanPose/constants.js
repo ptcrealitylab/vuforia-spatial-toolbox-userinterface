@@ -520,3 +520,42 @@ export const JOINT_CONFIDENCE_THRESHOLD = 0.25;
 export function getBoneName(bone) {
     return Object.keys(JOINT_CONNECTIONS).find(boneName => JOINT_CONNECTIONS[boneName] === bone);
 }
+
+/** Angle types/names in ErgonomicsData. */
+export const ERGO_ANGLES = {
+    TRUNK_BEND: 'trunk_bend_angle',
+    TRUNK_FRONT_BEND: 'trunk_front_bend_angle',
+    TRUNK_SIDE_BEND: 'trunk_side_bend_angle',
+    TRUNK_TWIST: 'trunk_twist_angle',
+    HEAD_BEND: 'head_bend_angle',
+    HEAD_FRONT_BEND: 'head_front_bend_angle',
+    HEAD_SIDE_BEND: 'head_side_bend_angle',
+    HEAD_TWIST: 'head_twist_angle',
+    LEFT_LOWER_LEG_BEND: 'left_lower_leg_bend_angle',
+    RIGHT_LOWER_LEG_BEND: 'right_lower_leg_bend_angle',
+    LEFT_UPPER_ARM_RAISE: 'left_upper_arm_raise_angle',
+    LEFT_UPPER_ARM_FRONT_RAISE: 'left_upper_arm_front_raise_angle',
+    LEFT_UPPER_ARM_SIDE_RAISE: 'left_upper_arm_side_raise_angle',
+    LEFT_UPPER_ARM_GRAVITY: 'left_upper_arm_gravity_angle',
+    LEFT_SHOULDER_RAISE: 'left_shoulder_raise_angle',
+    RIGHT_UPPER_ARM_RAISE: 'right_upper_arm_raise_angle',
+    RIGHT_UPPER_ARM_FRONT_RAISE: 'right_upper_arm_front_raise_angle',
+    RIGHT_UPPER_ARM_SIDE_RAISE: 'right_upper_arm_side_raise_angle',
+    RIGHT_UPPER_ARM_GRAVITY: 'right_upper_arm_gravity_angle',
+    RIGHT_SHOULDER_RAISE: 'right_shoulder_raise_angle',
+    LEFT_LOWER_ARM_BEND: 'left_lower_arm_bend_angle',
+    LEFT_LOWER_ARM_TWIST: 'left_lower_arm_twist_angle',
+    RIGHT_LOWER_ARM_BEND: 'right_lower_arm_bend_angle',
+    RIGHT_LOWER_ARM_TWIST: 'right_lower_arm_twist_angle',
+    LEFT_HAND_FRONT_BEND: 'left_hand_front_bend_angle',
+    LEFT_HAND_SIDE_BEND: 'left_hand_side_bend_angle',
+    RIGHT_HAND_FRONT_BEND: 'right_hand_front_bend_angle',
+    RIGHT_HAND_SIDE_BEND: 'right_hand_side_bend_angle' 
+};
+
+/** 3D offset types/names in ErgonomicsData. */
+export const ERGO_OFFSETS = {
+    PELVIS_TO_LEFT_WRIST: 'pelvis_to_left_wrist_offset',
+    PELVIS_TO_RIGHT_WRIST: 'pelvis_to_right_wrist_offset',
+    LEFT_TO_RIGHT_FOOT: 'left_to_right_foot_offset'
+};
