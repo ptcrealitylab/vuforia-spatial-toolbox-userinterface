@@ -24,16 +24,23 @@ export function angleBetween(vector1, vector2) {
 /**
  * @typedef {Class} ErgonomicsData
  * @property {Object.<string, Vector3>} joints The joint 3D positions of the pose
+ * @property {Object.<string, boolean>} jointValidities The validity flags of joint positions
  * @property {Object.<string, Orientation>} orientations The orientations of body parts
  * @property {Object.<string, number>} jointScores The joint ergonomic scores of the pose
- * @property {Object.<string, Color>} jointColors The joint colors of the pose
+ * @property {Object.<string, Color>} jointColors The joint colors based on ergonomic scores
  * @property {Object.<string, number>} boneScores The bone ergonomic scores of the pose
- * @property {Object.<string, Color>} boneColors The bone colors of the pose
- * @property {number} overallRebaScore The overall ergonomic score of the pose
- * @property {Color} overallRebaColor The overall color of the pose
- * // TODO: finish
+ * @property {Object.<string, Color>} boneColors The bone colors based on ergonomic scores
+ * @property {number} overallScore The overall ergonomic score of the pose
+ * @property {Color} overallColor The overall color based on ergonomic score of the pose
+ * @property {Object.<string, number>} angles The angles of joints for the pose
+ * @property {Object.<string, Vector3>} offsets The offsets between selected joints for the pose
  */
 
+/**
+ * ErgonomicsData class computes and stores base data for ergonomic assessement for a single input human pose. 
+ * These include different angles of joints and 3d offsets between joints. They can used to calculate ergonomic scores based on various assessement methods (eg. REBA) 
+ * Calculations assume human poses defined in Y-up world CS and in milimeter units.
+ */
 export class ErgonomicsData {
     /**
      * Creates a new ErgonomicsData object.
