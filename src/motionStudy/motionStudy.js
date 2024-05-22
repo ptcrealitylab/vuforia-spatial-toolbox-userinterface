@@ -777,9 +777,9 @@ export class MotionStudy {
         let header = [
             'label',
             'start', 'end', 'duration seconds', 'distance meters',
-            'reba avg', 'reba min', 'reba max',
-            'muri avg', 'muri min', 'muri max',
             'accel avg', 'accel min', 'accel max',
+            'reba avg', 'reba min', 'reba max', 'reba sum', 'reba count',
+            'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count'
         ];
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
@@ -793,15 +793,19 @@ export class MotionStudy {
                 new Date(regionCard.endTime).toISOString(),
                 regionCard.durationMs / 1000,
                 regionCard.distanceMm / 1000,
-                regionCard.graphSummaryValues['REBA'].average,
-                regionCard.graphSummaryValues['REBA'].minimum,
-                regionCard.graphSummaryValues['REBA'].maximum,
-                regionCard.graphSummaryValues['MURI'].average,
-                regionCard.graphSummaryValues['MURI'].minimum,
-                regionCard.graphSummaryValues['MURI'].maximum,
                 regionCard.graphSummaryValues['Accel'].average,
                 regionCard.graphSummaryValues['Accel'].minimum,
                 regionCard.graphSummaryValues['Accel'].maximum,
+                regionCard.graphSummaryValues['REBA'].average,
+                regionCard.graphSummaryValues['REBA'].minimum,
+                regionCard.graphSummaryValues['REBA'].maximum,
+                regionCard.graphSummaryValues['REBA'].sum,
+                regionCard.graphSummaryValues['REBA'].count,
+                regionCard.graphSummaryValues['MURI'].average,
+                regionCard.graphSummaryValues['MURI'].minimum,
+                regionCard.graphSummaryValues['MURI'].maximum,
+                regionCard.graphSummaryValues['MURI'].sum,
+                regionCard.graphSummaryValues['MURI'].count,
             ]);
         }
         let dataUrl = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(lines.map(line => {

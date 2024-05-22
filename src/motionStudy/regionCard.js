@@ -508,20 +508,26 @@ export class RegionCard {
     }
 
     getSummaryValues(poseValueFunction) {
-        let average = 0;
         let minimum = 9001 * 9001;
         let maximum = -minimum;
+        let count = this.poses.length;
+        let sum = 0;
         for (const pose of this.poses) {
             const val = poseValueFunction(pose);
-            average += val;
+            sum += val;
             minimum = Math.min(minimum, val);
             maximum = Math.max(maximum, val);
         }
-        average /= this.poses.length;
+        let average = 0;
+        if (count > 0) {
+            average = sum / count;
+        }
         return {
             average,
             minimum,
             maximum,
+            sum,
+            count
         };
     }
 
