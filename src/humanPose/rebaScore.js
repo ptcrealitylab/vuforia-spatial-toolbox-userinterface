@@ -1,10 +1,13 @@
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {ErgonomicsData} from "./ErgonomicsData.js";
+import {ErgonomicsData, clamp} from "./ErgonomicsData.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
 // ^ Sample REBA scoring tables
+
+export const MIN_REBA_SCORE = 1;
+export const MAX_REBA_SCORE = 12;
 
 /** Default configuration of thresholds for REBA calculation and visualisation (according to published REBA standard). */
 const REBA_CONFIG_DEFAULT = Object.freeze({
@@ -70,17 +73,6 @@ const REBA_CONFIG_CUSTOM1 = Object.freeze({
 
 /** Modifiable configuration of thresholds for REBA calculation. */
 const REBA_CONFIG = Object.assign({}, REBA_CONFIG_DEFAULT);
-
-/**
- * Clamp a value between a minimum and maximum.
- * @param {number} value The value to clamp.
- * @param {number} min The minimum value.
- * @param {number} max The maximum value.
- * @return {number} The clamped value.
- */
-function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-}
 
 /**
  * Sets the score and color for the neck reba.

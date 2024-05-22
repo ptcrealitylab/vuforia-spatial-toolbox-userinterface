@@ -13,6 +13,16 @@ export function angleBetween(vector1, vector2) {
     return vector1.angleTo(vector2) * 180 / Math.PI;
 }
 
+/**
+ * Clamp a value between a minimum and maximum.
+ * @param {number} value The value to clamp.
+ * @param {number} min The minimum value.
+ * @param {number} max The maximum value.
+ * @return {number} The clamped value.
+ */
+export function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+}
 
 /**
  * @typedef {Object} Orientation
@@ -290,14 +300,14 @@ export class ErgonomicsData {
             this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE] = angleBetween(leftUpperArmDown, trunkDown);
             // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
             const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
-            // Front raise angle from trunk down direction. The angle is positive when raising forwards and negative when raising backwards.
+            // Front raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising forwards and negative when raising backwards.
             this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
             if (leftArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] *= -1;
             }
             // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
             const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
-            // Side raise angle from trunk down direction. The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
+            // Side raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
             this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
             if (leftArmDownFrontalProjection.dot(this.orientations.trunk.right.clone().negate()) < 0) {  // negated to have a symmetrical definition of the angle for left and right arm
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] *= -1;
@@ -336,7 +346,7 @@ export class ErgonomicsData {
             this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
 
             if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP]) {
-                // Twist of hand wrt. rotation axis of elbow. When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
+                // Twist of hand wrt. rotation axis of elbow (only positive range [0, 180]deg). When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
                 // When the both vectors have 180deg angle between them there is the maximum twist.
                 // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
                 this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);
@@ -355,9 +365,9 @@ export class ErgonomicsData {
         if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP] &&
             this.jointValidities[JOINTS.LEFT_WRIST] && this.jointValidities[JOINTS.LEFT_ELBOW]) {  // check if all needed joints have a valid position
             const leftLowerArmDirection = this.orientations.leftLowerArm.up.clone().negate();
-            // Front bend of hand from midline of lower arm (wrist flexion/extention). The angle is positive when extending in the back-of-hand direction and negative when flexing in the palm direction.
+            // Front bend of hand from midline of lower arm (wrist flexion/extention). The angle is positive when extending in the back-of-hand direction and negative when flexing in the palm direction (range [-90, 90]deg).
             this.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND] = angleBetween(this.orientations.leftHand.forward, leftLowerArmDirection) - 90;
-            // Side bend of hand from midline of lower arm. The angle is positive when the hand bends in 'thumb' direction and negative when in the opposite direction.
+            // Side bend of hand from midline of lower arm. The angle is positive when the hand bends in 'thumb' direction and negative when in the opposite direction (range [-90, 90]deg).
             this.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND]  = angleBetween(this.orientations.leftHand.right, leftLowerArmDirection) - 90;
         }   
 

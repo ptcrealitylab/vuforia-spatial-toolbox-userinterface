@@ -12,6 +12,7 @@ export const MotionStudyColors = {
     green: new THREE.Color(0, 1, 0),
     blue: new THREE.Color(0, 0, 1),
     gray: new THREE.Color(0.8, 0.8, 0.8),
+    black: new THREE.Color(0, 0, 0),
     /**
      * Fades a color to a faded version of itself.
      * @param {Color} color The color to fade.

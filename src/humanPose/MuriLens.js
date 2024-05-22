@@ -18,8 +18,7 @@ export class MuriLens extends MotionStudyLens {
     }
     
     applyLensToPose(pose, force = false) {
-        // TODO: does every() work with muriScore == 0?
-        if (!force && Object.values(pose.joints).every(joint => joint.muriScore)) {
+        if (!force && pose.metadata.muriScores) {
             return false;
         } 
         const ergonomicsData = this.muriScore.calculateForPose(pose);

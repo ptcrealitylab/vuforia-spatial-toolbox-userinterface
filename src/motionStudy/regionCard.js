@@ -1,7 +1,7 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
 import {JOINTS} from '../humanPose/constants.js';
 import {MIN_ACCELERATION, MAX_ACCELERATION} from '../humanPose/AccelerationLens.js';
-import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/OverallRebaLens.js';
+import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 
