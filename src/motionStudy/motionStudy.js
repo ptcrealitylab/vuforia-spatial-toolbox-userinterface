@@ -778,6 +778,7 @@ export class MotionStudy {
             'label',
             'start', 'end', 'duration seconds', 'distance meters',
             'reba avg', 'reba min', 'reba max',
+            'muri avg', 'muri min', 'muri max',
             'accel avg', 'accel min', 'accel max',
         ];
         let lines = [header];
@@ -795,6 +796,9 @@ export class MotionStudy {
                 regionCard.graphSummaryValues['REBA'].average,
                 regionCard.graphSummaryValues['REBA'].minimum,
                 regionCard.graphSummaryValues['REBA'].maximum,
+                regionCard.graphSummaryValues['MURI'].average,
+                regionCard.graphSummaryValues['MURI'].minimum,
+                regionCard.graphSummaryValues['MURI'].maximum,
                 regionCard.graphSummaryValues['Accel'].average,
                 regionCard.graphSummaryValues['Accel'].minimum,
                 regionCard.graphSummaryValues['Accel'].maximum,
@@ -823,6 +827,7 @@ export class MotionStudy {
             let filteredPose = {
                 joints: {},
                 timestamp: pose.timestamp,
+                metadata: {}
             };
 
             for (const jointKey of Object.keys(pose.joints)) {
@@ -833,11 +838,17 @@ export class MotionStudy {
                 delete filteredPose.joints[jointKey].rebaColor;
                 delete filteredPose.joints[jointKey].rebaColorOverall;
                 delete filteredPose.joints[jointKey].overallRebaColor;
+                delete filteredPose.joints[jointKey].muriColor;
                 delete filteredPose.joints[jointKey].position;
                 delete filteredPose.joints[jointKey].acceleration;
                 delete filteredPose.joints[jointKey].velocity;
                 delete filteredPose.joints[jointKey].confidence;
             }
+
+            // eport muri related data 
+            filteredPose.metadata.ergonomics = pose.metadata.ergonomics;
+            filteredPose.metadata.muriScores = pose.metadata.muriScores;
+            filteredPose.metadata.overallMuriScore = pose.metadata.overallMuriScore; 
 
             poseStrings.push(JSON.stringify(filteredPose));
             poseStrings.push(',');

@@ -2,6 +2,7 @@ import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
 import {JOINTS} from '../humanPose/constants.js';
 import {MIN_ACCELERATION, MAX_ACCELERATION} from '../humanPose/AccelerationLens.js';
 import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
+import {MIN_MURI_SCORE, MAX_MURI_SCORE} from '../humanPose/MuriScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 
@@ -249,6 +250,7 @@ export class RegionCard {
 
         this.graphSummaryValues = {};
         this.createGraphSection('reba', 'REBA');
+        this.createGraphSection('muri', 'MURI');
         this.createGraphSection('accel', 'Accel');
         
         const buttonContainer = document.createElement('div');
@@ -438,6 +440,7 @@ export class RegionCard {
         }
         
         this.updateGraphSection('reba', 'REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore, MIN_REBA_SCORE, MAX_REBA_SCORE);
+        this.updateGraphSection('muri', 'MURI', pose => pose.metadata.overallMuriScore, MIN_MURI_SCORE, MAX_MURI_SCORE);
         this.updateGraphSection('accel', 'Accel', pose => {
             let maxAcceleration = 0;
             pose.forEachJoint(joint => {

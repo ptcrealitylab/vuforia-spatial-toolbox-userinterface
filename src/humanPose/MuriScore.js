@@ -35,7 +35,7 @@ const MURI_CONFIG_DEFAULT = Object.freeze({
     upperArmScoreLevels: [1, 2, 3],
     lowerArmScoreLevels: [1, 2, 3],
     handScoreLevels: [1, 2, 3],
-    overallScoreLevels: [0 /* MURI_MIN_SCORE */, 30 /* MURI_MAX_SCORE + 1 */]  // TODO: tune based on customer feedback
+    overallScoreLevels: [0 /* MIN_MURI_SCORE */, 30 /* MAX_MURI_SCORE + 1 */]  // TODO: tune based on customer feedback
 });
 
 /** Modifiable configuration of thresholds for MURI calculation. */
@@ -44,9 +44,9 @@ const MURI_CONFIG = Object.assign({}, MURI_CONFIG_DEFAULT);
 const MURI_COLOR_START = MotionStudyColors.fade(MotionStudyColors.green);
 const MURI_COLOR_END = MotionStudyColors.fade(MotionStudyColors.red);
 
-export const MURI_MIN_SCORE = 0
+export const MIN_MURI_SCORE = 0
 // TODO: calculate precisely based on final calculation of overall muri score. Should arms be 2*6*2?
-export const MURI_MAX_SCORE = 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* trunk + head */ + 2 * 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* arms */ + 1 * MURI_CONFIG_DEFAULT.scoreWeights[3] /* legs */ // == 41 
+export const MAX_MURI_SCORE = 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* trunk + head */ + 2 * 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* arms */ + 1 * MURI_CONFIG_DEFAULT.scoreWeights[3] /* legs */ // == 41 
 
 
 /** Score types/names for individual strains across body parts . */
