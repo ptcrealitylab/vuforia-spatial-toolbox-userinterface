@@ -11,6 +11,7 @@ import {
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 import {makeTextInput} from '../utilities/makeTextInput.js';
+import {MURI_SCORES} from '../humanPose/MuriScore.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -781,13 +782,21 @@ export class MotionStudy {
             'reba avg', 'reba min', 'reba max', 'reba sum', 'reba count',
             'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count'
         ];
+
+        Object.values(MURI_SCORES).forEach(scoreName => {
+            let titleTexts = ['muri ' + scoreName + ' avg',
+                          'muri ' + scoreName + ' sum',
+                          'muri ' + scoreName + ' count'];
+            header.push(...titleTexts);
+        });
+
         let lines = [header];
         for (let regionCard of this.pinnedRegionCards) {
             if (regionCard.poses.length === 0) {
                 continue;
             }
 
-            lines.push([
+            let values = [
                 regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
                 new Date(regionCard.endTime).toISOString(),
@@ -806,7 +815,15 @@ export class MotionStudy {
                 regionCard.graphSummaryValues['MURI'].maximum,
                 regionCard.graphSummaryValues['MURI'].sum,
                 regionCard.graphSummaryValues['MURI'].count,
-            ]);
+            ];
+
+            Object.values(MURI_SCORES).forEach(scoreName => {
+                let key = 'MURI ' + scoreName;
+                let selectedValuesForKey = [regionCard.graphSummaryValues[key].average, regionCard.graphSummaryValues[key].sum, regionCard.graphSummaryValues[key].count];
+                values.push(...selectedValuesForKey);
+            });
+
+            lines.push(values);
         }
         let dataUrl = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(lines.map(line => {
             return line.join(',');

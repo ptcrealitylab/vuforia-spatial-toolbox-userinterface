@@ -2,7 +2,7 @@ import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
 import {JOINTS} from '../humanPose/constants.js';
 import {MIN_ACCELERATION, MAX_ACCELERATION} from '../humanPose/AccelerationLens.js';
 import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
-import {MIN_MURI_SCORE, MAX_MURI_SCORE} from '../humanPose/MuriScore.js';
+import {MIN_MURI_SCORE, MAX_MURI_SCORE, MURI_SCORES} from '../humanPose/MuriScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 
@@ -448,6 +448,12 @@ export class RegionCard {
             });
             return maxAcceleration;
         }, MIN_ACCELERATION, MAX_ACCELERATION);
+
+        // add extra stats for all muri scores. They are not shown in UI.
+        Object.values(MURI_SCORES).forEach(scoreName => {
+            let titleText = 'MURI ' + scoreName;
+            this.graphSummaryValues[titleText] = this.getSummaryValuesExtended(pose => pose.metadata.muriScores[scoreName]);
+        });
     }
 
     /**
@@ -517,6 +523,33 @@ export class RegionCard {
             sum += val;
             minimum = Math.min(minimum, val);
             maximum = Math.max(maximum, val);
+        }
+        let average = 0;
+        if (count > 0) {
+            average = sum / count;
+        }
+        return {
+            average,
+            minimum,
+            maximum,
+            sum,
+            count
+        };
+    }
+
+    getSummaryValuesExtended(poseValueFunction) {
+        let minimum = 9001 * 9001;
+        let maximum = -minimum;
+        let count = 0;
+        let sum = 0;
+        for (const pose of this.poses) {
+            const val = poseValueFunction(pose);
+            if (val != null) {
+                sum += val;
+                count += 1;
+                minimum = Math.min(minimum, val);
+                maximum = Math.max(maximum, val);
+            }
         }
         let average = 0;
         if (count > 0) {
