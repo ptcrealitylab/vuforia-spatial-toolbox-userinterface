@@ -2,6 +2,7 @@ createNameSpace("realityEditor.ai");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
+import { ChatInterface } from './ChatInterface.js';
 
 (function(exports) {
     
@@ -9,6 +10,7 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
     let categorize_prompt = 'Which one of the following items best describes my question? 1. "summary", 2. "debug", 3. "tools", 4. "pdf", 5. "tool content", 6. "not relevant". You can only return one of these items in string.';
     let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
     let apiOrchestrator = null;
+    let chatInterface = null;
     
     let partMap = {};
     
@@ -280,6 +282,9 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
             }
         }
         realityEditor.network.postAiApiKeys(credentials.gpt4o.endPoint, credentials.gpt4o.apiKey, true);
+
+        chatInterface = new ChatInterface();
+        window.chatInterface = chatInterface;
 
         // TODO: figure out better place to initialize and make use of the apiOrchestrator
         apiOrchestrator = new IframeAPIOrchestrator(map);

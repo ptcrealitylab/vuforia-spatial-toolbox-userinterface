@@ -76,11 +76,14 @@ export class IframeAPIOrchestrator {
             // map.addToMap(avatarId, avatarName, avatarScrambledId);
             // map.addToMap(frameId, frameType, frameScrambledId);
 
-            let apiPath = `${applicationId}-${name}`;
-            let uniqueApiName = `${name}-${uuidTimeShort()}`;
-            let apiScrambledId = realityEditor.ai.crc.generateChecksum(apiPath);
-            this.mapEncoder.addToMap(apiPath, name, apiScrambledId);
-            console.log('added to map: ', apiPath, name, apiScrambledId);
+            const ADD_APIS_TO_MAP = false;
+            if (ADD_APIS_TO_MAP) {
+                let apiPath = `${applicationId}-${name}`;
+                let uniqueApiName = `${name}-${uuidTimeShort()}`;
+                let apiScrambledId = realityEditor.ai.crc.generateChecksum(apiPath);
+                this.mapEncoder.addToMap(apiPath, name, apiScrambledId);
+                console.log('added to map: ', apiPath, name, apiScrambledId);
+            }
         });
         this.updateUI();
     }

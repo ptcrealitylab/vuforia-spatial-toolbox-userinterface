@@ -42,6 +42,10 @@ createNameSpace("realityEditor.ai.mapping");
     function printMap() {
         console.log(threeMap);
     }
+
+    function getMap() {
+        return threeMap;
+    }
     
     // preprocess the historical message that got fed into ai prompt, to replace actual names with id names
     // function preprocess(html) {
@@ -180,6 +184,7 @@ createNameSpace("realityEditor.ai.mapping");
     exports.setupEventListeners = setupEventListeners;
     exports.addToMap = addToMap;
     exports.printMap = printMap;
+    exports.getMap = getMap;
     exports.preprocess = preprocess;
     exports.postprocess = postprocess;
     exports.postprocessBen = postprocessBen;
