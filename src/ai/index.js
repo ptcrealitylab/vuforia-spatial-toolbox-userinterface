@@ -58,7 +58,8 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
                 let partDirection = cameraPosition.clone().sub(partPosition).normalize();
                 callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
                     pos: {x: partPosition.x, y: partPosition.y, z: partPosition.z},
-                    dir: {x: partDirection.x, y: partDirection.y, z: partDirection.z}
+                    dir: {x: partDirection.x, y: partDirection.y, z: partDirection.z},
+                    zoomDistanceMm: 1000
                 });
             }
         } else {
@@ -67,7 +68,8 @@ import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
             let frameDirection = cameraPosition.clone().sub(framePosition).normalize();
             callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
                 pos: {x: framePosition.x, y: framePosition.y, z: framePosition.z},
-                dir: {x: frameDirection.x, y: frameDirection.y, z: frameDirection.z}
+                dir: {x: frameDirection.x, y: frameDirection.y, z: frameDirection.z},
+                zoomDistanceMm: 3000
             });
         }
     }
