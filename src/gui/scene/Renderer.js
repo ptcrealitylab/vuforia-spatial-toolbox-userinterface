@@ -4,6 +4,7 @@ import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.modul
 import { WebXRVRButton } from './WebXRVRButton.js';
 import { Camera } from './Camera.js';
 import AnchoredGroup from './AnchoredGroup.js';
+import {ToolManager} from './ToolManager.js';
 
 /**
  * @typedef {number} pixels
@@ -117,6 +118,9 @@ class Renderer {
     /** @type {GlobalScale} */
     #globalScale
 
+     /** @type {ToolManager} */
+     #tools;
+
     /**
      * 
      * @param {HTMLCanvasElement} domElement 
@@ -157,6 +161,8 @@ class Renderer {
         // Assumes the BVH is available on the `boundsTree` variable
         THREE.Mesh.prototype.raycast = acceleratedRaycast;
         this.#raycaster = new THREE.Raycaster();
+
+        this.#tools = new ToolManager(this);
     }
     
     /**
@@ -189,6 +195,30 @@ class Renderer {
         } else if (obj instanceof THREE.Object3D) {
             this.#globalScale.getNode().add(obj)
         }
+    }
+
+    /**
+     * 
+     * @param {string} toolId 
+     */
+    addTool(toolId) {
+        this.#tools.add(toolId);
+    }
+
+    /**
+     * 
+     * @param {string} toolId 
+     */
+    removeTool(toolId) {
+        this.#tools.remove(toolId);
+    }
+
+    /**
+     * 
+     * @param {AnchoredGroup} anchoredGroup 
+     */
+    setAnchoredGroupForTools(anchoredGroup) {
+        this.#tools.setAnchoredGroup(anchoredGroup);
     }
 
     /**

@@ -104,6 +104,8 @@ import {setMatrixFromArray} from "./scene/utils.js";
         threejsContainer = new AnchoredGroup("threejsContainer");
         mainRenderer.add(threejsContainer);
 
+        mainRenderer.setAnchoredGroupForTools(threejsContainer);
+
         customMaterials = new CustomMaterials();
         let _mapShaderUI = new MapShaderSettingsUI();        
 
