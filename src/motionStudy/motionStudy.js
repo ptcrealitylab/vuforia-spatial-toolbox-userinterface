@@ -11,7 +11,7 @@ import {
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 import {makeTextInput} from '../utilities/makeTextInput.js';
-import {MURI_SCORES} from '../humanPose/MuriScore.js';
+import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -783,10 +783,27 @@ export class MotionStudy {
             'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count'
         ];
 
+        let sortedScoreWeights = MURI_CONFIG.scoreWeights.toSorted((a, b) => a - b);
+
         Object.values(MURI_SCORES).forEach(scoreName => {
             let titleTexts = ['muri ' + scoreName + ' avg',
                           'muri ' + scoreName + ' sum',
                           'muri ' + scoreName + ' count'];
+            // sample counts for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' count')
+            });
+            // time duration for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' duration')
+            });
+            titleTexts.push('muri ' + scoreName + ' unknown duration')
+            // time % for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' %')
+            });
+            titleTexts.push('muri ' + scoreName + ' unknown %')
+
             header.push(...titleTexts);
         });
 
@@ -820,6 +837,10 @@ export class MotionStudy {
             Object.values(MURI_SCORES).forEach(scoreName => {
                 let key = 'MURI ' + scoreName;
                 let selectedValuesForKey = [regionCard.graphSummaryValues[key].average, regionCard.graphSummaryValues[key].sum, regionCard.graphSummaryValues[key].count];
+                selectedValuesForKey.push(...regionCard.graphSummaryValues[key].levelCounts);
+                let levelDurationsSec = regionCard.graphSummaryValues[key].levelDurations.map(val => val / 1000);
+                selectedValuesForKey.push(...levelDurationsSec);
+                selectedValuesForKey.push(...regionCard.graphSummaryValues[key].levelDurationPercentages);
                 values.push(...selectedValuesForKey);
             });
 

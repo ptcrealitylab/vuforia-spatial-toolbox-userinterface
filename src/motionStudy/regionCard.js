@@ -1,8 +1,8 @@
 import {getMeasurementTextLabel} from '../humanPose/spaghetti.js';
-import {JOINTS} from '../humanPose/constants.js';
+import {JOINTS, HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
 import {MIN_ACCELERATION, MAX_ACCELERATION} from '../humanPose/AccelerationLens.js';
 import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
-import {MIN_MURI_SCORE, MAX_MURI_SCORE, MURI_SCORES} from '../humanPose/MuriScore.js';
+import {MIN_MURI_SCORE, MAX_MURI_SCORE, MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 
@@ -450,9 +450,17 @@ export class RegionCard {
         }, MIN_ACCELERATION, MAX_ACCELERATION);
 
         // add extra stats for all muri scores. They are not shown in UI.
+        
+        // derive histogram bins for individual score weights. We get histogram counts of all weights for every muri score, although all of them may not be used by a specific score. 
+        let valueLevelThresholds = MURI_CONFIG.scoreWeights.toSorted((a, b) => a - b);
+        valueLevelThresholds.unshift(valueLevelThresholds[0] - 1); // start of first bin
+        // add small eps if scoreWeights happen to be floats
+        valueLevelThresholds.forEach((number, index, arr) => {
+            arr[index] = number + 0.00001;
+        });
         Object.values(MURI_SCORES).forEach(scoreName => {
             let titleText = 'MURI ' + scoreName;
-            this.graphSummaryValues[titleText] = this.getSummaryValuesExtended(pose => pose.metadata.muriScores[scoreName]);
+            this.graphSummaryValues[titleText] = this.getSummaryValuesExtended(pose => pose.metadata.muriScores[scoreName], valueLevelThresholds);
         });
     }
 
@@ -537,20 +545,53 @@ export class RegionCard {
         };
     }
 
-    getSummaryValuesExtended(poseValueFunction) {
+    getSummaryValuesExtended(poseValueFunction, valueLevelThresholds) {
         let minimum = 9001 * 9001;
         let maximum = -minimum;
         let count = 0;
         let sum = 0;
+        let levelCounts = new Array(valueLevelThresholds.length - 1).fill(0);
         for (const pose of this.poses) {
             const val = poseValueFunction(pose);
-            if (val != null) {
-                sum += val;
-                count += 1;
-                minimum = Math.min(minimum, val);
-                maximum = Math.max(maximum, val);
+            if (val == null) {
+                continue
+            }
+            sum += val;
+            count++;
+            minimum = Math.min(minimum, val);
+            maximum = Math.max(maximum, val);
+            // put value into histogram
+            for (let i = 0; i < valueLevelThresholds.length - 1; i++) {
+                if (val >= valueLevelThresholds[i] && val < valueLevelThresholds[i + 1]) {
+                    levelCounts[i]++;
+                    break;
+                }
             }
         }
+
+        // calculate time duration of individual levels of input values. Add a extra duration when the value is unknown.
+        // Note: this taking into account all cases why the value is unknown - no pose at all; body part has low confidence; value cannot be calculated  
+        // convert histogram counts to time durations within total step duration
+        const totalDuration = this.endTime - this.startTime;  // in ms
+        const singlePoseStandardTime =  1000 / HUMAN_TRACKING_FPS; // in ms
+        let levelDurations = levelCounts.map(val => val * singlePoseStandardTime);
+        let levelDurationSum = levelDurations.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+        let unknownDuration = 0;
+        if (levelDurationSum > totalDuration) {
+            // it is possible to go bit over 100% because of theoretic regular singlePoseStandardTime
+            // normalize durations to 100% of total step duration
+            levelDurations.forEach((duration, index, arr) => {
+                arr[index] = (duration / levelDurationSum) * totalDuration;
+            });
+        }
+        else {
+            unknownDuration = totalDuration - levelDurationSum;
+        }
+        levelDurations.push(unknownDuration); 
+
+        // calculate % of time for individual levels of input values in the total step duration.  Add a extra % for time when the value is unknown.
+        let levelDurationPercentages = levelDurations.map(duration => (duration/totalDuration) * 100);
+
         let average = 0;
         if (count > 0) {
             average = sum / count;
@@ -560,7 +601,10 @@ export class RegionCard {
             minimum,
             maximum,
             sum,
-            count
+            count,
+            levelCounts,
+            levelDurations,
+            levelDurationPercentages
         };
     }
 

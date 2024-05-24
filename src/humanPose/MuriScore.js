@@ -28,7 +28,8 @@ const MURI_CONFIG_DEFAULT = Object.freeze({
     // This is used to assign colours for visualising MURI scores.
     // Minimum score is always 0 and maximum score is (<the last entry in the threshold list> - 1)
     // Example with 4 levels of strain: 0 (low), 1 (medium), 2 (high), 3-5 (extreme)
-    //    scoreLevels: [1, 2, 3, 6]   
+    //    scoreLevels: [1, 2, 3, 6]
+    // Warning: Actual score values (in case of integer scoreWeights) are smaller by -1 than the thresholds   
     trunkScoreLevels: [1, 2, 3],
     headScoreLevels: [1, 2, 3],
     legScoreLevels: [1, 6],  
@@ -39,7 +40,7 @@ const MURI_CONFIG_DEFAULT = Object.freeze({
 });
 
 /** Modifiable configuration of thresholds for MURI calculation. */
-const MURI_CONFIG = Object.assign({}, MURI_CONFIG_DEFAULT);
+export const MURI_CONFIG = Object.assign({}, MURI_CONFIG_DEFAULT);
 
 const MURI_COLOR_START = MotionStudyColors.fade(MotionStudyColors.green);
 const MURI_COLOR_END = MotionStudyColors.fade(MotionStudyColors.red);
