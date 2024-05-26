@@ -28,7 +28,7 @@ export function clamp(value, min, max) {
  * Maximum angle between two vectors with similar direction.
  * Used to assess whether a vector is too similar to a normal of a plane onto which we want to project it.
  */
-const MAX_ANGLE_SIMILAR_VECTORS = 10 * (Math.PI / 180)    // radians
+const MAX_ANGLE_SIMILAR_VECTORS = 10    // deg
 
 /**
  * @typedef {Object} Orientation
@@ -186,7 +186,8 @@ export class ErgonomicsData {
         this.orientations.leftLowerArm.up.subVectors(this.joints[JOINTS.LEFT_ELBOW], this.joints[JOINTS.LEFT_WRIST]).normalize(); // aligned with the bone
         this.orientations.leftUpperArm.up.subVectors(this.joints[JOINTS.LEFT_SHOULDER], this.joints[JOINTS.LEFT_ELBOW]).normalize(); // aligned with the bone
         // given by rotation axis of elbow; direction towards the torso
-        // TODO: handle the case when leftUpperArm.up and leftLowerArm.up are collinear
+        // Warning: When leftUpperArm.up and leftLowerArm.up are collinear, leftLowerArm.right (by extension leftUpperArm.right) are unstable.
+        //          It is not possible to set this axis consistenly for all straight arm directions based on the joint positions alone. 
         this.orientations.leftLowerArm.right.crossVectors(this.orientations.leftUpperArm.up,this.orientations.leftLowerArm.up).normalize();
         this.orientations.leftLowerArm.forward.crossVectors(this.orientations.leftLowerArm.up,this.orientations.leftLowerArm.right).normalize();
         
@@ -201,7 +202,8 @@ export class ErgonomicsData {
         this.orientations.rightLowerArm.up.subVectors(this.joints[JOINTS.RIGHT_ELBOW], this.joints[JOINTS.RIGHT_WRIST]).normalize(); // aligned with the bone
         this.orientations.rightUpperArm.up.subVectors(this.joints[JOINTS.RIGHT_SHOULDER], this.joints[JOINTS.RIGHT_ELBOW]).normalize(); // aligned with the bone
         // given by rotation axis of elbow; direction away from the torso
-        // TODO: handle the case when rightUpperArm.up and rightLowerArm.up are collinear
+        // Warning: When rightUpperArm.up and rightLowerArm.up are collinear, rightLowerArm.right (by extension rightUpperArm.right) are unstable.
+        //          It is not possible to set this axis consistenly for all straight arm directions based on the joint positions alone. 
         this.orientations.rightLowerArm.right.crossVectors(this.orientations.rightUpperArm.up,this.orientations.rightLowerArm.up).normalize();
         this.orientations.rightLowerArm.forward.crossVectors(this.orientations.rightLowerArm.up,this.orientations.rightLowerArm.right).normalize();
         
@@ -243,7 +245,7 @@ export class ErgonomicsData {
         // Projection of trunk direction to sagittal/median plane of body where normal is this.orientations.hips.right. This assumes that both vectors have unit length.
         const trunkUpSagittalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.right.clone().multiplyScalar(this.orientations.hips.right.dot(this.orientations.trunk.up)));
         // Front bend angle from upright direction. The angle is positive when bending forwards and negative when bending backwards.
-        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
             this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = angleBetween(trunkUpSagittalProjection, up);
         }
         else {
@@ -256,7 +258,7 @@ export class ErgonomicsData {
         // Projection of trunk direction to frontal plane of body where normal is this.orientations.hips.forward. This assumes that both vectors have unit length.
         const trunkUpFrontalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.forward.clone().multiplyScalar(this.orientations.hips.forward.dot(this.orientations.trunk.up)));
         // Side bend angle from upright direction. The angle is positive when bending to the right and negative when bending to the left.
-        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
             this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] = angleBetween(trunkUpFrontalProjection, up);
         }
         else {
@@ -319,7 +321,7 @@ export class ErgonomicsData {
             // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
             const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
             // Front raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising forwards and negative when raising backwards.
-            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
             }
             else {
@@ -333,7 +335,7 @@ export class ErgonomicsData {
             // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
             const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
             // Side raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
-            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
             }
             else {
@@ -355,7 +357,7 @@ export class ErgonomicsData {
             const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
             this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
             const rightArmDownSagittalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(rightUpperArmDown)));
-            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
                 this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
             }
             else {
@@ -365,7 +367,7 @@ export class ErgonomicsData {
                 this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] *= -1;
             }
             const rightArmDownFrontalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(rightUpperArmDown)));
-            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS * (Math.PI / 180))) {
                 this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
             }
             else {
@@ -386,7 +388,8 @@ export class ErgonomicsData {
         if (this.jointValidities[JOINTS.LEFT_WRIST] && this.jointValidities[JOINTS.LEFT_ELBOW] && this.jointValidities[JOINTS.LEFT_SHOULDER]) {   // check if all needed joints have a valid position
             this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = angleBetween(this.orientations.leftLowerArm.up, this.orientations.leftUpperArm.up);
 
-            if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP]) {
+            if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP] && // check if hand joints have valid positions
+                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {  // check if the arm is almost straight, therefore the rotation axis of elbow (leftLowerArm.right) cannot be calculated reliably
                 // Twist of hand wrt. rotation axis of elbow (only positive range [0, 180]deg). When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
                 // When the both vectors have 180deg angle between them there is the maximum twist.
                 // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
@@ -397,7 +400,8 @@ export class ErgonomicsData {
         if (this.jointValidities[JOINTS.RIGHT_WRIST] && this.jointValidities[JOINTS.RIGHT_ELBOW] && this.jointValidities[JOINTS.RIGHT_SHOULDER]) {   // check if all needed joints have a valid position
             this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = angleBetween(this.orientations.rightLowerArm.up, this.orientations.rightUpperArm.up);
             
-            if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP]) {
+            if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP] &&
+                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {
                 this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
             }
         }
