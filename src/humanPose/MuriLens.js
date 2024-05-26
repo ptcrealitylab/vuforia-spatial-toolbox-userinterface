@@ -1,7 +1,7 @@
 import {MotionStudyLens} from "./MotionStudyLens.js";
 import {MuriScore} from "./MuriScore.js";
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {JOINTS, ERGO_ANGLES, ERGO_OFFSETS} from "./constants.js";
+import {ERGO_ANGLES, ERGO_OFFSETS} from "./constants.js";
 
 /**
  * MuriLens is a lens that calculates the Muri score for each pose in the history. Individual components of the score

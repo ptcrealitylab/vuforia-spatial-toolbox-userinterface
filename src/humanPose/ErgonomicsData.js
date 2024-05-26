@@ -24,6 +24,12 @@ export function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
 }
 
+/** 
+ * Maximum angle between two vectors with similar direction.
+ * Used to assess whether a vector is too similar to a normal of a plane onto which we want to project it.
+ */
+const MAX_ANGLE_SIMILAR_VECTORS = 10 * (Math.PI / 180)    // radians
+
 /**
  * @typedef {Object} Orientation
  * @property {Vector3} forward The forward direction of the orientation
@@ -237,14 +243,26 @@ export class ErgonomicsData {
         // Projection of trunk direction to sagittal/median plane of body where normal is this.orientations.hips.right. This assumes that both vectors have unit length.
         const trunkUpSagittalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.right.clone().multiplyScalar(this.orientations.hips.right.dot(this.orientations.trunk.up)));
         // Front bend angle from upright direction. The angle is positive when bending forwards and negative when bending backwards.
-        this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = angleBetween(trunkUpSagittalProjection, up);
+        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = angleBetween(trunkUpSagittalProjection, up);
+        }
+        else {
+            // correction for the angle instability when the trunk is close to perpendicular to the plane it is projected onto
+            this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] = this.angles[ERGO_ANGLES.TRUNK_BEND];
+        }
         if (trunkUpSagittalProjection.dot(this.orientations.hips.forward) < 0) {
             this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND] *= -1;
         }
         // Projection of trunk direction to frontal plane of body where normal is this.orientations.hips.forward. This assumes that both vectors have unit length.
         const trunkUpFrontalProjection = this.orientations.trunk.up.clone().sub(this.orientations.hips.forward.clone().multiplyScalar(this.orientations.hips.forward.dot(this.orientations.trunk.up)));
         // Side bend angle from upright direction. The angle is positive when bending to the right and negative when bending to the left.
-        this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] = angleBetween(trunkUpFrontalProjection, up);
+        if (Math.abs(this.orientations.trunk.up.dot(this.orientations.hips.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+            this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] = angleBetween(trunkUpFrontalProjection, up);
+        }
+        else {
+            // correction for the angle instability when the trunk is close to perpendicular to the plane it is projected onto (90 deg front bend)
+            this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] = this.angles[ERGO_ANGLES.TRUNK_BEND];
+        }
         if (trunkUpFrontalProjection.dot(this.orientations.hips.right) < 0) {
             this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] *= -1;
         }
@@ -301,14 +319,27 @@ export class ErgonomicsData {
             // Projection of upper arm direction to sagittal/median plane of trunk where normal is this.orientations.trunk.right. This assumes that both vectors have unit length.
             const leftArmDownSagittalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(leftUpperArmDown)));
             // Front raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising forwards and negative when raising backwards.
-            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
+            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = angleBetween(leftArmDownSagittalProjection, trunkDown);
+            }
+            else {
+                // correction for the angle instability when arm is close to perpendicular to the plane it is projected onto
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] = this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE];
+            }
             if (leftArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE] *= -1;
             }
+            
             // Projection of upper arm direction to frontal plane of trunk where normal is this.orientations.trunk.forward. This assumes that both vectors have unit length.
             const leftArmDownFrontalProjection = leftUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(leftUpperArmDown)));
             // Side raise angle from trunk down direction (range [-180, 180]deg). The angle is positive when raising away from the body (abduction) and negative when raising towards the body.
-            this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
+            if (Math.abs(leftUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = angleBetween(leftArmDownFrontalProjection, trunkDown);
+            }
+            else {
+                // correction for the angle instability when arm is close to perpendicular to the plane it is projected onto
+                this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] = this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE];
+            }
             if (leftArmDownFrontalProjection.dot(this.orientations.trunk.right.clone().negate()) < 0) {  // negated to have a symmetrical definition of the angle for left and right arm
                 this.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE] *= -1;
             }
@@ -324,12 +355,22 @@ export class ErgonomicsData {
             const rightUpperArmDown = this.orientations.rightUpperArm.up.clone().negate();
             this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE] = angleBetween(rightUpperArmDown, trunkDown);
             const rightArmDownSagittalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.right.clone().multiplyScalar(this.orientations.trunk.right.dot(rightUpperArmDown)));
-            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
+            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.right)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = angleBetween(rightArmDownSagittalProjection, trunkDown);
+            }
+            else {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] = this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE];
+            }
             if (rightArmDownSagittalProjection.dot(this.orientations.trunk.forward) < 0) {
                 this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE] *= -1;
             }
             const rightArmDownFrontalProjection = rightUpperArmDown.clone().sub(this.orientations.trunk.forward.clone().multiplyScalar(this.orientations.trunk.forward.dot(rightUpperArmDown)));
-            this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
+            if (Math.abs(rightUpperArmDown.dot(this.orientations.trunk.forward)) < Math.cos(MAX_ANGLE_SIMILAR_VECTORS)) {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = angleBetween(rightArmDownFrontalProjection, trunkDown);
+            }
+            else {
+                this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] = this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE];
+            }
             if (rightArmDownFrontalProjection.dot(this.orientations.trunk.right) < 0) {
                 this.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE] *= -1;
             }

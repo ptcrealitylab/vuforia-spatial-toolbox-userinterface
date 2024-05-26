@@ -1,5 +1,4 @@
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {Pose} from "./Pose.js";
 import {ErgonomicsData, clamp} from "./ErgonomicsData.js";
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 
@@ -800,7 +799,7 @@ export class MuriScore {
      * @param {Pose} pose The pose to calculate the regonomics for
      */
     calculateForPose(pose) {
-        const startTime = Date.now();
+        //const startTime = Date.now();
 
         // prepare for new pose
         this.reset();
@@ -812,7 +811,7 @@ export class MuriScore {
         this.score();
         this.data.muriScores = this.muriScores;
         
-        const elapsedTimeMs = Date.now() - startTime;
+        //const elapsedTimeMs = Date.now() - startTime;
         //console.log(`MURI calculation time: ${elapsedTimeMs}ms`);
         return this.data;
     }
