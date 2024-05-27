@@ -45,7 +45,7 @@ const MURI_COLOR_START = MotionStudyColors.fade(MotionStudyColors.green);
 const MURI_COLOR_END = MotionStudyColors.fade(MotionStudyColors.red);
 
 export const MIN_MURI_SCORE = 0
-// TODO: calculate precisely based on final calculation of overall muri score. Should arms be 2*6*2?
+// Note: calculate precisely based on final calculation of overall muri score.
 export const MAX_MURI_SCORE = 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* trunk + head */ + 2 * 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* arms */ + 1 * MURI_CONFIG_DEFAULT.scoreWeights[3] /* legs */ // == 41 
 
 
@@ -299,7 +299,7 @@ export class MuriScore {
         /* left uppper arm */
 
         // check for front/back arm raise (for now thresholds are used symmetrically for the front and the back)
-        // TODO: reevaluate symmetrical use of thresholds
+        // TODO future: reevaluate symmetrical use of thresholds based on customer feedback
         if (this.data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE)) {
             if (Math.abs(this.data.angles[ERGO_ANGLES.LEFT_UPPER_ARM_FRONT_RAISE]) < MURI_CONFIG.upperArmFrontRaiseAngleThresholds[0]) {
                 this.muriScores[MURI_SCORES.LEFT_UPPER_ARM_FRONT_RAISE] = MURI_CONFIG.scoreWeights[0];  // low strain
@@ -314,7 +314,7 @@ export class MuriScore {
         }
 
         // check for side arm raise (for now thresholds are used symmetrically for raise of the same arm to the left and right side)
-        // TODO: reevaluate symmetrical use of thresholds
+        // TODO future: reevaluate symmetrical use of thresholds
         if (this.data.angles.hasOwnProperty(ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE)) {
             if (Math.abs(this.data.angles[ERGO_ANGLES.LEFT_UPPER_ARM_SIDE_RAISE]) < MURI_CONFIG.upperArmSideRaiseAngleThresholds[0]) {
                 this.muriScores[MURI_SCORES.LEFT_UPPER_ARM_SIDE_RAISE] = MURI_CONFIG.scoreWeights[0];  // low strain
@@ -349,7 +349,7 @@ export class MuriScore {
         /* right uppper arm */
 
         // check for front/back arm raise (for now thresholds are used symmetrically for the front and the back)
-        // TODO: reevaluate symmetrical use of thresholds
+        // TODO future: reevaluate symmetrical use of thresholds
         if (this.data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE)) {
             if (Math.abs(this.data.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_FRONT_RAISE]) < MURI_CONFIG.upperArmFrontRaiseAngleThresholds[0]) {
                 this.muriScores[MURI_SCORES.RIGHT_UPPER_ARM_FRONT_RAISE] = MURI_CONFIG.scoreWeights[0];  // low strain
@@ -364,7 +364,7 @@ export class MuriScore {
         }
 
         // check for side arm raise (for now thresholds are used symmetrically for raise of the same arm to the left and right side)
-        // TODO: reevaluate symmetrical use of thresholds
+        // TODO future: reevaluate symmetrical use of thresholds
         if (this.data.angles.hasOwnProperty(ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE)) {
             if (Math.abs(this.data.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_SIDE_RAISE]) < MURI_CONFIG.upperArmSideRaiseAngleThresholds[0]) {
                 this.muriScores[MURI_SCORES.RIGHT_UPPER_ARM_SIDE_RAISE] = MURI_CONFIG.scoreWeights[0];  // low strain
@@ -772,7 +772,7 @@ export class MuriScore {
         let validScoreCount = 0;
         // Some scores are not included in the overall score (eg. individual leg scores which are combined into single 'legs_score')
         // Left and right arm scores are all added to the overall score.
-        // TODO: potentially different left and right arm combination should be resolved here
+        // TODO future: potentially different left and right arm combination should be resolved here
         MURI_SCORES_IN_OVERALL.forEach(scoreName => {
             if (this.muriScores[scoreName] != null) {
                 this.data.overallScore += this.muriScores[scoreName];

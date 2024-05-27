@@ -42,7 +42,7 @@ export class MuriLens extends MotionStudyLens {
                 pose.metadata.ergonomics[angleName] = null;
             }
         });
-        // TODO?: Volvo has bit different definition of this angle (straight arm has 180 deg). However, this definition is inconsistent with other angles which are zero in the netural pose. 
+        // TODO?: Volvo has bit different definition of this angle (straight arm has 180 deg). However, this definition is not properly established and is inconsistent with other angles which are zero in the netural pose. 
         // pose.metadata[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] = 180 - pose.metadata[ERGO_ANGLES.LEFT_LOWER_ARM_BEND];
         // pose.metadata[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] = 180 - pose.metadata[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND];
         Object.values(ERGO_OFFSETS).forEach(offsetName => {
