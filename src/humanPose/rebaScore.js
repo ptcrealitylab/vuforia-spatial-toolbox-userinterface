@@ -1,12 +1,13 @@
 import {JOINT_CONNECTIONS, JOINTS, getBoneName, ERGO_ANGLES, ERGO_OFFSETS} from './constants.js';
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {ErgonomicsData} from "./ErgonomicsData.js";
+import {ErgonomicsData, clamp} from "./ErgonomicsData.js";
 
 // https://www.physio-pedia.com/Rapid_Entire_Body_Assessment_(REBA)
 // https://ergo-plus.com/reba-assessment-tool-guide/
 // ^ Sample REBA scoring tables
 
-/** Calculations assume human poses defined in Y-up CS and in milimeter units. */
+export const MIN_REBA_SCORE = 1;
+export const MAX_REBA_SCORE = 12;
 
 /** Default configuration of thresholds for REBA calculation and visualisation (according to published REBA standard). */
 const REBA_CONFIG_DEFAULT = Object.freeze({
@@ -25,7 +26,7 @@ const REBA_CONFIG_DEFAULT = Object.freeze({
     footHeightDifferenceThresholds: [100], // mm
 
     // Definitions of score ranges for different levels of strain for each body part.
-    // Minimum score is always 1 and maximum score is the last entry in the threshold list
+    // Minimum score is always 1 and maximum score is the last entry in the threshold list minus 1
     // Example with 3 levels of strain: 1 (low), 2-3 (medium), 4-5 (high)
     //    trunkScoreLevels: [2, 4, 6]   
     // This is used for assigning colours for visualising levels of REBA scores.
@@ -74,17 +75,6 @@ const REBA_CONFIG_CUSTOM1 = Object.freeze({
 const REBA_CONFIG = Object.assign({}, REBA_CONFIG_DEFAULT);
 
 /**
- * Clamp a value between a minimum and maximum.
- * @param {number} value The value to clamp.
- * @param {number} min The minimum value.
- * @param {number} max The maximum value.
- * @return {number} The clamped value.
- */
-function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-}
-
-/**
  * Sets the score and color for the neck reba.
  * Starting with score=1
  * +1 for forward bending > 20 degrees or backward bending > 5 degrees
@@ -95,48 +85,50 @@ function neckReba(data) {
     let neckScore = 1;
     let neckColor = MotionStudyColors.undefined;
 
-    const headUp = data.orientations.head.up;
-    // all vectors are normalised, so dot() == cos(angle between vectors) 
-    const forwardBendingAlignment = headUp.clone().dot(data.orientations.trunk.forward);  
-    const backwardBendingAlignment = headUp.clone().dot(data.orientations.trunk.forward.clone().negate());
-    const rightBendingAlignment = headUp.clone().dot(data.orientations.trunk.right);
-    const leftBendingAlignment = headUp.clone().dot(data.orientations.trunk.right.clone().negate());
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.HEAD_BEND) && data.angles.hasOwnProperty(ERGO_ANGLES.HEAD_TWIST)) {
+        const headUp = data.orientations.head.up;
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const forwardBendingAlignment = headUp.clone().dot(data.orientations.trunk.forward);  
+        const backwardBendingAlignment = headUp.clone().dot(data.orientations.trunk.forward.clone().negate());
+        const rightBendingAlignment = headUp.clone().dot(data.orientations.trunk.right);
+        const leftBendingAlignment = headUp.clone().dot(data.orientations.trunk.right.clone().negate());
 
-    // Check for bending
-    // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
-    let sideBend = false;
-    if (data.angles[ERGO_ANGLES.HEAD_BEND] > REBA_CONFIG.neckFrontBendAngleThresholds[1]) {
-        neckScore++; // +1 for greater than threshold
+        // Check for bending
+        // +1 for side-bending (greater than 20 degrees), back-bending (any degrees), twisting, or greater than 20 degrees in general
+        let sideBend = false;
+        if (data.angles[ERGO_ANGLES.HEAD_BEND] > REBA_CONFIG.neckFrontBendAngleThresholds[1]) {
+            neckScore++; // +1 for greater than threshold
 
-        // check for side-bending only when above the overall bending threshold
-        // true when above +-45 deg from trunk forward or trunk backward direction (when looking from above) 
-        sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
-                    (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
-    } else {
-        if (forwardBendingAlignment < backwardBendingAlignment &&
-            data.angles[ERGO_ANGLES.HEAD_BEND] > REBA_CONFIG.neckFrontBendAngleThresholds[0]) {  // (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
-            neckScore++; // +1 for back-bending more than few degrees
+            // check for side-bending only when above the overall bending threshold
+            // true when above +-45 deg from trunk forward or trunk backward direction (when looking from above) 
+            sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                        (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
+        } else {
+            if (forwardBendingAlignment < backwardBendingAlignment &&
+                data.angles[ERGO_ANGLES.HEAD_BEND] > REBA_CONFIG.neckFrontBendAngleThresholds[0]) {  // (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
+                neckScore++; // +1 for back-bending more than few degrees
+            }
         }
-    }
-    
-    // Check for twisting of more degrees than bendingThreshold from straight ahead
-    const twist = (Math.abs(data.angles[ERGO_ANGLES.HEAD_TWIST]) > REBA_CONFIG.neckTwistAngleThresholds[0]);
+        
+        // Check for twisting of more degrees than bendingThreshold from straight ahead
+        const twist = (Math.abs(data.angles[ERGO_ANGLES.HEAD_TWIST]) > REBA_CONFIG.neckTwistAngleThresholds[0]);
 
-    // +1 for twisting or side-bending
-    if (sideBend || twist) {
-        neckScore++; 
-    }
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            neckScore++; 
+        }
 
-    //console.log(`Neck: bendAngle=${data.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
-    
-    neckScore = clamp(neckScore, 1, REBA_CONFIG.neckScoreLevels[2] - 1);
+        //console.log(`Neck: bendAngle=${data.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; neckScore=${neckScore}`);
+        
+        neckScore = clamp(neckScore, 1, REBA_CONFIG.neckScoreLevels[2] - 1);
 
-    if (neckScore < REBA_CONFIG.neckScoreLevels[0]) {
-        neckColor = MotionStudyColors.green;
-    } else if (neckScore < REBA_CONFIG.neckScoreLevels[1]) {
-        neckColor = MotionStudyColors.yellow;
-    } else {
-        neckColor = MotionStudyColors.red;
+        if (neckScore < REBA_CONFIG.neckScoreLevels[0]) {
+            neckColor = MotionStudyColors.green;
+        } else if (neckScore < REBA_CONFIG.neckScoreLevels[1]) {
+            neckColor = MotionStudyColors.yellow;
+        } else {
+            neckColor = MotionStudyColors.red;
+        }
     }
     
     [JOINTS.NECK,
@@ -177,48 +169,50 @@ function trunkReba(data) {
     let trunkScore = 1;
     let trunkColor = MotionStudyColors.undefined;
     
-    // Comparisons should be relative to directions determined by hips
-    const trunkUp = data.orientations.trunk.up;
-    // all vectors are normalised, so dot() == cos(angle between vectors) 
-    const forwardBendingAlignment = trunkUp.clone().dot(data.orientations.hips.forward);
-    const backwardBendingAlignment = trunkUp.clone().dot(data.orientations.hips.forward.clone().negate());
-    const rightBendingAlignment = trunkUp.clone().dot(data.orientations.hips.right);
-    const leftBendingAlignment = trunkUp.clone().dot(data.orientations.hips.right.clone().negate());
-    
-    // Check for bending
-    let sideBend = false;
-    if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[0]) {
-        trunkScore++; // +1 for greater than 5 degrees (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
-        if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[1]) {
-            trunkScore++; // +1 for greater than 20 degrees
-            // check for side-bending only when above some overall bending threshold
-            // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
-            sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
-                        (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
-            if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[2]) {
-                trunkScore++; // +1 for greater than 60 degrees
+    if (data.angles.hasOwnProperty(ERGO_ANGLES.TRUNK_BEND) && data.angles.hasOwnProperty(ERGO_ANGLES.TRUNK_TWIST)) {
+        // Comparisons should be relative to directions determined by hips
+        const trunkUp = data.orientations.trunk.up;
+        // all vectors are normalised, so dot() == cos(angle between vectors) 
+        const forwardBendingAlignment = trunkUp.clone().dot(data.orientations.hips.forward);
+        const backwardBendingAlignment = trunkUp.clone().dot(data.orientations.hips.forward.clone().negate());
+        const rightBendingAlignment = trunkUp.clone().dot(data.orientations.hips.right);
+        const leftBendingAlignment = trunkUp.clone().dot(data.orientations.hips.right.clone().negate());
+        
+        // Check for bending
+        let sideBend = false;
+        if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[0]) {
+            trunkScore++; // +1 for greater than 5 degrees (not in standard REBA but small deviation from upright 0 deg is needed to account for imperfection of measurement)
+            if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[1]) {
+                trunkScore++; // +1 for greater than 20 degrees
+                // check for side-bending only when above some overall bending threshold
+                // true when above +-45 deg from hip forward or hip backward direction (when looking from above) 
+                sideBend = ((forwardBendingAlignment < rightBendingAlignment || forwardBendingAlignment < leftBendingAlignment) && 
+                            (backwardBendingAlignment < rightBendingAlignment || backwardBendingAlignment < leftBendingAlignment));
+                if (data.angles[ERGO_ANGLES.TRUNK_BEND] > REBA_CONFIG.trunkFrontBendAngleThresholds[2]) {
+                    trunkScore++; // +1 for greater than 60 degrees
+                }
             }
         }
-    }
-    
-    // Check for twisting of more than twistThreshold from straight ahead
-    const twist = (Math.abs(data.angles[ERGO_ANGLES.TRUNK_TWIST]) > REBA_CONFIG.trunkTwistAngleThresholds[0]);
+        
+        // Check for twisting of more than twistThreshold from straight ahead
+        const twist = (Math.abs(data.angles[ERGO_ANGLES.TRUNK_TWIST]) > REBA_CONFIG.trunkTwistAngleThresholds[0]);
 
-    // +1 for twisting or side-bending
-    if (sideBend || twist) {
-        trunkScore++; 
-    }
+        // +1 for twisting or side-bending
+        if (sideBend || twist) {
+            trunkScore++; 
+        }
 
-    //console.log(`Trunk: bendAngle=${data.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
-    
-    trunkScore = clamp(trunkScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
+        //console.log(`Trunk: bendAngle=${data.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg;  twistAngle=${data.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg; sideBend=${sideBend}; twist=${twist}; trunkScore=${trunkScore}`);
+        
+        trunkScore = clamp(trunkScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
 
-    if (trunkScore < REBA_CONFIG.trunkScoreLevels[0]) {
-        trunkColor = MotionStudyColors.green;
-    } else if (trunkScore < REBA_CONFIG.trunkScoreLevels[1]) {
-        trunkColor = MotionStudyColors.yellow;
-    } else {
-        trunkColor = MotionStudyColors.red;
+        if (trunkScore < REBA_CONFIG.trunkScoreLevels[0]) {
+            trunkColor = MotionStudyColors.green;
+        } else if (trunkScore < REBA_CONFIG.trunkScoreLevels[1]) {
+            trunkColor = MotionStudyColors.yellow;
+        } else {
+            trunkColor = MotionStudyColors.red;
+        }
     }
     
     [JOINTS.CHEST,

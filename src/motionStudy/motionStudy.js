@@ -11,6 +11,8 @@ import {
 } from './utils.js';
 import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
 import {makeTextInput} from '../utilities/makeTextInput.js';
+import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
+import {HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -773,33 +775,210 @@ export class MotionStudy {
         this.updatePoseDataExportLink();
     }
 
-    updatePinnedRegionCardsExportLink() {
-        let header = [
-            'label',
-            'start', 'end', 'duration seconds', 'distance meters',
-            'reba avg', 'reba min', 'reba max',
-            'accel avg', 'accel min', 'accel max',
-        ];
-        let lines = [header];
-        for (let regionCard of this.pinnedRegionCards) {
+    aggregateRegionCardSummaryValues(regionCards) {
+        if (regionCards.length === 0) {
+            return {};
+        }
+
+        // initialize the object with aggregated stats
+        let result = {
+            startTime: regionCards[0].startTime,
+            endTime: regionCards[0].endTime,
+            durationMs: 0,
+            distanceMm: 0,
+            graphSummaryValues: {}
+        };
+
+        ['Accel', 'REBA', 'MURI'].forEach(name => {
+            result.graphSummaryValues[name] = {
+                average: 0,
+                minimum: regionCards[0].graphSummaryValues[name].minimum,
+                maximum: regionCards[0].graphSummaryValues[name].maximum,
+                sum: 0,
+                count: 0
+            };
+        });
+
+        Object.values(MURI_SCORES).forEach(scoreName => {
+            let name = 'MURI ' + scoreName;
+            result.graphSummaryValues[name] = {
+                average: 0,
+                minimum: regionCards[0].graphSummaryValues[name].minimum,
+                maximum: regionCards[0].graphSummaryValues[name].maximum,
+                sum: 0,
+                count: 0,
+                levelCounts: new Array(MURI_CONFIG.scoreWeights.length).fill(0),
+                levelDurations: new Array(MURI_CONFIG.scoreWeights.length + 1).fill(0),
+                levelDurationPercentages: new Array(MURI_CONFIG.scoreWeights.length + 1).fill(0)
+            };
+        });
+
+        // aggregate values which can be summed or min/max can be calculated
+        for (let regionCard of regionCards) {
             if (regionCard.poses.length === 0) {
                 continue;
             }
 
-            lines.push([
+            if (regionCard.startTime < result.startTime) {
+                result.startTime = regionCard.startTime;
+            }
+            if (regionCard.endTime > result.endTime) {
+                result.endTime = regionCard.endTime;
+            }
+            result.durationMs += regionCard.durationMs;
+            result.distanceMm += regionCard.distanceMm;
+        
+            ['Accel', 'REBA', 'MURI'].forEach(name => {
+                if (regionCard.graphSummaryValues[name].minimum < result.graphSummaryValues[name].minimum) {
+                    result.graphSummaryValues[name].minimum = regionCard.graphSummaryValues[name].minimum;
+                }
+                if (regionCard.graphSummaryValues[name].maximum > result.graphSummaryValues[name].maximum) {
+                    result.graphSummaryValues[name].maximum = regionCard.graphSummaryValues[name].maximum;
+                }
+                result.graphSummaryValues[name].sum += regionCard.graphSummaryValues[name].sum;
+                result.graphSummaryValues[name].count += regionCard.graphSummaryValues[name].count;
+            });
+
+            Object.values(MURI_SCORES).forEach(scoreName => {
+                let key = 'MURI ' + scoreName;
+                if (regionCard.graphSummaryValues[key].minimum < result.graphSummaryValues[key].minimum) {
+                    result.graphSummaryValues[key].minimum = regionCard.graphSummaryValues[key].minimum;
+                }
+                if (regionCard.graphSummaryValues[key].maximum > result.graphSummaryValues[key].maximum) {
+                    result.graphSummaryValues[key].maximum = regionCard.graphSummaryValues[key].maximum;
+                }
+                result.graphSummaryValues[key].sum += regionCard.graphSummaryValues[key].sum;
+                result.graphSummaryValues[key].count += regionCard.graphSummaryValues[key].count;
+                
+                result.graphSummaryValues[key].levelCounts.forEach((count, index, arr) => {
+                    arr[index] += regionCard.graphSummaryValues[key].levelCounts[index];
+                });
+            });
+        }
+
+        // compute averages
+        ['Accel', 'REBA', 'MURI'].forEach(name => {
+            result.graphSummaryValues[name].average = result.graphSummaryValues[name].sum / result.graphSummaryValues[name].count;
+        });
+
+        // compute averages and convert individual level counts to time durations and their percentages 
+        const singlePoseStandardTime =  1000 / HUMAN_TRACKING_FPS; // in ms
+        Object.values(MURI_SCORES).forEach(scoreName => {
+            let key = 'MURI ' + scoreName;
+            result.graphSummaryValues[key].average = result.graphSummaryValues[key].sum / result.graphSummaryValues[key].count;
+
+            // for more explanation, see RegionCard.getSummaryValuesExtended
+            let levelDurationSum = 0;
+            for (let i = 0; i < result.graphSummaryValues[key].levelCounts.length; i++) {
+                result.graphSummaryValues[key].levelDurations[i] = result.graphSummaryValues[key].levelCounts[i] * singlePoseStandardTime;
+                levelDurationSum += result.graphSummaryValues[key].levelDurations[i];
+            }
+            if (levelDurationSum > result.durationMs) {
+                // it is possible to go bit over 100% because of theoretic regular singlePoseStandardTime
+                // normalize durations to 100% of total step duration
+                result.graphSummaryValues[key].levelDurations.forEach((duration, index, arr) => {
+                    arr[index] = (duration / levelDurationSum) * result.durationMs;
+                });
+            }
+            else {
+                 // calculate duration when the value is unknown
+                 result.graphSummaryValues[key].levelDurations[result.graphSummaryValues[key].levelDurations.length - 1] = result.durationMs - levelDurationSum;
+            }
+            
+            result.graphSummaryValues[key].levelDurationPercentages.forEach((count, index, arr) => {
+                arr[index] = (result.graphSummaryValues[key].levelDurations[index] / result.durationMs) * 100;
+            }); 
+        });
+
+        return result; 
+    }
+
+    updatePinnedRegionCardsExportLink() {
+
+        // compute total stats over all region cards
+        // make a pseudo region card
+        let totalCard = this.aggregateRegionCardSummaryValues(this.pinnedRegionCards);
+        totalCard.getLabel = function() {
+            return 'All steps';
+        };
+        totalCard.poses = [1]; // dummy member
+        let regionCards = this.pinnedRegionCards.slice();
+        regionCards.push(totalCard);
+
+        let header = [
+            'label',
+            'start', 'end', 'duration seconds', 'distance meters',
+            'accel avg', 'accel min', 'accel max',
+            'reba avg', 'reba min', 'reba max', 'reba sum', 'reba count',
+            'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count'
+        ];
+
+        let sortedScoreWeights = MURI_CONFIG.scoreWeights.toSorted((a, b) => a - b);
+
+        Object.values(MURI_SCORES).forEach(scoreName => {
+            let titleTexts = ['muri ' + scoreName + ' avg',
+                          'muri ' + scoreName + ' sum',
+                          'muri ' + scoreName + ' count'];
+            // sample counts for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' count')
+            });
+            // time duration for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' duration')
+            });
+            titleTexts.push('muri ' + scoreName + ' unknown duration')
+            // time % for score levels
+            sortedScoreWeights.forEach(weight => {
+                titleTexts.push('muri ' + scoreName + ' level' + weight + ' %')
+            });
+            titleTexts.push('muri ' + scoreName + ' unknown %')
+
+            header.push(...titleTexts);
+        });
+
+        let lines = [header];
+        for (let regionCard of regionCards) {
+            if (regionCard.poses.length === 0) {
+                continue;
+            }
+
+            let values = [
                 regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
                 new Date(regionCard.endTime).toISOString(),
                 regionCard.durationMs / 1000,
                 regionCard.distanceMm / 1000,
-                regionCard.graphSummaryValues['REBA'].average,
-                regionCard.graphSummaryValues['REBA'].minimum,
-                regionCard.graphSummaryValues['REBA'].maximum,
                 regionCard.graphSummaryValues['Accel'].average,
                 regionCard.graphSummaryValues['Accel'].minimum,
                 regionCard.graphSummaryValues['Accel'].maximum,
-            ]);
+                regionCard.graphSummaryValues['REBA'].average,
+                regionCard.graphSummaryValues['REBA'].minimum,
+                regionCard.graphSummaryValues['REBA'].maximum,
+                regionCard.graphSummaryValues['REBA'].sum,
+                regionCard.graphSummaryValues['REBA'].count,
+                regionCard.graphSummaryValues['MURI'].average,
+                regionCard.graphSummaryValues['MURI'].minimum,
+                regionCard.graphSummaryValues['MURI'].maximum,
+                regionCard.graphSummaryValues['MURI'].sum,
+                regionCard.graphSummaryValues['MURI'].count,
+            ];
+
+            Object.values(MURI_SCORES).forEach(scoreName => {
+                let key = 'MURI ' + scoreName;
+                let selectedValuesForKey = [regionCard.graphSummaryValues[key].average, regionCard.graphSummaryValues[key].sum, regionCard.graphSummaryValues[key].count];
+                selectedValuesForKey.push(...regionCard.graphSummaryValues[key].levelCounts);
+                let levelDurationsSec = regionCard.graphSummaryValues[key].levelDurations.map(val => val / 1000);
+                selectedValuesForKey.push(...levelDurationsSec);
+                selectedValuesForKey.push(...regionCard.graphSummaryValues[key].levelDurationPercentages);
+                values.push(...selectedValuesForKey);
+            });
+
+            lines.push(values);
         }
+
+        
+
         let dataUrl = 'data:text/plain;charset=UTF-8,' + encodeURIComponent(lines.map(line => {
             return line.join(',');
         }).join('\n'));
@@ -823,6 +1002,7 @@ export class MotionStudy {
             let filteredPose = {
                 joints: {},
                 timestamp: pose.timestamp,
+                metadata: {}
             };
 
             for (const jointKey of Object.keys(pose.joints)) {
@@ -833,11 +1013,17 @@ export class MotionStudy {
                 delete filteredPose.joints[jointKey].rebaColor;
                 delete filteredPose.joints[jointKey].rebaColorOverall;
                 delete filteredPose.joints[jointKey].overallRebaColor;
+                delete filteredPose.joints[jointKey].muriColor;
                 delete filteredPose.joints[jointKey].position;
                 delete filteredPose.joints[jointKey].acceleration;
                 delete filteredPose.joints[jointKey].velocity;
                 delete filteredPose.joints[jointKey].confidence;
             }
+
+            // export muri related data 
+            filteredPose.metadata.ergonomics = pose.metadata.ergonomics;
+            filteredPose.metadata.muriScores = pose.metadata.muriScores;
+            filteredPose.metadata.overallMuriScore = pose.metadata.overallMuriScore; 
 
             poseStrings.push(JSON.stringify(filteredPose));
             poseStrings.push(',');

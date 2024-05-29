@@ -14,7 +14,8 @@ function colorFromValue(value) {
 }
 
 /**
- * RebaLens is a lens that calculates the REBA score for each bone in the pose history.
+ * ValueAddWasteTimeLens is a lens that stores value/waste assessement of activity at the current timestamp.
+ * This assessement is done by a analyst and is marked manually.
  */
 export class ValueAddWasteTimeLens extends MotionStudyLens {
     /**

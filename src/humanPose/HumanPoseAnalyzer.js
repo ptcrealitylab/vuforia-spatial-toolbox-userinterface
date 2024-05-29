@@ -3,6 +3,7 @@ import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
+import {MuriLens} from "./MuriLens.js";
 import {ValueAddWasteTimeLens} from "./ValueAddWasteTimeLens.js";
 import {AccelerationLens} from "./AccelerationLens.js";
 import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
@@ -30,6 +31,7 @@ export class HumanPoseAnalyzer {
 
         this.rebaLens = new RebaLens();
         this.overallRebaLens = new OverallRebaLens();
+        this.muriLens = new MuriLens();
         this.valueAddWasteTimeLens = new ValueAddWasteTimeLens(this.motionStudy);
         this.accelerationLens = new AccelerationLens();
         this.poseObjectIdLens = new PoseObjectIdLens();
@@ -38,6 +40,7 @@ export class HumanPoseAnalyzer {
         this.lenses = [
             this.rebaLens,
             this.overallRebaLens,
+            this.muriLens,
             this.valueAddWasteTimeLens,
             this.accelerationLens,
             this.poseObjectIdLens

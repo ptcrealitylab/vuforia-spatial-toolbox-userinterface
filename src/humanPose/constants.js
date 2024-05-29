@@ -559,3 +559,6 @@ export const ERGO_OFFSETS = {
     PELVIS_TO_RIGHT_WRIST: 'pelvis_to_right_wrist_offset',
     LEFT_TO_RIGHT_FOOT: 'left_to_right_foot_offset'
 };
+
+/** This is given by the method and settings in mobile app. */
+export const HUMAN_TRACKING_FPS = 10;  // fps  
