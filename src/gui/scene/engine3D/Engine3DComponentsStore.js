@@ -4,7 +4,12 @@ import DictionaryComponentStore from "/objectDefaultFiles/scene/DictionaryCompon
 import TransformComponentNode from "/objectDefaultFiles/scene/TransformComponentNode.js";
 import Engine3DTransformComponentStore from "./Engine3DTransformComponentStore.js";
 
+/**
+ * @typedef {import("/objectDefaultFiles/scene/EntityNode.js").default} EntityNode
+ */
+
 class Engine3DComponentsStore extends DictionaryStore {
+    /** @type {EntityNode} */
     #entityNode;
     
     constructor(entityNode) {
@@ -18,16 +23,21 @@ class Engine3DComponentsStore extends DictionaryStore {
      * @param {BaseNodeState} state
      * @returns {ComponentNode|undefined}
      */
-    create(_key, state) {
+    create(key, state) {
         if (state.hasOwnProperty("type")) {
             let ret = this.#entityNode.getEntity().createComponent(state);
             if (!ret && state.type.startsWith("Object.Component")) {
                 if (state.type === TransformComponentNode.TYPE) {
-                    const store = new Engine3DTransformComponentStore();
-                    store.setEntityNode(this.#entityNode);
-                    ret = new TransformComponentNode(store);
+                    ret = new TransformComponentNode(new Engine3DTransformComponentStore());
                 } else {
                     ret = new DictionaryComponentNode(new DictionaryComponentStore(), state.type);
+                }
+            }
+            if (ret) {
+                ret.setEntityNode(this.#entityNode);
+                const entity = this.#entityNode.getEntity();
+                if (entity) {
+                    entity.setComponent(key, ret.getComponent());
                 }
             }
             return ret;

@@ -1,29 +1,31 @@
 import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js";
 import Vector3Node from "/objectDefaultFiles/scene/Vector3Node.js";
+import Vector3Store from "/objectDefaultFiles/scene/Vector3Store.js";
 import QuaternionNode from "/objectDefaultFiles/scene/QuaternionNode.js";
-import Engine3DPositionStore from "./Engine3DPositionStore.js";
-import Engine3DRotationStore from "./Engine3DRotationStore.js";
-import Engine3DScaleStore from "./Engine3DScaleStore.js";
+import QuaternionStore from "/objectDefaultFiles/scene/QuaternionStore.js";
 
 /**
  * @typedef {import("/objectDefaultFiles/scene/TransformComponentNode.js").default} TransformComponentNode
  */
 
 class Engine3DTransformComponentStore extends ObjectStore {
-    /** @type {Engine3DPositionStore} */
+    /** @type {Engine3DPositionNode} */
     #position;
 
-    /** @type {Engine3DRotationStore} */
+    /** @type {Engine3DRotationNode} */
     #rotation;
 
-    /** @type {Engine3DScaleStore} */
+    /** @type {Engine3DScaleNode} */
     #scale;
 
-    constructor() {
+    /** @type {EntityInterface} */
+    #entity;
+
+    constructor(position, rotation, scale) {
         super();
-        this.#position = new Engine3DPositionStore();
-        this.#rotation = new Engine3DRotationStore();
-        this.#scale = new Engine3DScaleStore();
+        this.#position = new Vector3Node(new Vector3Store(position));
+        this.#rotation = new QuaternionNode(new QuaternionStore(rotation));
+        this.#scale = new Vector3Node(new Vector3Store(scale));
     }
 
     /**
@@ -33,9 +35,9 @@ class Engine3DTransformComponentStore extends ObjectStore {
      */
     getProperties(_thisNode) {
         return {
-            "position": new Vector3Node(this.#position),
-            "rotation": new QuaternionNode(this.#rotation),
-            "scale": new Vector3Node(this.#scale)
+            "position": this.#position,
+            "rotation": this.#rotation,
+            "scale": this.#scale
         };
     }
 
@@ -44,10 +46,23 @@ class Engine3DTransformComponentStore extends ObjectStore {
      * @param {EntityNode} entityNode 
      */
     setEntityNode(entityNode) {
-        const entity = entityNode.getEntity();
-        this.#position.setEntity(entity);
-        this.#rotation.setEntity(entity);
-        this.#scale.setEntity(entity);
+        this.#entity = entityNode.getEntity();
+    }
+
+    update() {
+        if (this.#entity.getPosition() !== this.#position.getValue()) {
+            this.#entity.setPosition(this.#position.getValue());
+        }
+        if (this.#entity.getRotation() !== this.#rotation.getValue()) {
+            this.#entity.setRotation(this.#rotation.getValue());
+        }
+        if (this.#entity.getScale() !== this.#scale.getValue()) {
+            this.#entity.setScale(this.#scale.getValue());
+        }
+    }
+
+    getComponent() {
+        return this;
     }
 }
 

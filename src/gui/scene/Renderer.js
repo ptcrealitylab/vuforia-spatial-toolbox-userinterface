@@ -242,6 +242,7 @@ class Renderer {
     }
 
     render() {
+        this.#tools.update();
         this.#renderer.render(this.#scene, this.#camera.getInternalObject());
     }
 

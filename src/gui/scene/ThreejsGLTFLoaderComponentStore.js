@@ -1,5 +1,6 @@
 import {GLTFLoader} from '../../../thirdPartyCode/three/GLTFLoader.module.js';
 import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js";
+import ValueStore from "/objectDefaultFiles/scene/ValueStore.js";
 import VersionedNode from "/objectDefaultFiles/scene/VersionedNode.js";
 import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
 import Engine3DEntityStore from './engine3D/Engine3DEntityStore.js';
@@ -14,15 +15,20 @@ const gltfLoader = new GLTFLoader();
 class ThreejsGLTFLoaderComponentStore extends ObjectStore {
     #node;
     #url;
+    #loadedVersion;
+    #forceLoad;
 
     constructor() {
         super();
         this.#node = null;
-        this.#url = "";
+        this.#url = new VersionedNode(new ValueStore(""));
+        this.#loadedVersion = -1;
+        this.#forceLoad = false;
     }
 
     setEntityNode(node) {
         this.#node = node;
+        this.#forceLoad = true;
     }
 
     /**
@@ -32,16 +38,38 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
      */
     getProperties(_thisNode) {
         return {
-            "url": new VersionedNode({get: () => {return this.#url;}, set: (value) => this.loadModel(value)})
+            "url": this.#url
         };
     }
 
-    async loadModel(url) {
-        this.#url = url;
-        const model = await new Promise((resolve, reject) => {
-            gltfLoader.load(url, (modelData) => resolve(modelData), null, reject);
-        });
-        this.#node.setChild(model.scene.name, new EntityNode(new Engine3DEntityStore(new ThreejsEntity(model.scene))));
+    async update() {
+        if ((this.#loadedVersion < this.#url.getVersion()) || this.#forceLoad) {
+            this.#forceLoad = false;
+            this.#loadedVersion = this.#url.getVersion();
+            const model = await new Promise((resolve, reject) => {
+                gltfLoader.load(this.#url.get(), (modelData) => resolve(modelData), null, reject);
+            });
+            const modelNode = new EntityNode(new Engine3DEntityStore(new ThreejsEntity(model.scene)));
+            ThreejsGLTFLoaderComponentStore.createChildEntities(modelNode);
+            this.#node.setChild("Scene", modelNode);
+        }
+    }
+
+    /** 
+     * @param {EntityNode} entityNode 
+     */
+    static createChildEntities(entityNode) {
+        const object3D = entityNode.getEntity().getInternalObject();
+        const children = object3D.children;
+        for (let i = 0; i < children.length; ++i) {
+            const childNode = new EntityNode(new Engine3DEntityStore(new ThreejsEntity(children[i])));
+            ThreejsGLTFLoaderComponentStore.createChildEntities(childNode);
+            entityNode.setChild(`${i}`, childNode);
+        }
+    }
+
+    getComponent() {
+        return this;
     }
 }
 

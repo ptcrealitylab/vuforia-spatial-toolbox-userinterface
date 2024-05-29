@@ -9,11 +9,15 @@ class ThreejsEntity {
     #object;
 
     /** @type {{order: number, component: ThreejsComponent}[]} */
-    #components
+    #components;
+
+    /** @type {{[key: string]: ThreejsEntity}} */
+    #childEntities;
 
     constructor(object) {
         this.#object = object;
         this.#components = [];
+        this.#childEntities = {};
     }
 
     /**
@@ -46,10 +50,6 @@ class ThreejsEntity {
 
     setScale(scale) {
         this.#object.scale.set(scale.x, scale.y, scale.z);
-    }
-
-    updateMatrix() {
-        this.#object.updateMatrix();
     }
 
     /**
@@ -85,20 +85,30 @@ class ThreejsEntity {
      */
     updateComponents() {
         for (let entry of this.#components) {
-            entry.component.update(this.#object);
+            entry.component.update();
+        }
+        for (let child of Object.values(this.#childEntities)) {
+            child.updateComponents();
         }
     }
 
     /**
      * 
-     * @param {ThreejsEntity|THREE.Object3D} child 
+     * @param {string} key 
+     * @param {ThreejsEntity} child 
      */
-    setChild(_key, child) {
-        if (child instanceof ThreejsEntity) {
-            this.#object.add(child.getInternalObject());
-        } else {
-            this.#object.add(child);
-        }
+    setChild(key, child) {
+        this.#childEntities[key] = child;
+        this.#object.add(child.getInternalObject());
+    }
+
+    /**
+     * 
+     * @param {string} key 
+     */
+    removeChild(key) {
+        this.#object.remove(this.#childEntities[key].getInternalObject());
+        delete this.#childEntities[key];
     }
 
     /**
@@ -115,13 +125,12 @@ class ThreejsEntity {
     /**
      * 
      * @param {ValueDict} state 
-     * @param {EntityNode} node 
      * @returns {ComponentInterface}
      */
-    createComponent(state, node) {
+    createComponent(state) {
         if (state.hasOwnProperty("type")) {
             if (state.type === GLTFLoaderComponentNode.TYPE) {
-                return new GLTFLoaderComponentNode(new ThreejsGLTFLoaderComponentStore(this, node));
+                return new GLTFLoaderComponentNode(new ThreejsGLTFLoaderComponentStore());
             }
         }
         return null;
