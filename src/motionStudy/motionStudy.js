@@ -1020,7 +1020,7 @@ export class MotionStudy {
                 delete filteredPose.joints[jointKey].confidence;
             }
 
-            // eport muri related data 
+            // export muri related data 
             filteredPose.metadata.ergonomics = pose.metadata.ergonomics;
             filteredPose.metadata.muriScores = pose.metadata.muriScores;
             filteredPose.metadata.overallMuriScore = pose.metadata.overallMuriScore; 

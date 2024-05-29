@@ -45,8 +45,21 @@ const MURI_COLOR_START = MotionStudyColors.fade(MotionStudyColors.green);
 const MURI_COLOR_END = MotionStudyColors.fade(MotionStudyColors.red);
 
 export const MIN_MURI_SCORE = 0
-// Note: calculate precisely based on final calculation of overall muri score.
-export const MAX_MURI_SCORE = 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* trunk + head */ + 2 * 6 * MURI_CONFIG_DEFAULT.scoreWeights[2] /* arms */ + 1 * MURI_CONFIG_DEFAULT.scoreWeights[3] /* legs */ // == 41 
+// 3 strain types are associated with the trunk and their maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[2]
+const MAX_MURI_SCORE_TRUNK = 3 * MURI_CONFIG_DEFAULT.scoreWeights[2];
+// 3 strain types are associated with the head and their maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[2]
+const MAX_MURI_SCORE_HEAD = 3 * MURI_CONFIG_DEFAULT.scoreWeights[2];
+// Single compound score is associated with the legs and the maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[3]
+const MAX_MURI_SCORE_LEGS = MURI_CONFIG_DEFAULT.scoreWeights[3];
+// 2 strain types are associated with the upper arm and their maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[2]
+const MAX_MURI_SCORE_UPPER_ARM = 2 * MURI_CONFIG_DEFAULT.scoreWeights[2];
+// 2 strain types are associated with the lower arm and their maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[2]
+const MAX_MURI_SCORE_LOWER_ARM = 2 * MURI_CONFIG_DEFAULT.scoreWeights[2];
+// 2 strain types are associated with the hand their maximum score level is MURI_CONFIG_DEFAULT.scoreWeights[2]
+const MAX_MURI_SCORE_HAND = 2 * MURI_CONFIG_DEFAULT.scoreWeights[2];
+// Note: MAX_MURI_SCORE needs to be adjusted when the calculation overall muri score changes.
+export const MAX_MURI_SCORE = MAX_MURI_SCORE_TRUNK + MAX_MURI_SCORE_HEAD + MAX_MURI_SCORE_LEGS +
+                              2 * (MAX_MURI_SCORE_UPPER_ARM + MAX_MURI_SCORE_LOWER_ARM + MAX_MURI_SCORE_HAND) // == 41 
 
 
 /** Score types/names for individual strains across body parts . */
