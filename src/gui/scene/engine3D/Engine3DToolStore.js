@@ -1,10 +1,10 @@
 import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js"
 import EntitiesNode from "/objectDefaultFiles/scene/EntitiesNode.js";
 import ComponentsNode from "/objectDefaultFiles/scene/ComponentsNode.js";
-import Engine3DEntitiesStore from "./Engine3DEntitiesStore.js";
-import Engine3DComponentsStore from "./Engine3DComponentsStore.js";
+import EntitiesStore from "/objectDefaultFiles/scene/EntitiesStore.js";
+import ComponentsStore from "/objectDefaultFiles/scene/ComponentsStore.js";
 import TransformComponentNode from "/objectDefaultFiles/scene/TransformComponentNode.js";
-import Engine3DTransformComponentStore from "./Engine3DTransformComponentStore.js";
+import TransformComponentStore from "/objectDefaultFiles/scene/TransformComponentStore.js";
 
 /**
  * @typedef {import("../ToolManager.js").ToolProxy} ToolProxy
@@ -30,8 +30,8 @@ class Engine3DToolStore extends ObjectStore {
      */
     getProperties(thisNode) {
         const ret = {
-            "children": new EntitiesNode(new Engine3DEntitiesStore(thisNode)),
-            "components": new ComponentsNode(new Engine3DComponentsStore(thisNode))
+            "children": new EntitiesNode(new EntitiesStore(thisNode)),
+            "components": new ComponentsNode(new ComponentsStore(thisNode))
         };
         return ret;
     }
@@ -42,7 +42,7 @@ class Engine3DToolStore extends ObjectStore {
 
     createTransform() {
         const entity = this.#toolProxy.getEntity();
-        return new TransformComponentNode(new Engine3DTransformComponentStore(entity.getPosition(), entity.getRotation(), entity.getScale()));
+        return new TransformComponentNode(new TransformComponentStore(entity.getPosition(), entity.getRotation(), entity.getScale()));
     }
 }
 

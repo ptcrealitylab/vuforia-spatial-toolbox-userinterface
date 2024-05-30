@@ -1,5 +1,3 @@
-import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import {GLTFLoader} from '../../../thirdPartyCode/three/GLTFLoader.module.js';
 import {ToolRenderSocket} from "/objectDefaultFiles/scene/ToolRenderStream.js";
 import {IFrameMessageInterface} from "/objectDefaultFiles/scene/MessageInterface.js";
 import WorldNode from "/objectDefaultFiles/scene/WorldNode.js";
@@ -11,6 +9,7 @@ import ThreejsEntity from "./ThreejsEntity.js";
 
 /**
  * @typedef {import('./AnchoredGroup.js').default} AnchoredGroup 
+ * @typedef {import('/objectDefaultFiles/scene/AnchoredGroupNode.js').default} AnchoredGroupNode 
  * 
  * @typedef {{type: string, properties: Object.<string, AnchoredGroupObjectState>}} WorldObjectState
  * @typedef {{type: string, properties: Object.<string, ToolsRootObjectState}} AnchoredGroupObjectState
@@ -90,6 +89,10 @@ class ToolProxy {
         this.#handler = new ToolProxyHandler(this, this.#worker);
     }
 
+    /**
+     * 
+     * @returns {ThreejsEntity}
+     */
     getEntity() {
         return this.#rootEntity;
     }
@@ -132,9 +135,6 @@ class ToolProxy {
     sendUpdate(delta) {
         if (this.#handler.isInitialized() && this.#checkPath(delta, ["properties", "threejsContainer", "properties", "tools", "properties", this.#toolId])) {
             const toolChanges = delta.properties.threejsContainer.properties.tools.properties[this.#toolId];
-            if (toolChanges.type) {
-                return; // tool creation is handled by tool initialisation get/set
-            }
             const toolDelta = this.#createDeltaForTool(delta, ["properties", "threejsContainer", "properties", "tools", "properties", this.#toolId], toolChanges);
             this.#handler.sendUpdate(toolDelta);
         } 
@@ -180,8 +180,8 @@ class ToolManager {
      * @param {string} toolId 
      */
     remove(toolId) {
-        this.#toolsRootNode.getListener().getToolsRoot().remove(toolId);
         if (this.#toolProxies.hasOwnProperty(toolId)) {
+            this.#toolsRootNode.remove(toolId);
             delete this.#toolProxies[toolId];
         }
     }

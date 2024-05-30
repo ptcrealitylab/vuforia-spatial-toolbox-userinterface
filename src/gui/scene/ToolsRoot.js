@@ -1,6 +1,7 @@
 import * as THREE from "../../../thirdPartyCode/three/three.module.js"
 
 class ToolsRoot {
+    /** @type {THREE.Group} */
     #root;
 
     constructor() {
@@ -8,6 +9,9 @@ class ToolsRoot {
         this.#root.name = "tools";
     }
 
+    /**
+     * @param {string} toolId 
+     */
     remove(toolId) {
         const tool = this.#root.getObjectByName(toolId);
         if (tool) {
@@ -15,6 +19,11 @@ class ToolsRoot {
         }
     }
 
+    /**
+     * 
+     * @param {string} toolId 
+     * @returns {THREE.Group}
+     */
     create(toolId) {
         const tool = new THREE.Group();
         tool.name = toolId;
@@ -22,6 +31,10 @@ class ToolsRoot {
         return tool;
     }
 
+    /**
+     * 
+     * @returns {THREE.Group}
+     */
     getInternalObject() {
         return this.#root;
     }
