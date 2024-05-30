@@ -927,11 +927,19 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         gsActive = active;
     }
     let gsRaycast = false;
+    let gsCanRaycast = true;
     function isGSRaycast() {
         return gsRaycast;
     }
     function gsToggleRaycast(active) {
-        gsRaycast = active;
+        if (gsCanRaycast) {
+            gsRaycast = active;
+        } else {
+            gsRaycast = false;
+        }
+    }
+    function gsCanToggleRaycast(active) {
+        gsCanRaycast = active;
     }
     let gsPosition = null;
     function gsSetPosition(position) {
@@ -1164,6 +1172,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     exports.gsToggleActive = gsToggleActive;
     exports.isGSRaycast = isGSRaycast;
     exports.gsToggleRaycast = gsToggleRaycast;
+    exports.gsCanToggleRaycast = gsCanToggleRaycast;
     exports.gsSetPosition = gsSetPosition;
     exports.getCursorRelativeToWorldObject = getCursorRelativeToWorldObject;
     exports.getOrientedCursorRelativeToWorldObject = getOrientedCursorRelativeToWorldObject;
