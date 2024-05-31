@@ -89,6 +89,10 @@ class ThreejsEntity extends BaseEntity {
         }
         return null;
     }
+
+    onDelete() {
+        this.#object.removeFromParent();
+    }
 }
 
 export default ThreejsEntity;

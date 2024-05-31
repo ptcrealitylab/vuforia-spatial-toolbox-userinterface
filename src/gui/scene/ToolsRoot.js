@@ -31,6 +31,10 @@ class ToolsRoot {
         return tool;
     }
 
+    onDelete() {
+        this.#root.removeFromParent();
+    }
+
     /**
      * 
      * @returns {THREE.Group}

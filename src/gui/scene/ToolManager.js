@@ -10,11 +10,8 @@ import ThreejsEntity from "./ThreejsEntity.js";
 /**
  * @typedef {import('./AnchoredGroup.js').default} AnchoredGroup 
  * @typedef {import('/objectDefaultFiles/scene/AnchoredGroupNode.js').default} AnchoredGroupNode 
- * 
- * @typedef {{type: string, properties: Object.<string, AnchoredGroupObjectState>}} WorldObjectState
- * @typedef {{type: string, properties: Object.<string, ToolsRootObjectState}} AnchoredGroupObjectState
- * @typedef {{type: string, properties: Object.<string, ToolObjectState}} ToolsRootObjectState
- * @typedef {{type: string, properties: Object.<string, *>}} ToolObjectState
+ * @typedef {import('/objectDefaultFiles/scene/WorldNode.js').WorldNodeState} WorldNodeState
+ * @typedef {import('/objectDefaultFiles/scene/WorldNode.js').WorldNodeDelta} WorldNodeDelta
  */
 
 class ToolProxyHandler {
@@ -49,12 +46,16 @@ class ToolProxyHandler {
     }
 
     onReceivedUpdate(delta) {
-        console.log("Composition layer: ", delta);
+        console.log(`${this.#toolProxy.getToolId()} -> composition layer: `, delta);
         this.#toolProxy.setWorldChanges(delta);
     }
 
     isInitialized() {
         return this.#isInitialized;
+    }
+
+    onDelete() {
+        this.#socket.onDelete();
     }
 }
 
@@ -87,6 +88,14 @@ class ToolProxy {
         this.#worker = worker;
         this.#rootEntity = new ThreejsEntity(rootGroup);
         this.#handler = new ToolProxyHandler(this, this.#worker);
+    }
+
+    /**
+     * 
+     * @returns {string}
+     */
+    getToolId() {
+        return this.#toolId;
     }
 
     /**
@@ -143,6 +152,10 @@ class ToolProxy {
     updateComponents() {
         this.#rootEntity.updateComponents();
     }
+
+    onDelete() {
+        this.#handler.onDelete();
+    }
 }
 
 class ToolManager {
@@ -167,8 +180,8 @@ class ToolManager {
      */
     constructor(renderer) {
         this.#renderer = renderer;
-        realityEditor.device.registerCallback('onVehicleDeleted', (params) => this.onVehicleDeleted(params));
-        realityEditor.network.registerCallback('onVehicleDeleted', (params) => this.onVehicleDeleted(params));
+        realityEditor.device.registerCallback('vehicleDeleted', (params) => this.onVehicleDeleted(params));
+        realityEditor.network.registerCallback('vehicleDeleted', (params) => this.onVehicleDeleted(params));
         this.#worldNode = new WorldNode(new Engine3DWorldStore(this.#renderer));
         this.#anchoredGroupNode = this.#worldNode.get("threejsContainer");
         this.#toolsRootNode = this.#anchoredGroupNode.get("tools");
@@ -181,7 +194,8 @@ class ToolManager {
      */
     remove(toolId) {
         if (this.#toolProxies.hasOwnProperty(toolId)) {
-            this.#toolsRootNode.remove(toolId);
+            this.#toolsRootNode.delete(toolId);
+            this.#toolProxies[toolId].onDelete();
             delete this.#toolProxies[toolId];
         }
     }
@@ -191,7 +205,10 @@ class ToolManager {
      * @param {string} toolId 
      */
     add(toolId) {
-        this.remove(toolId);
+        if (this.#toolProxies.hasOwnProperty(toolId)) {
+            console.warn(`toolId already exist`);
+            return;
+        }
         const worker = globalDOMCache['iframe' + toolId];
         const toolRoot = this.#toolsRootNode.getListener().getToolsRoot().create(toolId);
         const toolProxy = new ToolProxy(this, toolId, worker, toolRoot);
@@ -220,7 +237,7 @@ class ToolManager {
     /**
      * 
      * @param {string} toolId 
-     * @returns {WorldObjectState}
+     * @returns {WorldNodeState}
      */
     getStateForTool(toolId) {
         return this.#worldNode.getStateForTool(toolId);
@@ -228,7 +245,7 @@ class ToolManager {
 
     /**
      * 
-     * @param {WorldObjectDelta} delta 
+     * @param {WorldNodeDelta} delta 
      */
     setChanges(delta) {
         this.#worldNode.setChanges(delta);
