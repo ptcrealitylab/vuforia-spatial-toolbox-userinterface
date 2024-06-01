@@ -1,10 +1,13 @@
+import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import {ToolRenderSocket} from "/objectDefaultFiles/scene/ToolRenderStream.js";
 import {IFrameMessageInterface} from "/objectDefaultFiles/scene/MessageInterface.js";
 import WorldNode from "/objectDefaultFiles/scene/WorldNode.js";
 import Engine3DWorldStore from "./engine3D/Engine3DWorldStore.js";
 import Engine3DToolStore from "./engine3D/Engine3DToolStore.js";
 import ToolNode from "/objectDefaultFiles/scene/ToolNode.js";
+import TransformComponentNode from "/objectDefaultFiles/scene/TransformComponentNode.js";
 import ThreejsEntity from "./ThreejsEntity.js";
+import {setMatrixFromArray} from "./utils.js";
 
 
 /**
@@ -75,6 +78,12 @@ class ToolProxy {
     /** @type {ThreejsEntity} */
     #rootEntity;
 
+    /** @type {THREE.Matrix4|null} */
+    #lastToolMatrix;
+
+     /** @type {THREE.Matrix4|null} */
+     #lastToolsRootMatrix;
+
     /**
      * 
      * @param {ToolManager} manager
@@ -88,6 +97,8 @@ class ToolProxy {
         this.#worker = worker;
         this.#rootEntity = new ThreejsEntity(rootGroup);
         this.#handler = new ToolProxyHandler(this, this.#worker);
+        this.#lastToolMatrix = new THREE.Matrix4();
+        this.#lastToolsRootMatrix = new THREE.Matrix4();
     }
 
     /**
@@ -149,7 +160,37 @@ class ToolProxy {
         } 
     }
 
+    #updateMatrix() {
+        //const cursorMatThree = this.#rootEntity.getInternalObject().parent.parent.getObjectByName("spatialCursor indicator1");
+        //const cursorMat = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
+        const toolMat = new THREE.Matrix4();
+        const toolNode = realityEditor.sceneGraph.getSceneNodeById(this.#toolId);
+        setMatrixFromArray(toolMat, toolNode.worldMatrix);
+        const toolsRootMat = new THREE.Matrix4().copy(this.#rootEntity.getInternalObject().parent.matrixWorld);
+        
+       
+        if (!(toolMat.equals(this.#lastToolMatrix) || toolsRootMat.equals(this.#lastToolsRootMatrix))) {
+            this.#lastToolMatrix = toolMat;
+            this.#lastToolsRootMatrix = toolsRootMat;
+
+            const axisCorrectionMat = new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1);
+            const localToolMatrix = toolsRootMat.invert().multiply(toolMat).multiply(axisCorrectionMat);
+
+            const decomposedMatrix = {
+                position: new THREE.Vector3(),
+                rotation: new THREE.Quaternion(),
+                scale: new THREE.Vector3()
+            }
+            localToolMatrix.decompose(decomposedMatrix.position, decomposedMatrix.rotation, decomposedMatrix.scale);
+            const transformComponent = this.#rootEntity.getComponentByType(TransformComponentNode.TYPE);
+            transformComponent.setPosition(decomposedMatrix.position);
+            transformComponent.setRotation(decomposedMatrix.rotation);
+            transformComponent.setScale(decomposedMatrix.scale);
+        }
+    }
+
     updateComponents() {
+        this.#updateMatrix();
         this.#rootEntity.updateComponents();
     }
 
@@ -163,16 +204,16 @@ class ToolManager {
     #renderer;
 
     /** @type {WorldNode} */
-    #worldNode
+    #worldNode;
 
     /** @type {AnchoredGroupNode} */
-    #anchoredGroupNode
+    #anchoredGroupNode;
 
     /** @type {ToolsRootNode} */
-    #toolsRootNode
+    #toolsRootNode;
 
     /** @type {{[key: string]: ToolProxy} */
-    #toolProxies
+    #toolProxies;
 
     /**
      * 

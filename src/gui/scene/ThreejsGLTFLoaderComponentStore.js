@@ -75,10 +75,6 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
             entityNode.setChild(`${i}`, childNode);
         }
     }
-
-    getComponent() {
-        return this;
-    }
 }
 
 export default ThreejsGLTFLoaderComponentStore;

@@ -202,7 +202,7 @@ class Renderer {
      * @param {string} toolId 
      */
     addTool(toolId) {
-        this.#tools.add(toolId);
+        this.#tools.add(toolId, realityEditor.gui.threejsScene.getToolPosition(toolId));
     }
 
     /**

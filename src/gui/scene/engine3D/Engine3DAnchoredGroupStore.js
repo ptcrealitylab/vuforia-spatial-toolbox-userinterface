@@ -32,7 +32,7 @@ class Engine3DAnchoredGroupStore extends ObjectStore {
     }
 
     /**
-     * @param {AnchoredGroup} anchoredGroup 
+     * @param {Anchoredgroup} anchoredGroup 
      */
     setAnchoredGroup(anchoredGroup) {
         this.#anchoredGroup = anchoredGroup;
