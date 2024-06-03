@@ -1,6 +1,9 @@
 import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js"
 import AnchoredGroupNode from "/objectDefaultFiles/scene/AnchoredGroupNode.js"
 import Engine3DAnchoredGroupStore from "./Engine3DAnchoredGroupStore.js";
+import ToolsRootNode from "/objectDefaultFiles/scene/ToolsRootNode.js"
+import Engine3DToolsRootStore from "./Engine3DToolsRootStore.js";
+import ToolsRoot from "../ToolsRoot.js";
 
 /**
  * @typedef {import("/objectDefaultFiles/scene/ObjectNode.js").ObjectInterface} ObjectInterface
@@ -12,6 +15,8 @@ class Engine3DWorldStore extends ObjectStore {
     /** @type {Renderer} */
     #renderer;
 
+    #toolsRoot;
+
     /**
      * 
      * @param {Renderer} renderer 
@@ -19,6 +24,8 @@ class Engine3DWorldStore extends ObjectStore {
     constructor(renderer) {
         super();
         this.#renderer = renderer;
+        this.#toolsRoot = new ToolsRoot();
+        this.#renderer.getGlobalScale().getNode().add(this.#toolsRoot.getInternalObject());
     }
 
     /**
@@ -28,7 +35,8 @@ class Engine3DWorldStore extends ObjectStore {
      */
     getProperties(_thisNode) {
         return {
-            "threejsContainer": new AnchoredGroupNode(new Engine3DAnchoredGroupStore())
+            "threejsContainer": new AnchoredGroupNode(new Engine3DAnchoredGroupStore()),
+            "tools": new ToolsRootNode(new Engine3DToolsRootStore(this.#toolsRoot))
         };
     }
 }

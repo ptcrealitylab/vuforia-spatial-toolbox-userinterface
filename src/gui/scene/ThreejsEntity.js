@@ -22,28 +22,68 @@ class ThreejsEntity extends BaseEntity {
         return this.#object;
     }
 
+    /**
+     * 
+     * @returns {Vector3Value}
+     */
     getPosition() {
         return this.#object.position;
     }
 
+    /**
+     * 
+     * @param {Vector3Value} position 
+     */
     setPosition(position) {
         this.#object.position.set(position.x, position.y, position.z);
     }
     
+    /**
+     * 
+     * @returns {QuaternionValue}
+     */
     getRotation() {
         return this.#object.quaternion;
     }
 
+    /**
+     * 
+     * @param {QuaternionValue} rotation 
+     */
     setRotation(rotation) {
         this.#object.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
     }
 
+    /**
+     * 
+     * @returns {Vector3Value}
+     */
     getScale() {
         return this.#object.scale;
     }
 
+    /**
+     * 
+     * @param {Vector3Value} scale 
+     */
     setScale(scale) {
         this.#object.scale.set(scale.x, scale.y, scale.z);
+    }
+
+    /**
+     * 
+     * @param {boolean} isVisible 
+     */
+    setVisible(isVisible) {
+        this.#object.visible = isVisible;
+    }
+
+    /**
+     * 
+     * @returns {boolean}
+     */
+    isVisible() {
+        return this.#object.visible;
     }
 
     /**
@@ -90,6 +130,9 @@ class ThreejsEntity extends BaseEntity {
         return null;
     }
 
+    /**
+     * 
+     */
     onDelete() {
         this.#object.removeFromParent();
     }

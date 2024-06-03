@@ -35,8 +35,8 @@ class ToolProxyHandler {
         this.#isInitialized = false;
     }
 
-    sendSet(delta) {
-        this.#socket.sendSet(delta);
+    sendSet(state) {
+        this.#socket.sendSet(state);
         this.#isInitialized = true;
     }
 
@@ -98,7 +98,6 @@ class ToolProxy {
         this.#rootEntity = new ThreejsEntity(rootGroup);
         this.#handler = new ToolProxyHandler(this, this.#worker);
         this.#lastToolMatrix = new THREE.Matrix4();
-        this.#lastToolsRootMatrix = new THREE.Matrix4();
     }
 
     /**
@@ -153,28 +152,23 @@ class ToolProxy {
     }
 
     sendUpdate(delta) {
-        if (this.#handler.isInitialized() && this.#checkPath(delta, ["properties", "threejsContainer", "properties", "tools", "properties", this.#toolId])) {
-            const toolChanges = delta.properties.threejsContainer.properties.tools.properties[this.#toolId];
-            const toolDelta = this.#createDeltaForTool(delta, ["properties", "threejsContainer", "properties", "tools", "properties", this.#toolId], toolChanges);
+        if (this.#handler.isInitialized() && this.#checkPath(delta, ["properties", "tools", "properties", this.#toolId])) {
+            const toolChanges = delta.properties.tools.properties[this.#toolId];
+            const toolDelta = this.#createDeltaForTool(delta, ["properties", "tools", "properties", this.#toolId], toolChanges);
             this.#handler.sendUpdate(toolDelta);
         } 
     }
 
     #updateMatrix() {
-        //const cursorMatThree = this.#rootEntity.getInternalObject().parent.parent.getObjectByName("spatialCursor indicator1");
-        //const cursorMat = realityEditor.spatialCursor.getCursorRelativeToWorldObject();
         const toolMat = new THREE.Matrix4();
         const toolNode = realityEditor.sceneGraph.getSceneNodeById(this.#toolId);
         setMatrixFromArray(toolMat, toolNode.worldMatrix);
-        const toolsRootMat = new THREE.Matrix4().copy(this.#rootEntity.getInternalObject().parent.matrixWorld);
-        
        
-        if (!(toolMat.equals(this.#lastToolMatrix) || toolsRootMat.equals(this.#lastToolsRootMatrix))) {
-            this.#lastToolMatrix = toolMat;
-            this.#lastToolsRootMatrix = toolsRootMat;
+        if (!toolMat.equals(this.#lastToolMatrix)) {
+            this.#lastToolMatrix.copy(toolMat);
 
             const axisCorrectionMat = new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1);
-            const localToolMatrix = toolsRootMat.invert().multiply(toolMat).multiply(axisCorrectionMat);
+            const localToolMatrix = toolMat.multiply(axisCorrectionMat);
 
             const decomposedMatrix = {
                 position: new THREE.Vector3(),
@@ -225,7 +219,7 @@ class ToolManager {
         realityEditor.network.registerCallback('vehicleDeleted', (params) => this.onVehicleDeleted(params));
         this.#worldNode = new WorldNode(new Engine3DWorldStore(this.#renderer));
         this.#anchoredGroupNode = this.#worldNode.get("threejsContainer");
-        this.#toolsRootNode = this.#anchoredGroupNode.get("tools");
+        this.#toolsRootNode = this.#worldNode.get("tools");
         this.#toolProxies = {};
     }
 
