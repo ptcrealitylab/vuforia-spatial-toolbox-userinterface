@@ -1209,6 +1209,41 @@ import {setMatrixFromArray} from "./scene/utils.js";
         }
     }
 
+    /**
+     * Converts from common array or object formats to THREE.Vector3
+     * @param input
+     * @return {Vector3}
+     */
+    function convertToVector3(input) {
+        let x, y, z;
+
+        if (Array.isArray(input)) {
+            // Input format is an array [x, y, z]
+            [x, y, z] = input;
+        } else if (typeof input === 'string') {
+            // Input format is a string "(x, y, z)"
+            const match = input.match(/\(([^)]+)\)/);
+            if (match) {
+                [x, y, z] = match[1].split(',').map(Number);
+            } else {
+                throw new Error('Invalid string format');
+            }
+        } else if (typeof input === 'object' && input !== null) {
+            // Input format is an object {x, y, z}
+            if ('x' in input && 'y' in input && 'z' in input) {
+                x = input.x;
+                y = input.y;
+                z = input.z;
+            } else {
+                throw new Error('Object does not have x, y, and z properties');
+            }
+        } else {
+            throw new Error('Unsupported input type');
+        }
+
+        return new THREE.Vector3(x, y, z);
+    };
+
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -1249,4 +1284,5 @@ import {setMatrixFromArray} from "./scene/utils.js";
     exports.enableExternalSceneRendering = enableExternalSceneRendering;
     exports.disableExternalSceneRendering = disableExternalSceneRendering;
     exports.RENDER_MODES = RENDER_MODES;
+    exports.convertToVector3 = convertToVector3;
 })(realityEditor.gui.threejsScene);

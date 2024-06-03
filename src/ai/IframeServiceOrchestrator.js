@@ -1,14 +1,17 @@
-import { uuidTime, uuidTimeShort } from '../utilities/uuid.js';
+import { uuidTime } from '../utilities/uuid.js';
 
 export class IframeAPIOrchestrator {
-    constructor(mapEncoder) {
+    constructor() {
         this.apiRegistry = {}; // stores the index of all known APIs per frame type and id
         this.responsePromises = {}; // keep track of pending promises
         this.container = null; // debug UI container for triggering registered APIs
 
-        // this creates uuids for specific things that can be operated on by the ai interface
-        this.mapEncoder = mapEncoder;
+        // for communication with other modules (not related to iframe communication)
+        this.callbacks = {
+            onSpatialReferenceUpdated: []
+        };
 
+        // this creates uuids for specific things that can be operated on by the ai interface
         this.specialCaseHandlers = {};
 
         this.listenForAPIDefinitions();
@@ -24,14 +27,25 @@ export class IframeAPIOrchestrator {
             if (event.data.type === 'API_DEFINITION') {
                 console.log('got API_DEFINITION message');
                 this.registerAPI(event.data.objectId, event.data.applicationId, event.data.applicationName, event.data.apiDefinitions);
+
             } else if (event.data.type === 'API_RESPONSE') {
                 // handleAPIResponse(event.data);
                 if (this.responsePromises[event.data.callId]) {
                     this.responsePromises[event.data.callId].resolve(event.data.result);
                     delete this.responsePromises[event.data.callId]; // Clean up after resolving
                 }
+
+            } else if (event.data.type === 'UPDATE_SPATIAL_REFERENCES') {
+                // also track the mapping of uuids -> positions that can be used by SpatialUUIDMapper
+                this.callbacks.onSpatialReferenceUpdated.forEach(cb => {
+                    cb(event.data);
+                });
             }
         });
+    }
+
+    onSpatialReferenceUpdated(cb) {
+        this.callbacks.onSpatialReferenceUpdated.push(cb);
     }
 
     registerAPI(objectId, applicationId, applicationName, apiDefinitions) {
@@ -75,15 +89,6 @@ export class IframeAPIOrchestrator {
             // let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameId);
             // map.addToMap(avatarId, avatarName, avatarScrambledId);
             // map.addToMap(frameId, frameType, frameScrambledId);
-
-            const ADD_APIS_TO_MAP = false;
-            if (ADD_APIS_TO_MAP) {
-                let apiPath = `${applicationId}-${name}`;
-                let uniqueApiName = `${name}-${uuidTimeShort()}`;
-                let apiScrambledId = realityEditor.ai.crc.generateChecksum(apiPath);
-                this.mapEncoder.addToMap(apiPath, name, apiScrambledId);
-                console.log('added to map: ', apiPath, name, apiScrambledId);
-            }
         });
         this.updateUI();
     }
@@ -159,7 +164,10 @@ export class IframeAPIOrchestrator {
                         });
                     }
                     console.log(res);
-                    resolve(res);
+                    resolve({
+                        result: res,
+                        applicationId: matchingTool.id
+                    });
                 }).catch(err => {
                     console.warn(err);
                     reject(err);

@@ -410,7 +410,7 @@ createNameSpace("realityEditor.gui.glRenderer");
         for (let i = 0; i < proxiesToBeRenderedThisFrame.length; i++) {
             let proxy = proxiesToBeRenderedThisFrame[i];
             if (!res[i]) {
-                console.warn('dropped proxy frame due to large delay', proxy);
+                // console.warn('dropped proxy frame due to large delay', proxy);
                 proxy.executePreviousFrameCommands();
                 continue;
             }

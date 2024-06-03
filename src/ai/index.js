@@ -1,7 +1,6 @@
 createNameSpace("realityEditor.ai");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
-import { IframeAPIOrchestrator } from '../network/IframeServiceOrchestrator.js';
 import { ChatInterface } from './ChatInterface.js';
 
 (function(exports) {
@@ -9,7 +8,6 @@ import { ChatInterface } from './ChatInterface.js';
     let aiPrompt = '';
     let categorize_prompt = 'Which one of the following items best describes my question? 1. "summary", 2. "debug", 3. "tools", 4. "pdf", 5. "tool content", 6. "not relevant". You can only return one of these items in string.';
     let callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('ai');
-    let apiOrchestrator = null;
     let chatInterface = null;
     
     let partMap = {};
@@ -48,22 +46,45 @@ import { ChatInterface } from './ChatInterface.js';
     }
     
     function focusOnFrame(frameKey) {
-        if (frameKey.includes('_part_')) {
-            // special case for parts
-            let partInfo = partMap[frameKey];
-            if (partInfo) {
-                console.log(partInfo);
-                let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-                let partPosition = new THREE.Vector3(partInfo.position.x, partInfo.position.y - floorOffset, partInfo.position.z);
-                // let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
-                let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
-                let partDirection = cameraPosition.clone().sub(partPosition).normalize();
-                callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
-                    pos: {x: partPosition.x, y: partPosition.y, z: partPosition.z},
-                    dir: {x: partDirection.x, y: partDirection.y, z: partDirection.z},
-                    zoomDistanceMm: 1000
-                });
-            }
+
+        let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[frameKey];
+        if (spatialReference) {
+            // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
+            let position3d = realityEditor.gui.threejsScene.convertToVector3(spatialReference.position);
+
+            // console.log(partInfo);
+            let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+            // let partPosition = new THREE.Vector3(partInfo.position.x, partInfo.position.y - floorOffset, partInfo.position.z);
+            // let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
+
+            position3d.y -= floorOffset; // TODO: is this correction always necessary? is there a cleaner place to add it?
+            
+            let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+            let cameraDirection = cameraPosition.clone().sub(position3d).normalize();
+            callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
+                pos: {x: position3d.x, y: position3d.y, z: position3d.z},
+                dir: {x: cameraDirection.x, y: cameraDirection.y, z: cameraDirection.z},
+                zoomDistanceMm: 1000
+            });
+        // }
+        
+        
+        // if (frameKey.includes('_part_')) {
+        //     // special case for parts
+        //     let partInfo = partMap[frameKey];
+        //     if (partInfo) {
+        //         console.log(partInfo);
+        //         let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
+        //         let partPosition = new THREE.Vector3(partInfo.position.x, partInfo.position.y - floorOffset, partInfo.position.z);
+        //         // let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
+        //         let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+        //         let partDirection = cameraPosition.clone().sub(partPosition).normalize();
+        //         callbackHandler.triggerCallbacks('shouldFocusVirtualCamera', {
+        //             pos: {x: partPosition.x, y: partPosition.y, z: partPosition.z},
+        //             dir: {x: partDirection.x, y: partDirection.y, z: partDirection.z},
+        //             zoomDistanceMm: 1000
+        //         });
+        //     }
         } else {
             let framePosition = realityEditor.gui.threejsScene.getToolPosition(frameKey);
             let cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
@@ -271,73 +292,8 @@ import { ChatInterface } from './ChatInterface.js';
         setupSystemEventListeners();
         hideEndpointApiKeyAndShowSearchTextArea();
 
-        let credentials = {
-            gpt4o: {
-                endPoint: '',
-                apiKey: ''
-            },
-            gpt4andOlder: {
-                endPoint: '',
-                apiKey: ''
-            }
-        }
-        realityEditor.network.postAiApiKeys(credentials.gpt4o.endPoint, credentials.gpt4o.apiKey, true);
-
         chatInterface = new ChatInterface();
-        window.chatInterface = chatInterface;
-
-        // TODO: figure out better place to initialize and make use of the apiOrchestrator
-        apiOrchestrator = new IframeAPIOrchestrator(map);
-        console.log(apiOrchestrator);
-        // setTimeout(() => {
-        //     console.log(apiOrchestrator.getSpatialServiceRegistry());
-        // }, 5000);
-        
-        apiOrchestrator.handleSpecialCase('getPartNamesAndPositions', (res, toolName, toolId, parameterInfo, functionArgs) => {
-            console.log('apiOrchestrator special case', res);
-
-            if (res && res.length) {
-                res.forEach(part => {
-                    // let timestamp = getFormattedTime();
-                    let partId = makeSafeString(`${toolId}_part_${part.name}`); 
-                    let partName = part.name;
-                    // let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
-                    // let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
-                    let partScrambledId = realityEditor.ai.crc.generateChecksum(partId);
-                    map.addToMap(partId, partName, partScrambledId);
-                    // map.addToMap(frameId, frameType, frameScrambledId);
-                    // let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
-                    // console.log(newInfo);
-                    
-                    partMap[partId] = {
-                        name: partName,
-                        position: {
-                            x: part.x,
-                            y: part.y,
-                            z: part.z
-                        }
-                    };
-                });
-            }
-
-        });
-
-        apiOrchestrator.handleSpecialCase('setPartPosition', (res, toolName, toolId, parameterInfo, functionArgs) => {
-            console.log('apiOrchestrator setPartPosition special case', res);
-            
-            let partName = functionArgs.partName;
-            if (!partName || !res) return;
-            let partId = makeSafeString(`${toolId}_part_${partName}`);
-
-            partMap[partId] = {
-                name: partName,
-                position: {
-                    x: res.x,
-                    y: res.y,
-                    z: res.z
-                }
-            };
-        });
+        window.chatInterface = chatInterface; // Note: temporarily exposed as global variable for debugging
     }
 
     function makeSafeString(input) {
@@ -361,175 +317,6 @@ import { ChatInterface } from './ChatInterface.js';
             }
         }
         return authorSetString;
-    }
-
-    function getPastMessages(maxNumberOfPastMessages) {
-        let dialogueLengthTotal = dialogueContainer.children.length;
-        let pastMessagesIncluded = typeof maxNumberOfPastMessages === 'number' ? maxNumberOfPastMessages : PAST_MESSAGES_INCLUDED;
-        let maxDialogueLength = Math.min(pastMessagesIncluded, dialogueLengthTotal);
-        let firstDialogueIndex = dialogueLengthTotal - maxDialogueLength - (pastMessagesIncluded >= dialogueLengthTotal ? 0 : 1);
-        let lastDialogueIndex = firstDialogueIndex + maxDialogueLength + (pastMessagesIncluded >= dialogueLengthTotal ? 0 : 1);
-        let conversation = {};
-        for (let i = firstDialogueIndex; i < lastDialogueIndex; i++) {
-            let child = dialogueContainer.children[i];
-            let conversationObjectIndex = i;
-            if (child.classList.contains('ai-chat-tool-dialogue-my')) {
-                if (i === lastDialogueIndex - 1) { // last dialogue, need to include the categorize question here
-                    // conversation[conversationObjectIndex] = { role: "user",
-                    //     content: `${aiPrompt}\n${map.preprocess(child.innerHTML)}`,
-                    //     extra: `${categorize_prompt}`,
-                    //     communicationToolInfo: {
-                    //         authorAll,
-                    //         chatAll
-                    //     }
-                    // };
-                } else {
-                    conversation[conversationObjectIndex] = {role: "user", content: `${map.preprocess(child.innerHTML)}`};
-                }
-            } else if (child.classList.contains('ai-chat-tool-dialogue-ai')) {
-                conversation[conversationObjectIndex] = { role: "assistant", content: `${map.preprocess(child.innerHTML)}` };
-            }
-        }
-        return conversation;
-    }
-
-    function getToolAPIRegistry() {
-        return apiOrchestrator.getSpatialServiceRegistry();
-    }
-
-    function getConnectedUsers() {
-        let connectedUsers = [];
-        realityEditor.forEachObject((object, _objectId) => {
-            try {
-                if (realityEditor.avatar.utils.isAvatarObject(object)) {
-                    // avatarObjects.push(object);
-                    let avatarNodePath = realityEditor.avatar.utils.getAvatarNodeInfo(object);
-                    let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
-                    console.log(node);
-                    let userProfile = node.publicData.userProfile;
-                    let cursorState = node.publicData.cursorState;
-                    connectedUsers.push({
-                        name: userProfile.name || 'Anonymous User',
-                        spatialCursorPosition: [Math.round(cursorState.matrix.elements[12]), Math.round(cursorState.matrix.elements[13]), Math.round(cursorState.matrix.elements[14])]
-                    });
-                }
-            } catch (e) {
-                console.log('error getting username of connected user', object)
-            }
-        });
-        return connectedUsers;
-    }
-
-    function getMyUser() {
-        let myAvatarId = realityEditor.avatar.getMyAvatarId();
-        let myAvatarObject = realityEditor.getObject(myAvatarId);
-        if (!myAvatarObject) return null;
-        let avatarNodePath = realityEditor.avatar.utils.getAvatarNodeInfo(myAvatarObject);
-        let node = realityEditor.getNode(avatarNodePath.objectKey, avatarNodePath.frameKey, avatarNodePath.nodeKey);
-        let userProfile = node.publicData.userProfile;
-        let cursorState = node.publicData.cursorState;
-        // return realityEditor.avatar.utils.getAvatarName();
-        return {
-            name: userProfile.name || 'Anonymous User',
-            spatialCursorPosition: [
-                parseFloat(cursorState.matrix.elements[12].toFixed(2)),
-                parseFloat(cursorState.matrix.elements[13].toFixed(2)),
-                parseFloat(cursorState.matrix.elements[14].toFixed(2))]
-        };
-    }
-    
-    function getSimplifiedDataModel() {
-        let dataModel = {
-            objects: {}
-        };
-        
-        realityEditor.forEachFrameInAllObjects((objectKey, frameKey) => {
-            let object = realityEditor.getObject(objectKey);
-            if (realityEditor.avatar.utils.isAvatarObject(object)) return; // skip avatar objects in this summary
-            let frame = realityEditor.getFrame(objectKey, frameKey);
-            if (typeof dataModel.objects[objectKey] === 'undefined') {
-                // let objectSceneNode = realityEditor.sceneGraph.getSceneNodeById(objectKey);
-                let objectWorldPosition = realityEditor.sceneGraph.getWorldPosition(objectKey);
-                objectWorldPosition.x = Math.round(objectWorldPosition.x);
-                objectWorldPosition.y = Math.round(objectWorldPosition.y);
-                objectWorldPosition.z = Math.round(objectWorldPosition.z);
-                dataModel.objects[objectKey] = {
-                    // objectId: objectKey,
-                    objectType: object.type,
-                    worldPosition: objectWorldPosition,
-                    // worldMatrix: objectSceneNode.worldMatrix.map(elt => {
-                    //     return parseFloat(elt.toFixed(2));
-                    // }),
-                    // localMatrix: objectSceneNode.localMatrix,
-                    childApplications: {}
-                };
-            }
-            if (typeof dataModel.objects[objectKey].childApplications[frameKey] === 'undefined') {
-                // let frameSceneNode = realityEditor.sceneGraph.getSceneNodeById(frameKey);
-                let frameWorldPosition = realityEditor.sceneGraph.getWorldPosition(frameKey);
-                frameWorldPosition.x = Math.round(frameWorldPosition.x);
-                frameWorldPosition.y = Math.round(frameWorldPosition.y);
-                frameWorldPosition.z = Math.round(frameWorldPosition.z);
-                dataModel.objects[objectKey].childApplications[frameKey] = {
-                    // applicationId: frame.uuid,
-                    applicationType: frame.src,
-                    worldPosition: frameWorldPosition,
-                    // worldMatrix: frameSceneNode.worldMatrix.map(elt => {
-                    //     return parseFloat(elt.toFixed(2));
-                    // }),
-                    // localMatrix: frameSceneNode.localMatrix,
-                }
-
-                // let timestamp = getFormattedTime();
-                // let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
-                // let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
-                let frameScrambledId = realityEditor.ai.crc.generateChecksum(frameKey);
-                // map.addToMap(avatarId, avatarName, avatarScrambledId);
-                map.addToMap(frameKey, frame.src, frameScrambledId);
-            }
-        });
-        
-        return dataModel;
-    }
-
-    function getInteractionLog() {
-        return aiPrompt;
-    }
-
-    function getMostRecentMessage() {
-        if (dialogueContainer.childElementCount === 0) return null;
-        let mostRecentMessageDiv = dialogueContainer.lastChild;
-        return {
-            role: "user",
-            content: `${map.preprocess(mostRecentMessageDiv.innerHTML)}`,
-            // extra: `${categorize_prompt}`,
-            // communicationToolInfo: {
-            //     authorAll,
-            //     chatAll
-            // }
-        }
-    }
-
-    function askQuestionComplex() {
-        let mostRecentMessage = getMostRecentMessage();
-        let pastMessages = getPastMessages();
-        console.log(`selected ${Object.keys(pastMessages).length} past messages. Total length = ${Object.values(pastMessages).map(message => message.content).reduce((total, current) => total + current.length, 0)}`);
-        let interactionLog = getInteractionLog();
-        let toolAPIs = getToolAPIRegistry();
-        let connectedUsers = getConnectedUsers();
-        let simplifiedDataModel = getSimplifiedDataModel();
-        let myUser = getMyUser();
-
-        console.log('pastMessages', pastMessages);
-        console.log('mostRecentMessage', mostRecentMessage);
-        console.log('interactionLog', interactionLog);
-        console.log('toolAPIs', toolAPIs);
-
-        let extra = {
-            worldObjectId: realityEditor.worldObjects.getBestWorldObject().objectId,
-        }
-        // console.log(conversation);
-        realityEditor.network.postQuestionComplexToAI(mostRecentMessage, pastMessages, interactionLog, toolAPIs, connectedUsers, myUser, simplifiedDataModel, extra);
     }
 
     function askQuestion() {
@@ -613,80 +400,19 @@ import { ChatInterface } from './ChatInterface.js';
         let html = map.postprocess(answer);
         pushAIDialogue(html);
     }
-
-    function getAnswerComplex(answer, apiAnswer) {
-        // extract the API calls if needed
-        const OLD_METHOD = false;
-        if (OLD_METHOD) {
-            let apiMatches = parseApisFromString(answer);
-            if (apiMatches.length > 0) {
-                console.log('!! apiMatches !!');
-                console.log(apiMatches);
-
-                apiOrchestrator.processApiMatches(apiMatches);
-            }
-        } else {
-            apiOrchestrator.processApiAnswer(apiAnswer);
-        }
-        
-        // first postprocess to get the spatial links to tools
-        let html = map.postprocess(answer);
-        
-        pushAIDialogue(html);
-    }
     
     function displayAnswer(answer) {
         // let html = map.postprocess(answer);
         // console.log(map.postprocessBen(answer));
-        let html = map.postprocessBen(answer);
-        pushAIDialogue(html);
-    }
-    
-    function getAnswerChain(answer) {
-        // extract the API calls if needed
-        // const OLD_METHOD = false;
-        // if (OLD_METHOD) {
-        //     let apiMatches = parseApisFromString(answer);
-        //     if (apiMatches.length > 0) {
-        //         console.log('!! apiMatches !!');
-        //         console.log(apiMatches);
-        //
-        //         apiOrchestrator.processApiMatches(apiMatches);
-        //     }
-        // } else {
-        //     apiOrchestrator.processApiAnswer(apiAnswer);
-        // }
 
-        // first postprocess to get the spatial links to tools
-        let html = map.postprocess(answer);
+        // let html = map.postprocessBen(answer);
+        // pushAIDialogue(html);
 
-        pushAIDialogue(html);
-    }
-    
-    function parseApisFromString(input) {
-        // Extract all matches like [[id1][id2][id3]] or [[id2][id3]]
-        // const regex = /\[\[(.*?)\]\]?\[\[(.*?)\]\]\[\[(.*?)\]\]/g;
-        const pattern = /\[\[(.*?)\]\[(.*?)\]\]/g;
-
-        const matches = Array.from(input.matchAll(pattern));
-
-        // Map over the matches to format them into an array of objects
-        const results = matches.map(match => {
-            // return {
-            //     applicationType: match[1] ? match[1] : null,
-            //     applicationId: match[2],
-            //     apiName: match[3]
-            // };
-
-            // Create an object with applicationId and apiName from the captures
-            return {
-                applicationId: match[1],
-                apiName: match[2]
-            };
-        });
-
-        // Return the results array, or an empty array if no matches were found
-        return results;
+        let html = answer.replace(/\n/g, '<br>');
+        let d = document.createElement('div');
+        d.classList.add('ai-chat-tool-dialogue', 'ai-chat-tool-dialogue-ai');
+        d.innerHTML = html;
+        pushAIDialogue(d);
     }
     
     function getToolAnswer(category, tools) {
@@ -846,6 +572,15 @@ import { ChatInterface } from './ChatInterface.js';
         scrollToBottom();
     }
 
+    function getMostRecentMessage() {
+        if (dialogueContainer.childElementCount === 0) return null;
+        let mostRecentMessageDiv = dialogueContainer.lastChild;
+        return {
+            role: "user",
+            content: `${map.preprocess(mostRecentMessageDiv.innerHTML)}`
+        }
+    }
+
     function pushMyDialogue(text) {
         if (!text.trim()) {
             console.log('error');
@@ -857,12 +592,9 @@ import { ChatInterface } from './ChatInterface.js';
         dialogueContainer.append(d);
         realityEditor.avatar.network.sendAiDialogue(realityEditor.avatar.getMyAvatarNodeInfo(), d.outerHTML);
         scrollToBottom();
-        
-        // askAssistantQuestion();
 
         // askQuestion();
-        askQuestionComplex();
-        // askQuestionChain();
+        chatInterface.askQuestion(getMostRecentMessage().content);
     }
 
     function pushAIDialogue(html) {
@@ -884,55 +616,11 @@ import { ChatInterface } from './ChatInterface.js';
         resetTextAreaSize();
     }
 
-    async function handleFunctionCall(functionCallId, fnName, fnArgs) {
-
-        // perform the function on the client side
-        let functionResult = await apiOrchestrator.processFunctionCall(fnName, fnArgs);
-        console.log('handleFunctionCall got result', functionResult);
-        
-        // Send the result back to the server
-        let res = await realityEditor.network.postFunctionResultToAI(functionCallId, functionResult);
-        console.log(res);
-
-        // await fetch('/ai/function-result', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ functionCallId, result: functionResult })
-        // });
-
-        // Wait for the server to process the result and provide the final response
-        // const res = await fetch(`/ai/query-status?functionCallId=${functionCallId}`);
-        // let res = await realityEditor.network.queryAIStatus(functionCallId);
-
-        // const res = await response.json();
-        if (res.functionCallId) {
-            await realityEditor.ai.handleFunctionCall(res.functionCallId, res.fnName, res.fnArgs);
-        } else {
-            console.log(res.answer, res.apiAnswer);
-            // realityEditor.ai.getAnswerComplex(res.answer, res.apiAnswer);
-            realityEditor.ai.displayAnswer(res.answer);
-            // displayResult(result.answer);
-        }
-    }
-    //
-    // async function addLine(args) {
-    //     const { start, end } = args;
-    //     return `Line drawn from (${start.x},${start.y},${start.z}) to (${end.x},${end.y},${end.z})`;
-    // }
-    //
-    // function displayResult(answer) {
-    //     // Display the final answer to the user
-    //     console.log('Final Answer:', answer);
-    // }
-
     exports.initService = initService;
     exports.registerCallback = registerCallback;
     exports.askQuestion = askQuestion;
     exports.getAnswer = getAnswer;
-    exports.getAnswerComplex = getAnswerComplex;
     exports.displayAnswer = displayAnswer;
-    exports.handleFunctionCall = handleFunctionCall;
-    exports.getAnswerChain = getAnswerChain;
     exports.getToolAnswer = getToolAnswer;
     exports.pushDialogueFromOtherUser = pushDialogueFromOtherUser;
     exports.onOpen = onOpen;
