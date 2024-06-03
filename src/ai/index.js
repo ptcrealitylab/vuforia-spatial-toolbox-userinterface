@@ -449,26 +449,26 @@ import { ChatInterface } from './ChatInterface.js';
     }
 
     function setupEventListeners() {
-        endpointArea.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (endpointArea.value === '' || apiKeyArea.value === '') return;
-                realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
-            }
-        })
-        apiKeyArea.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (endpointArea.value === '' || apiKeyArea.value === '') return;
-                realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
-            }
-        })
-        
-        searchTextArea.addEventListener('input', function() {
-            // adjustTextAreaSize();
-        });
+        // endpointArea.addEventListener('keydown', (e) => {
+        //     e.stopPropagation();
+        //     if (e.key === 'Enter') {
+        //         e.preventDefault();
+        //         if (endpointArea.value === '' || apiKeyArea.value === '') return;
+        //         realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
+        //     }
+        // })
+        // apiKeyArea.addEventListener('keydown', (e) => {
+        //     e.stopPropagation();
+        //     if (e.key === 'Enter') {
+        //         e.preventDefault();
+        //         if (endpointArea.value === '' || apiKeyArea.value === '') return;
+        //         realityEditor.network.postAiApiKeys(endpointArea.value, apiKeyArea.value, true);
+        //     }
+        // })
+        //
+        // searchTextArea.addEventListener('input', function() {
+        //     // adjustTextAreaSize();
+        // });
         
         searchTextArea.addEventListener('pointerdown', (e) => {e.stopPropagation();});
         searchTextArea.addEventListener('pointerup', (e) => {e.stopPropagation();});

@@ -7,9 +7,17 @@ export class ChatHistorySource extends ContextSource {
         this.history = [];
     }
 
-    addToHistory(role, content) {
+    addToHistory(role, content, functionCall) {
         console.log(`added message { role: ${role}, content: ${content} } to chat history`);
-        this.history.push({ role, content });
+        if (functionCall && typeof functionCall.fnName === 'string' && typeof functionCall.fnArgs !== 'undefined') {
+            let message = { role, content };
+            message['function'] = functionCall.fnName;
+            message['args'] = functionCall.fnArgs;
+            this.history.push(message);
+            // {"role": "system", "content": "call_function", "function": "get_weather", "args": {"location": "New York"}}
+        } else {
+            this.history.push( { role, content });
+        }
     }
 
     resetHistory() {

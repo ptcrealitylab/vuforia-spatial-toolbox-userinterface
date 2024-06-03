@@ -59,7 +59,7 @@ export class ChatInterface {
         let ip = worldId.ip;
         let port = realityEditor.network.getPort(worldId);
 
-        let preprocessedInput = this.spatialUuidMapper.preprocess(userInput);
+        let preprocessedInput = this.spatialUuidMapper.preprocess(userInput, { replaceMapIDs: true, replaceMapNames: true });
         let preprocessedContext = this.spatialUuidMapper.preprocess(context);
         let preprocessedApiRegistry = this.spatialUuidMapper.preprocess(apiRegistry);
 
@@ -207,7 +207,13 @@ export class ChatInterface {
     // TODO: this needs some way to determine which spatial application the call belongs to
     async handleFunctionCall(functionCallId, fnName, fnArgs) {
         console.log('ChatInterface handleFunctionCall', functionCallId, fnName, fnArgs);
-        
+
+        this.chatHistorySource.addToHistory('system', 'call_function', {
+            fnName,
+            fnArgs
+        });
+        // {"role": "system", "content": "call_function", "function": "get_weather", "args": {"location": "New York"}}
+
         let processedFunctionArgs = this.spatialUuidMapper.postprocessFunctionArgs(fnArgs);
 
         // perform the function on the client side

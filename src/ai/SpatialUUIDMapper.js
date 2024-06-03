@@ -144,8 +144,9 @@ export class SpatialUUIDMapper {
      * throughout the system for consistent referencing.
      *
      * @param {string|Object} input
+     * @param {*} options
      */
-    preprocess(input) {
+    preprocess(input, options = { replaceMapIDs: true, replaceMapNames: false }) {
         // Helper function to replace IDs with UUIDs in a string
         function replaceIDs(text) {
             if (typeof text !== 'string') return text;
@@ -153,16 +154,20 @@ export class SpatialUUIDMapper {
             let threeMap = realityEditor.ai.mapping.getMap();
 
             // replace names with IDs, with the only danger being if the same name appears in multiple tools
-            threeMap.idToName.forEach((name, id) => {
-                const regex = new RegExp('\\b' + name + '\\b', 'g'); // Using word boundaries to match whole words only
-                result = result.replace(regex, id);
-            });
+            if (options.replaceMapNames) {
+                threeMap.idToName.forEach((name, id) => {
+                    const regex = new RegExp('\\b' + name + '\\b', 'g'); // Using word boundaries to match whole words only
+                    result = result.replace(regex, id);
+                });
+            }
             
             // replace IDs with scrambled UUIDs
-            threeMap.idToScrambledId.forEach((uuid, id) => {
-                const regex = new RegExp('\\b' + id + '\\b', 'g'); // Using word boundaries to match whole words only
-                result = result.replace(regex, uuid);
-            });
+            if (options.replaceMapIDs) {
+                threeMap.idToScrambledId.forEach((uuid, id) => {
+                    const regex = new RegExp('\\b' + id + '\\b', 'g'); // Using word boundaries to match whole words only
+                    result = result.replace(regex, uuid);
+                });
+            }
 
             return result;
         }
