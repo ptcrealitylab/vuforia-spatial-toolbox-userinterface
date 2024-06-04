@@ -1,4 +1,5 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import DateTimer from '/ObjectdefaultFiles/scene/DateTimer.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
 import { WebXRVRButton } from './WebXRVRButton.js';
@@ -13,6 +14,8 @@ import {ToolManager} from './ToolManager.js';
  * @typedef {number} DeviceUnitsPerSceneUnit
  * @typedef {number} SceneUnitsPerDeviceUnit
  * @typedef {number} SceneUnits
+ * @typedef {number} seconds
+ * @typedef {{date: seconds, timer: seconds}} TimerDateOffset
  * @typedef {(globalScale: GlobalScale) => void} GlobalScaleListener
  * @typedef {{a: number, b: number, c: number, normal: THREE.Vector3, materialIndex: number}} Face
  * @typedef {{distance: number, distanceToRay?: number|undefined, point: THREE.Vector3, index?: number | undefined, face?: Face | null | undefined, faceIndex?: number | undefined, object: THREE.Object3D, uv?: THREE.Vector2 | undefined, uv1?: THREE.Vector2 | undefined, normal?: THREE.Vector3, instanceId?: number | undefined, pointOnLine?: THREE.Vector3, batchId?: number, scenePoint: THREE.Vector3, sceneDistance: SceneUnits}} Intersection
@@ -121,11 +124,15 @@ class Renderer {
      /** @type {ToolManager} */
      #tools;
 
+     /** @type {Timer} */
+     #timer
+
     /**
      * 
      * @param {HTMLCanvasElement} domElement 
      */
     constructor(domElement) {
+        this.#timer = new DateTimer();
         this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
@@ -242,6 +249,7 @@ class Renderer {
     }
 
     render() {
+        this.#timer.update();
         this.#tools.update();
         this.#renderer.render(this.#scene, this.#camera.getInternalObject());
     }
@@ -361,6 +369,10 @@ class Renderer {
      */
     getInternalCanvas() {
         return this.#renderer.domElement;
+    }
+
+    getTimer() {
+        return this.#timer;
     }
 }
 

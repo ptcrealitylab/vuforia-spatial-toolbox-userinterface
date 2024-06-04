@@ -81,9 +81,6 @@ class ToolProxy {
     /** @type {THREE.Matrix4|null} */
     #lastToolMatrix;
 
-     /** @type {THREE.Matrix4|null} */
-     #lastToolsRootMatrix;
-
     /**
      * 
      * @param {ToolManager} manager

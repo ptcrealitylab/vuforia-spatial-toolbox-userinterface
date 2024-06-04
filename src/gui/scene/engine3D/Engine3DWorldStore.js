@@ -28,6 +28,10 @@ class Engine3DWorldStore extends ObjectStore {
         this.#renderer.getGlobalScale().getNode().add(this.#toolsRoot.getInternalObject());
     }
 
+    getTimer() {
+        return this.#renderer.getTimer();
+    }
+
     /**
      * @override
      * @param {WorldNode} _thisNode 
