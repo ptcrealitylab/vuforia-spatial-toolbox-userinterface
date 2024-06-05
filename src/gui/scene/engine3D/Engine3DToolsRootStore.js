@@ -22,13 +22,10 @@ class Engine3DToolsRootStore extends DictionaryStore {
     /**
      * @override
      * @param {string} _key
-     * @param {BaseNodeState} state
+     * @param {BaseNodeState} _state
      * @returns {BaseNode}
      */
-    create(_key, state) {
-        if (state.hasOwnProperty("type") && state.type === ToolNode.TYPE) {
-            return new ToolNode(new Engine3DToolStore());
-        }
+    create(_key, _state) {
         return undefined;
     }
 

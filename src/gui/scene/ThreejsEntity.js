@@ -135,6 +135,7 @@ class ThreejsEntity extends BaseEntity {
      */
     onDelete() {
         this.#object.removeFromParent();
+        this.release();
     }
 }
 

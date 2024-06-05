@@ -30,7 +30,7 @@ class ToolProxyHandler {
     constructor(toolProxy, worker) {
         this.#toolProxy = toolProxy;
         const messageInterface = new IFrameMessageInterface(worker, "*");
-        this.#socket = new ToolRenderSocket(messageInterface);
+        this.#socket = new ToolRenderSocket(messageInterface, toolProxy.getToolId());
         this.#socket.setListener(this);
         this.#isInitialized = false;
     }
@@ -136,15 +136,18 @@ class ToolProxy {
     }
 
     #createDeltaForTool(delta, propertyName, toolChanges) {
-        if (propertyName.length === 0) return toolChanges;
         const ret = {};
-        for (const key of Object.keys(delta)) {
-            if (key === propertyName[0]) continue;
-            ret[key] = structuredClone(delta[key]);
+        if (propertyName.length === 1) {
+            ret[propertyName[0]] = toolChanges;
+        } else {
+            for (const key of Object.keys(delta)) {
+                if (key === propertyName[0]) continue;
+                ret[key] = structuredClone(delta[key]);
+            }
+            const curPropName = propertyName[0];
+            propertyName.shift(); 
+            ret[curPropName] = this.#createDeltaForTool(delta[curPropName], propertyName, toolChanges);
         }
-        const curPropName = propertyName[0];
-        propertyName.shift(); 
-        ret[curPropName] = this.#createDeltaForTool(delta[curPropName], propertyName, toolChanges);
         return ret;
     }
 
