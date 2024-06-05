@@ -20,6 +20,7 @@ export class ChatInterface {
         this.setupSpecialFunctionCases();
 
         let objectDataModelSource = new ObjectDataModelSource();
+        this.objectDataModelSource = objectDataModelSource;
         let userListSource = new UserListSource();
         let interactionLogSource = new InteractionLogSource();
         // let semanticSegmentationSource = new SemanticSegmentationSource();
@@ -32,10 +33,72 @@ export class ChatInterface {
         this.contextCompositor.addSource(interactionLogSource);
         this.contextCompositor.addSource(this.chatHistorySource);
         // this.contextCompositor.addSource(semanticSegmentationSource);
-        
+
         this.apiOrchestrator.onSpatialReferenceUpdated(data => {
             this.spatialUuidMapper.updateSpatialReference(data);
+            objectDataModelSource.updateSpatialReference(data);
         });
+
+        this.apiOrchestrator.onSummarizedStateUpdated(async (data) => {
+            objectDataModelSource.updateSummarizedState(data);
+
+            // if (result && !result.isIdenticalToExisting) {
+            //     await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
+            // }
+
+            // if (this.stateSummarizerPrompts[data.applicationId]) {
+            //     // run the summary through the AI prompts to arrive at a final result
+            //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
+            //
+            //     });
+            // }
+        });
+
+        this.apiOrchestrator.onAiProcessingStateUpdated(async (data) => {
+            let result = objectDataModelSource.updateToolStateForAiProcessing(data);
+
+            if (result && !result.isIdenticalToExisting) {
+                await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
+            }
+
+            // if (this.stateSummarizerPrompts[data.applicationId]) {
+            //     // run the summary through the AI prompts to arrive at a final result
+            //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
+            //
+            //     });
+            // }
+        });
+
+        this.apiOrchestrator.onAiProcessingPromptsUpdated(async (data) => {
+            // let toolSpecificStateSummarizerPrompts = {};
+            let result = objectDataModelSource.updateToolStateProcessingPrompts(data);
+
+            if (result && !result.isIdenticalToExisting) {
+                await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
+            }
+        });
+    }
+    
+    async runStateSummarizerPrompts(applicationId, applicationState, applicationPrompts) {
+        if (!applicationId || !applicationState || !applicationPrompts) return;
+
+        this.networkInterface.processToolStateWithPrompts(applicationId, applicationState, applicationPrompts).then(res => {
+            console.log('ChatInterface got processedState from runStateSummarizerPrompts', res);
+            // TODO: store this in object.json along with a checksum for the summarizedState, so it doesn't need to be recomputed needlessly
+            this.objectDataModelSource.updateAiProcessedState(applicationId, applicationState, applicationPrompts, res.answer);
+        }).catch(err => {
+            console.warn('error in getting processedState from runStateSummarizerPrompts', err);
+        })
+        
+        // toolPrompts.forEach(async (prompt) => {
+        //    
+        // });
+        // if (this.stateSummarizerPrompts[data.applicationId]) {
+        //     // run the summary through the AI prompts to arrive at a final result
+        //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
+        //
+        //     });
+        // }
     }
 
     // TODO: implement saveContext and loadContext (into server or client) so that we know what happened before refresh
@@ -85,6 +148,7 @@ export class ChatInterface {
 
         // TODO: update the URL to match the old postQuestionToAI implementation if you want to use cloud proxy
 
+        // TODO: refactor this into the NetworkInterface
         fetch(realityEditor.network.getURL(ip, port, route), {
             method: 'POST',
             body: JSON.stringify(body),

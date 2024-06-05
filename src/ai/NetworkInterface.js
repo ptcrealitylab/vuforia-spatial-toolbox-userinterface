@@ -82,6 +82,32 @@ export class NetworkInterface {
         });
     }
 
+    async processToolStateWithPrompts(applicationId, state, prompts) {
+        let route = '/ai/process-state-with-prompts';
+
+        // let worldId = await this.findWorldId();
+        let worldId = realityEditor.worldObjects.getBestWorldObject();
+        let ip = worldId.ip;
+        let port = realityEditor.network.getPort(worldId);
+
+        return new Promise((resolve, reject) => {
+            realityEditor.network.postData(realityEditor.network.getURL(ip, port, route),
+                {
+                    applicationId,
+                    state,
+                    prompts,
+                },
+                function (err, res) {
+                    if (err) {
+                        console.warn('ai/process-state-with-prompts error:', err);
+                        reject(err);
+                    } else {
+                        resolve(res);
+                    }
+                });
+        });
+    }
+
     // helper function to return the world ID once it's initialized
     findWorldId() {
         return new Promise((resolve) => {

@@ -8,7 +8,10 @@ export class IframeAPIOrchestrator {
 
         // for communication with other modules (not related to iframe communication)
         this.callbacks = {
-            onSpatialReferenceUpdated: []
+            onSpatialReferenceUpdated: [],
+            onSummarizedStateUpdated: [],
+            onAiProcessingStateUpdated: [],
+            onAiProcessingPromptsUpdated: [],
         };
 
         // this creates uuids for specific things that can be operated on by the ai interface
@@ -40,12 +43,36 @@ export class IframeAPIOrchestrator {
                 this.callbacks.onSpatialReferenceUpdated.forEach(cb => {
                     cb(event.data);
                 });
+            } else if (event.data.type === 'UPDATE_SUMMARIZED_STATE') {
+                this.callbacks.onSummarizedStateUpdated.forEach(cb => {
+                    cb(event.data);
+                });
+            } else if (event.data.type === 'UPDATE_AI_PROCESSING_STATE') {
+                this.callbacks.onAiProcessingStateUpdated.forEach(cb => {
+                    cb(event.data);
+                });
+            } else if (event.data.type === 'UPDATE_AI_PROCESSING_PROMPTS') {
+                this.callbacks.onAiProcessingPromptsUpdated.forEach(cb => {
+                    cb(event.data);
+                });
             }
         });
     }
 
     onSpatialReferenceUpdated(cb) {
         this.callbacks.onSpatialReferenceUpdated.push(cb);
+    }
+
+    onSummarizedStateUpdated(cb) {
+        this.callbacks.onSummarizedStateUpdated.push(cb);
+    }
+
+    onAiProcessingPromptsUpdated(cb) {
+        this.callbacks.onAiProcessingPromptsUpdated.push(cb);
+    }
+
+    onAiProcessingStateUpdated(cb) {
+        this.callbacks.onAiProcessingStateUpdated.push(cb);
     }
 
     registerAPI(objectId, applicationId, applicationName, apiDefinitions) {

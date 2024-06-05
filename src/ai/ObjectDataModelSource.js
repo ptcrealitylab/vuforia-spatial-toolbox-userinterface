@@ -1,8 +1,97 @@
 import { ContextSource } from './ContextSource.js';
+import { uuidTime } from '../utilities/uuid.js';
 
 export class ObjectDataModelSource extends ContextSource {
     constructor() {
         super('ObjectDataModel');
+        
+        this.spatialReferences = {};
+        this.summarizedStates = {};
+        this.statesForSummarizerPrompts = {};
+        this.stateSummarizerPrompts = {};
+        this.aiStateSummaries = {};
+    }
+
+    updateSpatialReference(data) {
+        if (typeof data.spatialReferences === 'undefined') return;
+        if (typeof data.applicationId === 'undefined') return;
+
+        // this.spatialReferences[data.applicationId] = data.spatialReferences;
+        this.spatialReferences[data.applicationId] = {};
+
+        Object.keys(data.spatialReferences).forEach(referenceUuid => {
+            let fullUuid = `${data.applicationId}_${referenceUuid}`;
+            this.spatialReferences[data.applicationId][fullUuid] = data.spatialReferences[referenceUuid].position;
+        });
+    }
+
+    updateSummarizedState(data) {
+        if (typeof data.summarizedState === 'undefined') return null;
+        if (typeof data.applicationId === 'undefined') return null;
+
+        this.summarizedStates[data.applicationId] = data.summarizedState;
+
+        // let isIdenticalToExisting = this.checkStateAndPrompts(data.applicationId, this.summarizedStates[data.applicationId], this.stateSummarizerPrompts[data.applicationId]);
+        //
+        // return {
+        //     state: this.summarizedStates[data.applicationId],
+        //     prompts: this.stateSummarizerPrompts[data.applicationId],
+        //     isIdenticalToExisting,
+        // };
+    }
+
+    updateToolStateForAiProcessing(data) {
+        if (typeof data.state === 'undefined') return null;
+        if (typeof data.applicationId === 'undefined') return null;
+
+        this.statesForSummarizerPrompts[data.applicationId] = data.state;
+
+        let isIdenticalToExisting = this.checkStateAndPrompts(data.applicationId, this.statesForSummarizerPrompts[data.applicationId], this.stateSummarizerPrompts[data.applicationId]);
+
+        return {
+            state: this.statesForSummarizerPrompts[data.applicationId],
+            prompts: this.stateSummarizerPrompts[data.applicationId],
+            isIdenticalToExisting,
+        };
+    }
+
+    updateToolStateProcessingPrompts(data) {
+        if (typeof data.prompts === 'undefined') return;
+        if (typeof data.applicationId === 'undefined') return;
+        
+        this.stateSummarizerPrompts[data.applicationId] = data.prompts;
+
+        let isIdenticalToExisting = this.checkStateAndPrompts(data.applicationId, this.summarizedStates[data.applicationId], this.stateSummarizerPrompts[data.applicationId]);
+
+        return {
+            state: this.statesForSummarizerPrompts[data.applicationId],
+            prompts: this.stateSummarizerPrompts[data.applicationId],
+            isIdenticalToExisting,
+        };
+    }
+
+    checkStateAndPrompts(applicationId, state, prompts) {
+        // skip redundant calls
+        let isIdenticalToExisting = false;
+        let existingProcessedSummary = this.aiStateSummaries[applicationId];
+        if (existingProcessedSummary) {
+            let newStateChecksum = uuidTime(); // TODO: generate a real checksum using state
+            let newPromptChecksum = uuidTime(); // TODO: generate a real checksum using prompts
+            isIdenticalToExisting = (newStateChecksum === existingProcessedSummary.stateChecksum &&
+                newPromptChecksum === existingProcessedSummary.promptChecksum); // skip processing
+        }
+        return isIdenticalToExisting;
+    }
+
+    updateAiProcessedState(applicationId, state, prompts, aiStateSummaryResponse) {
+        let stateChecksum = uuidTime(); // TODO: generate a real checksum
+        let promptChecksum = uuidTime(); // TODO: generate a real checksum
+        this.aiStateSummaries[applicationId] = {
+            stateChecksum,
+            promptChecksum,
+            summary: aiStateSummaryResponse
+        };
+        console.log('aiStateSummaries', this.aiStateSummaries);
     }
 
     getContext() {
@@ -49,6 +138,17 @@ export class ObjectDataModelSource extends ContextSource {
                     //     return parseFloat(elt.toFixed(2));
                     // }),
                     // localMatrix: frameSceneNode.localMatrix,
+                }
+
+                // add additional information from the LanguageInterface, if provided
+                if (this.summarizedStates[frameKey]) {
+                    dataModel.objects[objectKey].childApplications[frameKey].stateSummary = this.summarizedStates[frameKey];
+                }
+                if (this.spatialReferences[frameKey]) {
+                    dataModel.objects[objectKey].childApplications[frameKey].childSpatialReferences = this.spatialReferences[frameKey];
+                }
+                if (this.aiStateSummaries[frameKey]) {
+                    dataModel.objects[objectKey].childApplications[frameKey].contentDescription = this.aiStateSummaries[frameKey].summary;
                 }
 
                 // let timestamp = getFormattedTime();
