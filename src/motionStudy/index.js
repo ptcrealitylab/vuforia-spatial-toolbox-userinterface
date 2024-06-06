@@ -2,6 +2,7 @@ createNameSpace("realityEditor.motionStudy");
 
 import {MotionStudy} from './motionStudy.js'
 import {MotionStudyMobile} from './MotionStudyMobile.js'
+import {MotionStudySensors} from './MotionStudySensors.js'
 
 (function(exports) {
     /**
@@ -10,15 +11,16 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
      */
     function makeMotionStudy(frame) {
         if (realityEditor.device.environment.isDesktop()) {
-            return new MotionStudy(frame);
+            return new MotionStudy(frame, sensors);
         } else {
-            return new MotionStudyMobile(frame);
+            return new MotionStudyMobile(frame, sensors);
         }
     }
 
     const noneFrame = 'none';
     let activeFrame = '';
     let motionStudyByFrame = {};
+    let sensors = new MotionStudySensors();
     
     function getDefaultMotionStudy() {
         return motionStudyByFrame[noneFrame];
@@ -143,8 +145,15 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
             motionStudyByFrame[msgData.frame].hydrateMotionStudy(msgData.analyticsData);
         });
 
+        realityEditor.network.addPostMessageHandler('analyticsSetSensor', (msgData) => {
+            console.log('set sensor', msgData);
+            sensors.setSensor(msgData.frame, msgData.position);
+        });
+
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
+
+        sensors.attachListeners();
     }
     exports.initService = initService;
 }(realityEditor.motionStudy));

@@ -29,9 +29,11 @@ export class MotionStudy {
     /**
      * @param {string} frame - frame id associated with instance of
      * motionStudy
+     * @param {MotionStudySensors} sensors
      */
-    constructor(frame) {
+    constructor(frame, sensors) {
         this.frame = frame;
+        this.sensors = sensors;
 
         this.windchill = new Windchill();
 
