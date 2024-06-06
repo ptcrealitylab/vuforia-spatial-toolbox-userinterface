@@ -35,7 +35,7 @@ export class HumanPoseAnalyzer {
         this.valueAddWasteTimeLens = new ValueAddWasteTimeLens(this.motionStudy);
         this.accelerationLens = new AccelerationLens();
         this.poseObjectIdLens = new PoseObjectIdLens();
-        
+
         /** @type {MotionStudyLens[]} */
         this.lenses = [
             this.rebaLens,
