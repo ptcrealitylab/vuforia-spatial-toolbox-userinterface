@@ -1,5 +1,13 @@
 import { credentials } from './APIKeys.js';
 
+/**
+ * @class NetworkInterface
+ * Provides a central location to manage the various fetches made to the toolbox edge server to interact with the
+ * /ai routes on the server, which in turn interact with Azure/OpenAI APIs.
+ * 
+ * @todo: the fetch paths have been temporarily adjusted to work with localhost and locally provided keys,
+ *   and the requests may need to be changed again if you are working with the cloud proxy
+ */
 export class NetworkInterface {
     constructor() {
         this.postAiApiKeys(credentials.gpt4o.endPoint, credentials.gpt4o.apiKey, true).then(res => {
@@ -9,6 +17,10 @@ export class NetworkInterface {
         });
     }
 
+    /**
+     * Note: this has been added for developing on localhost.
+     * On cloud proxy, API keys are provided on backend in another way.
+     */
     postAiApiKeys(endpoint, azureApiKey, isInit = false) {
         return new Promise(async (resolve, reject) => {
             if (!endpoint || !azureApiKey) {

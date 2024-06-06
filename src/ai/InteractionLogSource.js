@@ -1,6 +1,19 @@
 import { ContextSource } from './ContextSource.js';
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
+const ENVELOPE_EVENT_TEXT = Object.freeze({
+    open: 'opened',
+    close: 'closed',
+    focus: 'focused',
+    blur: 'minimized'
+});
+
+/**
+ * @class InteractionLogSource
+ * Sets up listeners for various user-interaction events, such as adding/removing tools, or opening/closing envelopes.
+ * From these, it builds up a log of messages in plain English, describing what's happened so far.
+ * @todo: there are plenty more system events that could potentially be monitored here and added to the log
+ */
 export class InteractionLogSource extends ContextSource {
     constructor() {
         super('InteractionLog');
@@ -37,18 +50,35 @@ export class InteractionLogSource extends ContextSource {
         realityEditor.network.registerCallback('vehicleDeleted', (params) => {
             this.onFrameDeleted(params, params.additionalInfo.avatarName);
         });
-        // realityEditor.envelopeManager.onEnvelopeOpened((params) => {
-        //
-        // });
-        // realityEditor.envelopeManager.onEnvelopeClosed((params) => {
-        //
-        // });
-        // realityEditor.envelopeManager.onEnvelopeFocused((params) => {
-        //
-        // });
-        // realityEditor.envelopeManager.onEnvelopeBlurred((params) => {
-        //
-        // });
+        realityEditor.envelopeManager.onOpen(envelope => {
+            this.onEnvelopeEvent(envelope, ENVELOPE_EVENT_TEXT.open);
+        });
+        realityEditor.envelopeManager.onClose(envelope => {
+            this.onEnvelopeEvent(envelope, ENVELOPE_EVENT_TEXT.close);
+        });
+        // TODO: we might want to filter out either focus or open, since both trigger in many circumstances
+        realityEditor.envelopeManager.onFocus(envelope => {
+            this.onEnvelopeEvent(envelope, ENVELOPE_EVENT_TEXT.focus);
+        });
+        realityEditor.envelopeManager.onBlur(envelope => {
+            this.onEnvelopeEvent(envelope, ENVELOPE_EVENT_TEXT.blur);
+        });
+    }
+
+    onEnvelopeEvent(envelope, verb = 'opened') {
+        // todo Steve: when another user open the envelope, it automatically opens & minimizes on my end, and here outputs that I opened it myself. Need to find a way to get the other user avatar's name and replace my name here
+        let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
+        let frame = realityEditor.getFrame(envelope.object, envelope.frame);
+
+        let timestamp = this.getFormattedTime();
+        let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
+        let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
+        let frameScrambledId = realityEditor.ai.crc.generateChecksum(frame.uuid);
+        realityEditor.ai.mapping.addToMap(avatarId, avatarName, avatarScrambledId);
+        realityEditor.ai.mapping.addToMap(frame.uuid, frame.src, frameScrambledId);
+        let newInfo = `The user ${avatarId} ${verb} a ${frame.src} tool (ID: ${frame.uuid}) at ${timestamp}.`;
+        console.log(newInfo);
+        this.eventLog.push(newInfo);
     }
 
     onFrameAdded(params, avatarId = 'Anonymous id') {

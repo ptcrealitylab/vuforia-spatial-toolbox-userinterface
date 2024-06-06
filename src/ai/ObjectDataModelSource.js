@@ -1,6 +1,15 @@
 import { ContextSource } from './ContextSource.js';
 import { uuidTime } from '../utilities/uuid.js';
 
+/**
+ * @class ObjectDataModelSource
+ * One of the largest ContextSources for the AI system. Builds a modified version of the object data model,
+ * Which the AI system can think of as the `sceneHierarchy`. It is the tree of objects -> tools, with their locations.
+ * Within each tool, it also adds as much context as possible from the IframeServiceOrchestrator, including:
+ * - the summarizedStates - a selected (developer-specified) description of the contents of the tool
+ * - the spatialReferences - a list of uuid<>name<>position references within the tool, that can appear as hyperlinks
+ * - the aiStateSummaries - a gen-AI description of the contents of the tool (if state and prompts are specified)
+ */
 export class ObjectDataModelSource extends ContextSource {
     constructor() {
         super('ObjectDataModel');
@@ -30,14 +39,6 @@ export class ObjectDataModelSource extends ContextSource {
         if (typeof data.applicationId === 'undefined') return null;
 
         this.summarizedStates[data.applicationId] = data.summarizedState;
-
-        // let isIdenticalToExisting = this.checkStateAndPrompts(data.applicationId, this.summarizedStates[data.applicationId], this.stateSummarizerPrompts[data.applicationId]);
-        //
-        // return {
-        //     state: this.summarizedStates[data.applicationId],
-        //     prompts: this.stateSummarizerPrompts[data.applicationId],
-        //     isIdenticalToExisting,
-        // };
     }
 
     updateToolStateForAiProcessing(data) {

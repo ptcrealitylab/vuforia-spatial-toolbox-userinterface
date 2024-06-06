@@ -1,5 +1,7 @@
 /**
- * Keeps track of all the relevant context for the AI system
+ * @class ContextCompositor
+ * Keeps track of all the relevant context for the AI system, by adding ContextSources to it.
+ * Calling getContext on the compositor returns the aggregated context of all its sources.
  */
 export class ContextCompositor {
     constructor() {

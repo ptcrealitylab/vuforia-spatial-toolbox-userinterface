@@ -171,7 +171,7 @@ createNameSpace("realityEditor.ai.mapping");
                 delete animations[frameId];
             // }
 
-            let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
+            let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
             if (spatialReference) {
                 stopHoverSpatialReference(spatialReference);
             }
@@ -183,7 +183,7 @@ createNameSpace("realityEditor.ai.mapping");
             animation = realityEditor.gui.recentlyUsedBar.createAnimation(frameId, false, true, startPos);
             animations[frameId] = animation;
 
-            let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
+            let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
             if (spatialReference) {
                 startHoverSpatialReference(spatialReference);
             }

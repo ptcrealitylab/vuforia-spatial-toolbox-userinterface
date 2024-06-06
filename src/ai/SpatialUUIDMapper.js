@@ -1,10 +1,20 @@
 /**
+ * @class SpatialUUIDMapper
  * Manages the translation and navigation of identifiers within a 3D scene. This class
  * preprocesses JSON data to replace spatial entity names and IDs with resilient UUIDs,
  * facilitating consistent identification across system interactions. It also ensures
  * that the transformed data integrates seamlessly with linked navigational elements
  * in the 3D environment, allowing for direct user interaction through clickable links
  * that navigate to and highlight specific entities in the scene.
+ * 
+ * There is some complexity and potential confusion in this class, as the mapping process of
+ * tool IDs -> AI-friendly UUIDs is slightly different compared to the mapping process of
+ * spatial reference IDs -> AI-friendly UUIDs. Spatial references get their parent tool ID
+ * appended to the reference ID, since it's possible that multiple tools could have a reference
+ * with the same ID, but these need to be treated differently by the AI system.
+ * 
+ * @todo: there is still a problem: If the user mentions a tool by name (e.g. spatialDraw or "drawing tool"), how can
+ *    we map that to a specific tool ID, especially if there are multiple of the same tool in the scene. Do we need to?
  */
 export class SpatialUUIDMapper {
     constructor() {

@@ -1,5 +1,18 @@
 import { uuidTime } from '../utilities/uuid.js';
 
+/**
+ * @class IframeAPIOrchestrator
+ * Manages a bidirectional flow of post messages to keep track of the tool iframe's SpatialApplicationAPIs.
+ * Is able to listen for API declarations from iframes, and compile them into an index known as the `apiRegistry`.
+ * The apiRegistry can be provided to GPT APIs to specify a set of functions that can be called by the AI system.
+ *
+ * Since this class is already monitoring the post messages coming from iframes, it is also given the task of listening
+ * for LanguageInterface messages (such as state summaries and spatial reference lists), but it does not process these
+ * itself; rather, these messages trigger events that other modules (e.g. the ChatInterface) can react to.
+ * 
+ * @todo: there is a problem: if multiple of the same tool type exist (e.g. two spatialDraw tools), it just picks one of
+ *   the tools at random to perform the function call. Ideally the function signature would include the tool ID.
+ */
 export class IframeAPIOrchestrator {
     constructor() {
         this.apiRegistry = {}; // stores the index of all known APIs per frame type and id
@@ -123,7 +136,7 @@ export class IframeAPIOrchestrator {
     async triggerAPI(applicationName, applicationId, apiName, parameterInfo, apiArguments) {
         console.log(parameterInfo);
         const parameters = parameterInfo.map(param => {
-            
+
             // match structure 1
             let matchingArgument = apiArguments.find(thisArg => {
                 return thisArg && typeof thisArg[param.name] !== 'undefined'; // thisArgName === param.name;
@@ -151,18 +164,7 @@ export class IframeAPIOrchestrator {
             console.warn('API call failed:', error);
         }
     }
-    
-    processApiAnswer(apiAnswer) {
-        let jsonObjects = this.extractJsonObjects(apiAnswer);
-        console.log(jsonObjects);
-        
-        this.processApiMatches(jsonObjects);
-        
-        // jsonObjects.forEach(apiRequest => {
-        //    
-        // });
-    }
-    
+
     async processFunctionCall(functionName, functionArgs) {
         return new Promise((resolve, reject) => {
 
@@ -180,7 +182,7 @@ export class IframeAPIOrchestrator {
                     }
                 });
             });
-            
+
             if (matchingTool) {
                 console.log(`found matching API on application ID: ${matchingTool.id}: ${functionName}`);
                 let apiInfo = this.apiRegistry[matchingTool.name][matchingTool.id][functionName];
@@ -240,133 +242,8 @@ export class IframeAPIOrchestrator {
         }
     }
 
-    extractJsonObjects(inputString) {
-        // Find all braces and attempt to parse the contents between them
-        let braceStack = [];
-        let potentialJsonBlocks = [];
-        let lastChar = '';
-
-        // Scan each character and keep track of positions of braces
-        for (let i = 0; i < inputString.length; i++) {
-            let char = inputString[i];
-            if (char === '{' && lastChar !== '\\') {
-                braceStack.push(i);
-            } else if (char === '}' && lastChar !== '\\' && braceStack.length > 0) {
-                let start = braceStack.pop();
-                let block = inputString.substring(start, i + 1);
-                try {
-                    let parsedJson = JSON.parse(block);
-                    potentialJsonBlocks.push(parsedJson);
-                } catch (error) {
-                    // If parsing fails, do not add to results
-                    console.error("Parsing failed at block: ", block);
-                }
-            }
-            lastChar = char;
-        }
-
-        return potentialJsonBlocks;
-    }
-
-// // Example usage with a known complex JSON embedded in text
-//     const inputString = `Here is some text before the JSON {
-//     "applicationId": "_WORLD_instantScanyU16ciu1_09rj746ig2lspatialDraw1g23rb16hifvh",
-//     "apiName": "addLine",
-//     "arguments": [
-//         {
-//             "startPoint": [0, 0, 0],
-//             "endPoint": [1, 2, 3],
-//             "color": "blue"
-//         }
-//     ]
-// } and here is some text after it.`;
-//     const results = extractJsonObjects(inputString);
-//     console.log(results);
-
-
-    // extractJsonObjects(inputString) {
-    //     // Regex pattern to loosely match what could be JSON objects or arrays
-    //     const pattern = /(\{[\s\S]*?\}|\[[\s\S]*?\])/g;
-    //
-    //     // Initialize an array to hold all valid JSON objects
-    //     let jsonObjects = [];
-    //
-    //     // Use the regex to find matches and iterate over them
-    //     let match;
-    //     while ((match = pattern.exec(inputString)) !== null) {
-    //         try {
-    //             // Parse each matched string as a JSON object
-    //             const parsedObject = JSON.parse(match[0]);
-    //             // Check if the parsed object is what we are interested in
-    //             if (Array.isArray(parsedObject) || (parsedObject.hasOwnProperty('applicationId') && parsedObject.hasOwnProperty('apiName') && parsedObject.hasOwnProperty('parameterInfo'))) {
-    //                 jsonObjects.push(parsedObject);
-    //             }
-    //         } catch (error) {
-    //             console.error("Failed to parse JSON: ", error);
-    //         }
-    //     }
-    //
-    //     // Return the array of JSON objects
-    //     return jsonObjects;
-    // }
-
-    // extractJsonObjects(inputString) {
-    //     // Regex pattern to match the JSON objects with specific keys
-    //     const pattern = /{[\s\n]*"applicationId"\s*:\s*"([^"]+)"\s*,[\s\n]*"apiName"\s*:\s*"([^"]+)"\s*,[\s\n]*"arguments"\s*:\s*\[\s*(.*?)\s*\][\s\n]*}/g;
-    //
-    //     // Initialize an array to hold all valid JSON objects
-    //     let jsonObjects = [];
-    //
-    //     // Use the regex to find matches and iterate over them
-    //     let match;
-    //     while ((match = pattern.exec(inputString)) !== null) {
-    //         try {
-    //             // Parse each matched string as a JSON object
-    //             const jsonObject = JSON.parse(match[0]);
-    //             jsonObjects.push(jsonObject);
-    //         } catch (error) {
-    //             console.error("Failed to parse JSON: ", error);
-    //         }
-    //     }
-    //
-    //     // Return the array of JSON objects
-    //     return jsonObjects;
-    // }
-
-    // // Example usage:
-    //     const inputString = 'Some non-JSON text { "applicationId": "_WORLD_instantScanyU16ciu1_09rj746ig2lspatialDraw1Dxbmvs3q4gji", "apiName": "clearCanvas", "parameterInfo": [] } more text';
-    //     const results = extractJsonObjects(inputString);
-    //     console.log(results);
-
-    processApiMatches(matches) {
-        // matches is a list like:
-        // {
-        //     applicationId: match[1],
-        //         apiName: match[2]
-        // }
-        
-        matches.forEach(match => {
-            Object.keys(this.apiRegistry).forEach(applicationName => {
-                let appRegistry = this.apiRegistry[applicationName];
-                let matchingApplicationId = Object.keys(appRegistry).find(frameId => {
-                    return frameId === match.applicationId || frameId.includes(match.applicationId);
-                });
-                if (matchingApplicationId && typeof appRegistry[matchingApplicationId] !== 'undefined') {
-                    if (typeof appRegistry[matchingApplicationId][match.apiName] !== 'undefined') {
-                        console.log(`found matching API on application ID: ${matchingApplicationId}: ${match.apiName}`);
-                        this.triggerAPI(applicationName, matchingApplicationId, match.apiName, appRegistry[matchingApplicationId][match.apiName].parameterInfo, match.arguments).then(res => {
-                            console.log(res);
-                        }).catch(err => {
-                            console.warn(err);
-                        }).finally(() => {
-                            console.log('API invocation is done.');
-                        });
-                    }
-                }
-            });
-        });
-    }
-
+    // NOTE: this UI is purely for debugging purposes, especially for earlier versions of the system.
+    // To enable the UI, find #temp-ui-container in index.css and remove its `visibility: hidden;`
     updateUI() {
         if (!this.container) {
             this.container = document.createElement('div');
@@ -375,11 +252,11 @@ export class IframeAPIOrchestrator {
         }
 
         this.container.innerHTML = ''; // Clear existing UI
-        
+
         let titleDiv = document.createElement('div');
         titleDiv.innerText = 'API List (Debugger)';
-        
-        
+
+
         Object.keys(this.apiRegistry).forEach(applicationName => {
             Object.keys(this.apiRegistry[applicationName]).forEach(applicationId => {
                 const apis = this.apiRegistry[applicationName][applicationId];
@@ -442,5 +319,5 @@ export class IframeAPIOrchestrator {
             this.specialCaseHandlers[apiName] = [];
         }
         this.specialCaseHandlers[apiName].push(handler);
-    } 
+    }
 }

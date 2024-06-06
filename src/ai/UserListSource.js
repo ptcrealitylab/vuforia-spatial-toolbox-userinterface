@@ -1,5 +1,11 @@
 import { ContextSource } from './ContextSource.js';
 
+/**
+ * @class UserListSource
+ * Provides the list of connected users (avatars) to the ContextCompositor, as well as extra information about
+ * the avatar corresponding to this user's client. Currently just provides name and cursor position.
+ * @todo: provide more info, like join time, viewer position, following state, isPointerActive, etc.
+ */
 export class UserListSource extends ContextSource {
     constructor() {
         super('UserList');

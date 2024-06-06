@@ -18,3 +18,4 @@ coverage/
 /.vscode
 
 /src/assistant/config.js
+/src/ai/APIKeys.js

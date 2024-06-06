@@ -8,8 +8,15 @@ import { IframeAPIOrchestrator } from './IframeServiceOrchestrator.js';
 import { NetworkInterface } from './NetworkInterface.js';
 
 /**
- * Sends user input and context to server.
- * Writes server responses to history.
+ * @class ChatInterface
+ * The primary class of the AI system. This connects the user queries with relevant context, sends the
+ * requests to the server after preprocessing them with UUID transformations, and handles the GPT
+ * response (whether a text response or a function_call response).
+ * Makes use of various class instances to delegate these tasks, such as the ContextCompositor, various ContextSources,
+ * the SpatialUUIDMapper, IframeAPIOrchestrator, and the NetworkInterface.
+ * To add more context to the request, simply add more ContextSources to the ContextCompositor.
+ * @todo: add a SemanticSegmentationSource,
+ *   and possibly a HumanMotionSource (but maybe that can be captured by ObjectDataModelSource)
  */
 export class ChatInterface {
     constructor() {
@@ -19,16 +26,13 @@ export class ChatInterface {
         this.apiOrchestrator = new IframeAPIOrchestrator();
         this.setupSpecialFunctionCases();
 
-        let objectDataModelSource = new ObjectDataModelSource();
-        this.objectDataModelSource = objectDataModelSource;
+        this.objectDataModelSource = new ObjectDataModelSource();
         let userListSource = new UserListSource();
         let interactionLogSource = new InteractionLogSource();
         // let semanticSegmentationSource = new SemanticSegmentationSource();
-
-        // TODO: call addToHistory on the ChatHistorySource when a message is sent/received
         this.chatHistorySource = new ChatHistorySource();
 
-        this.contextCompositor.addSource(objectDataModelSource);
+        this.contextCompositor.addSource(this.objectDataModelSource);
         this.contextCompositor.addSource(userListSource);
         this.contextCompositor.addSource(interactionLogSource);
         this.contextCompositor.addSource(this.chatHistorySource);
@@ -36,42 +40,24 @@ export class ChatInterface {
 
         this.apiOrchestrator.onSpatialReferenceUpdated(data => {
             this.spatialUuidMapper.updateSpatialReference(data);
-            objectDataModelSource.updateSpatialReference(data);
+            this.objectDataModelSource.updateSpatialReference(data);
         });
 
         this.apiOrchestrator.onSummarizedStateUpdated(async (data) => {
-            objectDataModelSource.updateSummarizedState(data);
-
-            // if (result && !result.isIdenticalToExisting) {
-            //     await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
-            // }
-
-            // if (this.stateSummarizerPrompts[data.applicationId]) {
-            //     // run the summary through the AI prompts to arrive at a final result
-            //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
-            //
-            //     });
-            // }
+            this.objectDataModelSource.updateSummarizedState(data);
         });
 
         this.apiOrchestrator.onAiProcessingStateUpdated(async (data) => {
-            let result = objectDataModelSource.updateToolStateForAiProcessing(data);
+            let result = this.objectDataModelSource.updateToolStateForAiProcessing(data);
 
             if (result && !result.isIdenticalToExisting) {
                 await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
             }
-
-            // if (this.stateSummarizerPrompts[data.applicationId]) {
-            //     // run the summary through the AI prompts to arrive at a final result
-            //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
-            //
-            //     });
-            // }
         });
 
         this.apiOrchestrator.onAiProcessingPromptsUpdated(async (data) => {
             // let toolSpecificStateSummarizerPrompts = {};
-            let result = objectDataModelSource.updateToolStateProcessingPrompts(data);
+            let result = this.objectDataModelSource.updateToolStateProcessingPrompts(data);
 
             if (result && !result.isIdenticalToExisting) {
                 await this.runStateSummarizerPrompts(data.applicationId, result.state, result.prompts);
@@ -88,28 +74,19 @@ export class ChatInterface {
             this.objectDataModelSource.updateAiProcessedState(applicationId, applicationState, applicationPrompts, res.answer);
         }).catch(err => {
             console.warn('error in getting processedState from runStateSummarizerPrompts', err);
-        })
-        
-        // toolPrompts.forEach(async (prompt) => {
-        //    
-        // });
-        // if (this.stateSummarizerPrompts[data.applicationId]) {
-        //     // run the summary through the AI prompts to arrive at a final result
-        //     this.stateSummarizerPrompts[data.applicationId].forEach((prompt) => {
-        //
-        //     });
-        // }
+        });
     }
 
     // TODO: implement saveContext and loadContext (into server or client) so that we know what happened before refresh
     // saveContext() {
     //     window.localStorage.setItem('chatContext', this.contextCompositor.getContext());
-    //     // TODO: save it to the server instead
+    //     // easy way is in localStorage, but better way would be to save it to the server instead
+    //     // probably only need to store interactionLog and chatHistory, as others can be recalculated
     // }
     //
     // loadContext() {
     //     let initialContext = window.localStorage.getItem('chatContext');
-    //     // TODO: feed this context into each data source as a starting point...
+    //     // easy way is in localStorage, but better way would be to save it to the server instead
     // }
 
     askQuestion(userInput) {
@@ -134,19 +111,6 @@ export class ChatInterface {
 
         // adds the unprocessed userInput to the chat history
         this.chatHistorySource.addToHistory('user', userInput);
-
-        // {
-        //     mostRecentMessage: mostRecentMessage,
-        //     pastMessages: pastMessages,
-        //     interactionLog: interactionLog,
-        //     toolAPIs: toolAPIs,
-        //     connectedUsers: connectedUsers,
-        //     myUser: myUser,
-        //     simplifiedDataModel: simplifiedDataModel,
-        //     extra: extra,
-        // }
-
-        // TODO: update the URL to match the old postQuestionToAI implementation if you want to use cloud proxy
 
         // TODO: refactor this into the NetworkInterface
         fetch(realityEditor.network.getURL(ip, port, route), {
@@ -221,50 +185,15 @@ export class ChatInterface {
         return span;
     }
 
+    // NOTE: the "handleSpecialCase" can probably be deleted entirely now...
+    // it is used to add special capabilities to the system for demos in an un-scalable way, on short notice
     setupSpecialFunctionCases() {
         this.apiOrchestrator.handleSpecialCase('getPartNamesAndPositions', (res, toolName, toolId, parameterInfo, functionArgs) => {
-            // console.log('apiOrchestrator special case', res);
-
-            // if (res && res.length) {
-            //     res.forEach(part => {
-            //         // let timestamp = getFormattedTime();
-            //         let partId = makeSafeString(`${toolId}_part_${part.name}`);
-            //         let partName = part.name;
-            //         // let avatarName = realityEditor.avatar.getAvatarNameFromObjectKey(avatarId);
-            //         // let avatarScrambledId = realityEditor.ai.crc.generateChecksum(avatarId);
-            //         let partScrambledId = realityEditor.ai.crc.generateChecksum(partId);
-            //         map.addToMap(partId, partName, partScrambledId);
-            //         // map.addToMap(frameId, frameType, frameScrambledId);
-            //         // let newInfo = `User ${avatarScrambledId} added a ${frameScrambledId} tool at ${timestamp} at (${position.x.toFixed(0)},${position.y.toFixed(0)},${position.z.toFixed(0)})`;
-            //         // console.log(newInfo);
-            //
-            //         partMap[partId] = {
-            //             name: partName,
-            //             position: {
-            //                 x: part.x,
-            //                 y: part.y,
-            //                 z: part.z
-            //             }
-            //         };
-            //     });
-            // }
+            // console.log('apiOrchestrator special case', res); // Not needed anymore since spatialReferences APIs have been added
         });
 
         this.apiOrchestrator.handleSpecialCase('setPartPosition', (res, toolName, toolId, parameterInfo, functionArgs) => {
-            // console.log('apiOrchestrator setPartPosition special case', res);
-
-            // let partName = functionArgs.partName;
-            // if (!partName || !res) return;
-            // let partId = makeSafeString(`${toolId}_part_${partName}`);
-            //
-            // partMap[partId] = {
-            //     name: partName,
-            //     position: {
-            //         x: res.x,
-            //         y: res.y,
-            //         z: res.z
-            //     }
-            // };
+            // console.log('apiOrchestrator setPartPosition special case', res); // Not needed anymore since spatialReferences APIs have been added
         });
     }
 
@@ -299,16 +228,6 @@ export class ChatInterface {
         // Send the result back to the server
         let res = await this.networkInterface.postFunctionResultToAI(functionCallId, processedResult);
         console.log(res);
-
-        // await fetch('/ai/function-result', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({ functionCallId, result: functionResult })
-        // });
-
-        // Wait for the server to process the result and provide the final response
-        // const res = await fetch(`/ai/query-status?functionCallId=${functionCallId}`);
-        // let res = await realityEditor.network.queryAIStatus(functionCallId);
 
         // const res = await response.json();
         if (res.functionCallId) {

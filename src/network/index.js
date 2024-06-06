@@ -2387,50 +2387,6 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
 
-realityEditor.network.postQuestionToAI = async function(conversation, extra) {
-    let route = '/ai/question';
-    
-    let worldId = realityEditor.worldObjects.getBestWorldObject();
-    let ip = worldId.ip;
-    let port = realityEditor.network.getPort(worldId);
-
-    this.postData(realityEditor.network.getURL(ip, port, route),
-        {
-            conversation: conversation,
-            extra: extra,
-        },
-        function (err, res) {
-            if (err) {
-                console.warn('ai/question error:', err);
-            } else {
-                if (res.tools !== undefined) {
-                    realityEditor.ai.getToolAnswer(res.category, res.tools);
-                } else {
-                    realityEditor.ai.getAnswer(res.category, res.answer);
-                }
-            }
-        });
-
-    // TODO: re-enable this part if you want to use cloud proxy
-    // const response = await fetch(window.location.origin + route, {
-    //     headers: {
-    //         'Accept': 'application/json',
-    //         'Content-Type': 'application/json'
-    //     },
-    //     method: 'POST',
-    //     body: JSON.stringify({
-    //         conversation: conversation,
-    //         extra: extra,
-    //     })
-    // });
-    // const res = await response.json();
-    // if (res.tools !== undefined) {
-    //     realityEditor.ai.getToolAnswer(res.category, res.tools);
-    // } else {
-    //     realityEditor.ai.getAnswer(res.category, res.answer);
-    // }
-}
-
 /**
  * When the settings menu posts up its new state to the rest of the application, refresh/update all settings
  * Also used for the settings menu to request data from the application, such as the list of Found Objects

@@ -446,23 +446,12 @@ class LineToFrameAnimation {
             y: 0
         };
 
-        let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[this.hoveredFrameId];
+        // TODO: ideally there will be a cleaner API to get the spatialReference
+        let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[this.hoveredFrameId];
         if (spatialReference) {
             // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
             let position3d = realityEditor.gui.threejsScene.convertToVector3(spatialReference.position);
             frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
-        // }
-        
-        // if (this.hoveredFrameId && this.hoveredFrameId.includes('_part_')) {
-        //     // console.log('todo: ben implement part screen position');
-        //     // TODO: consult the SpatialUUIDMapper to convert hoveredFrameId (e.g. '_WORLD_polarisHighRes_d2h8586m7vtthingview13Y5tqv8c5e3o_5256783.prt') to a position
-        //     let partInfo = realityEditor.ai.getPartInfo(this.hoveredFrameId);
-        //     if (partInfo) {
-        //         // let position = partInfo.position;
-        //         // let floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset();
-        //         let partPosition = new realityEditor.gui.threejsScene.THREE.Vector3(partInfo.position.x, partInfo.position.y, partInfo.position.z);
-        //         frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(partPosition);
-        //     }
         } else {
             frameScreenPosition = this.hoveredFrameId ?
                 realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
