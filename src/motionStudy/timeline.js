@@ -31,6 +31,16 @@ const DragMode = {
 
 const DEFAULT_WIDTH_MS = 60 * 1000;
 
+const Colors = {
+    highlightFill: '#00ffff',
+    cursorFill: 'white',
+    boardBackgroundFill: 'rgba(0, 0, 0, 0.1)',
+    pinnedRegionCardActiveStroke: 'white',
+    patchFill: 'rgb(200, 200, 200)',
+    wasteFill: '#880000',
+    valueAddFill: '#008800',
+};
+
 export class Timeline {
     /**
      * @param {MotionStudy} motionStudy - parent MotionStudy instance of this timeline
@@ -188,7 +198,7 @@ export class Timeline {
 
         this.gfx.clearRect(0, 0, this.width, this.height);
 
-        this.gfx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        this.gfx.fillStyle = Colors.boardBackgroundFill;
         this.gfx.fillRect(0, boardStart, this.width, boardHeight);
 
         this.rowIndex = 0;
@@ -216,7 +226,7 @@ export class Timeline {
         }
 
         let startX = this.timeToX(this.highlightRegion.startTime);
-        this.gfx.fillStyle = '#00ffff';
+        this.gfx.fillStyle = Colors.highlightFill;
         this.gfx.beginPath();
         this.gfx.moveTo(startX + needleWidth / 2, 0);
         this.gfx.lineTo(startX + needleWidth / 2, this.height);
@@ -242,7 +252,7 @@ export class Timeline {
             return;
         }
         let x = this.timeToX(this.cursorTime);
-        this.gfx.fillStyle = 'white';
+        this.gfx.fillStyle = Colors.cursorFill;
         this.gfx.fillRect(x - needleWidth / 2, 0, needleWidth, boardHeight + needlePad * 2);
     }
 
@@ -530,7 +540,7 @@ export class Timeline {
                 let dashes = [4, 4];
                 this.gfx.lineDashOffset = offset;
                 this.gfx.setLineDash(dashes);
-                this.gfx.strokeStyle = 'white';
+                this.gfx.strokeStyle = Colors.pinnedRegionCardActiveStroke;
                 this.gfx.strokeRect(
                     startX,
                     rowY,
@@ -560,7 +570,7 @@ export class Timeline {
         const rowY = this.rowIndexToRowY(this.rowIndex);
         this.rowIndex += 1;
 
-        this.gfx.fillStyle = 'rgb(200, 200, 200)';
+        this.gfx.fillStyle = Colors.patchFill;
 
         for (const patch of patches) {
             let timeStart = patch.creationTime;
@@ -613,7 +623,9 @@ export class Timeline {
             const startX = this.timeToX(timeStart);
             const endX = this.timeToX(timeEnd);
 
-            this.gfx.fillStyle = region.value === ValueAddWasteTimeTypes.WASTE_TIME ? "#880000" : "#008800";
+            this.gfx.fillStyle = region.value === ValueAddWasteTimeTypes.WASTE_TIME ?
+                Colors.wasteFill :
+                Colors.valueAddFill;
             this.gfx.fillRect(
                 startX,
                 rowY,
