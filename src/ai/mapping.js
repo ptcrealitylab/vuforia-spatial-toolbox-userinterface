@@ -35,7 +35,7 @@ createNameSpace("realityEditor.ai.mapping");
     let threeMap = new ThreeMap();
     
     function addToMap(key, value, scrambledKey) {
-        console.log(`threeMap.set(${key}, ${value}, ${scrambledKey}`);
+        // console.log(`threeMap.set(${key}, ${value}, ${scrambledKey}`);
         threeMap.set(key, value, scrambledKey);
     }
     
@@ -170,15 +170,67 @@ createNameSpace("realityEditor.ai.mapping");
                 realityEditor.gui.recentlyUsedBar.removeAnimation(animation);
                 delete animations[frameId];
             // }
+
+            let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
+            if (spatialReference) {
+                stopHoverSpatialReference(spatialReference);
+            }
+
             return;
         }
 
         if (!animation) {
             animation = realityEditor.gui.recentlyUsedBar.createAnimation(frameId, false, true, startPos);
             animations[frameId] = animation;
+
+            let spatialReference = window.chatInterface.spatialUuidMapper.spatialReferenceMap[frameId];
+            if (spatialReference) {
+                startHoverSpatialReference(spatialReference);
+            }
+
         } else {
             animation.hoveredFrameId = frameId;
         }
+    }
+
+    function startHoverSpatialReference(spatialReference) {
+        const {
+            applicationId,
+            referenceUuid,
+            scrambledUuid,
+            position,
+            name
+        } = spatialReference;
+
+        let iframeElt = document.getElementById('iframe' + applicationId);
+        if (!iframeElt) return;
+        iframeElt.contentWindow.postMessage({
+            type: 'HIGHLIGHT_SPATIAL_REFERENCE',
+            applicationId,
+            referenceUuid,
+            name,
+            position,
+        }, '*');
+    }
+
+    function stopHoverSpatialReference(spatialReference) {
+        const {
+            applicationId,
+            referenceUuid,
+            scrambledUuid,
+            position,
+            name
+        } = spatialReference;
+
+        let iframeElt = document.getElementById('iframe' + applicationId);
+        if (!iframeElt) return;
+        iframeElt.contentWindow.postMessage({
+            type: 'UNHIGHLIGHT_SPATIAL_REFERENCE',
+            applicationId,
+            referenceUuid,
+            name,
+            position,
+        }, '*');
     }
     
     exports.setupEventListeners = setupEventListeners;
