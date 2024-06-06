@@ -497,7 +497,7 @@ export class Timeline {
 
         const rowY = this.rowIndexToRowY(this.rowIndex);
         this.rowIndex += 1;
-        
+
         const timeMax = this.timeMin + this.widthMs;
 
         for (const prc of this.motionStudy.pinnedRegionCards) {
@@ -592,7 +592,7 @@ export class Timeline {
             );
         }
     }
-    
+
     drawValueAddWasteTime() {
         if (this.motionStudy.valueAddWasteTimeManager.regions.length === 0) {
             return;
@@ -602,14 +602,14 @@ export class Timeline {
         this.rowIndex += 1;
 
         const timeMax = this.timeMin + this.widthMs;
-        
+
         this.motionStudy.valueAddWasteTimeManager.regions.forEach(region => {
             if (region.endTime < this.timeMin || region.startTime > timeMax) {
                 return;
             }
             const timeStart = Math.max(region.startTime, this.timeMin);
             const timeEnd = Math.min(region.endTime, timeMax);
-            
+
             const startX = this.timeToX(timeStart);
             const endX = this.timeToX(timeEnd);
 
@@ -744,7 +744,7 @@ export class Timeline {
         this.mouseX = event.offsetX;
         this.mouseY = event.offsetY;
     }
-    
+
     isPointerOnRow() {
         return this.mouseY > boardStart &&
             this.mouseY < this.rowIndexToRowY(this.rowIndex) - rowPad;
