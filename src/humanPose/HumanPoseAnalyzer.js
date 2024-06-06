@@ -1128,6 +1128,8 @@ export class HumanPoseAnalyzer {
             clone.renderer.markMatrixNeedsUpdate();
             clone.setVisible(visible && canBeVisible);
         }
+
+        this.motionStudy.sensors.playbackSetActivationFromClones(this.clones.all);
     }
 
     /**
@@ -1139,6 +1141,7 @@ export class HumanPoseAnalyzer {
             clone.setVisible(canBeVisible);
             clone.renderer.markMatrixNeedsUpdate();
         });
+        this.motionStudy.sensors.playbackSetActivationFromClones(this.clones.all);
     }
 
     /**
@@ -1149,12 +1152,18 @@ export class HumanPoseAnalyzer {
             clone.setVisible(false);
             clone.renderer.markMatrixNeedsUpdate();
         });
+
+        this.motionStudy.sensors.playbackClearActivation();
     }
 
     /**
      * Hides the current displayed clones
      */
     hideLastDisplayedClones() {
+        if (this.lastDisplayedClones.length === 0) {
+            return;
+        }
+        this.motionStudy.sensors.playbackClearActivation();
         this.lastDisplayedClones.forEach(clone => {
             clone.setVisible(false);
             clone.renderer.markMatrixNeedsUpdate();
@@ -1197,6 +1206,8 @@ export class HumanPoseAnalyzer {
         });
 
         this.lastDisplayedClones = bestClones;
+
+        this.motionStudy.sensors.playbackSetActivationFromClones(this.lastDisplayedClones);
     }
 
     /**

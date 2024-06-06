@@ -207,6 +207,7 @@ export class Timeline {
         this.drawPinnedRegionCards();
         this.drawPatches();
         this.drawValueAddWasteTime();
+        this.drawSensors();
 
         this.drawHighlightRegion();
 
@@ -633,6 +634,107 @@ export class Timeline {
                 rowHeight
             );
         });
+    }
+
+    drawSensors() {
+        let allPoses = getPosesInTimeInterval(this.timeMin, this.timeMin + this.widthMs);
+        if (allPoses.length === 0) {
+            return;
+        }
+
+        for (let sensorFrame of this.motionStudy.sensors.getSensorFrames()) {
+            this.drawSensor(sensorFrame, allPoses);
+        }
+    }
+
+    drawSensor(sensorFrame, poses) {
+        const sensors = this.motionStudy.sensors;
+        const sensorColor = sensors.getSensorColor(sensorFrame);
+        let lastPose = poses[0];
+        let lastPoseTime = lastPose.timestamp;
+        let lastPoseActive = sensors.isSensorActive(sensorFrame, lastPose);
+        let startSectionTime = lastPoseTime;
+        const maxPoseDelayLenience = 500;
+
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+
+        const timeMax = this.timeMin + this.widthMs;
+
+        for (const pose of poses) {
+            if (pose.timestamp < this.timeMin) {
+                startSectionTime = pose.timestamp;
+                lastPose = pose;
+                lastPoseTime = lastPose.timestamp;
+                continue;
+            }
+            if (pose.timestamp > this.timeMin + this.widthMs) {
+                break;
+            }
+            const isGap = pose.timestamp - lastPoseTime > maxPoseDelayLenience;
+            const poseActive = sensors.isSensorActive(sensorFrame, pose);
+            const isSwap = poseActive !== lastPoseActive;
+            if (!isGap && !isSwap) {
+                lastPose = pose;
+                lastPoseTime = lastPose.timestamp;
+                continue;
+            }
+
+            // When swapping highlight allow the pose section to clip on the
+            // right side at the highlight region border
+            if (isSwap && !isGap && this.highlightRegion) {
+                // Swap point is either due to the start or the end, whichever
+                // is between the two poses
+                if (lastPoseTime < this.highlightRegion.startTime &&
+                    this.highlightRegion.startTime < pose.timestamp) {
+                    lastPoseTime = this.highlightRegion.startTime;
+                }
+                if (lastPoseTime < this.highlightRegion.endTime &&
+                    this.highlightRegion.endTime < pose.timestamp) {
+                    lastPoseTime = this.highlightRegion.endTime;
+                }
+            }
+
+            if (lastPoseActive) {
+                this.gfx.fillStyle = sensorColor;
+                const startX = this.timeToX(startSectionTime);
+                const endX = this.timeToX(lastPoseTime);
+                this.gfx.fillRect(
+                    startX,
+                    rowY,
+                    endX - startX,
+                    rowHeight
+                );
+            }
+
+            if (isSwap && !isGap) {
+                // When swapping color extend the pose section
+                // leftwards down to the highlight region border
+                startSectionTime = lastPoseTime;
+            } else {
+                startSectionTime = pose.timestamp;
+            }
+            lastPose = pose;
+            lastPoseTime = pose.timestamp;
+            lastPoseActive = poseActive;
+        }
+
+        if (timeMax - lastPoseTime < maxPoseDelayLenience) {
+            lastPoseTime = timeMax;
+        }
+
+        if (lastPoseActive) {
+            this.gfx.fillStyle = sensorColor;
+            const startX = this.timeToX(startSectionTime);
+            const endX = this.timeToX(lastPoseTime);
+            this.gfx.fillRect(
+                startX,
+                rowY,
+                endX - startX,
+                rowHeight
+            );
+        }
+
+        this.rowIndex += 1;
     }
 
     calculateAndDrawTicks() {
