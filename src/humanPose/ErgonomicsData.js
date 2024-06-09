@@ -268,8 +268,14 @@ export class ErgonomicsData {
         if (trunkUpFrontalProjection.dot(this.orientations.hips.right) < 0) {
             this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] *= -1;
         }
-        // Twist angle wrt hips forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
-        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.right, this.orientations.hips.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the trunk
+        // Projection of hips right direction to the twist plane across trunk where the normal is this.orientations.trunk.up. This assumes that both vectors have unit length.
+        // This is to eliminate an effect of front/side bend on twist angle.
+        const hipsRightProjection = this.orientations.hips.right.clone().sub(this.orientations.trunk.up.clone().multiplyScalar(this.orientations.trunk.up.dot(this.orientations.hips.right)));
+        // Twist angle wrt hips forward direction (range of [-180, 180]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.right, hipsRightProjection); 
+        if (hipsRightProjection.cross(this.orientations.trunk.right).dot(this.orientations.trunk.up) > 0) {   // warning: hipsRightProjection is changed by cross()
+            this.angles[ERGO_ANGLES.TRUNK_TWIST] *= -1;  // twisting to the left
+        }
         //console.log(`Trunk: bendAngle=${this.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND].toFixed(0)}deg;
         //             sideBendAngle=${this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg`);
 
