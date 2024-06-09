@@ -297,8 +297,14 @@ export class ErgonomicsData {
         if (headUpFrontalProjection.dot(this.orientations.trunk.right) < 0) {
             this.angles[ERGO_ANGLES.HEAD_SIDE_BEND] *= -1;
         }
-        // Twist angle wrt trunk forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
-        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.right, this.orientations.trunk.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the head
+        // Projection of trunk right direction to the twist plane across head where the normal is this.orientations.head.up. This assumes that both vectors have unit length.
+        // This is to eliminate an effect of front/side bend on twist angle.
+        const trunkRightProjection = this.orientations.trunk.right.clone().sub(this.orientations.head.up.clone().multiplyScalar(this.orientations.head.up.dot(this.orientations.trunk.right)));
+        // Twist angle wrt trunk forward direction (range of [-180, 180]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.right, trunkRightProjection); 
+        if (trunkRightProjection.cross(this.orientations.head.right).dot(this.orientations.head.up) > 0) {   // warning: trunkRightProjection is changed by cross()
+            this.angles[ERGO_ANGLES.HEAD_TWIST] *= -1;  // twisting to the left
+        }
         //console.log(`Head: bendAngle=${this.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.HEAD_FRONT_BEND].toFixed(0)}deg;
         //             sideBendAngle=${this.angles[ERGO_ANGLES.HEAD_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg`);
 
