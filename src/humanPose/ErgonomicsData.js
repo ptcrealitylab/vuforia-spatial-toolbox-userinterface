@@ -390,10 +390,15 @@ export class ErgonomicsData {
 
             if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP] && // check if hand joints have valid positions
                 this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {  // check if the arm is almost straight, therefore the rotation axis of elbow (leftLowerArm.right) cannot be calculated reliably
+               
+                // Projection of hand right direction to the plane across lower arm where normal is this.orientations.leftLowerArm.up. This assumes that both vectors have unit length.
+                // This is to eliminate an effect of hand side bend on twist angle.
+                const handRightProjection = this.orientations.leftHand.right.clone().sub(this.orientations.leftLowerArm.up.clone().multiplyScalar(this.orientations.leftLowerArm.up.dot(this.orientations.leftHand.right)));
+                
                 // Twist of hand wrt. rotation axis of elbow (only positive range [0, 180]deg). When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
                 // When the both vectors have 180deg angle between them there is the maximum twist.
                 // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
-                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);
+                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, handRightProjection);
             } 
         } 
 
@@ -402,7 +407,10 @@ export class ErgonomicsData {
             
             if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP] &&
                 this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {
-                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
+                // negated to have a symmetrical definition of twist angle for left and right arm
+                const handLeft = this.orientations.rightHand.right.clone().negate();
+                const handLeftProjection = handLeft.sub(this.orientations.rightLowerArm.up.clone().multiplyScalar(this.orientations.rightLowerArm.up.dot(handLeft)));
+                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), handLeftProjection); // negated to have a symmetrical definition of twist angle for left and right arm
             }
         }
 
