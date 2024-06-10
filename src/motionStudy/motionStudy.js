@@ -243,6 +243,14 @@ export class MotionStudy {
         this.pinnedRegionCardsContainer.appendChild(this.titleInput);
     }
 
+    getTitle() {
+        return this.titleInput.textContent;
+    }
+
+    setTitle(title) {
+        this.titleInput.textContent = title;
+    }
+
     draw() {
         if (this.container.parentElement) {
             this.timeline.draw();
@@ -553,7 +561,7 @@ export class MotionStudy {
         });
 
         if (data.title) {
-            this.titleInput.textContent = data.title;
+            this.setTitle(data.title);
         }
 
         for (let pinnedRegionCard of this.pinnedRegionCards) {
@@ -775,8 +783,8 @@ export class MotionStudy {
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },
             );
-            if (this.titleInput.textContent) {
-                motionStudyData.title = this.titleInput.textContent;
+            if (this.getTitle()) {
+                motionStudyData.title = this.getTitle();
             }
             realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
 
