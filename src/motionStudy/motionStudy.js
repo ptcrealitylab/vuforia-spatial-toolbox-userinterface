@@ -925,6 +925,45 @@ export class MotionStudy {
                 this.windchill.writeProcessPlanData(this.plan, this.pinnedRegionCards);
             }
         }
+
+        this.updateSummarizedState();
+    }
+
+    updateSummarizedState() {
+        let title = this.getTitle();
+        let operationCount = this.pinnedRegionCards.length;
+        let summary = `The process plan's motion study is labeled "${title}" and contains ${operationCount} operations. `;
+        let cardSummaries = this.pinnedRegionCards.map((card, i) => {
+            let cardSummary = `Operation ${i} is "${card.getLabel()}", `;
+            let duration = Math.round((card.endTime - card.startTime) / 1000) + ' seconds';
+            cardSummary += `took ${duration} to complete, `;
+            if (card.step) {
+                let prefix = `was planned in `;
+                if (card.step.laborTimeSeconds > 0.5) { // Interesting non-zero planned time
+                    prefix = `was planned to take ${card.step.laborTimeSeconds} seconds in `;
+                }
+                let stepDesc = prefix + `WindChill operation id "${card.step.id}", `;
+                cardSummary += stepDesc;
+            }
+            let rebaAvg = card.graphSummaryValues?.REBA?.average;
+            if (!rebaAvg) {
+                cardSummary += 'and is missing information on repetitive strain. ';
+            } else {
+                cardSummary += 'and has ';
+                if (rebaAvg < 4) {
+                    cardSummary += 'a safe '
+                } else if (rebaAvg < 8) {
+                    cardSummary += 'a potentially unsafe ';
+                } else {
+                    cardSummary += 'an unsafe ';
+                }
+                cardSummary += 'level of repetitive strain.';
+            }
+            return cardSummary;
+        });
+        summary += cardSummaries.join(' ');
+
+        realityEditor.ai.updateSummarizedState(this.frame, summary);
     }
 
     pinRegionCard(regionCard) {
