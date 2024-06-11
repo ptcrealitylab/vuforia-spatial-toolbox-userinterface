@@ -963,7 +963,56 @@ export class MotionStudy {
         });
         summary += cardSummaries.join(' ');
 
+        summary += '\n' + this.getSummarizedTimelineState();
+
+        console.log('summary', summary);
         realityEditor.ai.updateSummarizedState(this.frame, summary);
+    }
+
+    getSummarizedTimelineState() {
+        const allPoses = this.getPosesInTimeIntervalWithFallback(
+            this.lastDisplayRegion.startTime,
+            this.lastDisplayRegion.endTime,
+        );
+        if (allPoses.length === 0) {
+            return;
+        }
+
+        let events = [];
+        for (let sensorFrame of this.sensors.getSensorFrames()) {
+             events = events.concat(this.getSensorEvents(sensorFrame, allPoses));
+        }
+        events.sort((a, b) => {
+            return a.time - b.time;
+        });
+        const startTime = this.lastDisplayRegion.startTime;
+        return events.map(event => {
+            let dir = event.enter ? 'entered' : 'left';
+            return ` - ${Math.round((event.time - startTime) / 1000)} seconds: the person ${dir} ${event.sensor}`;
+        }).join('\n');
+    }
+
+    getSensorEvents(sensorFrame, poses) {
+        let lastPoseActive = false; // creates a default 'entered' event if the sensor was already active
+        let events = [];
+        for (const pose of poses) {
+            const poseActive = this.sensors.isSensorActive(sensorFrame, pose);
+            const isSwap = poseActive !== lastPoseActive;
+            if (!isSwap) {
+                lastPoseActive = poseActive;
+                continue;
+            }
+
+            events.push({
+                 enter: poseActive,
+                 time: pose.timestamp,
+                 sensor: sensorFrame,
+            });
+
+            lastPoseActive = poseActive;
+        }
+
+        return events;
     }
 
     pinRegionCard(regionCard) {
