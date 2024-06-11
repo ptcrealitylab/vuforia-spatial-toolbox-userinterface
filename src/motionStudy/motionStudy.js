@@ -1170,6 +1170,12 @@ export class MotionStudy {
     }
 
     updatePinnedRegionCardsExportLink() {
+        if (this.pinnedRegionCards.length === 0) {
+            this.exportLinkPinnedRegionCards.href = '#';
+            this.exportLinkPinnedRegionCards.classList.add('missing');
+            return;
+        }
+        this.exportLinkPinnedRegionCards.classList.remove('missing');
 
         // compute total stats over all region cards
         // make a pseudo region card
@@ -1267,8 +1273,12 @@ export class MotionStudy {
         const allPoses = this.humanPoseAnalyzer.getPosesInTimeInterval(0, Number.MAX_VALUE);
 
         if (allPoses.length === 0) {
+            this.exportLinkPoseData.href = '#';
+            this.exportLinkPoseData.classList.add('missing');
             return;
         }
+
+        this.exportLinkPoseData.classList.remove('missing');
 
         // Create array manually since we can go over the JSON.stringify and string
         // length limits
