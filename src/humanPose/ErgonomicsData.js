@@ -268,8 +268,14 @@ export class ErgonomicsData {
         if (trunkUpFrontalProjection.dot(this.orientations.hips.right) < 0) {
             this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND] *= -1;
         }
-        // Twist angle wrt hips forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
-        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.right, this.orientations.hips.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the trunk
+        // Projection of hips right direction to the twist plane across trunk where the normal is this.orientations.trunk.up. This assumes that both vectors have unit length.
+        // This is to eliminate an effect of front/side bend on twist angle.
+        const hipsRightProjection = this.orientations.hips.right.clone().sub(this.orientations.trunk.up.clone().multiplyScalar(this.orientations.trunk.up.dot(this.orientations.hips.right)));
+        // Twist angle wrt hips forward direction (range of [-180, 180]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.TRUNK_TWIST] = angleBetween(this.orientations.trunk.right, hipsRightProjection); 
+        if (hipsRightProjection.cross(this.orientations.trunk.right).dot(this.orientations.trunk.up) > 0) {   // warning: hipsRightProjection is changed by cross()
+            this.angles[ERGO_ANGLES.TRUNK_TWIST] *= -1;  // twisting to the left
+        }
         //console.log(`Trunk: bendAngle=${this.angles[ERGO_ANGLES.TRUNK_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.TRUNK_FRONT_BEND].toFixed(0)}deg;
         //             sideBendAngle=${this.angles[ERGO_ANGLES.TRUNK_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.TRUNK_TWIST].toFixed(0)}deg`);
 
@@ -291,8 +297,14 @@ export class ErgonomicsData {
         if (headUpFrontalProjection.dot(this.orientations.trunk.right) < 0) {
             this.angles[ERGO_ANGLES.HEAD_SIDE_BEND] *= -1;
         }
-        // Twist angle wrt trunk forward direction (range of [-90, 90]deg). The angle is positive when twisting to the right and negative when twisting to the left.
-        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.right, this.orientations.trunk.forward) - 90;  // this calculation makes the twist largely independent from front/side bend of the head
+        // Projection of trunk right direction to the twist plane across head where the normal is this.orientations.head.up. This assumes that both vectors have unit length.
+        // This is to eliminate an effect of front/side bend on twist angle.
+        const trunkRightProjection = this.orientations.trunk.right.clone().sub(this.orientations.head.up.clone().multiplyScalar(this.orientations.head.up.dot(this.orientations.trunk.right)));
+        // Twist angle wrt trunk forward direction (range of [-180, 180]deg). The angle is positive when twisting to the right and negative when twisting to the left.
+        this.angles[ERGO_ANGLES.HEAD_TWIST] = angleBetween(this.orientations.head.right, trunkRightProjection); 
+        if (trunkRightProjection.cross(this.orientations.head.right).dot(this.orientations.head.up) > 0) {   // warning: trunkRightProjection is changed by cross()
+            this.angles[ERGO_ANGLES.HEAD_TWIST] *= -1;  // twisting to the left
+        }
         //console.log(`Head: bendAngle=${this.angles[ERGO_ANGLES.HEAD_BEND].toFixed(0)}deg; frontBendAngle=${this.angles[ERGO_ANGLES.HEAD_FRONT_BEND].toFixed(0)}deg;
         //             sideBendAngle=${this.angles[ERGO_ANGLES.HEAD_SIDE_BEND].toFixed(0)}deg; twistAngle=${this.angles[ERGO_ANGLES.HEAD_TWIST].toFixed(0)}deg`);
 
@@ -390,10 +402,15 @@ export class ErgonomicsData {
 
             if (this.jointValidities[JOINTS.LEFT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.LEFT_PINKY_MCP] && this.jointValidities[JOINTS.LEFT_MIDDLE_FINGER_MCP] && // check if hand joints have valid positions
                 this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {  // check if the arm is almost straight, therefore the rotation axis of elbow (leftLowerArm.right) cannot be calculated reliably
+               
+                // Projection of hand right direction to the plane across lower arm where normal is this.orientations.leftLowerArm.up. This assumes that both vectors have unit length.
+                // This is to eliminate an effect of hand side bend on twist angle.
+                const leftHandRightProjection = this.orientations.leftHand.right.clone().sub(this.orientations.leftLowerArm.up.clone().multiplyScalar(this.orientations.leftLowerArm.up.dot(this.orientations.leftHand.right)));
+                
                 // Twist of hand wrt. rotation axis of elbow (only positive range [0, 180]deg). When the both vectors below ('thumb' direction and elbow rotation axis towards the body) have zero angle angle between them there is no twist.
                 // When the both vectors have 180deg angle between them there is the maximum twist.
                 // This formulation attempts to be agnostic to a pose of entire arm wrt. upper body.
-                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, this.orientations.leftHand.right);
+                this.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST] = angleBetween(this.orientations.leftLowerArm.right, leftHandRightProjection);
             } 
         } 
 
@@ -402,7 +419,10 @@ export class ErgonomicsData {
             
             if (this.jointValidities[JOINTS.RIGHT_INDEX_FINGER_MCP] && this.jointValidities[JOINTS.RIGHT_PINKY_MCP] && this.jointValidities[JOINTS.RIGHT_MIDDLE_FINGER_MCP] &&
                 this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND] > MAX_ANGLE_SIMILAR_VECTORS) {
-                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), this.orientations.rightHand.right.clone().negate()); // negated to have a symmetrical definition of twist angle for left and right arm
+                // negated to have a symmetrical definition of twist angle for left and right arm
+                const rightHandLeft = this.orientations.rightHand.right.clone().negate();
+                const rightHandLeftProjection = rightHandLeft.sub(this.orientations.rightLowerArm.up.clone().multiplyScalar(this.orientations.rightLowerArm.up.dot(rightHandLeft)));
+                this.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST] = angleBetween(this.orientations.rightLowerArm.right.clone().negate(), rightHandLeftProjection); // negated to have a symmetrical definition of twist angle for left and right arm
             }
         }
 
