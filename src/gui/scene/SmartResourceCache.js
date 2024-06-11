@@ -1,21 +1,40 @@
-import SmartResource from "./SmartResource.js"
+import {SmartResource, SmartResourceAdmin} from "./SmartResource.js"
 
 /**
  * @typedef {number} resourceVersion 
  */
 
-class SmartResourceEntry extends SmartResource{
+class ResourceEntry {
     /** @type {resourceVersion} */
     #version;
 
+    /** @type {any} */
+    #resource;
+
+    /** @type {SmartResourceCache} */
+    #cache;
+
+    /** @type {string} */
+    #id;
+
     /**
      * 
-     * @param {*} resource 
+     * @param {any} resource 
      * @param {resourceVersion} version 
      */
-    constructor(resource, version) {
-        super(resource);
+    constructor(cache, id, resource, version) {
+        this.#cache = cache;
+        this.#id = id;
+        this.#resource = resource;
         this.#version = version;
+    }
+
+    /**
+     * 
+     * @returns {any}
+     */
+    getResource() {
+        return this.#resource;
     }
 
     /**
@@ -25,75 +44,75 @@ class SmartResourceEntry extends SmartResource{
     getVersion() {
         return this.#version;
     }
-}
 
-class ResourceReference {
-    #version;
-    #id;
-    #resource;
-    #cache;
-
-    constructor(resource, id, version, cache) {
-        this.#resource = resource;
-        this.#id = id;
-        this.#version = version;
-        this.#cache = cache;
-    }
-    getVersion() {
-        return this.#version;
+    getId() {
+        return this.#id;
     }
 
-    getResource() {
-        return this.#resource;
-    }
-
-    copy() {
-        return this.#cache.getRef(this.#id);
-    }
-
-    release() {
-        this.#cache.releaseRef(this.#id, this.#version);
+    dispose() {
+        this.#cache.remove(this.#id, this.#version);
+        if (this.#resource.dispose) {
+            this.#resource.dispose();
+        }
     }
 }
 
-class SmartResourceCache {
-    /** @type {{[key: string]: SmartResourceEntry[]}} */
+class ResourceCache {
+    /** @type {{[key: string]: SmartResourceAdmin[]}} */
     #cache;
 
-    constructor() {
+    #name;
+
+    constructor(name) {
         this.#cache = {};
+        this.#name = name;
+    }
+
+    #getCurrentVersion(entry) {
+        let currentVersion = new SmartResource(entry[entry.length - 1]);
+        const version = currentVersion.getResource().getVersion() + 1;
+        currentVersion.release();
+        return version;
     }
 
     /**
      * 
      * @param {*} resource 
      * @param {string} id 
-     * @returns {ResourceReference}
+     * @returns {SmartResource}
      */
-    set(resource, id) {
+    insert(id, resource) {
         if (this.#cache.hasOwnProperty(id)) {
             const entry = this.#cache[id];
-            const version = entry[entry.length - 1].getVersion() + 1;
-            const smartRef = new SmartResourceEntry(resource, version);  
-            entry.push(smartRef);
-            return new ResourceReference(resource, id, version, this);
+            const version = this.#getCurrentVersion(entry) + 1;
+            const smartAdmin = new SmartResourceAdmin(new ResourceEntry(this, id, resource, version));  
+            entry.push(smartAdmin);
+            return new SmartResource(smartAdmin);
         } else {
-            const smartRef = new SmartResourceEntry(resource, 0);
-            this.#cache[id] = [smartRef];
-            return new ResourceReference(resource, id, 0, this);
+            const smartAdmin = new SmartResourceAdmin(new ResourceEntry(this, id, resource, 0));
+            this.#cache[id] = [smartAdmin];
+            return new SmartResource(smartAdmin);
         }
     }
 
     /**
      * 
      * @param {string} id 
-     * @returns {ResourceReference|undefined}
+     * @returns {SmartResource|undefined}
      */
-    getRef(id) {
+    get(id, version = null) {
         if (this.#cache.hasOwnProperty(id)) {
             const entry = this.#cache[id];
-            const smartRef = entry[entry.length - 1];
-            return new ResourceReference(smartRef.getRef(), id, smartRef.getVersion(), this);
+            let smartAdmin = entry[entry.length - 1];
+            if (version) {
+                for (const adminEntry of entry) {
+                    if (adminEntry.getResource().getVersion() === version) {
+                        smartAdmin = adminEntry;
+                        break;
+                    }
+                }
+            }
+            return new SmartResource(smartAdmin);
         } else {
             return undefined;
         }
@@ -104,25 +123,23 @@ class SmartResourceCache {
      * @param {string} id 
      * @param {resourceVersion} version 
      */
-    releaseRef(id, version) {
+    remove(id, version) {
         if (this.#cache.hasOwnProperty(id)) {
             const entry = this.#cache[id];
-            for (let i = 0; i < entry.length; ++i) {
-                if (entry[i].getVersion() == version) {
-                    if (entry[i].releaseRef()) {
-                        entry.splice(i, 1);
-                        if (entry.length == 0) {
-                            delete this.#cache[id];
-                        }
+            for (let index = 0; index < entry.length; ++index) {
+                if (entry[index].getWeakRef().getVersion() === version) {
+                    entry.splice(index, 1);
+                    if (entry.length == 0) {
+                        delete this.#cache[id];
                     }
                     return;
                 }
             }
-            console.error(`No such resource: ${id} with version: ${version}`);
+            console.error(`${this.#name} No such resource: ${id} with version: ${version}`);
         } else {
-            console.error(`No such resource: ${id}`);
+            console.error(`${this.#name} No such resource: ${id}`);
         }
     }
 }
 
-export default SmartResourceCache;
+export default ResourceCache;

@@ -39,8 +39,8 @@ class Engine3DToolsRootStore extends DictionaryStore {
         throw Error("ToolsRoot only accepts tools, can't cast");
     }
 
-    delete(_key, _oldNode) {
-        _oldNode.onDelete();
+    delete(_key, oldNode) {
+        oldNode.dispose();
         return true;
     }
 

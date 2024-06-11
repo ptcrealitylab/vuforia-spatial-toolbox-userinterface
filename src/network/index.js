@@ -2055,7 +2055,8 @@ realityEditor.network.onInternalPostMessage = function (e) {
     if (typeof msgContent.useWebGlWorker !== 'undefined') {
         realityEditor.gui.glRenderer.addWebGlProxy(msgContent.frame);
     } else if (typeof msgContent.useToolRenderer !== 'undefined') {
-        realityEditor.gui.threejsScene.getInternals().addTool(msgContent.frame);
+        const type = realityEditor.getFrame(msgContent.object, msgContent.frame).src;
+        realityEditor.gui.threejsScene.getInternals().addTool(msgContent.frame, type);
     }
 
     if (typeof msgContent.attachesTo !== 'undefined') {

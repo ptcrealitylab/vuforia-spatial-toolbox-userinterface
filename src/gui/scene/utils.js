@@ -29,4 +29,12 @@ function decomposeMatrix(matrix) {
     return ret;
 }
 
-export { setMatrixFromArray, decomposeMatrix }
+function getRoot(node) {
+    if (node.getParent()) {
+        return getRoot(node.getParent());
+    } else {
+        return node;
+    }
+}
+
+export { setMatrixFromArray, decomposeMatrix, getRoot }

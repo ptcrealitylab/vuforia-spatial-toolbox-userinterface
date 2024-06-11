@@ -32,6 +32,18 @@ class Engine3DWorldStore extends ObjectStore {
         return this.#renderer.getTimer();
     }
 
+    getRenderer() {
+        return this.#renderer;
+    }
+
+    getGeometryCache() {
+        return this.#renderer.getGeometryCache();
+    }
+
+    getMaterialCache() {
+        return this.#renderer.getMaterialCache();
+    }
+
     /**
      * @override
      * @param {WorldNode} _thisNode 

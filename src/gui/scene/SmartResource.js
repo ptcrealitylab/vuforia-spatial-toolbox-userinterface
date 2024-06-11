@@ -1,4 +1,33 @@
 class SmartResource {
+    #admin;
+
+    #resource;
+
+    constructor(smartPointerAdmin) {
+        this.#admin = smartPointerAdmin;
+        this.#resource = this.#admin.getRef();
+    }
+
+    static create(resource) {
+        return new SmartResource(new SmartResourceAdmin(resource));
+    }
+
+    copy() {
+        return new SmartResource(this.#admin);
+    }
+
+    getResource() {
+        return this.#resource;
+    }
+
+    release() {
+        this.#admin.releaseRef();
+        this.#resource = null;
+        this.#admin = null;
+    }
+}
+
+class SmartResourceAdmin {
     /** @type {number} */
     #refCount;
 
@@ -7,7 +36,11 @@ class SmartResource {
 
     constructor(resource) {
         this.#resource = resource;
-        this.#refCount = 1;
+        this.#refCount = 0;
+    }
+
+    getWeakRef() {
+        return this.#resource;
     }
 
     /**
@@ -28,11 +61,11 @@ class SmartResource {
         if (this.#refCount == 0) {
             if (this.#resource.dispose) {
                 this.#resource.dispose();
-            }
+            } 
             return true;
         }
         return false;
     }
 }
 
-export default SmartResource;
+export {SmartResource, SmartResourceAdmin};

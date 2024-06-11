@@ -6,6 +6,7 @@ import { WebXRVRButton } from './WebXRVRButton.js';
 import { Camera } from './Camera.js';
 import AnchoredGroup from './AnchoredGroup.js';
 import {ToolManager} from './ToolManager.js';
+import SmartResourceCache from './SmartResourceCache.js';
 
 /**
  * @typedef {number} pixels
@@ -121,11 +122,17 @@ class Renderer {
     /** @type {GlobalScale} */
     #globalScale
 
-     /** @type {ToolManager} */
-     #tools;
+    /** @type {ToolManager} */
+    #tools;
 
-     /** @type {Timer} */
-     #timer
+    /** @type {Timer} */
+    #timer
+
+    /** @type {SmartResourceCache} */
+    #geometryCache;
+
+    /** @type {SmartResourceCache} */
+    #materialCache;
 
     /**
      * 
@@ -133,6 +140,8 @@ class Renderer {
      */
     constructor(domElement) {
         this.#timer = new DateTimer();
+        this.#geometryCache = new SmartResourceCache("geometryCache");
+        this.#materialCache = new SmartResourceCache("materialCache");
         this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
@@ -171,6 +180,14 @@ class Renderer {
 
         this.#tools = new ToolManager(this);
     }
+
+    getGeometryCache() {
+        return this.#geometryCache;
+    }
+
+    getMaterialCache() {
+        return this.#materialCache;
+    }
     
     /**
      * use this helper function to update the camera matrix using the camera matrix from the sceneGraph
@@ -205,11 +222,11 @@ class Renderer {
     }
 
     /**
-     * 
+     * @param {string} type
      * @param {string} toolId 
      */
-    addTool(toolId) {
-        this.#tools.add(toolId, realityEditor.gui.threejsScene.getToolPosition(toolId));
+    addTool(toolId, type) {
+        this.#tools.add(toolId, type);
     }
 
     /**

@@ -236,10 +236,10 @@ class ToolManager {
     }
 
     /**
-     * 
+     * @param {string} type
      * @param {string} toolId 
      */
-    add(toolId) {
+    add(toolId, type) {
         if (this.#toolProxies.hasOwnProperty(toolId)) {
             console.warn(`toolId already exist`);
             return;
@@ -247,7 +247,7 @@ class ToolManager {
         const worker = globalDOMCache['iframe' + toolId];
         const toolRoot = this.#toolsRootNode.getListener().getToolsRoot().create(toolId);
         const toolProxy = new ToolProxy(this, toolId, worker, toolRoot);
-        this.#toolsRootNode.set(toolId, new ToolNode(new Engine3DToolStore(toolProxy)));
+        this.#toolsRootNode.set(toolId, new ToolNode(new Engine3DToolStore(toolProxy), `${ToolNode.TYPE}.${type}`));
         this.#toolProxies[toolId] = toolProxy;
     }
 
