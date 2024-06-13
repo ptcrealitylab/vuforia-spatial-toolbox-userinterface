@@ -1,12 +1,8 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
 import {Spaghetti} from './spaghetti.js';
-import {RebaLens} from "./RebaLens.js";
-import {OverallRebaLens} from "./OverallRebaLens.js";
-import {MuriLens} from "./MuriLens.js";
-import {ValueAddWasteTimeLens} from "./ValueAddWasteTimeLens.js";
-import {AccelerationLens} from "./AccelerationLens.js";
-import {PoseObjectIdLens} from "./PoseObjectIdLens.js";
+
+import {defaultLensProvider} from './LensProvider.js';
 
 import {HumanPoseAnalyzerSettingsUi} from "./HumanPoseAnalyzerSettingsUi.js";
 import {HumanPoseRenderer} from './HumanPoseRenderer.js';
@@ -29,22 +25,8 @@ export class HumanPoseAnalyzer {
 
         this.setupContainers(parent);
 
-        this.rebaLens = new RebaLens();
-        this.overallRebaLens = new OverallRebaLens();
-        this.muriLens = new MuriLens();
-        this.valueAddWasteTimeLens = new ValueAddWasteTimeLens(this.motionStudy);
-        this.accelerationLens = new AccelerationLens();
-        this.poseObjectIdLens = new PoseObjectIdLens();
-
         /** @type {MotionStudyLens[]} */
-        this.lenses = [
-            this.rebaLens,
-            this.overallRebaLens,
-            this.muriLens,
-            this.valueAddWasteTimeLens,
-            this.accelerationLens,
-            this.poseObjectIdLens
-        ]
+        this.lenses = [];
         this.activeLensIndex = 0;
 
         this.activeJointName = ""; // Used in the UI
@@ -60,19 +42,6 @@ export class HumanPoseAnalyzer {
             historical: {},
             live: {}
         }; // Dictionary of {lensName: Object3D} present in historyLineContainer that contains the corresponding history lines
-        this.lenses.forEach(lens => {
-            this.historyLines[lens.name] = {
-                all: {},
-                historical: {},
-                live: {}
-            };
-            this.historyLineContainers.historical[lens.name] = new THREE.Group();
-            this.historyLineContainers.historical[lens.name].visible = lens === this.activeLens;
-            this.historicalHistoryLineContainer.add(this.historyLineContainers.historical[lens.name]);
-            this.historyLineContainers.live[lens.name] = new THREE.Group();
-            this.historyLineContainers.live[lens.name].visible = lens === this.activeLens;
-            this.liveHistoryLineContainer.add(this.historyLineContainers.live[lens.name]);
-        });
 
         this.clones = {
             all: [],
@@ -84,6 +53,8 @@ export class HumanPoseAnalyzer {
 
         this.prevAnimationState = null;
         this.animationMode = AnimationMode.region;
+
+        defaultLensProvider.addHumanPoseAnalyzer(this);
 
         const maxPoseInstances = realityEditor.device.environment.isDesktop() ?
             MAX_POSE_INSTANCES :
@@ -116,6 +87,23 @@ export class HumanPoseAnalyzer {
 
         this.update = this.update.bind(this);
         window.requestAnimationFrame(this.update);
+    }
+
+    addLens(lens) {
+        this.lenses.push(lens);
+        this.historyLines[lens.name] = {
+            all: {},
+            historical: {},
+            live: {}
+        };
+        this.historyLineContainers.historical[lens.name] = new THREE.Group();
+        this.historyLineContainers.historical[lens.name].visible = lens === this.activeLens;
+        this.historicalHistoryLineContainer.add(this.historyLineContainers.historical[lens.name]);
+        this.historyLineContainers.live[lens.name] = new THREE.Group();
+        this.historyLineContainers.live[lens.name].visible = lens === this.activeLens;
+        this.liveHistoryLineContainer.add(this.historyLineContainers.live[lens.name]);
+
+        this.reprocessLens(lens);
     }
 
     get active() {
@@ -526,6 +514,14 @@ export class HumanPoseAnalyzer {
         });
         this.clones.live = [];
         this.markHistoricalMatrixNeedsUpdate();
+    }
+
+    getLensByName(name) {
+        for (let lens of this.lenses) {
+            if (name === lens.name) {
+                return lens;
+            }
+        }
     }
 
     /**
