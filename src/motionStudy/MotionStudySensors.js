@@ -13,12 +13,24 @@ export class MotionStudySensors {
         realityEditor.network.registerCallback('vehicleDeleted', this.onVehicleDeleted); // deleted using server
     }
 
-    setSensor(frame, position) {
+    setSensor(frame, data) {
         if (!this.sensors[frame]) {
-            this.setSensorColor(frame, this.getSensorPaletteColor(this.sensorPaletteIndex));
+            let color = this.getSensorPaletteColor(this.sensorPaletteIndex);
+            let lens = new SensorActiveLens(this.motionStudy, frame);
+            this.sensors[frame] = {
+                color,
+                position: data.position,
+                points: data.points,
+                lens,
+            };
+            this.setSensorColor(frame, color);
             this.sensorPaletteIndex += 1;
+
+            defaultLensProvider.addLens(lens);
         }
-        this.sensors[frame] = position;
+        console.log('setSensor', data);
+        this.sensors[frame].position = data.position;
+        this.sensors[frame].points = data.points;
     }
 
     getSensorFrames() {
@@ -31,11 +43,15 @@ export class MotionStudySensors {
     }
 
     getSensorColor(frame) {
-        return this.sensorColors[frame] || '#ff0000';
+        if (!this.sensors[frame] || !this.sensors[frame].color) {
+            return '#ff0000';
+        }
+        return this.sensors[frame].color;
     }
 
     setSensorColor(frame, color) {
-        this.sensorColors[frame] = color;
+        console.log('setSensorColor', frame, color);
+        this.sensors[frame].color = color;
         realityEditor.network.postMessageIntoFrame(frame, {
             analyticsSetSensorColor: {
                 color,
@@ -55,7 +71,10 @@ export class MotionStudySensors {
         if (!this.sensors[frame]) {
             return false;
         }
-        const sensorPosition = this.sensors[frame];
+        const sensorPosition = this.sensors[frame].position;
+        if (this.sensors[frame].points) {
+            return this.isSensorActivePoints(frame, pose);
+        }
         const sensorWidth = 0.8;
         const sensorDepth = 0.8;
         const mToUnit = 1000;
@@ -71,6 +90,44 @@ export class MotionStudySensors {
                 joint.position.z < maxZ) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    isSensorActivePoints(frame, pose) {
+        if (!this.sensors[frame]) {
+            return false;
+        }
+        const points = this.sensors[frame].points;
+
+        for (const jointName in pose.joints) {
+            const joint = pose.joints[jointName];
+            let pos = {x: joint.position.x, y: joint.position.z};
+            if (isPointInsideWalls(pos, points)) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    isPositionInSensor(frame, position) {
+        if (!this.sensors[frame]) {
+            return false;
+        }
+        const sensorPosition = this.sensors[frame].position;
+        const sensorWidth = 0.8;
+        const sensorDepth = 0.8;
+        const mToUnit = 1000;
+        const minX = sensorPosition.x - (sensorWidth * mToUnit) / 2;
+        const maxX = sensorPosition.x + (sensorWidth * mToUnit) / 2;
+        const minZ = sensorPosition.z - (sensorDepth * mToUnit) / 2;
+        const maxZ = sensorPosition.z + (sensorDepth * mToUnit) / 2;
+        if (position.x > minX &&
+            position.x < maxX &&
+            position.z > minZ &&
+            position.z < maxZ) {
+            return true;
         }
         return false;
     }
@@ -120,6 +177,5 @@ export class MotionStudySensors {
             return;
         }
         delete this.sensors[event.frameKey];
-        delete this.sensorColors[event.frameKey];
     }
 }
