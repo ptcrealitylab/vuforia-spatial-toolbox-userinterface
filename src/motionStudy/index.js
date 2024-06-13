@@ -147,7 +147,7 @@ import {MotionStudySensors} from './MotionStudySensors.js'
 
         realityEditor.network.addPostMessageHandler('analyticsSetSensor', (msgData) => {
             console.log('set sensor', msgData);
-            sensors.setSensor(msgData.frame, msgData.position);
+            sensors.setSensor(msgData.frame, msgData.sensor);
         });
 
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
