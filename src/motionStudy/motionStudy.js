@@ -677,7 +677,10 @@ export class MotionStudy {
 
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
-            this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
+            let valueAddWasteTimeLens = this.humanPoseAnalyzer.getLensByName("Value Add/Waste Time");
+            if (valueAddWasteTimeLens) {
+                this.humanPoseAnalyzer.reprocessLens(valueAddWasteTimeLens);
+            }
         }
 
         data.regionCards.sort((rcDescA, rcDescB) => {
