@@ -1,8 +1,10 @@
+import {SensorActiveLens} from '../humanPose/SensorActiveLens.js';
+import {defaultLensProvider} from '../humanPose/LensProvider.js';
+import {isPointInsideWalls} from './isPointInsideWalls.js';
 
 export class MotionStudySensors {
     constructor() {
         this.sensors = {};
-        this.sensorColors = {};
         this.playbackActivation = {};
         this.sensorPaletteIndex = 0;
         this.onVehicleDeleted = this.onVehicleDeleted.bind(this);
@@ -16,17 +18,19 @@ export class MotionStudySensors {
     setSensor(frame, data) {
         if (!this.sensors[frame]) {
             let color = this.getSensorPaletteColor(this.sensorPaletteIndex);
-            let lens = new SensorActiveLens(this.motionStudy, frame);
+            let lensCreateFunction = (analyzer) => {
+                return new SensorActiveLens(analyzer.motionStudy, frame);
+            };
             this.sensors[frame] = {
                 color,
                 position: data.position,
                 points: data.points,
-                lens,
+                lensCreateFunction,
             };
             this.setSensorColor(frame, color);
             this.sensorPaletteIndex += 1;
 
-            defaultLensProvider.addLens(lens);
+            defaultLensProvider.addLensCreateFunction(lensCreateFunction);
         }
         console.log('setSensor', data);
         this.sensors[frame].position = data.position;
@@ -176,6 +180,8 @@ export class MotionStudySensors {
         if (!this.sensors.hasOwnProperty(event.frameKey)) {
             return;
         }
+        let sensor = this.sensors[event.frameKey];
+        defaultLensProvider.removeLensCreateFunction(sensor.lensCreateFunction);
         delete this.sensors[event.frameKey];
     }
 }
