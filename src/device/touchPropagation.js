@@ -15,6 +15,8 @@ createNameSpace("realityEditor.device.touchPropagation");
      */
     var cachedTarget = null;
 
+    const DEBUG = false;
+
     /**
      * Sets up the touch propagation model by listening for accepted and unaccepted touches
      */
@@ -26,15 +28,16 @@ createNameSpace("realityEditor.device.touchPropagation");
         // be notified when certain touch event functions get triggered in device/index.js
         realityEditor.device.registerCallback('resetEditingState', resetCachedTarget);
         realityEditor.device.registerCallback('onDocumentMultiTouchEnd', resetCachedTarget);
-        
+
         // handle touch events that hit realityInteraction divs within frames
         realityEditor.network.addPostMessageHandler('pointerDownResult', handlePointerDownResult);
     }
-    
+
     function handlePointerDownResult(eventData, fullMessageContent) {
-        // pointerDownResult
-        console.log(eventData, fullMessageContent);
-        
+        if (DEBUG) {
+            console.log(eventData, fullMessageContent);
+        }
+
         if (eventData === 'interaction') {
             console.log('TODO: cancel the moveDelay timer to prevent accidental moves?');
         } else if (eventData === 'nonInteraction') {
@@ -54,8 +57,9 @@ createNameSpace("realityEditor.device.touchPropagation");
      * @param {Object} fullMessageContent - the full JSON message posted by the frame, including ID of its object, frame, etc
      */
     function handleUnacceptedTouch(eventData, fullMessageContent) {
-        
-        console.log('handleUnacceptedTouch');
+        if (DEBUG) {
+            console.log('handleUnacceptedTouch', eventData.type);
+        }
         // eventData.x is the x coordinate projected within the previouslyTouched iframe. we need to get position on screen
         var touchPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
         eventData.x = touchPosition.x;
@@ -63,7 +67,7 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // clear the timer that would start dragging the previously traversed frame
         realityEditor.device.clearTouchTimer();
-        
+
         // don't recalculate correct target on every touchmove if already cached the target
         if (cachedTarget) {
             stopHidingFramesForTouchDuration();
@@ -74,31 +78,29 @@ createNameSpace("realityEditor.device.touchPropagation");
 
         // tag the element that rejected the touch so that it becomes hidden but can be restored
         var previouslyTouchedElement = globalDOMCache['object' + fullMessageContent.frame];
-        previouslyTouchedElement.dataset.displayAfterTouch = previouslyTouchedElement.style.display;
-        
+        if (previouslyTouchedElement) {
+            previouslyTouchedElement.dataset.didNotAcceptTouch = true;
+        }
+
         // hide each tagged element. we may need to hide more than just this previouslyTouchedElement
         // (in case there are multiple fullscreen frames)
-        var overlappingDivs = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y);
-        overlappingDivs.filter(function(elt) {
-            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = 'none'; // TODO: instead of changing display, maybe just change pointerevents css to none
+        const allUntouchedDivsAtPoint = realityEditor.device.utilities.getAllDivsUnderCoordinate(eventData.x, eventData.y).filter((elt) => {
+            if (elt.dataset.didNotAcceptTouch) {
+                return false;
+            }
+            return true;
         });
 
         // find the next overlapping div that hasn't been traversed (and therefore hidden) yet
-        var newTouchedElement = document.elementFromPoint(eventData.x, eventData.y) || document.body;
+        var newTouchedElement = allUntouchedDivsAtPoint[0] || document.body;
+        if (DEBUG) {
+            console.log('newTouchedElement', newTouchedElement);
+        }
         // var newCoords = webkitConvertPointFromPageToNode(newTouchedElement, new WebKitPoint(eventData.x, eventData.y));
         // eventData.x = newCoords.x;
         // eventData.y = newCoords.y;
         dispatchSyntheticEvent(newTouchedElement, eventData);
 
-        // re-show each tagged element
-        overlappingDivs.filter(function(elt) {
-            return (elt.parentNode && typeof elt.parentNode.dataset.displayAfterTouch !== 'undefined');
-        }).forEach(function(elt) {
-            elt.parentNode.style.display = elt.parentNode.dataset.displayAfterTouch;
-        });
-        
         // we won't get an acceptedTouch message if the newTouchedElement isn't a frame, so auto-trigger it
         var isFrameElement = newTouchedElement.id.indexOf(fullMessageContent.object) > -1;
         if (!isFrameElement) {
@@ -126,8 +128,8 @@ createNameSpace("realityEditor.device.touchPropagation");
      * Remove tag from frames that have been hidden for the current touch.
      */
     function stopHidingFramesForTouchDuration() {
-        Array.from(document.querySelectorAll('[data-display-after-touch]')).forEach(function(element) {
-            delete element.dataset.displayAfterTouch;
+        Array.from(document.querySelectorAll('[data-did-not-accept-touch]')).forEach(function(element) {
+            delete element.dataset.didNotAcceptTouch;
         });
     }
 
@@ -163,7 +165,7 @@ createNameSpace("realityEditor.device.touchPropagation");
         cachedTarget = null;
         stopHidingFramesForTouchDuration();
     }
-    
+
     exports.initService = initService;
-    
+
 })(realityEditor.device.touchPropagation);
