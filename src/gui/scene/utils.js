@@ -1,6 +1,7 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 
 /**
+ * @typedef {import("/objectDefaultFiles/scene/BaseNode.js").default} BaseNode
  * @typedef {number[]} MatrixAsArray - a 4x4 matrix representated as an column-mayor array of 16 numbers 
  */
 
@@ -29,6 +30,11 @@ function decomposeMatrix(matrix) {
     return ret;
 }
 
+/**
+ * 
+ * @param {BaseNode} node 
+ * @returns {BaseNode}
+ */
 function getRoot(node) {
     if (node.getParent()) {
         return getRoot(node.getParent());

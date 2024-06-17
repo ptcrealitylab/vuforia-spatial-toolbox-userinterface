@@ -1,6 +1,4 @@
 import DictionaryStore from "/objectDefaultFiles/scene/DictionaryStore.js"
-import ToolNode from "/objectDefaultFiles/scene/ToolNode.js"
-import Engine3DToolStore from "./Engine3DToolStore.js"; 
 
 /**
  * @typedef {import("../ToolsRoot.js").ToolsRoot} ToolsRoot

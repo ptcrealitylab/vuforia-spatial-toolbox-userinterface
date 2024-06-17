@@ -1,20 +1,20 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import {ToolRenderSocket} from "/objectDefaultFiles/scene/ToolRenderStream.js";
-import {IFrameMessageInterface} from "/objectDefaultFiles/scene/MessageInterface.js";
-import WorldNode from "/objectDefaultFiles/scene/WorldNode.js";
+import {ToolRenderSocket} from "../../../objectDefaultFiles/scene/ToolRenderStream.js";
+import {IFrameMessageInterface} from "../../../objectDefaultFiles/scene/MessageInterface.js";
+import WorldNode from "../../../objectDefaultFiles/scene/WorldNode.js";
 import Engine3DWorldStore from "./engine3D/Engine3DWorldStore.js";
-import Engine3DToolStore from "./engine3D/Engine3DToolStore.js";
-import ToolNode from "/objectDefaultFiles/scene/ToolNode.js";
-import TransformComponentNode from "/objectDefaultFiles/scene/TransformComponentNode.js";
+import ThreejsToolStore from "./ThreejsToolStore.js";
+import ToolNode from "../../../objectDefaultFiles/scene/ToolNode.js";
+import TransformComponentNode from "../../../objectDefaultFiles/scene/TransformComponentNode.js";
 import ThreejsEntity from "./ThreejsEntity.js";
 import {setMatrixFromArray} from "./utils.js";
 
 
 /**
  * @typedef {import('./AnchoredGroup.js').default} AnchoredGroup 
- * @typedef {import('/objectDefaultFiles/scene/AnchoredGroupNode.js').default} AnchoredGroupNode 
- * @typedef {import('/objectDefaultFiles/scene/WorldNode.js').WorldNodeState} WorldNodeState
- * @typedef {import('/objectDefaultFiles/scene/WorldNode.js').WorldNodeDelta} WorldNodeDelta
+ * @typedef {import('../../../objectDefaultFiles/scene/AnchoredGroupNode.js').default} AnchoredGroupNode 
+ * @typedef {import('../../../objectDefaultFiles/scene/WorldNode.js').WorldNodeState} WorldNodeState
+ * @typedef {import('../../../objectDefaultFiles/scene/WorldNode.js').WorldNodeDelta} WorldNodeDelta
  */
 
 class ToolProxyHandler {
@@ -27,9 +27,14 @@ class ToolProxyHandler {
     /** @type {boolean} Received initial get command*/
     #isInitialized
 
-    constructor(toolProxy, worker) {
+    /**
+     * 
+     * @param {ToolProxy} toolProxy 
+     * @param {HTMLIFrameElement} iframe 
+     */
+    constructor(toolProxy, iframe) {
         this.#toolProxy = toolProxy;
-        const messageInterface = new IFrameMessageInterface(worker, "*");
+        const messageInterface = new IFrameMessageInterface(iframe, "*");
         this.#socket = new ToolRenderSocket(messageInterface, toolProxy.getToolId());
         this.#socket.setListener(this);
         this.#isInitialized = false;
@@ -159,6 +164,9 @@ class ToolProxy {
         } 
     }
 
+    /**
+     * 
+     */
     #updateMatrix() {
         const toolMat = new THREE.Matrix4();
         const toolNode = realityEditor.sceneGraph.getSceneNodeById(this.#toolId);
@@ -183,11 +191,17 @@ class ToolProxy {
         }
     }
 
+    /**
+     * 
+     */
     updateComponents() {
         this.#updateMatrix();
         this.#rootEntity.updateComponents();
     }
 
+    /**
+     * 
+     */
     onDelete() {
         this.#handler.onDelete();
     }
@@ -247,7 +261,7 @@ class ToolManager {
         const worker = globalDOMCache['iframe' + toolId];
         const toolRoot = this.#toolsRootNode.getListener().getToolsRoot().create(toolId);
         const toolProxy = new ToolProxy(this, toolId, worker, toolRoot);
-        this.#toolsRootNode.set(toolId, new ToolNode(new Engine3DToolStore(toolProxy), `${ToolNode.TYPE}.${type}`));
+        this.#toolsRootNode.set(toolId, new ToolNode(new ThreejsToolStore(toolProxy), `${ToolNode.TYPE}.${type}`));
         this.#toolProxies[toolId] = toolProxy;
     }
 

@@ -9,6 +9,10 @@ import ToolsRoot from "../ToolsRoot.js";
  * @typedef {import("/objectDefaultFiles/scene/ObjectNode.js").ObjectInterface} ObjectInterface
  * @typedef {import("/objectDefaultFiles/scene/WorldNode.js").default} WorldNode
  * @typedef {import("../Renderer.js").Renderer} Renderer
+ * @typedef {import("../Renderer.js").Timer} Timer
+ * @typedef {import("../Renderer.js").GeometryCache} GeometryCache
+ * @typedef {import("../Renderer.js").MaterialCache} MaterialCache
+ * @typedef {import("../Renderer.js").TextureCache} TextureCache
  */
 
 class Engine3DWorldStore extends ObjectStore {
@@ -28,20 +32,44 @@ class Engine3DWorldStore extends ObjectStore {
         this.#renderer.getGlobalScale().getNode().add(this.#toolsRoot.getInternalObject());
     }
 
+    /**
+     * 
+     * @returns {Timer}
+     */
     getTimer() {
         return this.#renderer.getTimer();
     }
 
+    /**
+     * 
+     * @returns {Renderer}
+     */
     getRenderer() {
         return this.#renderer;
     }
 
+    /**
+     * 
+     * @returns {GeometryCache}
+     */
     getGeometryCache() {
         return this.#renderer.getGeometryCache();
     }
 
+    /**
+     * 
+     * @returns {MaterialCache}
+     */
     getMaterialCache() {
         return this.#renderer.getMaterialCache();
+    }
+
+    /**
+     * 
+     * @returns {TextureCache}
+     */
+    getTextureCache() {
+        return this.#renderer.getTextureCache();
     }
 
     /**

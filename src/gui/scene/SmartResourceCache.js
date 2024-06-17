@@ -1,25 +1,32 @@
-import {SmartResource, SmartResourceAdmin} from "./SmartResource.js"
+import {SmartResource, SmartResourceAdmin, safeUsing} from "./SmartResource.js";
 
 /**
+ * @typedef {import("./SmartResource.js").Resource} Resource
  * @typedef {number} resourceVersion 
+ * @typedef {string} resourceId
  */
 
+/**
+ * @template {Resource} T
+ */
 class ResourceEntry {
     /** @type {resourceVersion} */
     #version;
 
-    /** @type {any} */
+    /** @type {T} */
     #resource;
 
-    /** @type {SmartResourceCache} */
+    /** @type {ResourceCache<T>} */
     #cache;
 
-    /** @type {string} */
+    /** @type {resourceId} */
     #id;
 
     /**
      * 
-     * @param {any} resource 
+     * @param {ResourceCache<T>} cache
+     * @param {resourceId} id  
+     * @param {T} resource 
      * @param {resourceVersion} version 
      */
     constructor(cache, id, resource, version) {
@@ -31,7 +38,7 @@ class ResourceEntry {
 
     /**
      * 
-     * @returns {any}
+     * @returns {T}
      */
     getResource() {
         return this.#resource;
@@ -45,41 +52,65 @@ class ResourceEntry {
         return this.#version;
     }
 
+    /**
+     * 
+     * @returns {resourceId}
+     */
     getId() {
         return this.#id;
     }
 
+    /**
+     * 
+     */
     dispose() {
         this.#cache.remove(this.#id, this.#version);
         if (this.#resource.dispose) {
             this.#resource.dispose();
         }
+        this.#id = null;
+        this.#version = -1;
+        this.#resource = null;
+        this.#cache = null;
     }
 }
 
+/**
+ * @template {Resource} T
+ */
 class ResourceCache {
-    /** @type {{[key: string]: SmartResourceAdmin[]}} */
+    /** @type {{[key: resourceId]: SmartResourceAdmin<ResourceEntry<T>>[]}} */
     #cache;
 
+    /** @type {string} */
     #name;
 
+    /**
+     * @param {string} name 
+     */
     constructor(name) {
         this.#cache = {};
         this.#name = name;
     }
 
+    /**
+     * 
+     * @param {SmartResourceAdmin<ResourceEntry<T>>[]} entry 
+     * @returns {resourceVersion}
+     */
     #getCurrentVersion(entry) {
-        let currentVersion = new SmartResource(entry[entry.length - 1]);
-        const version = currentVersion.getResource().getVersion() + 1;
-        currentVersion.release();
+        let version = -1;
+        safeUsing(new SmartResource(entry[entry.length - 1]), (currentResource) => {
+            version = currentResource.getResource().getVersion() + 1;
+        });
         return version;
     }
 
     /**
      * 
-     * @param {*} resource 
-     * @param {string} id 
-     * @returns {SmartResource}
+     * @param {resourceId} id 
+     * @param {T} resource 
+     * @returns {SmartResource<ResourceEntry<T>>}
      */
     insert(id, resource) {
         if (this.#cache.hasOwnProperty(id)) {
@@ -97,8 +128,9 @@ class ResourceCache {
 
     /**
      * 
-     * @param {string} id 
-     * @returns {SmartResource|undefined}
+     * @param {resourceId} id 
+     * @param {resourceVersion} version  
+     * @returns {SmartResource<ResourceEntry<T>>|undefined}
      */
     get(id, version = null) {
         if (this.#cache.hasOwnProperty(id)) {
@@ -120,7 +152,7 @@ class ResourceCache {
 
     /**
      * 
-     * @param {string} id 
+     * @param {resourceId} id 
      * @param {resourceVersion} version 
      */
     remove(id, version) {
@@ -142,4 +174,4 @@ class ResourceCache {
     }
 }
 
-export default ResourceCache;
+export {ResourceCache, ResourceEntry};

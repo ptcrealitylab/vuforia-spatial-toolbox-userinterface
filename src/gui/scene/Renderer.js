@@ -1,14 +1,24 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import DateTimer from '/ObjectdefaultFiles/scene/DateTimer.js';
+import DateTimer from '../../../objectdefaultFiles/scene/DateTimer.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
 import { WebXRVRButton } from './WebXRVRButton.js';
 import { Camera } from './Camera.js';
 import AnchoredGroup from './AnchoredGroup.js';
 import {ToolManager} from './ToolManager.js';
-import SmartResourceCache from './SmartResourceCache.js';
+import {ResourceCache} from './SmartResourceCache.js';
 
 /**
+ * @typedef {DateTimer} Timer
+ * @typedef {ResourceCache<THREE.BufferGeometry>} GeometryCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.BufferGeometry>} GeometryEntry
+ * @typedef {import("./SmartResource.js").SmartResource<GeometryEntry>} GeometryRef
+ * @typedef {ResourceCache<THREE.Material>} MaterialCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.Material>} MaterialEntry
+ * @typedef {import("./SmartResource.js").SmartResource<MaterialEntry>} MaterialRef
+ * @typedef {ResourceCache<THREE.Texture>} TextureCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.Texture>} TextureEntry
+ * @typedef {import("./SmartResource.js").SmartResource<TextureEntry>} TextureRef
  * @typedef {number} pixels
  * @typedef {number} DeviceUnitsPerMeter
  * @typedef {number} MetersPerSceneUnit
@@ -128,11 +138,14 @@ class Renderer {
     /** @type {Timer} */
     #timer
 
-    /** @type {SmartResourceCache} */
+    /** @type {GeometryCache} */
     #geometryCache;
 
-    /** @type {SmartResourceCache} */
+    /** @type {MaterialCache} */
     #materialCache;
+
+    /** @type {TextureCache} */
+    #textureCache;
 
     /**
      * 
@@ -140,8 +153,9 @@ class Renderer {
      */
     constructor(domElement) {
         this.#timer = new DateTimer();
-        this.#geometryCache = new SmartResourceCache("geometryCache");
-        this.#materialCache = new SmartResourceCache("materialCache");
+        this.#geometryCache = new ResourceCache("geometryCache");
+        this.#materialCache = new ResourceCache("materialCache");
+        this.#textureCache = new ResourceCache("textureCache");
         this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
@@ -181,12 +195,28 @@ class Renderer {
         this.#tools = new ToolManager(this);
     }
 
+    /**
+     * 
+     * @returns {GeometryCache}
+     */
     getGeometryCache() {
         return this.#geometryCache;
     }
 
+    /**
+     * 
+     * @returns {MaterialCache}
+     */
     getMaterialCache() {
         return this.#materialCache;
+    }
+
+    /**
+     * 
+     * @returns {TextureCache}
+     */
+    getTextureCache() {
+        return this.#textureCache;
     }
     
     /**
@@ -388,6 +418,10 @@ class Renderer {
         return this.#renderer.domElement;
     }
 
+    /**
+     * 
+     * @returns {Timer}
+     */
     getTimer() {
         return this.#timer;
     }

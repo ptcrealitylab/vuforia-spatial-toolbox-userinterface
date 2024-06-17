@@ -4,8 +4,10 @@ import VersionedNode from "/objectDefaultFiles/scene/VersionedNode.js";
 import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
 import EntityStore from '/objectDefaultFiles/scene/EntityStore.js';
 import ThreejsEntity from "./ThreejsEntity.js"; 
-import ResourceCache from './SmartResourceCache.js';
+import {ResourceCache} from './SmartResourceCache.js';
 import {getRoot} from "./utils.js";
+import MaterialComponentNode from "/objectDefaultFiles/scene/MaterialComponentNode.js";
+import ThreejsMaterialComponentStore from "./ThreejsMaterialComponentStore.js";
 
 /**
  * @typedef {import("/objectDefaultFiles/scene/ThreejsGLTFLoaderComponentNode.js").default} ThreejsGLTFLoaderComponentNode
@@ -87,6 +89,7 @@ class CreateChildEntityWalker {
             const materialRef = this.#createSmartResource(object3D.material, uniqueIdPrefix, this.#materialCache, this.#materialLookup); 
             entityNode.getListener().getEntity().setMaterialRef(materialRef);
             materialRef.release();
+            entityNode.addComponent("1000", new MaterialComponentNode(new ThreejsMaterialComponentStore()), false);
         }
         if (object3D.hasOwnProperty("geometry")) {
             const geometryRef = this.#createSmartResource(object3D.geometry, uniqueIdPrefix, this.#geometryCache, this.#geometryLookup); 
@@ -97,7 +100,7 @@ class CreateChildEntityWalker {
         for (let i = 0; i < children.length; ++i) {
             const childNode = new EntityNode(new EntityStore(new ThreejsEntity(children[i])));
             this.#internalRun(childNode, uniqueIdPrefix + `.${children[i].name ? children[i].name.replace(/[\\.@]/g, '\\$&') : ""}@${i}`);
-            entityNode.setChild(`${i}`, childNode);
+            entityNode.setChild(`${i}`, childNode, false);
         }
     }
 }
@@ -145,6 +148,7 @@ class CachedGLTFLoader {
         dstNode.getEntity().setMaterialRef(materialRef);
         if (materialRef) {
             materialRef.release();
+            dstNode.addComponent("1000", new MaterialComponentNode(new ThreejsMaterialComponentStore()), false);
         }
         const geometryRef = srcNode.getEntity().getGeometryRef();
         dstNode.getEntity().setGeometryRef(geometryRef);

@@ -1,11 +1,4 @@
-import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import GLTFLoaderComponentNode from "/objectDefaultFiles/scene/GLTFLoaderComponentNode.js";
 import BaseEntity from "/objectDefaultFiles/scene/BaseEntity.js";
-import ThreejsGLTFLoaderComponentStore from './ThreejsGLTFLoaderComponentStore.js';
-import MaterialComponentNode from "/objectDefaultFiles/scene/MaterialComponentNode.js";
-import ThreejsMaterialComponentStore from './ThreejsMaterialComponentStore.js';
-import EntityStore from "/objectDefaultFiles/scene/EntityStore.js";
-import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
 
 /** 
  * @typedef {{update: (object3D = THREE.Object3D) => void}} ThreejsComponent
@@ -121,33 +114,6 @@ class ThreejsEntity extends BaseEntity {
     removeChild(key) {
         this.#object.remove(this.getChild(key).getInternalObject());
         super.removeChild(key);
-    }
-
-    /**
-     * 
-     * @param {string} name 
-     * @returns {ThreejsEntity}
-     */
-    createEntity(name) {
-        const obj = new THREE.Object3D();
-        obj.name = name; 
-        return new EntityNode(new EntityStore(new ThreejsEntity(obj)));
-    }
-
-    /**
-     * @param {number} index
-     * @param {ValueDict} state 
-     * @returns {ComponentInterface}
-     */
-    createComponent(index, state) {
-        if (state.hasOwnProperty("type")) {
-            if (state.type === GLTFLoaderComponentNode.TYPE) {
-                return new GLTFLoaderComponentNode(new ThreejsGLTFLoaderComponentStore());
-            } else if (state.type === MaterialComponentNode.TYPE) {
-                return new MaterialComponentNode(new ThreejsMaterialComponentStore());
-            }
-        }
-        return null;
     }
 
     getGeometryRef() {
