@@ -24,6 +24,10 @@ class AnchoredGroup {
         this.#group.name = name;
     }
 
+    getName() {
+        return this.#group.name;
+    }
+
     /**
      * 
      * @param {MatrixAsArray} array 

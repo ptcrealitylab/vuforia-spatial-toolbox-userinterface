@@ -58,6 +58,14 @@ class GroundPlane {
     getInternalObject() {
         return this.#plane;
     }
+
+    /**
+     * 
+     * @param {THREE.Object3D} object 
+     */
+    add(object) {
+        this.#plane.add(object);
+    }
 }
 
 export default GroundPlane;

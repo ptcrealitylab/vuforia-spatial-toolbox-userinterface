@@ -1,17 +1,32 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import DateTimer from '../../../objectdefaultFiles/scene/DateTimer.js';
 import { RoomEnvironment } from '../../../thirdPartyCode/three/RoomEnvironment.module.js';
 import { acceleratedRaycast } from '../../../thirdPartyCode/three-mesh-bvh.module.js';
 import { WebXRVRButton } from './WebXRVRButton.js';
 import { Camera } from './Camera.js';
 import AnchoredGroup from './AnchoredGroup.js';
+import {ToolManager} from './ToolManager.js';
+import {ResourceCache} from './SmartResourceCache.js';
 
 /**
+ * @typedef {DateTimer} Timer
+ * @typedef {ResourceCache<THREE.BufferGeometry>} GeometryCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.BufferGeometry>} GeometryEntry
+ * @typedef {import("./SmartResource.js").SmartResource<GeometryEntry>} GeometryRef
+ * @typedef {ResourceCache<THREE.Material>} MaterialCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.Material>} MaterialEntry
+ * @typedef {import("./SmartResource.js").SmartResource<MaterialEntry>} MaterialRef
+ * @typedef {ResourceCache<THREE.Texture>} TextureCache
+ * @typedef {import("./SmartResourceCache.js").ResourceEntry<THREE.Texture>} TextureEntry
+ * @typedef {import("./SmartResource.js").SmartResource<TextureEntry>} TextureRef
  * @typedef {number} pixels
  * @typedef {number} DeviceUnitsPerMeter
  * @typedef {number} MetersPerSceneUnit
  * @typedef {number} DeviceUnitsPerSceneUnit
  * @typedef {number} SceneUnitsPerDeviceUnit
  * @typedef {number} SceneUnits
+ * @typedef {number} seconds
+ * @typedef {{date: seconds, timer: seconds}} TimerDateOffset
  * @typedef {(globalScale: GlobalScale) => void} GlobalScaleListener
  * @typedef {{a: number, b: number, c: number, normal: THREE.Vector3, materialIndex: number}} Face
  * @typedef {{distance: number, distanceToRay?: number|undefined, point: THREE.Vector3, index?: number | undefined, face?: Face | null | undefined, faceIndex?: number | undefined, object: THREE.Object3D, uv?: THREE.Vector2 | undefined, uv1?: THREE.Vector2 | undefined, normal?: THREE.Vector3, instanceId?: number | undefined, pointOnLine?: THREE.Vector3, batchId?: number, scenePoint: THREE.Vector3, sceneDistance: SceneUnits}} Intersection
@@ -117,11 +132,30 @@ class Renderer {
     /** @type {GlobalScale} */
     #globalScale
 
+    /** @type {ToolManager} */
+    #tools;
+
+    /** @type {Timer} */
+    #timer
+
+    /** @type {GeometryCache} */
+    #geometryCache;
+
+    /** @type {MaterialCache} */
+    #materialCache;
+
+    /** @type {TextureCache} */
+    #textureCache;
+
     /**
      * 
      * @param {HTMLCanvasElement} domElement 
      */
     constructor(domElement) {
+        this.#timer = new DateTimer();
+        this.#geometryCache = new ResourceCache("geometryCache");
+        this.#materialCache = new ResourceCache("materialCache");
+        this.#textureCache = new ResourceCache("textureCache");
         this.#renderer = new THREE.WebGLRenderer({canvas: domElement, alpha: true, antialias: true});
         this.#renderer.setPixelRatio(window.devicePixelRatio);
         this.#renderer.setSize(window.innerWidth, window.innerHeight);
@@ -157,6 +191,32 @@ class Renderer {
         // Assumes the BVH is available on the `boundsTree` variable
         THREE.Mesh.prototype.raycast = acceleratedRaycast;
         this.#raycaster = new THREE.Raycaster();
+
+        this.#tools = new ToolManager(this);
+    }
+
+    /**
+     * 
+     * @returns {GeometryCache}
+     */
+    getGeometryCache() {
+        return this.#geometryCache;
+    }
+
+    /**
+     * 
+     * @returns {MaterialCache}
+     */
+    getMaterialCache() {
+        return this.#materialCache;
+    }
+
+    /**
+     * 
+     * @returns {TextureCache}
+     */
+    getTextureCache() {
+        return this.#textureCache;
     }
     
     /**
@@ -192,6 +252,30 @@ class Renderer {
     }
 
     /**
+     * @param {string} type
+     * @param {string} toolId 
+     */
+    addTool(toolId, type) {
+        this.#tools.add(toolId, type);
+    }
+
+    /**
+     * 
+     * @param {string} toolId 
+     */
+    removeTool(toolId) {
+        this.#tools.remove(toolId);
+    }
+
+    /**
+     * 
+     * @param {AnchoredGroup} anchoredGroup 
+     */
+    setAnchoredGroupForTools(anchoredGroup) {
+        this.#tools.setAnchoredGroup(anchoredGroup);
+    }
+
+    /**
      * 
      * @returns {boolean}
      */
@@ -212,6 +296,8 @@ class Renderer {
     }
 
     render() {
+        this.#timer.update();
+        this.#tools.update();
         this.#renderer.render(this.#scene, this.#camera.getInternalObject());
     }
 
@@ -330,6 +416,14 @@ class Renderer {
      */
     getInternalCanvas() {
         return this.#renderer.domElement;
+    }
+
+    /**
+     * 
+     * @returns {Timer}
+     */
+    getTimer() {
+        return this.#timer;
     }
 }
 
