@@ -1,7 +1,6 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import ObjectStore from "../../../objectDefaultFiles/scene/ObjectStore.js";
 import ValueNode from "../../../objectDefaultFiles/scene/ValueNode.js";
-import TriggerValueStore from "../../../objectDefaultFiles/scene/TriggerValueStore.js";
 import ColorNode from "../../../objectDefaultFiles/scene/ColorNode.js";
 import TriggerColorStore from "../../../objectDefaultFiles/scene/TriggerColorStore.js";
 import EulerAnglesNode from "../../../objectDefaultFiles/scene/EulerAnglesNode.js";
@@ -51,7 +50,8 @@ class ThreejsMaterialComponentStore extends ObjectStore {
      */
     constructor() {
         super();
-        this.#materialIdNode = new ValueNode(new TriggerValueStore(() => {this.#entityNeedsUpdate = true;}, ""));
+        this.#materialIdNode = new ValueNode("");
+        this.#materialIdNode.onChanged = () => {this.#entityNeedsUpdate = true;};
         this.#propertiesNode = new DictionaryNode(new DictionaryStore());
         this.#entityNeedsUpdate = false;
         this.#cache = null;
@@ -98,7 +98,7 @@ class ThreejsMaterialComponentStore extends ObjectStore {
                 textureData.id = texture.userData.toolboxId;
                 textureRef = this.#textureCache.get(textureData.id);
             } else {
-                textureData.id = `${this.#materialIdNode.get()}.${propertyName.replace(/[\\.@]/g, "\\$&")}.${texture.name.replace(/[\\.@]/g, "\\$&")}`;
+                textureData.id = `${this.#materialIdNode.value}.${propertyName.replace(/[\\.@]/g, "\\$&")}.${texture.name.replace(/[\\.@]/g, "\\$&")}`;
                 texture.userData.toolboxId = textureData.id;
                 textureRef = this.#textureCache.insert(textureData.id, texture);
             }
@@ -114,7 +114,8 @@ class ThreejsMaterialComponentStore extends ObjectStore {
     }
 
     #addValue(entity, propertyName) {
-        this.#propertiesNode.set(propertyName, new ValueNode(new TriggerValueStore(() => {this.#changedProperties.push(propertyName);}, entity.material[propertyName])));
+        this.#propertiesNode.set(propertyName, new ValueNode(entity.material[propertyName]));
+        this.#propertiesNode.onChanged = () => {this.#changedProperties.push(propertyName);};
     } 
 
     #addVector2(entity, propertyName) {
@@ -132,7 +133,7 @@ class ThreejsMaterialComponentStore extends ObjectStore {
         }
         if (this.#entityNeedsUpdate) {
             this.#entityNeedsUpdate = false;   
-            const materialRef = this.#cache.get(this.#materialIdNode.get());
+            const materialRef = this.#cache.get(this.#materialIdNode.value);
             if (materialRef) {
                 const entityNode = this.#node.getEntity();
                 const entity = entityNode.getInternalObject();
@@ -217,7 +218,7 @@ class ThreejsMaterialComponentStore extends ObjectStore {
             this.#nodeChanged = false;
             const entity = this.#node.getEntity();
             const materialRef = entity.getMaterialRef();
-            this.#materialIdNode.set(materialRef.getResource().getId());
+            this.#materialIdNode.value = materialRef.getResource().getId();
         }
         for (const change of this.#changedProperties) {
             const material = this.#node.getEntity().getInternalObject().material;
@@ -228,7 +229,7 @@ class ThreejsMaterialComponentStore extends ObjectStore {
             } else if (material[change] instanceof THREE.Texture) {
                 material[change] = this.#propertiesNode.get(change).getListener().swapAndGetTexture();
             } else if (typeof material[change] === "number") {
-                material[change] = this.#propertiesNode.get(change).get();
+                material[change] = this.#propertiesNode.get(change).value;
             }
         }
         this.#changedProperties = [];

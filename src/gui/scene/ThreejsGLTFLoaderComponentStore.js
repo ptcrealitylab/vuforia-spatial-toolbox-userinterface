@@ -218,9 +218,6 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
     /** @type {EntityNode|null} */
     #node;
 
-    /** @type {string} */
-    #url;
-
     /** @type {VersionedNode} */
     #urlNode;
 
@@ -233,7 +230,8 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
     constructor() {
         super();
         this.#node = null;
-        this.#urlNode = new VersionedNode({get: () => {return this.#url;}, set: (value) => {this.#url = value; this.#forceLoad;}});
+        this.#urlNode = new VersionedNode("");
+        this.#urlNode.onChanged = () => {this.#forceLoad = true};
         this.#forceLoad = false;
         this.#resourceRef = null;
     }
@@ -271,7 +269,7 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
                 ThreejsGLTFLoaderComponentStore.#gltfLoader = new CachedGLTFLoader(worldStore.getGeometryCache(), worldStore.getMaterialCache());
             }
             const result = await new Promise((resolve, reject) => {
-                ThreejsGLTFLoaderComponentStore.#gltfLoader.load(new URL(this.#url).href, (resourceRef) => resolve(resourceRef), reject, version);
+                ThreejsGLTFLoaderComponentStore.#gltfLoader.load(new URL(this.#urlNode.value).href, (resourceRef) => resolve(resourceRef), reject, version);
             });
             this.#resourceRef = result.ref;
             this.#node.setChild("Scene", result.node);
