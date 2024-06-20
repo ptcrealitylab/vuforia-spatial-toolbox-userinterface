@@ -1,6 +1,8 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 import {Timeline} from './timeline.js';
+import {DraggableMenu} from '../utilities/DraggableMenu.js';
+import {TableView} from '../utilities/TableView.js';
 import {
     RegionCard,
     RegionCardState,
@@ -9,10 +11,10 @@ import {HumanPoseAnalyzer} from '../humanPose/HumanPoseAnalyzer.js';
 import {
     postPersistRequest,
 } from './utils.js';
-import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
+import {ValueAddWasteTimeManager} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
-import {HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
+import {HUMAN_TRACKING_FPS, JOINTS} from '../humanPose/constants.js';
 
 const RecordingState = {
     empty: 'empty',
@@ -57,6 +59,7 @@ export class MotionStudy {
         this.stepLabels = [];
         this.pinnedRegionCardsContainer = null;
         this.exportLinkContainer = null;
+        this.tableViewMenu = null;
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
 
@@ -80,6 +83,67 @@ export class MotionStudy {
         this.stepLabelContainer.appendChild(this.stepLabel);
 
         this.container.appendChild(this.stepLabelContainer);
+    }
+
+    createTableView() {
+        this.tableViewMenu = new DraggableMenu('analytics-table-view-root', 'Table View', {});
+        // const rowNames = ['Step 1', 'Step 2', 'Step 3', 'Step 4'];
+        // const columnNames = ['Head', 'Torso', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg'];
+        // const data = [
+        //     [4, 5, 1, 2, 6, 4],
+        //     [6, 4, 3, 3, 3, 5],
+        //     [5, 7, 4, 5, 7, 4],
+        //     [8, 8, 4, 2, 3, 3],
+        // ];
+        // this.tableView = new TableView(rowNames, columnNames, data, this.tableViewMenu.body);
+        this.updateTableView();
+        this.tableViewMenu.initialize();
+    }
+
+    // TODO: Call when cards are added or lens changes
+    // TODO: Also clear modified data when card durations get changed, maybe save a hash of a card as a key for the data
+    // TODO: Combine joints into body parts
+    updateTableView() {
+        this.tableViewMenu.body.innerHTML = ''; // Remove old table view if it exists
+        const jointNameMap = value => value.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
+        const jointNames = Object.values(JOINTS).map(jointNameMap);
+        const data = [];
+        const regionCards = this.pinnedRegionCards;
+        const stepNames = regionCards.map(card => card.labelElement.innerText);
+        regionCards.forEach(step => {
+            const row = [];
+            const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(step.startTime, step.endTime);
+            poses.forEach((pose, i) => {
+                const jointValues = Object.values(pose.joints);
+                jointNames.forEach((jointName, j) => {
+                    const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
+                    if (i === 0) {
+                        row.push(joint.muriScore);
+                    } else {
+                        row[j] = row[j] + joint.muriScore;
+                    }
+                });
+            });
+            row.forEach((val, i) => {
+                row[i] = val / poses.length; // Average the values
+                row[i] = Math.round(row[i] * 10) / 10; // Round to tenth place
+            })
+            data.push(row);
+        });
+        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body);
+        this.tableView.onSelection(_selection => {
+            // console.log({selection});
+            // TODO: disable camera shortcuts while only one item is selected
+        });
+
+        const setInteractable = () => {
+            this.tableView.setInteractable(this.tableViewMenu.showing && this.tableViewMenu.maximized)
+        }
+        // TODO: remove old callbacks from previous table view
+        this.tableViewMenu.on('show', () => setInteractable());
+        this.tableViewMenu.on('maximize', () => setInteractable());
+        this.tableViewMenu.on('hide', () => setInteractable());
+        this.tableViewMenu.on('minimize', () => setInteractable());
     }
 
     createStepFileUploadComponent() {
@@ -123,6 +187,7 @@ export class MotionStudy {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.show();
         }
+        this.tableViewMenu.show();
         this.updateVideoPlayerShowHideButtonText();
     }
 
@@ -136,6 +201,7 @@ export class MotionStudy {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
         }
+        this.tableViewMenu.hide();
     }
 
     /**
@@ -231,6 +297,9 @@ export class MotionStudy {
         this.exportLinkContainer.appendChild(this.exportLinkPinnedRegionCards);
         this.exportLinkContainer.appendChild(this.exportLinkPoseData);
         this.pinnedRegionCardsContainer.appendChild(this.exportLinkContainer);
+
+        this.createTableView();
+
         this.createStepFileUploadComponent();
     }
 
@@ -641,6 +710,7 @@ export class MotionStudy {
         this.nextStepNumber += 1;
 
         this.updateStepLabel();
+        this.updateTableView();
 
         this.updateExportLinks();
 
