@@ -822,9 +822,9 @@ export class RegionCard {
     }
 
     /**
-     * @return {{valuePercent: number, wastePercent: number}?}
+     * @return {{valuePercent: number, wastePercent: number, valueTimeMs: number, wasteTimeMs: number}?}
      */
-    getValueAddWasteTimePercents() {
+    getValueAddWasteTimeSummary() {
         const subset = this.motionStudy.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
         let totalValueAdd = 0;
         let totalWasteTime = 0;
@@ -843,7 +843,12 @@ export class RegionCard {
         const valuePercent = Math.round(totalValueAdd / totalTime * 100);
         const wastePercent = Math.round(totalWasteTime / totalTime * 100);
 
-        return {valuePercent, wastePercent};
+        return {
+            valuePercent,
+            wastePercent,
+            valueTimeMs: totalValueAdd,
+            wasteTimeMs: totalWasteTime,
+        };
     }
 
     updateValueAddWasteTimeUi() {
@@ -860,7 +865,7 @@ export class RegionCard {
             this.wasteTimeButton.classList.remove('selected');
         }
 
-        const percents = this.getValueAddWasteTimePercents();
+        const percents = this.getValueAddWasteTimeSummary();
         if (!percents) {
             return;
         }
