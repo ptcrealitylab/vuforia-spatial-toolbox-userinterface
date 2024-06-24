@@ -92,12 +92,14 @@ export class Windchill {
                     let coPlanCoOp = await this.api.checkOutOperation(coPlanOp.id);
                     // Forces regionCard to calculate summary statistics
                     regionCard.getMotionSummaryText();
-                    const vaPercents = regionCard.getValueAddWasteTimePercents();
+                    regionCard.updateLensStatistics();
+                    const vaSummary = regionCard.getValueAddWasteTimeSummary();
                     let valueAdd = null;
                     let waste = null;
-                    if (vaPercents) {
-                        valueAdd = Math.round(vaPercents.valuePercent);
-                        waste = Math.round(vaPercents.wastePercent);
+                    if (vaSummary) {
+                        // Round to tenths of a second
+                        valueAdd = Math.round(vaSummary.valueTimeMs / 100) / 10;
+                        waste = Math.round(vaSummary.wasteTimeMs / 100) / 10;
                     }
 
                     // Build a deep link on top of the existing window
@@ -108,13 +110,22 @@ export class Windchill {
                     params.set('toolId', regionCard.motionStudy.frame);
                     url.search = params.toString();
                     url.hash = regionCard.step.id;
+
                     await this.api.patchVariables(coPlanCoOp.id, {
                         URL: url.toString(),
                         DistanceTraveled: (regionCard.distanceMm / 1000).toString(),
                         Duration: Math.round(regionCard.durationMs),
-                        ValueAdd: valueAdd,
-                        Waste: waste,
-                        // TODO REBA statistics
+                        ValueAddTime: valueAdd,
+                        WasteTime: waste,
+                        MURIAverage1: regionCard.graphSummaryValues?.MURI?.average,
+                        MURIMax1: regionCard.graphSummaryValues?.MURI?.maximum,
+                        MURIMin: regionCard.graphSummaryValues?.MURI?.minimum,
+                        AccelerationAverage: regionCard.graphSummaryValues?.Accel?.average,
+                        Accelerationmax: regionCard.graphSummaryValues?.Accel?.maximum,
+                        Accelerationmin: regionCard.graphSummaryValues?.Accel?.minimum,
+                        REBA: regionCard.graphSummaryValues?.REBA?.average,
+                        REBAMIN: regionCard.graphSummaryValues?.REBA?.minimum,
+                        REBAMax: regionCard.graphSummaryValues?.REBA?.maximum,
                     });
                     await this.api.checkInOperation(coPlanCoOp.id);
                 }
