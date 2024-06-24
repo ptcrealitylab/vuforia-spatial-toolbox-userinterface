@@ -229,6 +229,8 @@ createNameSpace("realityEditor.avatar");
         linkCanvasContainer.style.top = '0';
         linkCanvasContainer.style.left = '0';
         linkCanvasContainer.style.pointerEvents = 'none';
+        linkCanvasContainer.style.zIndex = '3001';
+        linkCanvasContainer.style.transform = 'translateZ(3001px)';
         document.body.appendChild(linkCanvasContainer);
 
         linkCanvas = document.createElement('canvas');
@@ -237,6 +239,7 @@ createNameSpace("realityEditor.avatar");
         linkCanvas.style.top = '0';
         linkCanvas.style.left = '0';
         linkCanvas.style.zIndex = '3001';
+        linkCanvas.style.transform = 'translateZ(3001px)';
         linkCanvasContainer.appendChild(linkCanvas);
 
         linkCanvasCtx = linkCanvas.getContext("2d");
