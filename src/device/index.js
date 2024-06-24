@@ -452,7 +452,7 @@ realityEditor.device.postEventIntoIframe = async function(event, frameKey, nodeK
             });
         })
     });
-    const raycastResults = await Promise.all(frameRaycastPromises);
+    const raycastResults = (await Promise.allSettled(frameRaycastPromises)).filter(res => res.status === 'fulfilled').map(res => res.value);
     const cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
     const groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
     const inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
