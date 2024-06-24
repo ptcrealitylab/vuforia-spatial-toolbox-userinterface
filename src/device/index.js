@@ -135,6 +135,9 @@ realityEditor.device.previousPointerMove = null;
  */
 realityEditor.device.callbackHandler = new realityEditor.moduleCallbacks.CallbackHandler('device/index');
 
+realityEditor.device.raycastIndex = 0; // Used to ensure raycast requests don't override each other
+realityEditor.device.raycastCallbacks = new Map();
+
 /**
  * Adds a callback function that will be invoked when the specified function is called
  * @param {string} functionName
@@ -151,10 +154,21 @@ realityEditor.device.registerCallback = function(functionName, callback) {
  * Initialize the device module by registering callbacks to other modules
  */
 realityEditor.device.initService = function() {
+    realityEditor.network.addPostMessageHandler('raycastResult', handleRaycastResult);
 
     realityEditor.gui.buttons.registerCallbackForButton('gui', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('logic', resetEditingOnButtonUp);
     realityEditor.gui.buttons.registerCallbackForButton('setting', resetEditingOnButtonUp);
+
+    function handleRaycastResult(eventData, fullMessageContent) {
+        const {object, frame, index} = fullMessageContent;
+        const key = object + frame + index;
+        const callback = realityEditor.device.raycastCallbacks.get(key);
+        if (callback) {
+            callback(eventData);
+            realityEditor.device.raycastCallbacks.delete(key);
+        }
+    }
 
     function resetEditingOnButtonUp(params) {
         if (params.newButtonState === 'up') {
@@ -313,7 +327,7 @@ realityEditor.device.shouldPostEventsIntoIframe = function() {
  * @param {string} frameKey
  * @param {string|undefined} nodeKey
  */
-realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
+realityEditor.device.postEventIntoIframe = async function(event, frameKey, nodeKey) {
     var iframe = document.getElementById('iframe' + (nodeKey || frameKey));
     var newCoords = webkitConvertPointFromPageToNode(iframe, new WebKitPoint(event.pageX, event.pageY));
     if (!newCoords) { return }
@@ -392,6 +406,74 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
             }
         }
     }
+    
+    const entries = [];
+    realityEditor.forEachFrameInAllObjects((object, frame) => {
+        entries.push({
+            object,
+            frame
+        });
+    });
+    let currentIndex = realityEditor.device.raycastIndex;
+    realityEditor.device.raycastIndex += 1;
+    const frameRaycastPromises = entries.map(entry => {
+        return new Promise((resolve, reject) => {
+            const {object, frame} = entry;
+            const targetIframe = document.getElementById('iframe' + frame);
+            if (!targetIframe || !targetIframe.contentWindow) { // Avatars don't have iframes
+                resolve(null);
+                return;
+            }
+            targetIframe.contentWindow.postMessage(JSON.stringify({
+                raycastRequest: {
+                    coords: {
+                        x: newCoords.x,
+                        y: newCoords.y
+                    },
+                    index: currentIndex
+                }
+            }), '*');
+            let resolved = false;
+
+            const key = object + frame + currentIndex;
+            setTimeout(() => {
+                realityEditor.device.raycastCallbacks.delete(key);
+                if (!resolved) {
+                    resolved = true;
+                    reject();
+                }
+            }, 200); // Reject automatically within 200 ms
+
+            realityEditor.device.raycastCallbacks.set(key, (result) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(result);
+                }
+            });
+        })
+    });
+    const raycastResults = await Promise.all(frameRaycastPromises);
+    const cameraPosition = realityEditor.gui.threejsScene.getCameraPosition();
+    const groundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+    const inverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+    realityEditor.gui.threejsScene.setMatrixFromArray(inverseGroundPlaneMatrix, groundPlaneMatrix);
+    inverseGroundPlaneMatrix.invert();
+    const groundPlaneYOffset = new realityEditor.gui.threejsScene.THREE.Vector3().setFromMatrixPosition(inverseGroundPlaneMatrix).y;
+    cameraPosition.y -= groundPlaneYOffset;
+    const ray = realityEditor.gui.threejsScene.getScreenRay(event.pageX, event.pageY);
+    let minToolZ = Number.POSITIVE_INFINITY;
+    let closestFrameRaycast = null;
+    raycastResults.forEach(result => {
+        if (result === null) {
+            return;
+        }
+        const z = Math.sqrt(Math.pow(cameraPosition.x - result.x, 2) + Math.pow(cameraPosition.y - result.y, 2) + Math.pow(cameraPosition.z - result.z, 2));
+        if (z < minToolZ) {
+            minToolZ = z;
+            closestFrameRaycast = result;
+        }
+    });
+
     let eventData = {
         type: event.type,
         pointerId: event.pointerId,
@@ -400,12 +482,40 @@ realityEditor.device.postEventIntoIframe = function(event, frameKey, nodeKey) {
         x: newCoords.x,
         y: newCoords.y
     }
-    if (typeof projectedZ !== 'undefined') {
-        eventData.projectedZ = projectedZ;
+    if (closestFrameRaycast) {
+        if (typeof projectedZ !== 'undefined') {
+            if (minToolZ < projectedZ) {
+                eventData.projectedZ = minToolZ;
+                eventData.worldIntersectPoint = {
+                    x: closestFrameRaycast.x,
+                    y: closestFrameRaycast.y,
+                    z: closestFrameRaycast.z,
+                    normalVector: ray.direction.clone().negate(),
+                    rayDirection: ray.direction,
+                };
+            } else {
+                eventData.projectedZ = projectedZ;
+                eventData.worldIntersectPoint = worldIntersectPoint;
+            }
+        } else {
+            eventData.projectedZ = minToolZ;
+            eventData.worldIntersectPoint = {
+                x: closestFrameRaycast.x,
+                y: closestFrameRaycast.y,
+                z: closestFrameRaycast.z,
+                normalVector: ray.direction.clone().negate(),
+                rayDirection: ray.direction,
+            };
+        }
+    } else {
+        if (typeof projectedZ !== 'undefined') {
+            eventData.projectedZ = projectedZ;
+        }
+        if (typeof worldIntersectPoint !== 'undefined') {
+            eventData.worldIntersectPoint = worldIntersectPoint;
+        }
     }
-    if (typeof worldIntersectPoint !== 'undefined') {
-        eventData.worldIntersectPoint = worldIntersectPoint;
-    }
+    
     if (typeof threejsIntersectPoint !== 'undefined') {
         eventData.threejsIntersectPoint = threejsIntersectPoint;
     }

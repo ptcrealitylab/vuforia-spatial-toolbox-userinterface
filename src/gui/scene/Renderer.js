@@ -259,6 +259,20 @@ class Renderer {
     }
 
     /**
+     * Returns the ray that would be used for raycasting without performing the raycasting calculation
+     * @param {pixels} clientX - screen coordinate left to right
+     * @param {pixels} clientY - screen coordinate top to bottom
+     * @return {Ray}
+     */
+    getScreenRay(clientX, clientY) {
+        let mouse = new THREE.Vector2();
+        mouse.x = ( clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( clientY / window.innerHeight ) * 2 + 1;
+        this.#raycaster.setFromCamera( mouse, this.#camera.getInternalObject() );
+        return this.#raycaster.ray;
+    }
+
+    /**
      * this module exports this utility so that other modules can perform hit tests
      * objectsToCheck defaults to scene.children (all objects in the scene) if unspecified
      * NOTE: returns the coordinates in threejs scene world coordinates:
