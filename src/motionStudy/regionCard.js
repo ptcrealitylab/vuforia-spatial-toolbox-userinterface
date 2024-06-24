@@ -5,6 +5,7 @@ import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
 import {MIN_MURI_SCORE, MAX_MURI_SCORE, MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
+import {getConvexHullOfPoses} from './getConvexHullOfPoses.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -126,6 +127,7 @@ export class RegionCard {
                 this.displayActive = false;
             } else {
                 this.show();
+                // this.createPolygonSensor();
             }
             break;
         }
@@ -871,5 +873,31 @@ export class RegionCard {
         }
         const {valuePercent, wastePercent} = percents;
         this.valueAddWasteTimeSummary.setValues(valuePercent, wastePercent);
+    }
+
+    createPolygonSensor() {
+        let points = getConvexHullOfPoses(this.poses);
+
+        let addedTool = realityEditor.gui.pocket.createFrame('spatialSensorPolygon', {
+            noUserInteraction: true,
+            pageX: window.innerWidth / 2,
+            pageY: window.innerHeight / 2,
+            onUploadComplete: () => {
+                realityEditor.network.postVehiclePosition(addedTool);
+                write();
+            },
+        });
+
+        const frameKey = addedTool.uuid;
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(
+                addedTool.objectId, frameKey, frameKey + 'storage',
+                'points', points
+            );
+        };
+        setTimeout(write, 500);
+        setTimeout(write, 1500);
+
+        return addedTool.uuid;
     }
 }
