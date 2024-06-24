@@ -250,9 +250,10 @@ export class RegionCard {
         this.element.appendChild(motionSummary);
         this.element.appendChild(this.valueAddWasteTimeSummary);
 
-        this.labelElement = document.createElement('div');
+        this.labelElement = document.createElement('input');
         this.labelElement.classList.add('analytics-region-card-label');
-        this.labelElement.setAttribute('contenteditable', true);
+        this.labelElement.setAttribute('type', 'text');
+        this.labelElement.setAttribute('list', 'analytics-step-names');
         this.setLabel('');
 
         makeTextInput(this.labelElement, () => {
@@ -786,11 +787,11 @@ export class RegionCard {
     }
 
     getLabel() {
-        return this.labelElement.textContent;
+        return this.labelElement.value;
     }
 
     setLabel(label) {
-        this.labelElement.textContent = label;
+        this.labelElement.value = label;
     }
 
     setAccentColor(accentColor) {

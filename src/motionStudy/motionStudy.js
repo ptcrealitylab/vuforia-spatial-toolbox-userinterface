@@ -509,7 +509,7 @@ export class MotionStudy {
                 this.exportLinkContainer.style.display = '';
                 break;
         }
-        if (recordingState !== RecordingState.empty) {
+        if (this.plan) {
             this.importStepsButton.hide();
         } else {
             this.importStepsButton.show();
@@ -521,11 +521,25 @@ export class MotionStudy {
         this.plan = plan;
         const operations = await this.windchill.getOperations(plan.id);
         this.setSteps(operations);
+        this.importStepsButton.hide();
     }
 
     setSteps(steps) {
         this.steps = steps;
         this.updateStepLabel();
+
+        this.createStepDataList();
+    }
+
+    createStepDataList() {
+        const datalist = document.createElement('datalist');
+        datalist.id = 'analytics-step-names';
+        for (const step of this.steps) {
+            const option = document.createElement('option');
+            option.value = this.windchill.getOperationLabel(step);
+            datalist.appendChild(option);
+        }
+        this.container.appendChild(datalist);
     }
 
     getStep() {
@@ -541,7 +555,7 @@ export class MotionStudy {
         let label = 'Step ' + i;
         if (i <= this.steps.length) {
             const step = this.getStep();
-            label = step.description || step.name;
+            label = this.windchill.getOperationLabel(step);
         }
         return label;
     }
@@ -700,6 +714,12 @@ export class MotionStudy {
         });
 
         this.sortPinnedRegionCards();
+
+        if (data.plan && data.plan !== this.plan?.id) {
+            this.setProcessPlan({
+                id: data.plan,
+            });
+        }
     }
 
     getPosesInTimeIntervalWithFallback(startTime, endTime) {
@@ -869,6 +889,17 @@ export class MotionStudy {
     writeMotionStudyData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
+
+        for (let regionCard of this.pinnedRegionCards) {
+            let operation = this.windchill.getOperationByLabel(regionCard.getLabel());
+            // If ids match or both step descriptions are null
+            if (regionCard.step?.id === operation?.id) {
+                continue;
+            }
+            regionCard.setWindchillData(operation);
+            regionCard.updateWindchillSection();
+        }
+
         let allCards = this.pinnedRegionCards.map(regionCard => {
             return {
                 startTime: regionCard.startTime,
@@ -892,6 +923,7 @@ export class MotionStudy {
                 {},
                 this.lastHydratedData || {},
                 {
+                    plan: this.plan?.id,
                     regionCards: allCards,
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },
