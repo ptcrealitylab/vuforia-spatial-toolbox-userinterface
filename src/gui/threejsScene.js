@@ -1218,6 +1218,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
     exports.removeAnimationCallback = removeAnimationCallback;
     exports.addToScene = addToScene;
     exports.removeFromScene = removeFromScene;
+    exports.getScreenRay = (clientX, clientY) => {return mainRenderer.getScreenRay(clientX, clientY)};
     exports.getRaycastIntersects = (clientX, clientY, objectsToCheck) => {return mainRenderer.getRaycastIntersects(clientX, clientY, objectsToCheck)};
     exports.getPointAtDistanceFromCamera = getPointAtDistanceFromCamera;
     exports.getObjectByName = getObjectByName;
