@@ -16,6 +16,7 @@ export class Windchill {
         this.api = new MPMAPI(baseUrl, username, password);
         this.writing = false;
         this.writeTimeout = null;
+        this.operationByLabel = {};
     }
 
     /**
@@ -51,6 +52,19 @@ export class Windchill {
             });
         }
         return steps;
+    }
+
+    getOperationLabel(operation) {
+        let label = operation.name.split('_').at(-1);
+        if (operation.description) {
+            label += ' ' + operation.description;
+        }
+        this.operationByLabel[label] = operation;
+        return label;
+    }
+
+    getOperationByLabel(label) {
+        return this.operationByLabel[label];
     }
 
     async writeProcessPlanData(plan, regionCards) {

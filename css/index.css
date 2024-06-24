@@ -2156,7 +2156,12 @@ Logic Interface CSS
 }
 
 .analytics-region-card-label {
+    color: white;
+    background: none;
+    padding: 0;
+
     grid-column-start: span 3;
+    border: none;
     border-bottom: 1px solid #999;
     padding-bottom: 4px;
     margin-bottom: 4px;
