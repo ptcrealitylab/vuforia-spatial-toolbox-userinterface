@@ -426,6 +426,7 @@ createNameSpace("realityEditor.avatar.draw");
             overlay.style.borderRadius = '10px';
             overlay.style.backgroundColor = color;
             overlay.style.opacity = '0.5';
+            overlay.style.zIndex = '1201';
             document.body.appendChild(overlay);
         }
         overlay.style.transform = 'translate3d(' + screenX + 'px, ' + screenY + 'px, 1201px)';
