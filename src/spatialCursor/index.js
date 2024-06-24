@@ -389,8 +389,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             });
         }
 
-        realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', (_, fullMessageData) => {
-            let tmpRaycastResult = getRaycastCoordinates(screenX, screenY, false);
+        realityEditor.network.addPostMessageHandler('getSpatialCursorEvent', async (_, fullMessageData) => {
+            let tmpRaycastResult = await getRaycastCoordinates(screenX, screenY, false);
             let threejsIntersectPoint = tmpRaycastResult.point === undefined ? undefined : {
                 x: tmpRaycastResult.point.x,
                 y: tmpRaycastResult.point.y,
@@ -410,13 +410,13 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
-    function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
+    async function addToolAtScreenCenter(toolName, { moveToCursor = false, onToolUploadComplete = null} = {}) {
         
         let spatialCursorMatrix = null;
         if (moveToCursor) {
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else {
-            let info = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+            let info = await realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
             if (info.didFindCenterPoint) {
                 spatialCursorMatrix = info.matrix;
             }
@@ -441,7 +441,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
 
         if (!moveToCursor && !spatialCursorMatrix) {
-            let worldCenterPoint = getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
+            let worldCenterPoint = await getRaycastCoordinates(window.innerWidth/2, window.innerHeight/2);
             if (worldCenterPoint.point === undefined) {
                 let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
                 if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
@@ -465,7 +465,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
     // publicly accessible function to add a tool at the spatial cursor position (or floating in front of you)
     // tool added at screen coordinates
-    function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
+    async function addToolAtSpecifiedCoords(toolName, { moveToCursor = false, screenX, screenY }) {
 
         // TODO: what happens if you drop tool into the sky, looking up –> there's no cursor intersect point,
         //  -> so make it drop close in front of you instead of infinitely far away
@@ -475,12 +475,12 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             spatialCursorMatrix = realityEditor.spatialCursor.getOrientedCursorRelativeToWorldObject();
         } else if (screenX !== null && screenY !== null){
             //set spatialCursorMatrix equal to screen coordinates
-            let info = realityEditor.spatialCursor.getOrientedCursorAtSpecificCoords(screenX, screenY);
+            let info = await realityEditor.spatialCursor.getOrientedCursorAtSpecificCoords(screenX, screenY);
             if (info.didFindMouseCoords) {
                 spatialCursorMatrix = info.matrix;
             }
         } else {
-            let info = realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
+            let info = await realityEditor.spatialCursor.getOrientedCursorIfItWereAtScreenCenter();
             if (info.didFindCenterPoint) {
                 spatialCursorMatrix = info.matrix;
             }
@@ -502,7 +502,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         });
 
         if (!moveToCursor && !spatialCursorMatrix) {
-            let worldCenterPoint = getRaycastCoordinates(screenX, screenY);
+            let worldCenterPoint = await getRaycastCoordinates(screenX, screenY);
             if (worldCenterPoint.point === undefined) {
                 let rotateCenterId = 'rotateCenter'+'_VISUAL_ELEMENT';
                 if (realityEditor.sceneGraph.getSceneNodeById(rotateCenterId) !== undefined) {
@@ -640,7 +640,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         updateT33();
     }
 
-    function updateLoop() {
+    async function updateLoop() {
         if (!isCursorEnabled || !isMyColorDetermined) {
             isUpdateLoopRunning = false;
             indicator1.visible = false;
@@ -655,7 +655,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 screenX = window.innerWidth / 2;
                 screenY = window.innerHeight / 2;
             }
-            worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+            worldIntersectPoint = await getRaycastCoordinates(screenX, screenY);
             updateScaleFactor();
             updateOpacityFactor();
             updateInnerRadius();
@@ -956,7 +956,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     let projectedZ = null;
-    function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
+    async function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
         if (gsActive && gsRaycast) {
             if (gsPosition === null) {
                 return {};
@@ -1029,6 +1029,30 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             distance: raycastIntersects[0].sceneDistance,
             isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
         }
+
+        const frameRaycastResults = await realityEditor.device.getFrameRaycast(screenX, screenY);
+
+        if (frameRaycastResults.point) {
+            const tempGroundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
+            const tempInverseGroundPlaneMatrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(tempInverseGroundPlaneMatrix, tempGroundPlaneMatrix);
+            tempInverseGroundPlaneMatrix.invert();
+            const groundPlaneYOffset = new realityEditor.gui.threejsScene.THREE.Vector3().setFromMatrixPosition(tempInverseGroundPlaneMatrix).y;
+            frameRaycastResults.point.y += groundPlaneYOffset;
+            
+            const frameIntersectPoint = {
+                point: frameRaycastResults.point,
+                distance: frameRaycastResults.z,
+                normalVector: frameRaycastResults.direction.clone().negate(),
+                isOnGroundPlane: false
+            };
+
+            if (!worldIntersectPoint || frameRaycastResults.z < worldIntersectPoint.distance) {
+                return frameIntersectPoint;
+            }
+            return worldIntersectPoint;
+        }
+
         return worldIntersectPoint; // these are relative to the world object
     }
 
@@ -1040,9 +1064,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
         return realityEditor.sceneGraph.convertToNewCoordSystem(cursorMatrix, realityEditor.sceneGraph.getSceneNodeById('ROOT'), worldSceneNode);
     }
 
-    function getOrientedCursorIfItWereAtScreenCenter() {
+    async function getOrientedCursorIfItWereAtScreenCenter() {
         // move cursor to center, then get the matrix, then move the cursor back to where it was
-        worldIntersectPoint = getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
+        worldIntersectPoint = await getRaycastCoordinates(window.innerWidth / 2, window.innerHeight / 2);
         if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
             worldIntersectPoint.distance = 1000;
 
@@ -1066,7 +1090,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         // move it back
         let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        worldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        worldIntersectPoint = await getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld();
@@ -1075,9 +1099,9 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     //function to orient cursor to specific screen coordinates
-    function getOrientedCursorAtSpecificCoords(screenX, screenY) {
+    async function getOrientedCursorAtSpecificCoords(screenX, screenY) {
         // get specific coordinates of cursor
-        worldIntersectPoint = getRaycastCoordinates(screenX, screenY);
+        worldIntersectPoint = await getRaycastCoordinates(screenX, screenY);
         if (!realityEditor.device.environment.isDesktop() && worldIntersectPoint.distance > 10000) {
             worldIntersectPoint.distance = 1000;
 
@@ -1101,7 +1125,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
         // move it back
         let pointerPosition = realityEditor.gui.ar.positioning.getMostRecentTouchPosition();
-        worldIntersectPoint = getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
+        worldIntersectPoint = await getRaycastCoordinates(pointerPosition.x, pointerPosition.y);
         updateSpatialCursor();
         updateTestSpatialCursor();
         indicator1.updateMatrixWorld();
