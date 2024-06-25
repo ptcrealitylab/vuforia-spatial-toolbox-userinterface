@@ -876,6 +876,10 @@ export class RegionCard {
     }
 
     createPolygonSensor() {
+        if (this.poses.length === 0) {
+            return;
+        }
+
         let points = getConvexHullOfPoses(this.poses);
 
         let addedTool = realityEditor.gui.pocket.createFrame('spatialSensorPolygon', {
@@ -894,6 +898,12 @@ export class RegionCard {
                 addedTool.objectId, frameKey, frameKey + 'storage',
                 'points', points
             );
+            if (this.step) {
+                realityEditor.network.realtime.writePublicData(
+                    addedTool.objectId, frameKey, frameKey + 'storage',
+                    'step', this.step
+                );
+            }
         };
         setTimeout(write, 500);
         setTimeout(write, 1500);
