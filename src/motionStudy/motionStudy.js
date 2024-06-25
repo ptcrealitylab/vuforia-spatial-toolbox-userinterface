@@ -749,8 +749,8 @@ export class MotionStudy {
         this.sortPinnedRegionCards();
 
         if (data.plan && data.plan !== this.plan?.id) {
-            this.setProcessPlan({
-                id: data.plan,
+            this.windchill.getProcessPlans('VR_DEMO_PP').then(plans => {
+                this.setProcessPlan(plans[0]);
             });
         }
 
