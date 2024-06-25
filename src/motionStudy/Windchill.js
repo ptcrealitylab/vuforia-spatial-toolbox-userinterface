@@ -51,6 +51,9 @@ export class Windchill {
                 description,
             });
         }
+        steps.sort((a, b) => {
+            return a.name.localeCompare(b.name);
+        });
         return steps;
     }
 
