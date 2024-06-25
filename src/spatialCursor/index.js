@@ -956,7 +956,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
 
     let projectedZ = null;
-    async function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true) {
+    async function getRaycastCoordinates(screenX, screenY, includeGroundPlane = true, ignoreFrames = false) {
         if (gsActive && gsRaycast) {
             if (gsPosition === null) {
                 return {};
@@ -1030,7 +1030,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             isOnGroundPlane: raycastIntersects[0].object.name === 'groundPlaneCollider',
         }
 
-        const frameRaycastResults = await realityEditor.device.getFrameRaycast(screenX, screenY);
+        const frameRaycastResults = ignoreFrames ? {point: null} : await realityEditor.device.getFrameRaycast(screenX, screenY);
 
         if (frameRaycastResults.point) {
             const tempGroundPlaneMatrix = realityEditor.sceneGraph.getGroundPlaneNode().worldMatrix;
