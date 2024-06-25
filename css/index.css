@@ -1949,7 +1949,7 @@ Logic Interface CSS
     display: block;
 }
 
-#analytics-step-file {
+#analytics-step-file, .analytics-button-input {
     pointer-events: none;
     opacity: 0;
     width: 1px;
