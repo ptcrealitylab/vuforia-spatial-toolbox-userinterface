@@ -114,12 +114,20 @@ export class Windchill {
                     url.search = params.toString();
                     url.hash = regionCard.step.id;
 
+                    function toUnitValue(value, unit) {
+                        return {
+                            Value: value,
+                            Unit: unit,
+                            Precision: 2,
+                        };
+                    }
+
                     await this.api.patchVariables(coPlanCoOp.id, {
                         URL: url.toString(),
-                        DistanceTraveled: (regionCard.distanceMm / 1000).toString(),
-                        Duration: Math.round(regionCard.durationMs),
-                        ValueAddTime: valueAdd,
-                        WasteTime: waste,
+                        DistanceTravelled: toUnitValue(regionCard.distanceMm / 1000, 'm'),
+                        Duration: toUnitValue(regionCard.durationMs / 1000, 's'),
+                        ValueAddTime: toUnitValue(valueAdd, 's'),
+                        WasteTime: toUnitValue(waste, 's'),
                         MURIAverage1: regionCard.graphSummaryValues?.MURI?.average,
                         MURIMax1: regionCard.graphSummaryValues?.MURI?.maximum,
                         MURIMin: regionCard.graphSummaryValues?.MURI?.minimum,
