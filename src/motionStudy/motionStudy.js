@@ -665,7 +665,13 @@ export class MotionStudy {
 
         this.lastHydratedData = data;
 
-        if (!this.videoPlayer && data.videoUrls) {
+        const videoUrlsAreValid = data.videoUrls &&
+            data.videoUrls.color &&
+            data.videoUrls.rvl &&
+            data.videoUrls.color.split('/').at(-1).length > '.mp4'.length &&
+            data.videoUrls.rvl.split('/').at(-1).length > '.dat'.length;
+        if (!this.videoPlayer && videoUrlsAreValid) {
+
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
             let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
             if (matches && matches[1]) {
