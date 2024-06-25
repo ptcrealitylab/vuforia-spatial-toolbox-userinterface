@@ -12,7 +12,7 @@ export class ImportStepsButton {
         this.stepFileInputLabel = document.createElement('label');
         // this.stepFileInputLabel.classList.add('analytics-step');
         this.stepFileInputLabel.setAttribute('for', 'analytics-step-file');
-        this.stepFileInputLabel.textContent = 'Import Step File';
+        this.stepFileInputLabel.textContent = 'Load Process Plan';
 
         this.stepFileInput = document.createElement('input');
         this.stepFileInput.id = 'analytics-step-file';
