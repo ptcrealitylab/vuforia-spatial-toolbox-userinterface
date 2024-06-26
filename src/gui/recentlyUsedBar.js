@@ -441,6 +441,30 @@ class LineToFrameAnimation {
         // if we stop hovering, draw a receding animation back to the last hovered icon element
         if (!this.hoveredFrameId && !this.lastAnimationPositions) return;
 
+        // TODO: get this working with new spatial-ai-addon code organization
+        // let frameScreenPosition = {
+        //     x: 0,
+        //     y: 0
+        // };
+        //
+        // // TODO: ideally there will be a cleaner API to get the spatialReference
+        // let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[this.hoveredFrameId];
+        // let simpleReference = realityEditor.ai.chatInterface.spatialUuidMapper.simpleSpatialReferenceMap[this.hoveredFrameId];
+        // if (spatialReference) {
+        //     // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
+        //     let position3d = realityEditor.gui.threejsScene.convertToVector3(spatialReference.position);
+        //     frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
+        // } else if (simpleReference) {
+        //     // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
+        //     let position3d = realityEditor.gui.threejsScene.convertToVector3(simpleReference.position);
+        //     frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
+        //     // TODO: support simple references pointing to dynamic linked entities
+        // } else {
+        //     frameScreenPosition = this.hoveredFrameId ?
+        //         realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
+        //         this.lastAnimationPositions.frame;
+        // }
+
         let frameScreenPosition = this.hoveredFrameId ?
             realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
             this.lastAnimationPositions.frame;

@@ -401,7 +401,8 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.userProfile] = (msgContent) => {
             const userProfile = msgContent.publicData.userProfile;
             if (avatarNames[msgContent.object] !== userProfile.name) {
-                realityEditor.ai.onAvatarChangeName(avatarNames[msgContent.object], userProfile.name);
+                // realityEditor.ai.onAvatarChangeName(avatarNames[msgContent.object], userProfile.name);
+                console.log('TODO: refactor realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name)');
             }
             avatarNames[msgContent.object] = userProfile.name;
             if (!connectedAvatarUserProfiles[msgContent.object]) {
@@ -419,7 +420,8 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiDialogue] = (msgContent) => {
             // console.log(msgContent.publicData.aiDialogue);
             console.log("push other's ai dialogue");
-            realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
+            console.log('TODO: refactor realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue)');
+            // realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
         }
         
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
@@ -502,6 +504,9 @@ createNameSpace("realityEditor.avatar");
                     y: e.pageY
                 };
                 lastPointerState.timestamp = Date.now();
+
+                // allow laser beam to pass through full2D tools with title bars, if started outside them
+                realityEditor.gui.ar.positioning.coverFull2DTools(true);
             }
         });
 
@@ -510,6 +515,8 @@ createNameSpace("realityEditor.avatar");
                 if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
                 setBeamOff();
                 lastPointerState.position = null;
+
+                realityEditor.gui.ar.positioning.coverFull2DTools(false);
             });
         });
 
@@ -546,7 +553,9 @@ createNameSpace("realityEditor.avatar");
      */
     function writeUsername(name) {
         if (!myAvatarObject) { return; }
-        realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name);
+        // realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name);
+        console.log('TODO: refactor realityEditor.ai.onAvatarChangeName(connectedAvatarUserProfiles[myAvatarId].name, name)');
+
         connectedAvatarUserProfiles[myAvatarId].name = name;
         let sessionId = globalStates.tempUuid;
         connectedAvatarUserProfiles[myAvatarId].sessionId = sessionId;

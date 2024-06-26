@@ -1781,8 +1781,13 @@ realityEditor.network.onInternalPostMessage = function (e) {
                 let activeVehicle = realityEditor.getFrame(msgContent.object, msgContent.frame);
                 realityEditor.gui.ar.positioning.setVehicleScale(activeVehicle, 3.0);
             }
-            if (globalDOMCache[msgContent.frame]) {
-                globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+
+            if (msgContent.showWindowTitleBar) {
+                realityEditor.gui.ar.positioning.addTitleBarToTool(msgContent.object, msgContent.frame);
+            } else {
+                if (globalDOMCache[msgContent.frame]) {
+                    globalDOMCache[msgContent.frame].classList.add('deactivatedIframeOverlay');
+                }
             }
         } else {
             if (globalDOMCache[msgContent.frame]) {
@@ -2381,67 +2386,6 @@ realityEditor.network.postNewNodeName = function(ip, objectKey, frameKey, nodeKe
 
     this.postData(realityEditor.network.getURL(ip, realityEditor.network.getPort(objects[objectKey]), '/object/' + objectKey + "/frame/" +  frameKey + "/node/" + nodeKey + "/rename/"), contents);
 };
-
-realityEditor.network.postAiApiKeys = function(endpoint, azureApiKey, isInit = false) {
-    if (endpoint === undefined || azureApiKey === undefined) return;
-    let worldId = realityEditor.worldObjects.getBestWorldObject();
-    let ip = worldId.ip;
-    let port = realityEditor.network.getPort(worldId);
-    let route = '/ai/init';
-
-    this.postData(realityEditor.network.getURL(ip, port, route),
-        {
-            endpoint: endpoint,
-            azureApiKey: azureApiKey,
-        },
-        function (err, res) {
-            if (err) {
-                console.warn('postNewNode error:', err);
-            } else {
-                if (res.answer === 'success') {
-                    // change ai search text area to the actual search text area
-                    realityEditor.ai.hideEndpointApiKeyAndShowSearchTextArea();
-                    if (isInit) {
-                        // todo Steve: broadcast this message to all avatars, and have them spin up their own Azure GPT-3.5 with the same API keys
-                        //  subsequently triggered avatars' postAiApiKeys have isInit set to false, thus not triggering infinite loop of calling other avatars to trigger the same function
-                        //  still need to consider the edge case where 2 avatars submit the same req at the same time, what's gon happen? Are they gon trigger an infinite loop of this function call?
-                        //  ALSO NEED TO CONSIDER: if someone in the session already logged in with ai, people who joined later how do they know how to join?
-                        
-                        // todo Steve: currently, one edge case: when a user later join the session, before subscribing all the avatars & get the ai api keys,
-                        //  they input another ai api key. This way, even later users might get either api keys, maybe activating 2 different kinds of azure gpt instances
-                        //  solution: need to store this info in the session storage, and once set, don't update it. This way later user will get this info faster, and cannot modify it
-                        // console.log(`Broadcast endpoint and apikey to other avatars: ${endpoint}, ${azureApiKey}`);
-                        realityEditor.avatar.network.sendAiApiKeys(realityEditor.avatar.getMyAvatarNodeInfo(), {
-                            endpoint: endpoint,
-                            azureApiKey: azureApiKey,
-                        });
-                    }
-                }
-            }
-        });
-}
-
-realityEditor.network.postQuestionToAI = async function(conversation, extra) {
-    let route = '/ai/question';
-    
-    const response = await fetch(window.location.origin + route, {
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        method: 'POST',
-        body: JSON.stringify({
-            conversation: conversation,
-            extra: extra,
-        })
-    });
-    const res = await response.json();
-    if (res.tools !== undefined) {
-        realityEditor.ai.getToolAnswer(res.category, res.tools);
-    } else {
-        realityEditor.ai.getAnswer(res.category, res.answer);
-    }
-}
 
 /**
  * When the settings menu posts up its new state to the rest of the application, refresh/update all settings
@@ -3317,14 +3261,8 @@ realityEditor.network.onElementLoad = function (objectKey, frameKey, nodeKey) {
     // adjust move-ability corner UI to match true width and height of frame contents
     if (globalDOMCache['iframe' + activeKey].clientWidth > 0) { // get around a bug where corners would resize to 0 for new logic nodes
         setTimeout(function() {
-            var trueSize = {
-                width: globalDOMCache['iframe' + activeKey].clientWidth,
-                height: globalDOMCache['iframe' + activeKey].clientHeight
-            };
-
-            var cornerPadding = 24;
-            globalDOMCache[activeKey].querySelector('.corners').style.width = trueSize.width + cornerPadding*2 + 'px';
-            globalDOMCache[activeKey].querySelector('.corners').style.height = trueSize.height + cornerPadding*2 + 'px';
+            realityEditor.gui.ar.positioning.updateTitleBarIfNeeded(objectKey, activeKey);
+            realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, activeKey);
         }, 100); // resize corners after a slight delay to ensure that the frame has fully initialized with the correct size
     }
 
