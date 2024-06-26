@@ -719,8 +719,6 @@ realityEditor.device.beginTouchEditing = function(objectKey, frameKey, nodeKey) 
 
     globalDOMCache[(nodeKey || frameKey)].querySelector('.corners').style.visibility = 'visible';
 
-    realityEditor.gui.ar.positioning.coverFull2DTools(true);
-
     this.sendEditingStateToFrameContents(frameKey, true);
 
     this.callbackHandler.triggerCallbacks('beginTouchEditing');
@@ -1817,8 +1815,6 @@ realityEditor.device.onDocumentMultiTouchEnd = function (event) {
 
             if (activeVehicle && !globalStates.editingMode) {
                 globalDOMCache[(this.editingState.node || this.editingState.frame)].querySelector('.corners').style.visibility = 'hidden';
-                
-                realityEditor.gui.ar.positioning.coverFull2DTools(false);
             }
 
             this.resetEditingState();
