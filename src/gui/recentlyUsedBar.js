@@ -19,6 +19,9 @@ class RecentlyUsedBar {
         this.hoverAnimation = new LineToFrameAnimation(this.ctx, null, false);
         this.animations = [this.hoverAnimation];
 
+        // We can use the hover-line animation system with other id-position pairs by adding them to this map.
+        // Tools don't need to be manually added, their positions are automatically calculated for the lines.
+        this.referenceMap = {};
 
         this.callbacks = {
             onIconStartDrag: [],
@@ -408,6 +411,14 @@ class RecentlyUsedBar {
     removeAnimation(animation) {
         this.animations = this.animations.filter(a => a !== animation);
     }
+
+    updateReferenceMap(referenceId, position) {
+        this.referenceMap[referenceId] = realityEditor.gui.threejsScene.convertToVector3(position);
+    }
+
+    deleteFromReferenceMap(referenceId) {
+        delete this.referenceMap[referenceId];
+    }
 }
 
 class LineToFrameAnimation {
@@ -441,33 +452,20 @@ class LineToFrameAnimation {
         // if we stop hovering, draw a receding animation back to the last hovered icon element
         if (!this.hoveredFrameId && !this.lastAnimationPositions) return;
 
-        // TODO: get this working with new spatial-ai-addon code organization
-        // let frameScreenPosition = {
-        //     x: 0,
-        //     y: 0
-        // };
-        //
-        // // TODO: ideally there will be a cleaner API to get the spatialReference
-        // let spatialReference = realityEditor.ai.chatInterface.spatialUuidMapper.spatialReferenceMap[this.hoveredFrameId];
-        // let simpleReference = realityEditor.ai.chatInterface.spatialUuidMapper.simpleSpatialReferenceMap[this.hoveredFrameId];
-        // if (spatialReference) {
-        //     // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
-        //     let position3d = realityEditor.gui.threejsScene.convertToVector3(spatialReference.position);
-        //     frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
-        // } else if (simpleReference) {
-        //     // console.log(`found ${this.hoveredFrameId} in spatialReferenceMap`);
-        //     let position3d = realityEditor.gui.threejsScene.convertToVector3(simpleReference.position);
-        //     frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(position3d);
-        //     // TODO: support simple references pointing to dynamic linked entities
-        // } else {
-        //     frameScreenPosition = this.hoveredFrameId ?
-        //         realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
-        //         this.lastAnimationPositions.frame;
-        // }
+        let frameScreenPosition = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+        };
 
-        let frameScreenPosition = this.hoveredFrameId ?
-            realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
-            this.lastAnimationPositions.frame;
+        // for non-tools, the ID might correspond to a location in the referenceMap (e.g. addons can store part locations)
+        let spatialReference = recentlyUsedBar.referenceMap[this.hoveredFrameId];
+        if (spatialReference) {
+            frameScreenPosition = realityEditor.gui.threejsScene.getScreenXY(spatialReference);
+        } else {
+            frameScreenPosition = this.hoveredFrameId ?
+                realityEditor.sceneGraph.getScreenPosition(this.hoveredFrameId, [0, 0, 0, 1]) :
+                this.lastAnimationPositions.frame;
+        }
 
         let lineStartX = 0;
         let lineStartY = 0;
