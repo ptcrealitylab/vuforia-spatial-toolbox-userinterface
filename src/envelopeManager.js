@@ -30,9 +30,16 @@ createNameSpace("realityEditor.envelopeManager");
     let alreadyProcessedUrlToolId = false;
 
     let callbacks = {
+        // legacy callback functions, UI-related
         onExitButtonShown: [],
         onExitButtonHidden: [],
-        onFullscreenFull2DToggled: []
+        onFullscreenFull2DToggled: [],
+        
+        // more straightforward event callbacks
+        onOpen: [],
+        onClose: [],
+        onFocus: [],
+        onBlur: [],
     };
 
     /**
@@ -211,6 +218,10 @@ createNameSpace("realityEditor.envelopeManager");
 
         realityEditor.gui.recentlyUsedBar.onOpen(envelope);
         realityEditor.gui.envelopeIconRenderer.onOpen(envelope);
+
+        callbacks.onOpen.forEach(cb => {
+            cb(envelope);
+        });
     }
 
     /**
@@ -256,10 +267,13 @@ createNameSpace("realityEditor.envelopeManager");
         // adjust exit/cancel/back buttons for # of open frames
         updateExitButton();
 
+        // TODO: refactor these onClose events
         realityEditor.gui.recentlyUsedBar.onClose(envelope);
         realityEditor.gui.envelopeIconRenderer.onClose(envelope);
-        let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
-        realityEditor.ai.onClose(envelope, avatarId);
+
+        callbacks.onClose.forEach(cb => {
+            cb(envelope);
+        });
     }
 
     /**
@@ -303,8 +317,9 @@ createNameSpace("realityEditor.envelopeManager");
         realityEditor.gui.envelopeIconRenderer.onFocus(knownEnvelopes[frameId]);
         // focusing an app also brings it to the front of the bar, same as opening it
         realityEditor.gui.recentlyUsedBar.onOpen(knownEnvelopes[frameId]);
-        let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid); // todo Steve: when another user open the envelope, it automatically opens & minimizes on my end, and here outputs that I opened it myself. Need to find a way to get the other user avatar's name and replace my name here
-        realityEditor.ai.onOpen(knownEnvelopes[frameId], avatarId);
+        callbacks.onFocus.forEach(cb => {
+            cb(knownEnvelopes[frameId]);
+        });
     }
 
     /**
@@ -334,8 +349,10 @@ createNameSpace("realityEditor.envelopeManager");
         updateExitButton();
 
         realityEditor.gui.envelopeIconRenderer.onBlur(knownEnvelopes[frameId]);
-        let avatarId = realityEditor.avatar.getAvatarObjectKeyFromSessionId(globalStates.tempUuid);
-        realityEditor.ai.onBlur(knownEnvelopes[frameId], avatarId);
+
+        callbacks.onBlur.forEach(cb => {
+            cb(knownEnvelopes[frameId]);
+        });
     }
 
     function createExitButton() {
@@ -411,15 +428,31 @@ createNameSpace("realityEditor.envelopeManager");
 
     exports.onExitButtonHidden = (callback) => {
         callbacks.onExitButtonHidden.push(callback);
-    }
+    };
 
     exports.onExitButtonShown = (callback) => {
         callbacks.onExitButtonShown.push(callback);
-    }
+    };
 
     exports.onFullscreenFull2DToggled = (callback) => {
         callbacks.onFullscreenFull2DToggled.push(callback);
-    }
+    };
+
+    exports.onOpen = (callback) => {
+        callbacks.onOpen.push(callback);
+    };
+
+    exports.onClose = (callback) => {
+        callbacks.onClose.push(callback);
+    };
+
+    exports.onFocus = (callback) => {
+        callbacks.onFocus.push(callback);
+    };
+
+    exports.onBlur = (callback) => {
+        callbacks.onBlur.push(callback);
+    };
 
     /**
      * When a new frame is added and finishes loading, tell any open envelopes about it so they can "claim" it if they choose
