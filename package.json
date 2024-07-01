@@ -10,6 +10,7 @@
     "vitest": "^2.0.1"
   },
   "scripts": {
+    "pre-test-setup": "cp src/motionStudy/config.js.template src/motionStudy/config.js",
     "test": "npm run lint",
     "lint": "eslint .",
     "build": "vite build && cp -r svg css png thirdPartyCode src dist/"
