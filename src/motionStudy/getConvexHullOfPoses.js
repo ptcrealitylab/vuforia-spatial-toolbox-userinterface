@@ -1,4 +1,14 @@
 /* global hull */
+import {JOINTS} from '../humanPose/constants.js';
+
+const representativeJoints = [
+    JOINTS.HEAD,
+    JOINTS.CHEST,
+    JOINTS.LEFT_ANKLE,
+    JOINTS.RIGHT_ANKLE,
+    JOINTS.LEFT_SHOULDER,
+    JOINTS.RIGHT_SHOULDER,
+];
 
 /**
  * Get the 2d (x, z) convex hull of the list of poses
@@ -8,8 +18,9 @@
 export function getConvexHullOfPoses(poses) {
     let points = poses.flatMap(pose => {
         const jointPoints = [];
-        for (const jointName in pose.joints) {
-            const joint = pose.joints[jointName];
+
+        for (const jointName of representativeJoints) {
+            const joint = pose.getJoint(jointName);
             // Project onto floor
             jointPoints.push([
                 joint.position.x,
