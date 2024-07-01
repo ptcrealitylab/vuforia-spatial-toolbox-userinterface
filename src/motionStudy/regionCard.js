@@ -467,7 +467,7 @@ export class RegionCard {
             'analytics-region-card-windchill',
             'analytics-region-card-graph-section-title'
         );
-        title.textContent = 'Proc. Plan';
+        title.textContent = 'Operation';
 
         let sparkLine = document.createElementNS(svgNS, 'svg');
         sparkLine.classList.add(
