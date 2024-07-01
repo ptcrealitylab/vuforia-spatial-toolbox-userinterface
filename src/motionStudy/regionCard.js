@@ -267,10 +267,12 @@ export class RegionCard {
         this.createWindchillSection();
 
         this.graphSummaryValues = {};
-        this.createGraphSection('reba', 'REBA');
-        this.createGraphSection('muri', 'MURI');
-        this.createGraphSection('accel', 'Accel');
-        
+        this.graphSectionElements = {
+            reba: this.createGraphSection('reba', 'REBA'),
+            muri: this.createGraphSection('muri', 'MURI'),
+            accel: this.createGraphSection('accel', 'Accel'),
+        };
+
         const buttonContainer = document.createElement('div');
         buttonContainer.classList.add('analytics-region-card-button-container');
         this.element.appendChild(buttonContainer);
@@ -389,13 +391,22 @@ export class RegionCard {
         return getMeasurementTextLabel(distanceMm, this.endTime - this.startTime);
     }
 
+    /**
+     * @return {Array<Element>} elements of section
+     */
     createGraphSection(id, titleText) {
         let title = document.createElement('div');
-        title.classList.add('analytics-region-card-graph-section-title');
+        title.classList.add(
+            'analytics-region-card-graph-section-title',
+            'analytics-region-card-graph-section-id-' + id,
+        );
         title.textContent = titleText;
 
         let sparkLine = document.createElementNS(svgNS, 'svg');
-        sparkLine.classList.add('analytics-region-card-graph-section-sparkline');
+        sparkLine.classList.add(
+            'analytics-region-card-graph-section-sparkline',
+            'analytics-region-card-graph-section-id-' + id,
+        );
         sparkLine.setAttribute('width', cardWidth / 3);
         sparkLine.setAttribute('height', rowHeight);
         sparkLine.setAttribute('xmlns', svgNS);
@@ -409,26 +420,35 @@ export class RegionCard {
         let average = document.createElement('div');
         average.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-average-' + id
+            'analytics-region-card-graph-section-average-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
         let minimum = document.createElement('div');
         minimum.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-minimum-' + id
+            'analytics-region-card-graph-section-minimum-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
         let maximum = document.createElement('div');
         maximum.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-maximum-' + id
+            'analytics-region-card-graph-section-maximum-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
-        this.element.appendChild(title);
-        this.element.appendChild(sparkLine);
-        this.element.appendChild(average);
-        this.element.appendChild(minimum);
-        this.element.appendChild(maximum);
+        const elements = [
+            title,
+            sparkLine,
+            average,
+            minimum,
+            maximum
+        ];
+        for (const elt of elements) {
+            this.element.appendChild(elt);
+        }
+        return elements;
     }
 
     updateGraphSection(id, titleText, poseValueFunction, minValue, maxValue) {
@@ -599,6 +619,25 @@ export class RegionCard {
             span.style.color = color;
         }
         element.appendChild(span);
+    }
+
+    /**
+     * @param {MotionStudyLens} lens - the lens to set as active
+     */
+    setActiveLens(lens) {
+        for (const id in this.graphSectionElements) {
+            let hidden = true;
+            if (lens.name.toLowerCase().includes(id)) {
+                hidden = false;
+            }
+            for (const elt of this.graphSectionElements[id]) {
+                if (hidden) {
+                    elt.style.display = 'none';
+                } else {
+                    elt.style.display = '';
+                }
+            }
+        }
     }
 
     updateLensStatistics() {
