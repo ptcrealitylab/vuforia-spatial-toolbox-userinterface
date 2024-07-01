@@ -14,6 +14,8 @@ let gsContainer;
 let gsSettingsPanel;
 let isGSRaycasting = false;
 
+let labelInitialized = false;
+
 /** iPhoneVerticalFOV, projectionMatrixFrom(), makePerspective() come from desktopAdapter in remote operator addon. */
 
 const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
@@ -137,6 +139,15 @@ function multiply4(a, b) {
     ];
 }
 
+function multiply4v(m, v) {
+    return [
+        v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12],
+        v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13],
+        v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14],
+        v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15]
+    ]
+}
+
 function invert4(a) {
     let b00 = a[0] * a[5] - a[1] * a[4];
     let b01 = a[0] * a[6] - a[2] * a[4];
@@ -196,13 +207,15 @@ function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
 function createWorker(self) {
     let buffer;
     let vertexCount = 0;
+    let doneLoading = false;
     let viewProj;
     // 6*4 + 4 + 4 = 8*4
     // XYZ - Position (Float32)
     // XYZ - Scale (Float32)
     // RGBA - colors (uint8)
     // IJKL - quaternion/rot (uint8)
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
     let lastProj = [];
     let depthIndex = new Uint32Array();
     let lastVertexCount = 0;
@@ -254,33 +267,65 @@ function createWorker(self) {
         var texdata_c = new Uint8Array(texdata.buffer);
         var texdata_f = new Float32Array(texdata.buffer);
 
+        let center_map = new Map();
+        // console.log(vertexCount);
+
         // Here we convert from a .splat file buffer into a texture
         // With a little bit more foresight perhaps this texture file
         // should have been the native format as it'd be very easy to
         // load it into webgl.
         for (let i = 0; i < vertexCount; i++) {
             // x, y, z
-            texdata_f[8 * i + 0] = f_buffer[8 * i + 0];
-            texdata_f[8 * i + 1] = f_buffer[8 * i + 1];
-            texdata_f[8 * i + 2] = f_buffer[8 * i + 2];
+            texdata_f[8 * i + 0] = f_buffer[9 * i + 0];
+            texdata_f[8 * i + 1] = f_buffer[9 * i + 1];
+            texdata_f[8 * i + 2] = f_buffer[9 * i + 2];
 
             // r, g, b, a
-            texdata_c[4 * (8 * i + 7) + 0] = u_buffer[32 * i + 24 + 0];
-            texdata_c[4 * (8 * i + 7) + 1] = u_buffer[32 * i + 24 + 1];
-            texdata_c[4 * (8 * i + 7) + 2] = u_buffer[32 * i + 24 + 2];
-            texdata_c[4 * (8 * i + 7) + 3] = u_buffer[32 * i + 24 + 3];
+            texdata_c[4 * (8 * i + 7) + 0] = u_buffer[36 * i + 24 + 0];
+            texdata_c[4 * (8 * i + 7) + 1] = u_buffer[36 * i + 24 + 1];
+            texdata_c[4 * (8 * i + 7) + 2] = u_buffer[36 * i + 24 + 2];
+            texdata_c[4 * (8 * i + 7) + 3] = u_buffer[36 * i + 24 + 3];
+
+            // cx, cy, cz, label (cluster center (x, y, z) and splat label/category)
+            // todo Steve: cx, cy, cz is read as Uint8 , therefore not accurate, need to find a way to read / parse & store them as actual Float32 values, just like x, y, z.
+            //  need a way to make up the missing digits and convert Uint8 back to Float32 in the shader, or find a way to smartly pack them to Half16 / Uint8 and restore them in shader, just like rot and scale
+            texdata_c[4 * (8 * i + 3) + 0] = u_buffer[36 * i + 28 + 0]; // cx
+            texdata_c[4 * (8 * i + 3) + 1] = u_buffer[36 * i + 28 + 1]; // cy
+            texdata_c[4 * (8 * i + 3) + 2] = u_buffer[36 * i + 28 + 2]; // cz
+            texdata_c[4 * (8 * i + 3) + 3] = u_buffer[36 * i + 28 + 3]; // label
+
+            if (doneLoading) {
+                let label = u_buffer[36 * i + 28 + 3];
+                if (!center_map.has(label)) {
+                    center_map.set(
+                        label,
+                        {
+                            x: f_buffer[9 * i + 0],
+                            y: f_buffer[9 * i + 1],
+                            z: f_buffer[9 * i + 2],
+                            count: 1,
+                        }
+                    )
+                } else {
+                    let info = center_map.get(label);
+                    info.x += f_buffer[9 * i + 0];
+                    info.y += f_buffer[9 * i + 1];
+                    info.z += f_buffer[9 * i + 2];
+                    info.count++;
+                }
+            }
 
             // quaternions
             let scale = [
-                f_buffer[8 * i + 3 + 0],
-                f_buffer[8 * i + 3 + 1],
-                f_buffer[8 * i + 3 + 2],
+                f_buffer[9 * i + 3 + 0],
+                f_buffer[9 * i + 3 + 1],
+                f_buffer[9 * i + 3 + 2],
             ];
             let rot = [
-                (u_buffer[32 * i + 28 + 0] - 128) / 128,
-                (u_buffer[32 * i + 28 + 1] - 128) / 128,
-                (u_buffer[32 * i + 28 + 2] - 128) / 128,
-                (u_buffer[32 * i + 28 + 3] - 128) / 128,
+                (u_buffer[36 * i + 32 + 0] - 128) / 128,
+                (u_buffer[36 * i + 32 + 1] - 128) / 128,
+                (u_buffer[36 * i + 32 + 2] - 128) / 128,
+                (u_buffer[36 * i + 32 + 3] - 128) / 128,
             ];
 
             // Compute the matrix product of S and R (M = S * R)
@@ -312,7 +357,14 @@ function createWorker(self) {
             texdata[8 * i + 6] = packHalf2x16(4 * sigma[4], 4 * sigma[5]);
         }
 
-        self.postMessage({ texdata, texwidth, texheight }, [texdata.buffer]);
+        if (doneLoading) {
+            center_map.forEach(info => {
+                info.x /= info.count;
+                info.y /= info.count;
+                info.z /= info.count;
+            })
+        }
+        self.postMessage({ texdata, texwidth, texheight, center_map }, [texdata.buffer]);
     }
 
     function runSort(viewProj) {
@@ -337,9 +389,9 @@ function createWorker(self) {
         let sizeList = new Int32Array(vertexCount);
         for (let i = 0; i < vertexCount; i++) {
             let depth =
-                ((viewProj[2] * f_buffer[8 * i + 0] +
-                        viewProj[6] * f_buffer[8 * i + 1] +
-                        viewProj[10] * f_buffer[8 * i + 2]) *
+                ((viewProj[2] * f_buffer[9 * i + 0] +
+                        viewProj[6] * f_buffer[9 * i + 1] +
+                        viewProj[10] * f_buffer[9 * i + 2]) *
                     4096) |
                 0;
             sizeList[i] = depth;
@@ -445,7 +497,9 @@ function createWorker(self) {
         // XYZ - Scale (Float32)
         // RGBA - colors (uint8)
         // IJKL - quaternion/rot (uint8)
-        const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+
+        // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+        const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
         const buffer = new ArrayBuffer(rowLength * vertexCount);
 
         console.time("build buffer");
@@ -459,9 +513,14 @@ function createWorker(self) {
                 j * rowLength + 4 * 3 + 4 * 3,
                 4,
             );
-            const rot = new Uint8ClampedArray(
+            const f_rgba = new Uint8ClampedArray(
                 buffer,
                 j * rowLength + 4 * 3 + 4 * 3 + 4,
+                4,
+            );
+            const rot = new Uint8ClampedArray(
+                buffer,
+                j * rowLength + 4 * 3 + 4 * 3 + 4 + 4,
                 4,
             );
 
@@ -502,14 +561,23 @@ function createWorker(self) {
                 rgba[1] = (0.5 + SH_C0 * attrs.f_dc_1) * 255;
                 rgba[2] = (0.5 + SH_C0 * attrs.f_dc_2) * 255;
             } else {
-                rgba[0] = attrs.red;
-                rgba[1] = attrs.green;
-                rgba[2] = attrs.blue;
+                const SH_C0 = 0.28209479177387814;
+                rgba[0] = (0.5 + SH_C0 * attrs.r) * 255;
+                rgba[1] = (0.5 + SH_C0 * attrs.g) * 255;
+                rgba[2] = (0.5 + SH_C0 * attrs.b) * 255;
+
+                f_rgba[0] = attrs.cx;
+                f_rgba[1] = attrs.cy;
+                f_rgba[2] = attrs.cz;
             }
             if (types["opacity"]) {
                 rgba[3] = (1 / (1 + Math.exp(-attrs.opacity))) * 255;
+
+                f_rgba[3] = attrs.label;
             } else {
                 rgba[3] = 255;
+
+                f_rgba[3] = attrs.label;
             }
         }
         console.timeEnd("build buffer");
@@ -534,9 +602,11 @@ function createWorker(self) {
     self.onmessage = (e) => {
         if (e.data.ply) {
             vertexCount = 0;
+            doneLoading = false;
             runSort(viewProj);
             buffer = processPlyBuffer(e.data.ply);
             vertexCount = Math.floor(buffer.byteLength / rowLength);
+            doneLoading = true;
             postMessage({ buffer: buffer });
         } else if (e.data.buffer) {
             buffer = e.data.buffer;
@@ -546,6 +616,8 @@ function createWorker(self) {
         } else if (e.data.view) {
             viewProj = e.data.view;
             throttledSort();
+        } else if (e.data.doneLoading) {
+            doneLoading = e.data.doneLoading;
         }
     };
 }
@@ -569,6 +641,9 @@ uniform int uCollideIndex;
 uniform vec3 uCollidePosition;
 uniform bool uShouldDraw;
 
+uniform float mode;
+uniform float uLabel;
+
 in vec2 position;
 in int index;
 
@@ -578,6 +653,13 @@ out vec2 vPosition;
 out vec4 vDebug2;
 out float vShouldDisplay;
 out float vIndex;
+
+vec3 randomNoiseVec3(float seed) {
+    float x = fract(sin(seed * 34.678 + 23.458) * 41.89);
+    float y = fract(cos(sin(seed + seed * seed * seed) * 56.743 + 18.794) * 93.37);
+    float z = fract(sin(cos(seed * 89.32 + seed * seed) * 23.167 + 28.842) * 84.273);
+    return vec3(x, y, z);
+}
 
 void main () {
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
@@ -613,7 +695,28 @@ void main () {
     vec2 majorAxis = min(sqrt(2.0 * lambda1), 1024.0) * diagonalVector;
     vec2 minorAxis = min(sqrt(2.0 * lambda2), 1024.0) * vec2(diagonalVector.y, -diagonalVector.x);
 
-    vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu, (cov.w >> 24) & 0xffu) / 255.0;
+    // vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu, (cov.w >> 24) & 0xffu) / 255.0;
+    float label = float((cen.w >> 24) & 0xffu);
+    bool dont_render = (uLabel != -1.) && (uLabel != label);
+    // dont_render = false;
+    if (mode == 0.) { // normal color mode
+        vec3 color = vec3((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu) / 255.0;
+        float opacity = float((cov.w >> 24) & 0xffu) / 255.0;
+        if (dont_render) {
+            color = vec3(0.);
+            opacity = 0.;
+        }
+        vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4(color, opacity);
+    } else if (mode == 1.) { // label color mode
+        // vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cen.w) & 0xffu, (cen.w >> 8) & 0xffu, (cen.w >> 16) & 0xffu, (cen.w >> 24) & 0xffu) / 255.0;
+        vec3 color = randomNoiseVec3(label);
+        float opacity = float((cov.w >> 24) & 0xffu) / 255.0;
+        if (dont_render) {
+            color = vec3(0.);
+            opacity = 0.;
+        }
+        vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4(color, opacity);
+    }
     vPosition = position;
 
     vec2 vCenter = vec2(pos2d) / pos2d.w;
@@ -695,6 +798,7 @@ void main () {
     }
     
     fragColor = vec4(col, a);
+    // fragColor = vFBOPosColor;
     return;
 }
 
@@ -714,7 +818,8 @@ async function main(initialFilePath) {
 
     const reader = req.body.getReader();
     // calculate number of splats in the scene 
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
     let splatData = new Uint8Array(req.headers.get("content-length"));
     let splatCount = splatData.length / rowLength
 
@@ -780,6 +885,38 @@ async function main(initialFilePath) {
     const u_toggleBoundary = gl.getUniformLocation(program, "uToggleBoundary");
     const u_worldLowAlpha = gl.getUniformLocation(program, "uWorldLowAlpha");
 
+    let uMode = 0;
+    const u_mode = gl.getUniformLocation(program, "mode");
+    gl.uniform1f(u_mode, uMode);
+
+    window.addEventListener("keydown", (e) => {
+        if (e.key === 'j' || e.key === 'J') {
+            uMode = uMode === 1 ? 0 : 1;
+            gl.uniform1f(u_mode, uMode);
+        }
+    });
+
+    let uLabel = -1;
+    const u_label = gl.getUniformLocation(program, "uLabel");
+    gl.uniform1f(u_label, uLabel);
+
+    let labelContainer = document.createElement('div');
+    labelContainer.id = 'label-container';
+    document.body.append(labelContainer);
+    
+    window.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        if (e.target.id.includes('label_')) {
+            uLabel = parseFloat(e.target.id.slice(6));
+            gl.uniform1f(u_label, uLabel);
+        } else {
+            uLabel = -1;
+            gl.uniform1f(u_label, uLabel);
+        }
+    })
+
+    let center_map_from_worker;
+
     // positions
     const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
     const vertexBuffer = gl.createBuffer();
@@ -804,6 +941,7 @@ async function main(initialFilePath) {
     gl.vertexAttribIPointer(a_index, 1, gl.INT, false, 0, 0);
     gl.vertexAttribDivisor(a_index, 1);
 
+    let actualViewMatrix;
     let projectionMatrix;
 
     // set up an off-screen frame buffer object texture
@@ -884,6 +1022,93 @@ async function main(initialFilePath) {
     window.addEventListener("resize", resize);
     resize();
 
+    const clamp = (x, low, high) => {
+        return Math.min(Math.max(x, low), high);
+    }
+
+    const remap01 = (x, low, high) => {
+        return clamp((x - low) / (high - low), 0, 1);
+    }
+    
+    const _remap01Curve1 = (x, low, high) => {
+        let r = remap01(x, low, high);
+        let a = 2;
+        return (1 - r) * Math.pow(r, a) + r * (-Math.pow(r - 1, a) + 1);
+    }
+
+    const remap01Curve2 = (x, low, high) => {
+        let r = remap01(x, low, high);
+        let a = 2;
+        return -Math.pow(r - 1, a) + 1;
+    }
+
+    const _remap = (x, lowIn, highIn, lowOut, highOut) => {
+        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
+    }
+
+    const remapCurve = (x, lowIn, highIn, lowOut, highOut) => {
+        return lowOut + (highOut - lowOut) * remap01Curve2(x, lowIn, highIn);
+    }
+
+    function loopThroughLabels() {
+        let minCount = Infinity, maxCount = 0;
+        for (let value of center_map_from_worker.values()) {
+            if (value.count < minCount) minCount = value.count;
+            if (value.count > maxCount) maxCount = value.count;
+        }
+        for (let [key, value] of center_map_from_worker.entries()) {
+            let label = document.getElementById(`label_${key}`);
+            if (label === null) {
+                label = document.createElement('div');
+                label.classList.add('cluster-label');
+                label.innerHTML = `.`;
+                label.id = `label_${key}`;
+                let scaleFactor = remapCurve(value.count, minCount, maxCount, 1, 8);
+                label.style.fontSize = `${scaleFactor}rem`;
+                
+                let label_number = document.createElement('div')
+                label_number.classList.add('cluster-label-number');
+                label_number.innerHTML = `${key}`;
+                label.append(label_number);
+                
+                labelContainer.append(label);
+            }
+            let pos = [value.x, value.y, value.z, 1];
+            let pos2d = multiply4v(multiply4(projectionMatrix, actualViewMatrix), pos);
+            let clip = 1.2 * pos2d[3];
+            if (uLabel !== -1) {
+                if (uLabel !== key) {
+                    label.style.visibility = 'hidden';
+                    continue;
+                }
+            }
+            if (pos2d[2] < -clip || pos2d[0] < -clip || pos2d[0] > clip || pos2d[1] < -clip || pos2d[1] > clip) {
+                label.style.visibility = 'hidden';
+            } else {
+                label.style.visibility = 'visible';
+                let ndcXY = [pos2d[0] / pos2d[3], pos2d[1] / pos2d[3]];
+                let screenXY = [(ndcXY[0] + 1) / 2 * innerWidth, (-ndcXY[1] + 1) / 2 * innerHeight];
+                label.style.transform = `translate(-50%, -50%) translate(${screenXY[0]}px, ${screenXY[1]}px)`;
+            }
+        }
+    }
+
+    function clearLabels() {
+        labelContainer.innerHTML = '';
+    }
+
+    function addLabels() {
+        if (center_map_from_worker.size === 0 || labelInitialized) return; // todo Steve: figure out why there is ONLY 256 instead of 265 clusters
+        labelInitialized = true;
+        loopThroughLabels();
+        renderLabels();
+    }
+
+    function renderLabels() {
+        requestAnimationFrame(renderLabels);
+        loopThroughLabels();
+    }
+
     worker.onmessage = (e) => {
         if (e.data.buffer) {
             splatData = new Uint8Array(e.data.buffer);
@@ -899,6 +1124,10 @@ async function main(initialFilePath) {
             link.remove();
         } else if (e.data.texdata) {
             const { texdata, texwidth, texheight } = e.data;
+            labelInitialized = false;
+            center_map_from_worker = e.data.center_map;
+            clearLabels();
+            addLabels();
             // console.log(texdata)
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -984,7 +1213,7 @@ async function main(initialFilePath) {
 
         let resultMatrix_1 = multiply4(newCamMatrix, flipMatrix);
         // inversion is needed
-        let actualViewMatrix = invert4(resultMatrix_1);
+        actualViewMatrix = invert4(resultMatrix_1);
 
         let useManualAlignment = USE_MANUAL_ALIGNMENT_FOR_ALL ||
             (USE_MANUAL_ALIGNMENT_FOR_SPECIFIED && typeof HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] !== 'undefined');
@@ -1090,8 +1319,10 @@ async function main(initialFilePath) {
     let vWorld = new THREE.Vector3();
     window.addEventListener("pointermove", (e) => {
         if (isFlying) return;
-        uMouseScreen = [e.clientX, e.clientY];
-        uMouse = [(e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1];
+        // uMouseScreen = [e.clientX, e.clientY];
+        // uMouse = [(e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1];
+        uMouseScreen = [Math.round(e.clientX), Math.round(e.clientY)];
+        uMouse = [(uMouseScreen[0] / innerWidth) * 2 - 1, -(uMouseScreen[1] / innerHeight) * 2 + 1];
     })
     // add fly mode support
     let isFlying = false;
@@ -1155,7 +1386,12 @@ async function main(initialFilePath) {
     // eslint-disable-next-line no-constant-condition
     while (true) {
         const { done, value } = await reader.read();
-        if (done || stopLoading) break;
+        if (done || stopLoading) {
+            worker.postMessage({
+                doneLoading: true,
+            })
+            break;
+        }
 
         splatData.set(value, bytesRead);
         bytesRead += value.length;
