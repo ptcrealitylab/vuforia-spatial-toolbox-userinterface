@@ -621,10 +621,12 @@ export class MotionStudy {
     }
 
     /**
-     * @param {'reba'|'motion'} lens
+     * @param {MotionStudyLens} lens - the lens to set as active
      */
-    setLens(lens) {
-        console.error('setLens unimplemented', lens);
+    setActiveLens(lens) {
+        for (const regionCard of this.pinnedRegionCards) {
+            regionCard.setActiveLens(lens);
+        }
     }
 
     /**
