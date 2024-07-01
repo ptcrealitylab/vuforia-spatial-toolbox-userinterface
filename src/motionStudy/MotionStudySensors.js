@@ -17,17 +17,19 @@ export class MotionStudySensors {
 
     setSensor(frame, data) {
         if (!this.sensors[frame]) {
-            let color = this.getSensorPaletteColor(this.sensorPaletteIndex);
+            if (!data.color) {
+                data.color = this.getSensorPaletteColor(this.sensorPaletteIndex);
+            }
             let lensCreateFunction = (analyzer) => {
                 return new SensorActiveLens(analyzer.motionStudy, frame);
             };
             this.sensors[frame] = {
-                color,
+                color: data.color,
                 position: data.position,
                 points: data.points,
                 lensCreateFunction,
             };
-            this.setSensorColor(frame, color);
+            this.setSensorColor(frame, data.color);
             this.sensorPaletteIndex += 1;
 
             defaultLensProvider.addLensCreateFunction(lensCreateFunction);

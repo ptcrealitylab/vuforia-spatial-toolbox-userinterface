@@ -934,6 +934,10 @@ export class RegionCard {
                 addedTool.objectId, frameKey, frameKey + 'storage',
                 'points', points
             );
+            realityEditor.network.realtime.writePublicData(
+                addedTool.objectId, frameKey, frameKey + 'storage',
+                'color', this.accentColor
+            );
             if (this.step) {
                 realityEditor.network.realtime.writePublicData(
                     addedTool.objectId, frameKey, frameKey + 'storage',
