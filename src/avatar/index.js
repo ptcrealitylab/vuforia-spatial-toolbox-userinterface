@@ -420,7 +420,7 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiDialogue] = (msgContent) => {
             // console.log(msgContent.publicData.aiDialogue);
             console.log("push other's ai dialogue");
-            console.log('TODO: refactor realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue)');
+            console.log('TODO: refactor realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue)', msgContent);
             // realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
         }
         

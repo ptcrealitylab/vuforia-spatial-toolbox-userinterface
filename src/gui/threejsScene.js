@@ -1242,7 +1242,7 @@ import {setMatrixFromArray} from "./scene/utils.js";
         }
 
         return new THREE.Vector3(x, y, z);
-    };
+    }
 
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
