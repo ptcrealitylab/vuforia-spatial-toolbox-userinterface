@@ -612,6 +612,8 @@ export class HumanPoseAnalyzer {
         if (this.settingsUi) {
             this.settingsUi.setActiveLens(lens);
         }
+
+        this.motionStudy.setActiveLens(lens);
     }
 
     /**
