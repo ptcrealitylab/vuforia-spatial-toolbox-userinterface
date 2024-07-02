@@ -1908,26 +1908,35 @@ Logic Interface CSS
 
 #analytics-step-label-container {
     position: absolute;
-    bottom: calc(48px + 128px + 26px);
+    bottom: calc(32px + 128px + 26px);
     left: calc(50% + 12px + 64px + 24px);
     pointer-events: all;
 }
 
-.analytics-step {
-    text-align: left;
+#analytics-step-label-container > .analytics-region-card {
+    position: relative;
+    transform: none;
+    top: auto;
+    left: auto;
+}
+
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-label {
     display: block;
-    color: white;
-    background-color: #000000a0;
-    padding: 10px;
-    max-width: 20vw;
-    cursor: pointer;
 }
 
-.analytics-step-label-container-active {
-    border: 1px solid white;
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-button-container {
+    display: none;
 }
 
-#analytics-step-file {
+#analytics-step-label-container > .analytics-region-card.analytics-region-card-no-windchill > .analytics-region-card-windchill {
+    display: none;
+}
+
+#analytics-step-label-container > .analytics-region-card > .analytics-region-card-windchill {
+    display: block;
+}
+
+#analytics-step-file, .analytics-button-input {
     pointer-events: none;
     opacity: 0;
     width: 1px;
@@ -2022,6 +2031,10 @@ Logic Interface CSS
     transform: translateZ(3000px);
 }
 
+.analytics-region-card.analytics-region-card-no-windchill > .analytics-region-card-windchill {
+    display: none;
+}
+
 .analytics-pinned-region-cards-container {
     position: absolute;
     top: 90px;
@@ -2100,6 +2113,13 @@ Logic Interface CSS
     color: white;
 }
 
+.analytics-export-link.missing,
+.analytics-export-link.missing:visited {
+    text-decoration: none;
+    cursor: not-allowed;
+    color: #aaa;
+}
+
 .analytics-region-card-title {
     grid-column-start: span 3;
 }
@@ -2122,7 +2142,12 @@ Logic Interface CSS
 }
 
 .analytics-region-card-label {
+    color: white;
+    background: none;
+    padding: 0;
+
     grid-column-start: span 3;
+    border: none;
     border-bottom: 1px solid #999;
     padding-bottom: 4px;
     margin-bottom: 4px;

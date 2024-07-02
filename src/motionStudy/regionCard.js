@@ -5,6 +5,7 @@ import {MIN_REBA_SCORE, MAX_REBA_SCORE} from '../humanPose/rebaScore.js';
 import {MIN_MURI_SCORE, MAX_MURI_SCORE, MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {ValueAddWasteTimeTypes} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
+import {getConvexHullOfPoses} from './getConvexHullOfPoses.js';
 
 const cardWidth = 200;
 const rowHeight = 22;
@@ -33,7 +34,7 @@ export class RegionCard {
      * @param {MotionStudy} motionStudy - parent instance of MotionStudy
      * @param {Element} container
      * @param {Array<Pose>} poses - the poses to process in this region card
-     * @param {{startTime: number, endTime: number}?} desc - If present, the
+     * @param {{startTime: number, endTime: number, step: any}?} desc - If present, the
      * dehydrated description of this card
      */
     constructor(motionStudy, container, poses, desc) {
@@ -48,6 +49,10 @@ export class RegionCard {
         });
         this.state = RegionCardState.Tooltip;
         this.accentColor = '';
+        this.step = null;
+        if (desc && desc.step) {
+            this.setWindchillData(desc.step);
+        }
         // If a region card has control over the timeline's displayed points
         this.displayActive = false;
         this.updated = true;
@@ -65,6 +70,7 @@ export class RegionCard {
         }
         this.setPoses(poses);
         this.updateValueAddWasteTimeUi();
+        this.updateWindchillSection();
 
         this.element.addEventListener('pointerover', this.onPointerOver);
         this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -119,13 +125,8 @@ export class RegionCard {
                 this.motionStudy.setCursorTime(-1);
                 this.displayActive = false;
             } else {
-                this.motionStudy.setActiveRegionCard(this);
-                this.motionStudy.setHighlightRegion({
-                    startTime: this.startTime,
-                    endTime: this.endTime,
-                    label: this.getLabel(),
-                });
-                this.displayActive = true;
+                this.show();
+                // this.createPolygonSensor();
             }
             break;
         }
@@ -144,6 +145,17 @@ export class RegionCard {
         this.updatePinButtonText();
 
         this.motionStudy.pinRegionCard(this);
+    }
+
+    show() {
+        this.motionStudy.setActiveRegionCard(this);
+        this.motionStudy.setHighlightRegion({
+            startTime: this.startTime,
+            endTime: this.endTime,
+            label: this.getLabel(),
+        });
+        this.displayActive = true;
+        this.updateDisplayActive();
     }
 
     save() {
@@ -237,9 +249,10 @@ export class RegionCard {
         this.element.appendChild(motionSummary);
         this.element.appendChild(this.valueAddWasteTimeSummary);
 
-        this.labelElement = document.createElement('div');
+        this.labelElement = document.createElement('input');
         this.labelElement.classList.add('analytics-region-card-label');
-        this.labelElement.setAttribute('contenteditable', true);
+        this.labelElement.setAttribute('type', 'text');
+        this.labelElement.setAttribute('list', 'analytics-step-names');
         this.setLabel('');
 
         makeTextInput(this.labelElement, () => {
@@ -248,11 +261,15 @@ export class RegionCard {
 
         this.element.appendChild(this.labelElement);
 
+        this.createWindchillSection();
+
         this.graphSummaryValues = {};
-        this.createGraphSection('reba', 'REBA');
-        this.createGraphSection('muri', 'MURI');
-        this.createGraphSection('accel', 'Accel');
-        
+        this.graphSectionElements = {
+            reba: this.createGraphSection('reba', 'REBA'),
+            muri: this.createGraphSection('muri', 'MURI'),
+            accel: this.createGraphSection('accel', 'Accel'),
+        };
+
         const buttonContainer = document.createElement('div');
         buttonContainer.classList.add('analytics-region-card-button-container');
         this.element.appendChild(buttonContainer);
@@ -371,13 +388,22 @@ export class RegionCard {
         return getMeasurementTextLabel(distanceMm, this.endTime - this.startTime);
     }
 
+    /**
+     * @return {Array<Element>} elements of section
+     */
     createGraphSection(id, titleText) {
         let title = document.createElement('div');
-        title.classList.add('analytics-region-card-graph-section-title');
+        title.classList.add(
+            'analytics-region-card-graph-section-title',
+            'analytics-region-card-graph-section-id-' + id,
+        );
         title.textContent = titleText;
 
         let sparkLine = document.createElementNS(svgNS, 'svg');
-        sparkLine.classList.add('analytics-region-card-graph-section-sparkline');
+        sparkLine.classList.add(
+            'analytics-region-card-graph-section-sparkline',
+            'analytics-region-card-graph-section-id-' + id,
+        );
         sparkLine.setAttribute('width', cardWidth / 3);
         sparkLine.setAttribute('height', rowHeight);
         sparkLine.setAttribute('xmlns', svgNS);
@@ -391,26 +417,35 @@ export class RegionCard {
         let average = document.createElement('div');
         average.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-average-' + id
+            'analytics-region-card-graph-section-average-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
         let minimum = document.createElement('div');
         minimum.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-minimum-' + id
+            'analytics-region-card-graph-section-minimum-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
         let maximum = document.createElement('div');
         maximum.classList.add(
             'analytics-region-card-graph-section-value',
-            'analytics-region-card-graph-section-maximum-' + id
+            'analytics-region-card-graph-section-maximum-' + id,
+            'analytics-region-card-graph-section-id-' + id,
         );
 
-        this.element.appendChild(title);
-        this.element.appendChild(sparkLine);
-        this.element.appendChild(average);
-        this.element.appendChild(minimum);
-        this.element.appendChild(maximum);
+        const elements = [
+            title,
+            sparkLine,
+            average,
+            minimum,
+            maximum
+        ];
+        for (const elt of elements) {
+            this.element.appendChild(elt);
+        }
+        return elements;
     }
 
     updateGraphSection(id, titleText, poseValueFunction, minValue, maxValue) {
@@ -434,11 +469,181 @@ export class RegionCard {
         maximum.appendChild(this.makeSummaryValue(summaryValues.maximum, minValue, maxValue));
     }
 
+    setWindchillData(step) {
+        if (!step) {
+            return;
+        }
+        this.step = step;
+    }
+
+    createWindchillSection() {
+        const id = 'windchill';
+
+        let title = document.createElement('div');
+        title.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-title'
+        );
+        title.textContent = 'Operation';
+
+        let sparkLine = document.createElementNS(svgNS, 'svg');
+        sparkLine.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-sparkline',
+        );
+        sparkLine.setAttribute('width', cardWidth / 3);
+        sparkLine.setAttribute('height', rowHeight);
+        sparkLine.setAttribute('xmlns', svgNS);
+
+        let actualRect = document.createElementNS(svgNS, 'rect');
+        actualRect.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-sparkline-actual-' + id,
+        );
+        let planRect = document.createElementNS(svgNS, 'rect');
+        planRect.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-sparkline-plan-' + id,
+        );
+
+        sparkLine.appendChild(actualRect);
+        sparkLine.appendChild(planRect);
+
+        let actualText = document.createElement('div');
+        actualText.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-actual-' + id
+        );
+
+        let planText = document.createElement('div');
+        planText.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-plan-' + id
+        );
+
+        let diffText = document.createElement('div');
+        diffText.classList.add(
+            'analytics-region-card-windchill',
+            'analytics-region-card-graph-section-value',
+            'analytics-region-card-graph-section-diff-' + id
+        );
+
+        this.element.appendChild(title);
+        this.element.appendChild(sparkLine);
+        this.element.appendChild(actualText);
+        this.element.appendChild(planText);
+        this.element.appendChild(diffText);
+    }
+
+    updateWindchillSection() {
+        const id = 'windchill';
+
+        if (!this.step) {
+            this.element.classList.add('analytics-region-card-no-windchill');
+            return;
+        } else {
+            this.element.classList.remove('analytics-region-card-no-windchill');
+        }
+
+        let durationMs = 0;
+        if (typeof this.startTime === 'number') {
+            durationMs = this.endTime - this.startTime;
+        }
+
+        let plannedMs = durationMs;
+        if (this.step) {
+            plannedMs = (this.step.laborTimeSeconds + this.step.processingTimeSeconds) * 1000;
+        }
+        let diffMs = durationMs - plannedMs;
+
+        // durationMs < planned -> green
+        // durationMs > planned -> green to red
+        let overage = 1 - (durationMs - plannedMs) / plannedMs;
+        let overageColor = this.getValueColor(overage);
+
+        let actualRect = this.element.querySelector('.analytics-region-card-graph-section-sparkline-actual-' + id);
+        let planRect = this.element.querySelector('.analytics-region-card-graph-section-sparkline-plan-' + id);
+
+        let widthMs = Math.max(durationMs, plannedMs);
+        let width = cardWidth / 3;
+
+        actualRect.setAttribute('x', 0);
+        actualRect.setAttribute('y', rowHeight / 6);
+        actualRect.setAttribute('height', rowHeight / 2);
+        actualRect.setAttribute('width', durationMs / widthMs * width);
+        actualRect.style.fill = overageColor;
+        actualRect.style.stroke = 'none';
+
+        planRect.setAttribute('x', 0);
+        planRect.setAttribute('y', rowHeight / 2 + rowHeight / 6);
+        planRect.setAttribute('height', rowHeight / 6);
+        planRect.setAttribute('width', plannedMs / widthMs * width);
+        planRect.style.fill = 'white';
+        planRect.style.stroke = 'none';
+
+        let actualText = this.element.querySelector('.analytics-region-card-graph-section-actual-' + id);
+        let planText = this.element.querySelector('.analytics-region-card-graph-section-plan-' + id);
+        let diffText = this.element.querySelector('.analytics-region-card-graph-section-diff-' + id);
+
+
+        let durationLabel = (durationMs / 1000).toFixed(1) + 's';
+        let planLabel = (plannedMs / 1000).toFixed(1) + 's';
+        let diffLabel = (diffMs / 1000).toFixed(1) + 's';
+        if (diffMs > 0) {
+            diffLabel = '+' + diffLabel;
+        }
+
+        this.setGraphSectionText(actualText, 'Real', durationLabel, overageColor);
+        this.setGraphSectionText(planText, 'Plan', planLabel);
+
+        let diffColor = '';
+        if (diffMs < 0) {
+            diffColor = this.getValueColor(1);
+        } else {
+            diffColor = this.getValueColor(0);
+        }
+
+        this.setGraphSectionText(diffText, 'Diff', diffLabel, diffColor);
+    }
+
+    setGraphSectionText(element, label, valueText, color) {
+        element.textContent = `${label}: `;
+        let span = document.createElement('span');
+        span.textContent = valueText;
+        if (color) {
+            span.style.color = color;
+        }
+        element.appendChild(span);
+    }
+
+    /**
+     * @param {MotionStudyLens} lens - the lens to set as active
+     */
+    setActiveLens(lens) {
+        for (const id in this.graphSectionElements) {
+            let hidden = true;
+            if (lens.name.toLowerCase().includes(id)) {
+                hidden = false;
+            }
+            for (const elt of this.graphSectionElements[id]) {
+                if (hidden) {
+                    elt.style.display = 'none';
+                } else {
+                    elt.style.display = '';
+                }
+            }
+        }
+    }
+
     updateLensStatistics() {
+        this.updateWindchillSection();
+
         if (this.poses.length === 0) {
             return;
         }
-        
+
         this.updateGraphSection('reba', 'REBA', pose => pose.getJoint(JOINTS.HEAD).overallRebaScore, MIN_REBA_SCORE, MAX_REBA_SCORE);
         this.updateGraphSection('muri', 'MURI', pose => pose.metadata.overallMuriScore, MIN_MURI_SCORE, MAX_MURI_SCORE);
         this.updateGraphSection('accel', 'Accel', pose => {
@@ -490,8 +695,8 @@ export class RegionCard {
             // Prevent overflowing scale
             val = max;
         }
-        let hue = (max - val) / (max - min) * 120;
-        span.style.color = `hsl(${hue}, 100%, 50%)`;
+        let valScaled = (max - val) / (max - min);
+        span.style.color = this.getValueColor(valScaled);
         return span;
     }
 
@@ -608,12 +813,23 @@ export class RegionCard {
         };
     }
 
+    getValueColor(value) {
+        if (value < 0) {
+            value = 0;
+        }
+        if (value > 1) {
+            value = 1;
+        }
+        let hue = value * 120;
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+
     getLabel() {
-        return this.labelElement.textContent;
+        return this.labelElement.value;
     }
 
     setLabel(label) {
-        this.labelElement.textContent = label;
+        this.labelElement.value = label;
     }
 
     setAccentColor(accentColor) {
@@ -643,20 +859,10 @@ export class RegionCard {
         this.container.appendChild(this.element);
     }
 
-    updateValueAddWasteTimeUi() {
-        const regionValue = this.motionStudy.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
-
-        if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
-            this.wasteTimeButton.classList.add('selected');
-            this.valueAddButton.classList.remove('selected');
-        } else if (regionValue === ValueAddWasteTimeTypes.VALUE_ADD) {
-            this.valueAddButton.classList.add('selected');
-            this.wasteTimeButton.classList.remove('selected');
-        } else {
-            this.valueAddButton.classList.remove('selected');
-            this.wasteTimeButton.classList.remove('selected');
-        }
-        
+    /**
+     * @return {{valuePercent: number, wastePercent: number, valueTimeMs: number, wasteTimeMs: number}?}
+     */
+    getValueAddWasteTimeSummary() {
         const subset = this.motionStudy.valueAddWasteTimeManager.subset(this.startTime, this.endTime);
         let totalValueAdd = 0;
         let totalWasteTime = 0;
@@ -674,7 +880,74 @@ export class RegionCard {
         }
         const valuePercent = Math.round(totalValueAdd / totalTime * 100);
         const wastePercent = Math.round(totalWasteTime / totalTime * 100);
-        
+
+        return {
+            valuePercent,
+            wastePercent,
+            valueTimeMs: totalValueAdd,
+            wasteTimeMs: totalWasteTime,
+        };
+    }
+
+    updateValueAddWasteTimeUi() {
+        const regionValue = this.motionStudy.valueAddWasteTimeManager.getValueForRegion(this.startTime, this.endTime);
+
+        if (regionValue === ValueAddWasteTimeTypes.WASTE_TIME) {
+            this.wasteTimeButton.classList.add('selected');
+            this.valueAddButton.classList.remove('selected');
+        } else if (regionValue === ValueAddWasteTimeTypes.VALUE_ADD) {
+            this.valueAddButton.classList.add('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        } else {
+            this.valueAddButton.classList.remove('selected');
+            this.wasteTimeButton.classList.remove('selected');
+        }
+
+        const percents = this.getValueAddWasteTimeSummary();
+        if (!percents) {
+            return;
+        }
+        const {valuePercent, wastePercent} = percents;
         this.valueAddWasteTimeSummary.setValues(valuePercent, wastePercent);
+    }
+
+    createPolygonSensor() {
+        if (this.poses.length === 0) {
+            return;
+        }
+
+        let points = getConvexHullOfPoses(this.poses);
+
+        let addedTool = realityEditor.gui.pocket.createFrame('spatialSensorPolygon', {
+            noUserInteraction: true,
+            pageX: window.innerWidth / 2,
+            pageY: window.innerHeight / 2,
+            onUploadComplete: () => {
+                realityEditor.network.postVehiclePosition(addedTool);
+                write();
+            },
+        });
+
+        const frameKey = addedTool.uuid;
+        const write = () => {
+            realityEditor.network.realtime.writePublicData(
+                addedTool.objectId, frameKey, frameKey + 'storage',
+                'points', points
+            );
+            realityEditor.network.realtime.writePublicData(
+                addedTool.objectId, frameKey, frameKey + 'storage',
+                'color', this.accentColor
+            );
+            if (this.step) {
+                realityEditor.network.realtime.writePublicData(
+                    addedTool.objectId, frameKey, frameKey + 'storage',
+                    'step', this.step
+                );
+            }
+        };
+        setTimeout(write, 500);
+        setTimeout(write, 1500);
+
+        return addedTool.uuid;
     }
 }
