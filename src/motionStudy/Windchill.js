@@ -40,13 +40,15 @@ export class Windchill {
         const steps = [];
         for (const component of components) {
             let id = component.OperationHolder.ID;
-            let laborTimeSeconds = component.OperationHolder.LaborTime.Value;
+            let laborTimeSeconds = component.OperationHolder.LaborTime.Value || 0;
+            let processingTimeSeconds = component.OperationHolder.ProcessingTime.Value || 0;
             let description = component.OperationHolder.Description;
             let name = component.OperationHolder.Name;
 
             steps.push({
                 id,
                 laborTimeSeconds,
+                processingTimeSeconds,
                 name,
                 description,
             });
