@@ -554,7 +554,7 @@ export class RegionCard {
 
         let plannedMs = durationMs;
         if (this.step) {
-            plannedMs = this.step.laborTimeSeconds * 1000;
+            plannedMs = (this.step.laborTimeSeconds + this.step.processingTimeSeconds) * 1000;
         }
         let diffMs = durationMs - plannedMs;
 
