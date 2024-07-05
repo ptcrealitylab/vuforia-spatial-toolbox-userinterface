@@ -56,7 +56,7 @@ class ResourceEntry {
      * 
      * @returns {resourceId}
      */
-    getId() {
+    get id() {
         return this.#id;
     }
 
@@ -122,6 +122,7 @@ class ResourceCache {
         } else {
             const smartAdmin = new SmartResourceAdmin(new ResourceEntry(this, id, resource, 0));
             this.#cache[id] = [smartAdmin];
+            console.log(`${this.#name} ${Object.keys(this.#cache).length} ${id}`);
             return new SmartResource(smartAdmin);
         }
     }
@@ -163,7 +164,8 @@ class ResourceCache {
                     entry.splice(index, 1);
                     if (entry.length == 0) {
                         delete this.#cache[id];
-                    }
+                    } 
+                    console.log(`${this.#name} ${Object.keys(this.#cache).length} ${id}`);
                     return;
                 }
             }

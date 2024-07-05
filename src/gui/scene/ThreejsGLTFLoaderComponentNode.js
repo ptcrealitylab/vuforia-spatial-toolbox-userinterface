@@ -1,13 +1,14 @@
 import {GLTFLoader} from '../../../thirdPartyCode/three/GLTFLoader.module.js';
-import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js";
+import ObjectNode from '../../../objectDefaultFiles/scene/ObjectNode.js';
 import VersionedNode from "/objectDefaultFiles/scene/VersionedNode.js";
-import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
-import EntityStore from '/objectDefaultFiles/scene/EntityStore.js';
+import EntityNode from "/objectDefaultFiles/scene/BaseEntityNode.js";
 import ThreejsEntity from "./ThreejsEntity.js"; 
 import {ResourceCache} from './SmartResourceCache.js';
 import {getRoot} from "./utils.js";
 import MaterialComponentNode from "/objectDefaultFiles/scene/MaterialComponentNode.js";
-import ThreejsMaterialComponentStore from "./ThreejsMaterialComponentStore.js";
+import ThreejsMaterialComponentNode from "./ThreejsMaterialComponentNode.js";
+import ThreejsEntityNode from './ThreejsEntityNode.js';
+import { safeUsing } from './SmartResource.js';
 
 /**
  * @typedef {import("/objectDefaultFiles/scene/ThreejsGLTFLoaderComponentNode.js").default} ThreejsGLTFLoaderComponentNode
@@ -20,14 +21,8 @@ class CreateChildEntityWalker {
     /** @type {ResourceCache} */
     #geometryCache;
 
-    /** @type {{[key: number]: SmartResource}} */
-    #geometryLookup;
-
     /** @type {ResourceCache} */
     #materialCache;
-
-    /** @type {{[key: number]: SmartResource}} */
-    #materialLookup;
 
     /**
      * 
@@ -36,9 +31,7 @@ class CreateChildEntityWalker {
      */
     constructor(geometryCache, materialCache) {
         this.#geometryCache = geometryCache;
-        this.#geometryLookup = {};
         this.#materialCache = materialCache;
-        this.#materialLookup = {};
     }
 
     /**
@@ -46,24 +39,14 @@ class CreateChildEntityWalker {
      * @param {THREE.Material|THREE.Geometry} resource 
      * @param {string} uniqueIdPrefix 
      * @param {ResourceCache} cache 
-     * @param {{[key: number]: SmartResource}} lookup 
      */
-    #createSmartResource(resource, uniqueIdPrefix, cache, lookup) {
-        if (lookup.hasOwnProperty(resource.id)) {
-            return lookup[resource.id].copy();
+    #createSmartResource(resource, uniqueIdPrefix, cache) {
+        if (resource.userData.hasOwnProperty("toolboxId")) {
+            return cache.get(resource.userData.toolboxId);
         } else {
             const resourceId = uniqueIdPrefix + "." + resource.name.replace(/[\\.@]/g, "\\$&");
-            let smartResource = cache.insert(resourceId, resource);
-            lookup[resource.id] = smartResource.copy();
-            return smartResource;
-        }
-    }
-
-    #clearLookup(lookup) {
-        const keys = Object.keys(lookup);
-        for (const key of keys) {
-            lookup[key].release();
-            delete lookup[key];
+            resource.userData.toolboxId = resourceId;
+            return cache.insert(resourceId, resource);
         }
     }
 
@@ -74,8 +57,6 @@ class CreateChildEntityWalker {
      */
     run(entityNode, uniqueIdPrefix) {
         this.#internalRun(entityNode, uniqueIdPrefix);
-        this.#clearLookup(this.#materialLookup);
-        this.#clearLookup(this.#geometryLookup);
     }
 
     /**
@@ -84,21 +65,21 @@ class CreateChildEntityWalker {
      * @param {string} uniqueIdPrefix 
      */
     #internalRun(entityNode, uniqueIdPrefix) {
-        const object3D = entityNode.getEntity().getInternalObject();
+        const object3D = entityNode.entity.getInternalObject();
         if (object3D.hasOwnProperty("material")) {
-            const materialRef = this.#createSmartResource(object3D.material, uniqueIdPrefix, this.#materialCache, this.#materialLookup); 
-            entityNode.getListener().getEntity().setMaterialRef(materialRef);
+            const materialRef = this.#createSmartResource(object3D.material, uniqueIdPrefix, this.#materialCache); 
+            entityNode.entity.materialRef = materialRef;
             materialRef.release();
-            entityNode.addComponent("1000", new MaterialComponentNode(new ThreejsMaterialComponentStore()), false);
+            entityNode.setComponent("1000", new ThreejsMaterialComponentNode(), false);
         }
         if (object3D.hasOwnProperty("geometry")) {
-            const geometryRef = this.#createSmartResource(object3D.geometry, uniqueIdPrefix, this.#geometryCache, this.#geometryLookup); 
-            entityNode.getListener().getEntity().setGeometryRef(geometryRef);
+            const geometryRef = this.#createSmartResource(object3D.geometry, uniqueIdPrefix, this.#geometryCache); 
+            entityNode.entity.geometryRef = geometryRef;
             geometryRef.release();
         }
         const children = object3D.children;
         for (let i = 0; i < children.length; ++i) {
-            const childNode = new EntityNode(new EntityStore(new ThreejsEntity(children[i])));
+            const childNode = new ThreejsEntityNode(new ThreejsEntity(children[i]));
             this.#internalRun(childNode, uniqueIdPrefix + `.${children[i].name ? children[i].name.replace(/[\\.@]/g, '\\$&') : ""}@${i}`);
             entityNode.setChild(`${i}`, childNode, false);
         }
@@ -137,24 +118,18 @@ class CachedGLTFLoader {
      * @returns {EntityNode}
      */
     #createEntityNode(modelData, absUrl, version) {
-        const modelNode = new EntityNode(new EntityStore(new ThreejsEntity(modelData.scene)));
+        const modelNode = new ThreejsEntityNode(new ThreejsEntity(modelData.scene));
         this.#childEntityWalker.run(modelNode, absUrl.replace(/[\\.@]/g, '\\$&') + "@" + version);
         return modelNode;
     }
 
     #internalCloneEntityNode(srcNode, object3D) {
-        const dstNode = new EntityNode(new EntityStore(new ThreejsEntity(object3D)));
-        const materialRef = srcNode.getEntity().getMaterialRef();
-        dstNode.getEntity().setMaterialRef(materialRef);
-        if (materialRef) {
-            materialRef.release();
-            dstNode.addComponent("1000", new MaterialComponentNode(new ThreejsMaterialComponentStore()), false);
+        const dstNode = new ThreejsEntityNode(new ThreejsEntity(object3D));
+        dstNode.entity.materialRef = srcNode.entity.materialRef;
+        if (srcNode.entity.materialRef) {
+            dstNode.setComponent("1000", new ThreejsMaterialComponentNode(), false);
         }
-        const geometryRef = srcNode.getEntity().getGeometryRef();
-        dstNode.getEntity().setGeometryRef(geometryRef);
-        if (geometryRef) {
-            geometryRef.release();
-        }
+        dstNode.entity.geometryRef = srcNode.entity.geometryRef;
         for (let i = 0; i < object3D.children.length; ++i) {
             dstNode.setChild(`${i}`, this.#internalCloneEntityNode(srcNode.getChild(i), object3D.children[i]));
         }
@@ -162,7 +137,7 @@ class CachedGLTFLoader {
     }
 
     #cloneEntityNode(modelNode) {
-        return this.#internalCloneEntityNode(modelNode, modelNode.getEntity().getInternalObject().clone());
+        return this.#internalCloneEntityNode(modelNode, modelNode.entity.getInternalObject().clone());
     }
 
     /**
@@ -211,7 +186,7 @@ class CachedGLTFLoader {
 
 
 
-class ThreejsGLTFLoaderComponentStore extends ObjectStore {
+class ThreejsGLTFLoaderComponentNode extends ObjectNode {
     /** @type {CachedGLTFLoader|null} */
     static #gltfLoader = null;
 
@@ -234,6 +209,7 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
         this.#urlNode.onChanged = () => {this.#forceLoad = true};
         this.#forceLoad = false;
         this.#resourceRef = null;
+        this._set("url", this.#urlNode);
     }
 
     /**
@@ -264,12 +240,12 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
                 version = this.#resourceRef.getVersion() + 1;
                 this.#resourceRef.release();
             }
-            if (!ThreejsGLTFLoaderComponentStore.#gltfLoader) {
-                const worldStore = getRoot(this.#node).getListener();
-                ThreejsGLTFLoaderComponentStore.#gltfLoader = new CachedGLTFLoader(worldStore.getGeometryCache(), worldStore.getMaterialCache());
+            if (!ThreejsGLTFLoaderComponentNode.#gltfLoader) {
+                const worldNode = getRoot(this.#node);
+                ThreejsGLTFLoaderComponentNode.#gltfLoader = new CachedGLTFLoader(worldNode.geometryCache, worldNode.materialCache);
             }
             const result = await new Promise((resolve, reject) => {
-                ThreejsGLTFLoaderComponentStore.#gltfLoader.load(new URL(this.#urlNode.value).href, (resourceRef) => resolve(resourceRef), reject, version);
+                ThreejsGLTFLoaderComponentNode.#gltfLoader.load(new URL(this.#urlNode.value).href, (resourceRef) => resolve(resourceRef), reject, version);
             });
             this.#resourceRef = result.ref;
             this.#node.setChild("Scene", result.node);
@@ -282,6 +258,10 @@ class ThreejsGLTFLoaderComponentStore extends ObjectStore {
         }
         this.#resourceRef = null;
     }
+
+    get component() {
+        return this;
+    }
 }
 
-export default ThreejsGLTFLoaderComponentStore;
+export default ThreejsGLTFLoaderComponentNode;

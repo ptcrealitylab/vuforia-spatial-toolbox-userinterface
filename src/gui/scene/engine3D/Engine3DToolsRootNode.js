@@ -1,10 +1,11 @@
-import DictionaryStore from "/objectDefaultFiles/scene/DictionaryStore.js"
+import DictionaryNode from "../../../../objectDefaultFiles/scene/DictionaryNode.js";
+import ToolsRootNode from "../../../../objectDefaultFiles/scene/ToolsRootNode.js";
 
 /**
  * @typedef {import("../ToolsRoot.js").ToolsRoot} ToolsRoot
  */
 
-class Engine3DToolsRootStore extends DictionaryStore {
+class Engine3DToolsRootStore extends DictionaryNode {
     /** @type {ToolsRoot} */
     #toolsRoot;
 
@@ -13,8 +14,15 @@ class Engine3DToolsRootStore extends DictionaryStore {
      * @param {ToolsRoot} toolsRoot 
      */
     constructor(toolsRoot) {
-        super();
+        super(ToolsRootNode.TYPE);
         this.#toolsRoot = toolsRoot;
+    }
+
+    getStateForTool(toolId) {
+        const ret = super.getState();
+        ret.properties = {};
+        ret.properties[toolId] = this.get(toolId).getState();
+        return ret;
     }
 
     /**
@@ -37,12 +45,15 @@ class Engine3DToolsRootStore extends DictionaryStore {
         throw Error("ToolsRoot only accepts tools, can't cast");
     }
 
-    delete(_key, oldNode) {
+    canDelete(_key, oldNode) {
         oldNode.dispose();
         return true;
     }
 
-    getToolsRoot() {
+    /**
+     * @returns {ToolsRoot}
+     */
+    get toolsRoot() {
         return this.#toolsRoot;
     }
 }

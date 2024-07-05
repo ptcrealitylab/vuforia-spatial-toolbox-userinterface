@@ -1,9 +1,8 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import {ToolRenderSocket} from "../../../objectDefaultFiles/scene/ToolRenderStream.js";
 import {IFrameMessageInterface} from "../../../objectDefaultFiles/scene/MessageInterface.js";
-import WorldNode from "../../../objectDefaultFiles/scene/WorldNode.js";
-import Engine3DWorldStore from "./engine3D/Engine3DWorldStore.js";
-import ThreejsToolStore from "./ThreejsToolStore.js";
+import Engine3DWorldNode from "./engine3D/Engine3DWorldNode.js";
+import ThreejsToolNode from "./ThreejsToolNode.js";
 import ToolNode from "../../../objectDefaultFiles/scene/ToolNode.js";
 import TransformComponentNode from "../../../objectDefaultFiles/scene/TransformComponentNode.js";
 import ThreejsEntity from "./ThreejsEntity.js";
@@ -114,7 +113,7 @@ class ToolProxy {
      * 
      * @returns {ThreejsEntity}
      */
-    getEntity() {
+    get entity() {
         return this.#rootEntity;
     }
 
@@ -185,9 +184,9 @@ class ToolProxy {
             }
             localToolMatrix.decompose(decomposedMatrix.position, decomposedMatrix.rotation, decomposedMatrix.scale);
             const transformComponent = this.#rootEntity.getComponentByType(TransformComponentNode.TYPE);
-            transformComponent.setPosition(decomposedMatrix.position);
-            transformComponent.setRotation(decomposedMatrix.rotation);
-            transformComponent.setScale(decomposedMatrix.scale);
+            transformComponent.position = decomposedMatrix.position;
+            transformComponent.rotation = decomposedMatrix.rotation;
+            transformComponent.scale = decomposedMatrix.scale;
         }
     }
 
@@ -204,6 +203,7 @@ class ToolProxy {
      */
     onDelete() {
         this.#handler.onDelete();
+        this.#rootEntity.dispose();
     }
 }
 
@@ -231,7 +231,7 @@ class ToolManager {
         this.#renderer = renderer;
         realityEditor.device.registerCallback('vehicleDeleted', (params) => this.onVehicleDeleted(params));
         realityEditor.network.registerCallback('vehicleDeleted', (params) => this.onVehicleDeleted(params));
-        this.#worldNode = new WorldNode(new Engine3DWorldStore(this.#renderer));
+        this.#worldNode = new Engine3DWorldNode(this.#renderer);
         this.#anchoredGroupNode = this.#worldNode.get("threejsContainer");
         this.#toolsRootNode = this.#worldNode.get("tools");
         this.#toolProxies = {};
@@ -243,7 +243,6 @@ class ToolManager {
      */
     remove(toolId) {
         if (this.#toolProxies.hasOwnProperty(toolId)) {
-            this.#toolsRootNode.delete(toolId);
             this.#toolProxies[toolId].onDelete();
             delete this.#toolProxies[toolId];
         }
@@ -259,9 +258,9 @@ class ToolManager {
             return;
         }
         const worker = globalDOMCache['iframe' + toolId];
-        const toolRoot = this.#toolsRootNode.getListener().getToolsRoot().create(toolId);
+        const toolRoot = this.#toolsRootNode.toolsRoot.create(toolId);
         const toolProxy = new ToolProxy(this, toolId, worker, toolRoot);
-        this.#toolsRootNode.set(toolId, new ToolNode(new ThreejsToolStore(toolProxy), `${ToolNode.TYPE}.${type}`));
+        this.#toolsRootNode.set(toolId, new ThreejsToolNode(toolProxy, `${ToolNode.TYPE}.${type}`));
         this.#toolProxies[toolId] = toolProxy;
     }
 
@@ -280,7 +279,7 @@ class ToolManager {
      * @param {AnchoredGroup} anchoredGroup 
      */
     setAnchoredGroup(anchoredGroup) {
-        this.#anchoredGroupNode.getListener().setAnchoredGroup(anchoredGroup);
+        this.#anchoredGroupNode.anchoredGroup = anchoredGroup;
     }
 
     /**

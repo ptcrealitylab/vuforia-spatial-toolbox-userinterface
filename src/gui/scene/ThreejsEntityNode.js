@@ -1,15 +1,18 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import BaseEntityStore from "/objectDefaultFiles/scene/BaseEntityStore.js";
-import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
+import BaseEntityNode from '../../../objectDefaultFiles/scene/BaseEntityNode.js';
 import ThreejsEntity from "./ThreejsEntity.js";
 import GLTFLoaderComponentNode from "/objectDefaultFiles/scene/GLTFLoaderComponentNode.js";
-import ThreejsGLTFLoaderComponentStore from './ThreejsGLTFLoaderComponentStore.js';
+import ThreejsGLTFLoaderComponentNode from './ThreejsGLTFLoaderComponentNode.js';
 import MaterialComponentNode from "/objectDefaultFiles/scene/MaterialComponentNode.js";
-import ThreejsMaterialComponentStore from './ThreejsMaterialComponentStore.js';
+import ThreejsMaterialComponentNode from './ThreejsMaterialComponentNode.js';
 
-class ThreejsEntityStore extends BaseEntityStore {
-    constructor(entity) {
-        super(entity);
+class ThreejsEntityNode extends BaseEntityNode {
+    /**
+     * @param {ThreejsEntity} entity
+     * @param {string} type
+     */
+    constructor(entity, type) {
+        super(entity, type);
     }
 
     /**
@@ -20,7 +23,7 @@ class ThreejsEntityStore extends BaseEntityStore {
     createEntity(_key, name) {
         const obj = new THREE.Object3D();
         obj.name = name; 
-        return new EntityNode(new ThreejsEntityStore(new ThreejsEntity(obj)));
+        return new ThreejsEntityNode(new ThreejsEntity(obj));
     }
 
     /**
@@ -31,13 +34,17 @@ class ThreejsEntityStore extends BaseEntityStore {
     createComponent(_index, state) {
         if (state.hasOwnProperty("type")) {
             if (state.type === GLTFLoaderComponentNode.TYPE) {
-                return new GLTFLoaderComponentNode(new ThreejsGLTFLoaderComponentStore());
+                return new ThreejsGLTFLoaderComponentNode();
             } else if (state.type === MaterialComponentNode.TYPE) {
-                return new MaterialComponentNode(new ThreejsMaterialComponentStore());
+                return new ThreejsMaterialComponentNode();
             }
         }
         return null;
     }
+
+    dispose() {
+        this.entity.dispose();
+    }
 }
 
-export default ThreejsEntityStore;
+export default ThreejsEntityNode;

@@ -10,16 +10,6 @@ class ToolsRoot {
     }
 
     /**
-     * @param {string} toolId 
-     */
-    remove(toolId) {
-        const tool = this.#root.getObjectByName(toolId);
-        if (tool) {
-            this.#root.remove(tool);
-        }
-    }
-
-    /**
      * 
      * @param {string} toolId 
      * @returns {THREE.Group}

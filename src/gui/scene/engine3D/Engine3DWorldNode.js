@@ -1,13 +1,11 @@
-import ObjectStore from "/objectDefaultFiles/scene/ObjectStore.js"
-import AnchoredGroupNode from "/objectDefaultFiles/scene/AnchoredGroupNode.js"
-import Engine3DAnchoredGroupStore from "./Engine3DAnchoredGroupStore.js";
-import ToolsRootNode from "/objectDefaultFiles/scene/ToolsRootNode.js"
-import Engine3DToolsRootStore from "./Engine3DToolsRootStore.js";
+import ObjectNode from "../../../../objectDefaultFiles/scene/ObjectNode.js"
+import Engine3DAnchoredGroupNode from "./Engine3DAnchoredGroupNode.js"
+import Engine3DToolsRootNode from "./Engine3DToolsRootNode.js"
 import ToolsRoot from "../ToolsRoot.js";
+import WorldNode from "../../../../objectDefaultFiles/scene/WorldNode.js";
 
 /**
- * @typedef {import("/objectDefaultFiles/scene/ObjectNode.js").ObjectInterface} ObjectInterface
- * @typedef {import("/objectDefaultFiles/scene/WorldNode.js").default} WorldNode
+ * @typedef {import("./../../../objectDefaultFiles/scene/ObjectNode.js").ObjectInterface} ObjectInterface
  * @typedef {import("../Renderer.js").Renderer} Renderer
  * @typedef {import("../Renderer.js").Timer} Timer
  * @typedef {import("../Renderer.js").GeometryCache} GeometryCache
@@ -15,10 +13,11 @@ import ToolsRoot from "../ToolsRoot.js";
  * @typedef {import("../Renderer.js").TextureCache} TextureCache
  */
 
-class Engine3DWorldStore extends ObjectStore {
+class Engine3DWorldNode extends ObjectNode {
     /** @type {Renderer} */
     #renderer;
 
+    /** @type {ToolsRoot} */
     #toolsRoot;
 
     /**
@@ -26,17 +25,19 @@ class Engine3DWorldStore extends ObjectStore {
      * @param {Renderer} renderer 
      */
     constructor(renderer) {
-        super();
+        super(WorldNode.TYPE);
         this.#renderer = renderer;
         this.#toolsRoot = new ToolsRoot();
         this.#renderer.getGlobalScale().getNode().add(this.#toolsRoot.getInternalObject());
+        this._set("threejsContainer", new Engine3DAnchoredGroupNode());
+        this._set("tools", new Engine3DToolsRootNode(this.#toolsRoot));
     }
 
     /**
      * 
      * @returns {Timer}
      */
-    getTimer() {
+    get timer() {
         return this.#renderer.getTimer();
     }
 
@@ -44,7 +45,7 @@ class Engine3DWorldStore extends ObjectStore {
      * 
      * @returns {Renderer}
      */
-    getRenderer() {
+    get renderer() {
         return this.#renderer;
     }
 
@@ -52,7 +53,7 @@ class Engine3DWorldStore extends ObjectStore {
      * 
      * @returns {GeometryCache}
      */
-    getGeometryCache() {
+    get geometryCache() {
         return this.#renderer.getGeometryCache();
     }
 
@@ -60,7 +61,7 @@ class Engine3DWorldStore extends ObjectStore {
      * 
      * @returns {MaterialCache}
      */
-    getMaterialCache() {
+    get materialCache() {
         return this.#renderer.getMaterialCache();
     }
 
@@ -68,21 +69,23 @@ class Engine3DWorldStore extends ObjectStore {
      * 
      * @returns {TextureCache}
      */
-    getTextureCache() {
+    get textureCache() {
         return this.#renderer.getTextureCache();
     }
 
     /**
-     * @override
-     * @param {WorldNode} _thisNode 
-     * @returns {NodeDict}
+     * 
+     * @param {string} toolId 
+     * @returns {WorldNodeState}
      */
-    getProperties(_thisNode) {
-        return {
-            "threejsContainer": new AnchoredGroupNode(new Engine3DAnchoredGroupStore()),
-            "tools": new ToolsRootNode(new Engine3DToolsRootStore(this.#toolsRoot))
-        };
+    getStateForTool(toolId) {
+        const ret = super.getState();
+        ret.properties = {};
+        ret.properties["threejsContainer"] = this.get("threejsContainer").getState();
+        ret.properties["tools"] = this.get("tools").getStateForTool(toolId);
+        ret.toolsRoot = ["tools"];
+        return ret;
     }
 }
 
-export default Engine3DWorldStore;
+export default Engine3DWorldNode;

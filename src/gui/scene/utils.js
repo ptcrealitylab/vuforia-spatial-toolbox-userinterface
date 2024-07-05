@@ -36,8 +36,8 @@ function decomposeMatrix(matrix) {
  * @returns {BaseNode}
  */
 function getRoot(node) {
-    if (node.getParent()) {
-        return getRoot(node.getParent());
+    if (node.parent) {
+        return getRoot(node.parent);
     } else {
         return node;
     }

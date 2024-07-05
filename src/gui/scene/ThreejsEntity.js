@@ -1,4 +1,5 @@
 import BaseEntity from "/objectDefaultFiles/scene/BaseEntity.js";
+import { safeRelease } from "./SmartResource.js";
 
 /** 
  * @typedef {{update: (object3D = THREE.Object3D) => void}} ThreejsComponent
@@ -34,7 +35,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @returns {Vector3Value}
      */
-    getPosition() {
+    get position() {
         return this.#object.position;
     }
 
@@ -42,7 +43,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @param {Vector3Value} position 
      */
-    setPosition(position) {
+    set position(position) {
         this.#object.position.set(position.x, position.y, position.z);
     }
     
@@ -50,7 +51,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @returns {QuaternionValue}
      */
-    getRotation() {
+    get rotation() {
         return this.#object.quaternion;
     }
 
@@ -58,7 +59,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @param {QuaternionValue} rotation 
      */
-    setRotation(rotation) {
+    set rotation(rotation) {
         this.#object.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
     }
 
@@ -66,7 +67,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @returns {Vector3Value}
      */
-    getScale() {
+    get scale() {
         return this.#object.scale;
     }
 
@@ -74,7 +75,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @param {Vector3Value} scale 
      */
-    setScale(scale) {
+    set scale(scale) {
         this.#object.scale.set(scale.x, scale.y, scale.z);
     }
 
@@ -82,7 +83,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @param {boolean} isVisible 
      */
-    setVisible(isVisible) {
+    set isVisible(isVisible) {
         this.#object.visible = isVisible;
     }
 
@@ -90,7 +91,7 @@ class ThreejsEntity extends BaseEntity {
      * 
      * @returns {boolean}
      */
-    isVisible() {
+    get isVisible() {
         return this.#object.visible;
     }
 
@@ -101,8 +102,8 @@ class ThreejsEntity extends BaseEntity {
      */
     setChild(key, child) {
         super.setChild(key, child);
-        const internalChild = child.getInternalObject();
-        if (internalChild.parent !== this.#object) {
+        const internalChild = child;
+        if (internalChild.getInternalObject().parent !== this.#object) {
             this.#object.add(child.getInternalObject());
         }
     }
@@ -116,37 +117,39 @@ class ThreejsEntity extends BaseEntity {
         super.removeChild(key);
     }
 
-    getGeometryRef() {
-        return this.#geometryRef ? this.#geometryRef.copy() : null; 
+    /**
+     * @returns {ResourceReference|null}
+     */
+    get geometryRef() {
+        return this.#geometryRef; 
     }
 
-    setGeometryRef(geometryRef) {
-        if (this.#geometryRef) {
-            this.#geometryRef.release();
-        }
+    /**
+     * @param {ResourceReference|null} geometryRef
+     */
+    set geometryRef(geometryRef) {
+        this.#geometryRef = safeRelease(this.geometryRef);
         this.#geometryRef = geometryRef ? geometryRef.copy() : null;
     }
 
-    getMaterialRef() {
-        return this.#materialRef ? this.#materialRef.copy() : null; 
+    /**
+     * @returns {ReosurceReference|null}
+     */
+    get materialRef() {
+        return this.#materialRef; 
     }
 
-    setMaterialRef(materialRef) {
-        if (this.#materialRef) {
-            this.#materialRef.release();
-        }
+    /**
+     * @param {ResourceReference} materialRef
+     */
+    set materialRef(materialRef) {
+        this.#materialRef = safeRelease(this.materialRef); 
         this.#materialRef = materialRef ? materialRef.copy() : null;
     }
 
     internalRelease() {
-        if (this.#geometryRef) {
-            this.#geometryRef.release();
-        }
-        this.#geometryRef = null;
-        if (this.#materialRef) {
-            this.#materialRef.release();
-        }
-        this.#materialRef = null;
+        this.#geometryRef = safeRelease(this.geometryRef);
+        this.#materialRef = safeRelease(this.materialRef);
     }
 
     /**

@@ -1,18 +1,17 @@
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
-import BaseEntityStore from "/objectDefaultFiles/scene/BaseEntityStore.js"
-import EntityNode from "/objectDefaultFiles/scene/EntityNode.js";
-import ThreejsEntityStore from "./ThreejsEntityStore.js";
+import ThreejsEntityNode from "./ThreejsEntityNode.js"
 import ThreejsEntity from "./ThreejsEntity.js";
 import GLTFLoaderComponentNode from "/objectDefaultFiles/scene/GLTFLoaderComponentNode.js";
-import ThreejsGLTFLoaderComponentStore from './ThreejsGLTFLoaderComponentStore.js';
+import ThreejsGLTFLoaderComponentNode from './ThreejsGLTFLoaderComponentNode.js';
 import MaterialComponentNode from "/objectDefaultFiles/scene/MaterialComponentNode.js";
-import ThreejsMaterialComponentStore from './ThreejsMaterialComponentStore.js';
+import ThreejsMaterialComponentNode from './ThreejsMaterialComponentNode.js';
+import ToolNode from '../../../objectDefaultFiles/scene/ToolNode.js';
 
 /**
  * @typedef {import("./ToolManager.js").ToolProxy} ToolProxy
  */
 
-class ThreejsToolStore extends BaseEntityStore {
+class ThreejsToolNode extends ThreejsEntityNode {
     /** @type {ToolProxy} */
     #toolProxy;
 
@@ -20,8 +19,8 @@ class ThreejsToolStore extends BaseEntityStore {
      * 
      * @param {ToolProxy} toolProxy 
      */
-    constructor(toolProxy) {
-        super(toolProxy.getEntity());
+    constructor(toolProxy, type = ToolNode.TYPE) {
+        super(toolProxy.entity, type);
         this.#toolProxy = toolProxy;
     }
 
@@ -33,7 +32,7 @@ class ThreejsToolStore extends BaseEntityStore {
     createEntity(_key, name) {
         const obj = new THREE.Object3D();
         obj.name = name; 
-        return new EntityNode(new ThreejsEntityStore(new ThreejsEntity(obj)));
+        return new ThreejsEntityNode(new ThreejsEntity(obj));
     }
 
     /**
@@ -44,13 +43,13 @@ class ThreejsToolStore extends BaseEntityStore {
     createComponent(_index, state) {
         if (state.hasOwnProperty("type")) {
             if (state.type === GLTFLoaderComponentNode.TYPE) {
-                return new GLTFLoaderComponentNode(new ThreejsGLTFLoaderComponentStore());
+                return new ThreejsGLTFLoaderComponentNode();
             } else if (state.type === MaterialComponentNode.TYPE) {
-                return new MaterialComponentNode(new ThreejsMaterialComponentStore());
+                return new ThreejsMaterialComponentNode();
             }
         }
         return null;
     }
 }
 
-export default ThreejsToolStore;
+export default ThreejsToolNode;

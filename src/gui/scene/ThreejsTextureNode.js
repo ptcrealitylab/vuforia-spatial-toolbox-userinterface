@@ -1,15 +1,15 @@
-import TriggerTextureStore from "../../../objectDefaultFiles/scene/TriggerTextureStore.js";
+import * as THREE from '../../../thirdPartyCode/three/three.module.js';
+import TextureNode from "../../../../objectDefaultFiles/scene/TextureNode.js";
 import {safeRelease} from "./SmartResource.js";
 
 /**
  * @typedef {import("../../../thirdPartyCode/three/three.module.js").Texture} Texture
  * @typedef {import("./Renderer.js").TextureCache} TextureCache
  * @typedef {import("./Renderer.js").TextureRef} TextureRef
- * @typedef {import("../../../objectDefaultFiles/scene/TriggerTextureStore.js").onChangedFunc} onChangedFunc
  * @typedef {import("../../../objectDefaultFiles/scene/TextureNode.js").TextureValue} TextureValue
  */
 
-class ThreejsTriggerTextureStore extends TriggerTextureStore {
+class ThreejsTextureNode extends TextureNode {
     /** @type {TextureCache} */
     #cache;
 
@@ -21,12 +21,11 @@ class ThreejsTriggerTextureStore extends TriggerTextureStore {
 
     /**
      * 
-     * @param {onChangedFunc} onChanged 
      * @param {TextureValue} value 
      * @param {TextureCache} cache 
      */
-    constructor(onChanged, value = {id: null}, cache) {
-        super(onChanged, value);
+    constructor(value = {id: null, mapping: THREE.UVMapping, wrapS: THREE.ClampToEdgeWrapping, wrapT: THREE.ClampToEdgeWrapping, magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter, anisotropy: 1}, cache) {
+        super(value);
         this.#cache = cache;
         this.#oldRef = null;
         if (value.id) {
@@ -44,9 +43,8 @@ class ThreejsTriggerTextureStore extends TriggerTextureStore {
     /**
      * @override
      * @param {ObjectNodeDelta} delta
-     * @param {(delta: ObjectNodeDelta) => void} defaultApplyChanges
      */
-    applyChanges(delta, defaultApplyChanges) {
+    setChanges(delta) {
         if (delta.hasOwnProperty("protperties") && delta.properties.hasOwnProperty("id")) {
             if (!this.#oldRef) {
                 this.#oldRef = this.#newRef;
@@ -62,7 +60,7 @@ class ThreejsTriggerTextureStore extends TriggerTextureStore {
                 }
             }
         }
-        super.applyChanges(delta, defaultApplyChanges);
+        super.setChanges(delta);
     }
 
 
@@ -89,4 +87,4 @@ class ThreejsTriggerTextureStore extends TriggerTextureStore {
     }
 }
 
-export default ThreejsTriggerTextureStore;
+export default ThreejsTextureNode;

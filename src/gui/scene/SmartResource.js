@@ -89,6 +89,10 @@ class SmartResourceAdmin {
      */
     getRef() {
         this.#refCount++;
+        /*if (this.#resource.id === "https://192\\.168\\.0\\.42:8080/frames/gltfExample/flagab\\.glb@0.Plane001@2." || this.#resource.id === "https://192\\.168\\.0\\.42:8080/frames/gltfExample/flagab\\.glb@0.Plane001@2.Material\\.003") {
+            console.log(`resource ${this.#refCount} ${this.#resource.id}`);
+            console.trace();
+        }*/
         return this.#resource;
     }
 
@@ -98,6 +102,10 @@ class SmartResourceAdmin {
      */
     releaseRef() {
         this.#refCount--;
+        /*if (this.#resource.id === "https://192\\.168\\.0\\.42:8080/frames/gltfExample/flagab\\.glb@0.Plane001@2." || this.#resource.id === "https://192\\.168\\.0\\.42:8080/frames/gltfExample/flagab\\.glb@0.Plane001@2.Material\\.003") {
+            console.log(`resource ${this.#refCount} ${this.#resource.id}`);
+            console.trace();
+        }*/
         if (this.#refCount == 0) {
             this.#resource.dispose();
             return true;
