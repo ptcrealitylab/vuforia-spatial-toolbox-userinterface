@@ -1042,6 +1042,7 @@ async function main(initialFilePath) {
             gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+            if (shouldCapture) capture();
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("gsSpinner").style.display = "";
@@ -1176,6 +1177,16 @@ async function main(initialFilePath) {
     }
 }
 
+let shouldCapture = false;
+let mostRecentCapture = null;
+
+function capture() {
+    console.log('capturing......');
+    let canvas = gsActive ? document.getElementById('gsCanvas') : document.getElementById('mainThreejsCanvas');
+    mostRecentCapture = canvas.toDataURL('image/png');
+    shouldCapture = false;
+}
+
 // The comma key can be used to toggle the splat rendering visibility after it's been loaded at least once
 window.addEventListener("keydown", e => {
     if (e.key === ',') {
@@ -1255,4 +1266,12 @@ export default {
     hideGSSettingsPanel() {
         gsSettingsPanel.domElement.style.display = 'none';
     },
+    // need to do this in a particular order otherwise you might capture
+    // the screenshot of the canvas after it's been cleared
+    captureScreenshot() {
+        shouldCapture = true;
+    },
+    getMostRecentScreenshot() {
+        return mostRecentCapture;
+    }
 }
