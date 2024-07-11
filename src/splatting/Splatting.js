@@ -1042,7 +1042,7 @@ async function main(initialFilePath) {
             gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
-            if (shouldCapture) capture();
+            if (pendingCapture) capture(pendingCapture.outputWidth, pendingCapture.outputHeight, pendingCapture.jpgCompression);
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("gsSpinner").style.display = "";
@@ -1177,14 +1177,45 @@ async function main(initialFilePath) {
     }
 }
 
-let shouldCapture = false;
+let pendingCapture = null;
 let mostRecentCapture = null;
 
-function capture() {
+function capture(outputWidth, outputHeight, compressionOptions) {
     console.log('capturing......');
     let canvas = gsActive ? document.getElementById('gsCanvas') : document.getElementById('mainThreejsCanvas');
-    mostRecentCapture = canvas.toDataURL('image/png');
-    shouldCapture = false;
+
+    if (outputWidth || outputHeight) {
+        let originalWidth = canvas.width;
+        let originalHeight = canvas.height;
+
+        if (!outputHeight) {
+            // Calculate height to preserve aspect ratio
+            outputHeight = outputWidth * (originalHeight / originalWidth);
+        } else if (!outputWidth) {
+            // Calculate width to preserve aspect ratio
+            outputWidth = outputHeight * (originalWidth / originalHeight);
+        }
+
+        // Create an off-screen canvas for resizing
+        let offScreenCanvas = document.createElement('canvas');
+        offScreenCanvas.width = outputWidth;
+        offScreenCanvas.height = outputHeight;
+        let ctx = offScreenCanvas.getContext('2d');
+
+        // Draw the original canvas onto the off-screen canvas at the desired size
+        ctx.drawImage(canvas, 0, 0, offScreenCanvas.width, offScreenCanvas.height);
+        canvas = offScreenCanvas;
+    }
+
+    if (compressionOptions.useJpg) {
+        // Get the data URL of the resized canvas as JPEG
+        let quality = compressionOptions.quality || 0.7; // Adjust the quality parameter (0.0 to 1.0) as needed
+        mostRecentCapture = canvas.toDataURL('image/jpeg', quality);
+    } else {
+        mostRecentCapture = canvas.toDataURL('image/png');
+    }
+
+    pendingCapture = null;
 }
 
 // The comma key can be used to toggle the splat rendering visibility after it's been loaded at least once
@@ -1268,8 +1299,15 @@ export default {
     },
     // need to do this in a particular order otherwise you might capture
     // the screenshot of the canvas after it's been cleared
-    captureScreenshot() {
-        shouldCapture = true;
+    captureScreenshot(options = {outputWidth: undefined, outputHeight: undefined, useJpgCompression: false, jpgQuality: 0.7}) {
+        pendingCapture = {
+            outputWidth: options.outputWidth,
+            outputHeight: options.outputHeight,
+            jpgCompression: {
+                useJpg: options.useJpgCompression,
+                quality: options.jpgQuality
+            }
+        };
     },
     getMostRecentScreenshot() {
         return mostRecentCapture;
