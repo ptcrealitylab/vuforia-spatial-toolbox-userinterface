@@ -1,6 +1,8 @@
 import {SensorActiveLens} from '../humanPose/SensorActiveLens.js';
 import {defaultLensProvider} from '../humanPose/LensProvider.js';
 import {isPointInsideWalls} from './isPointInsideWalls.js';
+import {scorePose} from './utils.js';
+import {baselineJoints} from './baselinePose.js';
 
 export class MotionStudySensors {
     constructor() {
@@ -148,6 +150,7 @@ export class MotionStudySensors {
             if (!clone.visible) {
                 continue;
             }
+            console.log(scorePose({joints: baselineJoints}, clone.pose));
             for (let sensorFrame of this.getSensorFrames()) {
                 if (this.playbackActivation[sensorFrame]) {
                     continue;
