@@ -67,6 +67,7 @@ export class MotionStudy {
         this.pinnedRegionCards = [];
         this.pinnedRegionCardToShow = null;
         this.activeRegionCard = null;
+        this.activeLens = null;
         this.nextStepNumber = 1;
         this.steps = [];
         this.pinnedRegionCardsContainer = null;
@@ -617,6 +618,9 @@ export class MotionStudy {
         this.stepLabel.element.classList.remove('minimized');
         this.stepLabel.setLabel(this.getStepLabel());
         this.stepLabel.setAccentColor(this.getStepColor());
+        if (this.activeLens) {
+            this.stepLabel.setActiveLens(this.activeLens);
+        }
         this.stepLabel.updateWindchillSection();
     }
 
@@ -624,6 +628,7 @@ export class MotionStudy {
      * @param {MotionStudyLens} lens - the lens to set as active
      */
     setActiveLens(lens) {
+        this.activeLens = lens;
         for (const regionCard of this.pinnedRegionCards) {
             regionCard.setActiveLens(lens);
         }
@@ -730,12 +735,18 @@ export class MotionStudy {
             if (desc.label) {
                 regionCard.setLabel(desc.label);
             }
+
             if (desc.label.startsWith('Step ') && !isNaN(desc.label.slice(5)) && !isNaN(parseInt(desc.label.slice(5)))) {
                 const stepNumber = parseInt(desc.label.slice(5));
                 if (stepNumber >= this.nextStepNumber) {
                     this.nextStepNumber = stepNumber + 1;
                 }
             }
+
+            if (this.activeLens) {
+                regionCard.setActiveLens(this.activeLens);
+            }
+
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
