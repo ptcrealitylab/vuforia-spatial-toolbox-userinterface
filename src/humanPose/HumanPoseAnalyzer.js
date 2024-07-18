@@ -658,7 +658,7 @@ export class HumanPoseAnalyzer {
             wallBrightness: 0.6
         });
         const points = [];
-        const poses = this.clones.all.map(clone => clone.pose); // TODO: get correct poses
+        const poses = this.clones.all.map(clone => clone.pose);
         poses.forEach(pose => {
             const timestamp = pose.timestamp;
             let currentPoint = pose.getJoint(jointName).position.clone();

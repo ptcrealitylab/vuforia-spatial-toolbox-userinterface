@@ -175,7 +175,6 @@ export class MotionStudy {
         const setInteractable = () => {
             this.tableView.setInteractable(this.tableViewMenu.showing && this.tableViewMenu.maximized)
         }
-        // TODO: remove old callbacks from previous table view
         this.tableViewMenu.on('show', () => setInteractable());
         this.tableViewMenu.on('maximize', () => setInteractable());
         this.tableViewMenu.on('hide', () => setInteractable());
