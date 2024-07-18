@@ -67,6 +67,16 @@ class TimeLens extends MotionStudyLens {
         }
         return this.getColorForJoint(pose.getJoint(JOINTS.HEAD));
     }
+
+    getTableViewJoints() {
+        return [
+            JOINTS.CHEST
+        ]
+    }
+
+    getTableViewValue(joint) {
+        return joint.timeFrac;
+    }
 }
 
 export {TimeLens};

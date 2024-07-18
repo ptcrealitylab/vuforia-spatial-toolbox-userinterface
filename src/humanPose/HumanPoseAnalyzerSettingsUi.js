@@ -76,6 +76,15 @@ export class HumanPoseAnalyzerSettingsUi {
                         </div>
                     </div>
                 </div>
+                <div class="hpa-settings-section" id="hpa-table-settings">
+                    <div class="hpa-settings-section-title">Table Settings</div>
+                    <div class="hpa-settings-section-body">
+                        <div class="hpa-settings-section-row">
+                            <div class="hpa-settings-section-row-label">Show Table View</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-table">
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -153,6 +162,15 @@ export class HumanPoseAnalyzerSettingsUi {
 
         this.root.querySelector('#hpa-settings-select-lens').addEventListener('change', (event) => {
             this.humanPoseAnalyzer.setActiveLensByName(event.target.value);
+        });
+
+        this.root.querySelector('#hpa-settings-toggle-table').addEventListener('change', (event) => {
+            if (event.target.checked) {
+                this.humanPoseAnalyzer.motionStudy.tableViewMenu.show();
+                this.humanPoseAnalyzer.motionStudy.tableViewMenu.maximize();
+            } else {
+                this.humanPoseAnalyzer.motionStudy.tableViewMenu.hide();
+            }
         });
        
         /*

@@ -151,4 +151,8 @@ export class AccelerationLens extends MotionStudyLens {
         });
         return MotionStudyColors.fade(this.getColorForAcceleration(maxAcceleration));
     }
+    
+    getTableViewValue(joint) {
+        return joint.accelerationMagnitude;
+    }
 }

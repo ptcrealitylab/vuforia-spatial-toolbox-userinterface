@@ -7,7 +7,10 @@ export class DraggableMenu {
         this.root.innerHTML = `
             <div class="draggable-menu-header">
                 <div class="draggable-menu-title">${title}</div>
-                <div class="draggable-menu-header-icon">_</div>
+                <div class="draggable-menu-header-icons">
+                    <div class="draggable-menu-fullscreen-icon draggable-menu-header-icon">⇱</div>  
+                    <div class="draggable-menu-minimize-icon draggable-menu-header-icon">_</div>                
+                </div>
             </div>
             <div class="draggable-menu-body"></div>
         `;
@@ -22,6 +25,7 @@ export class DraggableMenu {
             minimize: [],
             maximize: []
         };
+        this.isFullscreen = false;
         this.maximized = true;
         this.showing = true;
     }
@@ -62,6 +66,11 @@ export class DraggableMenu {
                 this.root.querySelector('.draggable-menu-header').removeEventListener('mouseup', mouseUpListener);
             };
             this.root.querySelector('.draggable-menu-header').addEventListener('mouseup', mouseUpListener);
+        });
+        
+        this.root.querySelector('.draggable-menu-fullscreen-icon').addEventListener('mousedown', event => {
+            this.toggleFullscreen();
+            event.stopPropagation();
         });
     }
 
@@ -168,14 +177,17 @@ export class DraggableMenu {
         const previousWidth = this.root.offsetWidth;
         this.root.classList.add('draggable-menu-minimized');
         this.root.style.width = `${previousWidth}px`;
-        this.root.querySelector('.draggable-menu-header-icon').innerText = '+';
+        this.root.querySelector('.draggable-menu-minimize-icon').innerText = '+';
+        this.root.querySelector('.draggable-menu-fullscreen-icon').classList.add('hidden');
         this.callbacks.minimize.forEach(cb => cb());
     }
 
     maximize() {
         this.maximized = true;
         this.root.classList.remove('draggable-menu-minimized');
-        this.root.querySelector('.draggable-menu-header-icon').innerText = '_';
+        this.root.style.width = '';
+        this.root.querySelector('.draggable-menu-minimize-icon').innerText = '_';
+        this.root.querySelector('.draggable-menu-fullscreen-icon').classList.remove('hidden');
         this.callbacks.maximize.forEach(cb => cb());
     }
 
@@ -184,6 +196,35 @@ export class DraggableMenu {
             this.maximize();
         } else {
             this.minimize();
+        }
+    }
+    
+    enterFullscreen() {
+        this.root.style.zIndex = '3000';
+        const navbar = document.querySelector('.desktopMenuBar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        const headerHeight = this.root.querySelector('.draggable-menu-header').offsetHeight;
+        this.body.style.maxHeight = `calc(100vh - ${navbarHeight + headerHeight}px)`;
+        this.root.style.maxWidth = `${window.innerWidth}px`;
+        this.root.querySelector('.draggable-menu-fullscreen-icon').innerText = '⇲';
+        this.isFullscreen = true;
+        this.snapToFitScreen();
+    }
+    
+    exitFullscreen() {
+        this.root.style.zIndex = '';
+        this.body.style.maxHeight = '';
+        this.root.style.maxWidth = '';
+        this.root.querySelector('.draggable-menu-fullscreen-icon').innerText = '⇱';
+        this.isFullscreen = false;
+        this.snapToFitScreen();
+    }
+    
+    toggleFullscreen() {
+        if (!this.isFullscreen) {
+            this.enterFullscreen();
+        } else {
+            this.exitFullscreen();
         }
     }
 

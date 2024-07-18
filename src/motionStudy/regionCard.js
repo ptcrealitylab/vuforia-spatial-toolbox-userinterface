@@ -117,6 +117,7 @@ export class RegionCard {
                 this.motionStudy.setActiveRegionCard(null);
                 this.motionStudy.setHighlightRegion(null);
                 this.motionStudy.setCursorTime(-1);
+                this.motionStudy.tableView.clearSelection();
                 this.displayActive = false;
             } else {
                 this.motionStudy.setActiveRegionCard(this);
@@ -125,6 +126,8 @@ export class RegionCard {
                     endTime: this.endTime,
                     label: this.getLabel(),
                 });
+                const row = this.motionStudy.tableView.rowNames.indexOf(this.getLabel()) + 1; // First row is headers
+                this.motionStudy.tableView.selectRow(row, false);
                 this.displayActive = true;
             }
             break;

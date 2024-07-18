@@ -1,12 +1,6 @@
 .table-view-wrapper {
     user-select: none;
 }
-.table-view-corner {
-    background-color: black;
-}
-.table-view-wrapper .table-view-corner.selected {
-    background-color: black;
-}
 .table-view-header {
     font-weight: bold;
 }
@@ -19,7 +13,6 @@
 .table-view-wrapper table {
     border-collapse: collapse;
     border: 2px solid white;
-    background-color: black;
     text-wrap: nowrap;
 }
 .table-view-wrapper th, .table-view-wrapper td {
