@@ -14,6 +14,7 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
 import { WebXRCamera, DefaultCamera, LayerConfig } from "./scene/Camera.js";
 import { Renderer } from "./scene/Renderer.js";
 import {setMatrixFromArray} from "./scene/utils.js";
+import { getPendingCapture } from './sceneCapture.js';
 
 (function(exports) {
 
@@ -286,8 +287,10 @@ import {setMatrixFromArray} from "./scene/utils.js";
         if (isProjectionMatrixSet) {
             mainRenderer.render();
 
-            // capture screenshots directly after render to ensure canvas isn't empty
-            if (pendingCapture) capture(pendingCapture.outputWidth, pendingCapture.outputHeight, pendingCapture.jpgCompression);
+            let pendingCapture = getPendingCapture('mainThreejsCanvas');
+            if (pendingCapture) {
+                pendingCapture.performCapture();
+            }
         }
     }
 
@@ -1247,52 +1250,6 @@ import {setMatrixFromArray} from "./scene/utils.js";
         return new THREE.Vector3(x, y, z);
     }
 
-    let pendingCapture = null;
-
-    function capture(outputWidth, outputHeight, compressionOptions) {
-        console.log('capturing......');
-        let canvas = document.getElementById('mainThreejsCanvas');
-
-        if (outputWidth || outputHeight) {
-            let originalWidth = canvas.width;
-            let originalHeight = canvas.height;
-
-            if (!outputHeight) {
-                // Calculate height to preserve aspect ratio
-                outputHeight = outputWidth * (originalHeight / originalWidth);
-            } else if (!outputWidth) {
-                // Calculate width to preserve aspect ratio
-                outputWidth = outputHeight * (originalWidth / originalHeight);
-            }
-
-            // Create an off-screen canvas for resizing
-            let offScreenCanvas = document.createElement('canvas');
-            offScreenCanvas.width = outputWidth;
-            offScreenCanvas.height = outputHeight;
-            let ctx = offScreenCanvas.getContext('2d');
-
-            // Draw the original canvas onto the off-screen canvas at the desired size
-            ctx.drawImage(canvas, 0, 0, offScreenCanvas.width, offScreenCanvas.height);
-            canvas = offScreenCanvas;
-        }
-
-        let mostRecentCapture = null;
-
-        if (compressionOptions.useJpg) {
-            // Get the data URL of the resized canvas as JPEG
-            let quality = compressionOptions.quality || 0.7; // Adjust the quality parameter (0.0 to 1.0) as needed
-            mostRecentCapture = canvas.toDataURL('image/jpeg', quality);
-        } else {
-            mostRecentCapture = canvas.toDataURL('image/png');
-        }
-
-        if (pendingCapture.promiseResolve) {
-            pendingCapture.promiseResolve(mostRecentCapture);
-            pendingCapture.promiseResolve = null;
-        }
-        pendingCapture = null;
-    }
-
     exports.initService = initService;
     exports.setCameraPosition = setCameraPosition;
     exports.addOcclusionGltf = addOcclusionGltf;
@@ -1335,22 +1292,4 @@ import {setMatrixFromArray} from "./scene/utils.js";
     exports.disableExternalSceneRendering = disableExternalSceneRendering;
     exports.RENDER_MODES = RENDER_MODES;
     exports.convertToVector3 = convertToVector3;
-    // need to do this in a particular order otherwise you might capture
-    // the screenshot of the canvas after it's been cleared
-    exports.captureScreenshot = (options = {outputWidth: undefined, outputHeight: undefined, useJpgCompression: false, jpgQuality: 0.7}) => {
-        if (pendingCapture) console.warn('wait for previous capture to finish before capturing again');
-
-        pendingCapture = {
-            outputWidth: options.outputWidth,
-            outputHeight: options.outputHeight,
-            jpgCompression: {
-                useJpg: options.useJpgCompression,
-                quality: options.jpgQuality
-            }
-        };
-
-        return new Promise((resolve) => {
-            pendingCapture.promiseResolve = resolve;
-        });
-    };
 })(realityEditor.gui.threejsScene);
