@@ -14,6 +14,7 @@ import AnchoredGroup from "./scene/AnchoredGroup.js";
 import { WebXRCamera, DefaultCamera, LayerConfig } from "./scene/Camera.js";
 import { Renderer } from "./scene/Renderer.js";
 import {setMatrixFromArray} from "./scene/utils.js";
+import { getPendingCapture } from './sceneCapture.js';
 
 (function(exports) {
 
@@ -285,6 +286,11 @@ import {setMatrixFromArray} from "./scene/utils.js";
         // only render the scene if the projection matrix is initialized
         if (isProjectionMatrixSet) {
             mainRenderer.render();
+
+            let pendingCapture = getPendingCapture('mainThreejsCanvas');
+            if (pendingCapture) {
+                pendingCapture.performCapture();
+            }
         }
     }
 
