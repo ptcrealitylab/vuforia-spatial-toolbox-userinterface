@@ -432,7 +432,7 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
             let endpoint = msgContent.publicData.aiApiKeys.endpoint;
             let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
-            realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false);
+            // realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false); // TODO: bring this back if needed
         }
 
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
