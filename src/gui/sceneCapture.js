@@ -2,7 +2,7 @@
  * Coordinates with canvases in the scene to asynchronously take a screenshot at the proper time in the render loop
  *
  * To make use of this with a new canvas, do the following:
- * 1. import { getPendingCapture } from './memory/sceneCapture.js';
+ * 1. import { getPendingCapture } from './sceneCapture.js';
  *    ...
  *    // In the main render loop, directly after finishing drawing, do:
  *    let pendingCapture = getPendingCapture('thisCanvasId');
@@ -10,7 +10,7 @@
  *      pendingCapture.performCapture();
  *    }
  * 2. Then when you want to take a screenshot of the canvas elsewhere, do:
- *    import { captureScreenshot } from '../../src/gui/memory/sceneCapture.js';
+ *    import { captureScreenshot } from '../../src/gui/sceneCapture.js';
  *    ...
  *    captureScreenshot('thisCanvasId', options).then(screenshotImageSrc => {
  *      console.log(screenshotImageSrc);
