@@ -88,6 +88,11 @@ createNameSpace("realityEditor.avatar");
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
 
+            if (!cachedWorldObject) {
+                // ensure we keep a reference to the world object even if no mesh file loads
+                cachedWorldObject = realityEditor.getObject(worldObjectKey);
+            }
+
             // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
             //       migrate our existing avatar to the server hosting the current world object that we're looking at
             if (myAvatarObject || myAvatarId) { return; }
@@ -459,30 +464,30 @@ createNameSpace("realityEditor.avatar");
             objectsToCheck.push(cachedOcclusionObject);
         }
 
-        if (cachedWorldObject && objectsToCheck.length > 0) {
-            // by default, three.js raycast returns coordinates in the top-level scene coordinate system
-            let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
+        if (!cachedWorldObject) return null;
+
+        // by default, three.js raycast returns coordinates in the top-level scene coordinate system
+        let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
+        if (raycastIntersects.length > 0) {
+            worldIntersectPoint = raycastIntersects[0].scenePoint;
+
+        // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
+        } else if (RAYCAST_AGAINST_GROUNDPLANE) {
+            let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
+            raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
+            groundPlane.updateWorldMatrix(true, false);
             if (raycastIntersects.length > 0) {
                 worldIntersectPoint = raycastIntersects[0].scenePoint;
-                
-            // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
-            } else if (RAYCAST_AGAINST_GROUNDPLANE) {
-                let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
-                groundPlane.updateWorldMatrix(true, false);
-                if (raycastIntersects.length > 0) {
-                    worldIntersectPoint = raycastIntersects[0].scenePoint;
-                }
             }
+        }
 
-            if (worldIntersectPoint) {
-                // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
-                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
-                matrix.invert();
-                worldIntersectPoint.applyMatrix4(matrix);
-            }
+        if (worldIntersectPoint) {
+            // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
+            let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+            let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+            realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
+            matrix.invert();
+            worldIntersectPoint.applyMatrix4(matrix);
         }
 
         return worldIntersectPoint; // these are relative to the world object
