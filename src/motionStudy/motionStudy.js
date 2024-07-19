@@ -1,6 +1,8 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 import {Timeline} from './timeline.js';
+import {DraggableMenu} from '../utilities/DraggableMenu.js';
+import {TableView} from '../utilities/TableView.js';
 import {
     RegionCard,
     RegionCardState,
@@ -9,7 +11,7 @@ import {HumanPoseAnalyzer} from '../humanPose/HumanPoseAnalyzer.js';
 import {
     postPersistRequest,
 } from './utils.js';
-import {ValueAddWasteTimeManager} from "./ValueAddWasteTimeManager.js";
+import {ValueAddWasteTimeManager} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
@@ -57,6 +59,7 @@ export class MotionStudy {
         this.stepLabels = [];
         this.pinnedRegionCardsContainer = null;
         this.exportLinkContainer = null;
+        this.tableViewMenu = null;
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
 
@@ -80,6 +83,102 @@ export class MotionStudy {
         this.stepLabelContainer.appendChild(this.stepLabel);
 
         this.container.appendChild(this.stepLabelContainer);
+    }
+
+    createTableView() {
+        this.tableViewMenu = new DraggableMenu('analytics-table-view-root', 'Table View', {});
+        // const rowNames = ['Step 1', 'Step 2', 'Step 3', 'Step 4'];
+        // const columnNames = ['Head', 'Torso', 'Left Arm', 'Right Arm', 'Left Leg', 'Right Leg'];
+        // const data = [
+        //     [4, 5, 1, 2, 6, 4],
+        //     [6, 4, 3, 3, 3, 5],
+        //     [5, 7, 4, 5, 7, 4],
+        //     [8, 8, 4, 2, 3, 3],
+        // ];
+        // this.tableView = new TableView(rowNames, columnNames, data, this.tableViewMenu.body);
+        this.updateTableView();
+        this.tableViewMenu.initialize();
+    }
+
+    // TODO: Clear modified data when card durations get changed, maybe save a hash of a card as a key for the data
+    updateTableView() {
+        this.tableViewMenu.body.innerHTML = ''; // Remove old table view if it exists
+        const lens = this.humanPoseAnalyzer.activeLens;
+        const jointNameMap = value => value.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
+        const jointNames = lens.getTableViewJoints().map(jointNameMap);
+        const invertJointNameMap = value => lens.getTableViewJoints().find(name => jointNameMap(name) === value);
+        const data = [];
+        const regionCards = this.pinnedRegionCards;
+        const stepNames = regionCards.map(card => card.getLabel());
+        if (regionCards.length === 0) {
+            this.tableViewMenu.body.innerHTML = '<p>Please record ≥1 step to see the table view.</p>'
+            return;
+        }
+        regionCards.forEach(step => {
+            const row = [];
+            const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(step.startTime, step.endTime);
+            poses.forEach((pose, i) => {
+                const jointValues = Object.values(pose.joints);
+                jointNames.forEach((jointName, j) => {
+                    const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
+                    if (i === 0) {
+                        row.push(lens.getTableViewValue(joint));
+                    } else {
+                        row[j] = row[j] + lens.getTableViewValue(joint);
+                    }
+                });
+            });
+            row.forEach((val, i) => {
+                row[i] = val / poses.length; // Average the values
+                row[i] = Math.round(row[i] * 10) / 10; // Round to tenth place
+            })
+            data.push(row);
+        });
+        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body);
+        this.tableView.onSelection(selection => {
+            const selectedRows = Array.from(new Set(selection.map(cell => cell.row)));
+            const selectedColumns = Array.from(new Set(selection.map(cell => cell.column)));
+            const regionCards = this.pinnedRegionCards.filter(card => selectedRows.includes(card.getLabel()));
+
+            if (selectedColumns.length === 1) {
+                const jointName = invertJointNameMap(selectedColumns[0]);
+                this.humanPoseAnalyzer.setActiveJointByName(jointName);
+                this.humanPoseAnalyzer.setHistoricalHistoryLinesVisible(false);
+            } else {
+                this.humanPoseAnalyzer.clearActiveJoint();
+                this.humanPoseAnalyzer.setHistoricalHistoryLinesVisible(true);
+            }
+
+            if (selectedRows.length === 1) {
+                const card = regionCards.find(card => card.getLabel() === selectedRows[0]);
+                this.setActiveRegionCard(card);
+                this.setHighlightRegion({
+                    startTime: card.startTime,
+                    endTime: card.endTime,
+                    label: card.getLabel()
+                }, false);
+            } else {
+                this.setActiveRegionCard(null);
+            }
+
+            if (selection.length === 0) {
+                this.setHighlightRegion({startTime: Number.MIN_VALUE, endTime: Number.MAX_VALUE}, false);
+            } else {
+                const startTime = regionCards.reduce((prev, curr) => Math.min(prev, curr.startTime), Number.MAX_VALUE);
+                const endTime = regionCards.reduce((prev, curr) => Math.max(prev, curr.endTime), Number.MIN_VALUE);
+                this.setHighlightRegion({startTime, endTime}, false);
+            }
+
+            // TODO: disable camera shortcuts while only one item is selected
+        });
+
+        const setInteractable = () => {
+            this.tableView.setInteractable(this.tableViewMenu.showing && this.tableViewMenu.maximized)
+        }
+        this.tableViewMenu.on('show', () => setInteractable());
+        this.tableViewMenu.on('maximize', () => setInteractable());
+        this.tableViewMenu.on('hide', () => setInteractable());
+        this.tableViewMenu.on('minimize', () => setInteractable());
     }
 
     createStepFileUploadComponent() {
@@ -136,6 +235,7 @@ export class MotionStudy {
         if (this.humanPoseAnalyzer.settingsUi) {
             this.humanPoseAnalyzer.settingsUi.hide();
         }
+        this.tableViewMenu.hide();
     }
 
     /**
@@ -231,6 +331,9 @@ export class MotionStudy {
         this.exportLinkContainer.appendChild(this.exportLinkPinnedRegionCards);
         this.exportLinkContainer.appendChild(this.exportLinkPoseData);
         this.pinnedRegionCardsContainer.appendChild(this.exportLinkContainer);
+
+        this.createTableView();
+
         this.createStepFileUploadComponent();
     }
 
@@ -547,6 +650,12 @@ export class MotionStudy {
             if (desc.label) {
                 regionCard.setLabel(desc.label);
             }
+            if (desc.label.startsWith('Step ') && !isNaN(desc.label.slice(5)) && !isNaN(parseInt(desc.label.slice(5)))) {
+                const stepNumber = parseInt(desc.label.slice(5));
+                if (stepNumber >= this.nextStepNumber) {
+                    this.nextStepNumber = stepNumber + 1;
+                }
+            }
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
@@ -641,6 +750,7 @@ export class MotionStudy {
         this.nextStepNumber += 1;
 
         this.updateStepLabel();
+        this.updateTableView();
 
         this.updateExportLinks();
 
@@ -768,6 +878,7 @@ export class MotionStudy {
         });
         this.updateExportLinks();
         this.writeMotionStudyData();
+        this.updateTableView();
     }
 
     updateExportLinks() {

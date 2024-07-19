@@ -1,6 +1,6 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import {JOINTS, JOINT_CONFIDENCE_THRESHOLD} from './constants.js';
-import {Spaghetti} from './spaghetti.js';
+import {Spaghetti, MetaSpaghetti} from './spaghetti.js';
 import {RebaLens} from "./RebaLens.js";
 import {OverallRebaLens} from "./OverallRebaLens.js";
 import {MuriLens} from "./MuriLens.js";
@@ -48,6 +48,8 @@ export class HumanPoseAnalyzer {
         this.activeLensIndex = 0;
 
         this.activeJointName = ""; // Used in the UI
+        this.activeJointSpaghetti = null;
+        
         this.poseRenderInstances = {};
 
         // auxiliary human objects supporting fused human objects
@@ -165,6 +167,13 @@ export class HumanPoseAnalyzer {
             parent.add(this.opaqueContainer);
         } else {
             realityEditor.gui.threejsScene.addToScene(this.opaqueContainer);
+        }
+        this.activeJointContainer = new THREE.Group();
+        this.activeJointContainer.visible = false;
+        if (parent) {
+            parent.add(this.activeJointContainer);
+        } else {
+            realityEditor.gui.threejsScene.addToScene(this.activeJointContainer);
         }
     }
 
@@ -611,6 +620,8 @@ export class HumanPoseAnalyzer {
             const nextSpaghetti = this.historyLines[lens.name].all[key];
             previousSpaghetti.transferStateTo(nextSpaghetti);
         });
+        
+        this.motionStudy.updateTableView();
 
         // Update UI
         if (this.settingsUi) {
@@ -636,7 +647,38 @@ export class HumanPoseAnalyzer {
         if (this.settingsUi) {
             this.settingsUi.setActiveJointByName(jointName);
         }
-        // TODO: Create history line for joint
+        if (this.activeJointSpaghetti) {
+            this.activeJointContainer.remove(this.activeJointSpaghetti);
+            this.activeJointSpaghetti = null;
+        }
+        this.activeJointSpaghetti = new MetaSpaghetti([], this.motionStudy, `${Math.random()}`, {
+            widthMm: 10,
+            heightMm: 10,
+            usePerVertexColors: true,
+            wallBrightness: 0.6
+        });
+        const points = [];
+        const poses = this.clones.all.map(clone => clone.pose);
+        poses.forEach(pose => {
+            const timestamp = pose.timestamp;
+            let currentPoint = pose.getJoint(jointName).position.clone();
+
+            const color = this.activeLens.getColorForJoint(pose.getJoint(jointName));
+
+            /** @type {SpaghettiMeshPathPoint} */
+            const historyPoint = {
+                x: currentPoint.x,
+                y: currentPoint.y,
+                z: currentPoint.z,
+                color,
+                timestamp,
+            };
+            points.push(historyPoint);
+        });
+
+        this.activeJointSpaghetti.addPoints(points);
+        this.activeJointContainer.add(this.activeJointSpaghetti);
+        this.activeJointContainer.visible = true;
     }
 
     /**
@@ -645,6 +687,19 @@ export class HumanPoseAnalyzer {
      */
     setActiveJoint(joint) {
         this.setActiveJointByName(joint.name);
+    }
+    
+    clearActiveJoint() {
+        this.activeJointName = "";
+        if (this.settingsUi) {
+            this.settingsUi.setActiveJointByName("");
+        }
+        console.log(`Active joint cleared`);
+        if (this.activeJointSpaghetti) {
+            this.activeJointContainer.remove(this.activeJointSpaghetti);
+            this.activeJointSpaghetti = null;
+        }
+        this.activeJointContainer.visible = false;
     }
 
     /**
@@ -663,6 +718,9 @@ export class HumanPoseAnalyzer {
                 for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
                     mesh.setHighlightRegion(null);
                 }
+                if (this.activeJointSpaghetti) {
+                    this.activeJointSpaghetti.setHighlightRegion(null);
+                }
             }
             // Clear prevAnimationState because we're no longer in a
             // highlighting state
@@ -678,6 +736,9 @@ export class HumanPoseAnalyzer {
         if (!fromSpaghetti) {
             for (let mesh of Object.values(this.historyLines[this.activeLens.name].all)) {
                 mesh.setHighlightRegion(highlightRegion);
+            }
+            if (this.activeJointSpaghetti) {
+                this.activeJointSpaghetti.setHighlightRegion(highlightRegion);
             }
         }
     }

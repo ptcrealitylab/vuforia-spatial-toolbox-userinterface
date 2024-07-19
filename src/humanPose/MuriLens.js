@@ -1,7 +1,7 @@
 import {MotionStudyLens} from "./MotionStudyLens.js";
 import {MuriScore} from "./MuriScore.js";
 import {MotionStudyColors} from "./MotionStudyColors.js";
-import {ERGO_ANGLES, ERGO_OFFSETS} from "./constants.js";
+import {ERGO_ANGLES, ERGO_OFFSETS, JOINTS} from "./constants.js";
 
 /**
  * MuriLens is a lens that calculates the Muri score for each pose in the history. Individual components of the score
@@ -97,5 +97,22 @@ export class MuriLens extends MotionStudyLens {
             return MotionStudyColors.undefined;
         }
         return pose.metadata.overallMuriColor;
+    }
+
+    getTableViewJoints() {
+        return [
+            JOINTS.HEAD,
+            JOINTS.CHEST,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_ELBOW,
+            JOINTS.RIGHT_ELBOW,
+            JOINTS.LEFT_WRIST,
+            JOINTS.RIGHT_WRIST
+        ]
+    }
+
+    getTableViewValue(joint) {
+        return joint.muriScore;
     }
 }
