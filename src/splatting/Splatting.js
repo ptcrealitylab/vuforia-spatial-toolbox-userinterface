@@ -6,6 +6,7 @@
  *  that can be found in the LICENSE_splat file in the thirdPartyCode directory.
  */
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { ConvexGeometry } from '../../thirdPartyCode/three/geometries/ConvexGeometry.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 
 let gsInitialized = false;
@@ -296,21 +297,29 @@ function createWorker(self) {
 
             if (doneLoading) {
                 let label = u_buffer[36 * i + 28 + 3];
+                const x = f_buffer[9 * i + 0];
+                const y = f_buffer[9 * i + 1];
+                const z = f_buffer[9 * i + 2];
+
                 if (!center_map.has(label)) {
                     center_map.set(
                         label,
                         {
-                            x: f_buffer[9 * i + 0],
-                            y: f_buffer[9 * i + 1],
-                            z: f_buffer[9 * i + 2],
+                            x,
+                            y,
+                            z,
+                            points: [{x, y, z}],
                             count: 1,
                         }
                     )
                 } else {
                     let info = center_map.get(label);
-                    info.x += f_buffer[9 * i + 0];
-                    info.y += f_buffer[9 * i + 1];
-                    info.z += f_buffer[9 * i + 2];
+                    info.x += x;
+                    info.y += y;
+                    info.z += z;
+                    if (info.count % 50 === 0 && (info.count < 20000 || label === 167)) {
+                        info.points.push({x, y, z});
+                    }
                     info.count++;
                 }
             }
@@ -1126,6 +1135,62 @@ async function main(initialFilePath) {
             const { texdata, texwidth, texheight } = e.data;
             labelInitialized = false;
             center_map_from_worker = e.data.center_map;
+
+            const floorOffset = realityEditor.gui.ar.areaCreator.calculateFloorOffset() // in mm units
+
+            for (let [key, value] of center_map_from_worker.entries()) {
+                if (key !== 167) {
+                    // continue;
+                }
+                let avgDx = 0;
+                let avgDy = 0;
+                let avgDz = 0;
+
+                for (const point of value.points) {
+                    avgDx += Math.abs(point.x - value.x);
+                    avgDy += Math.abs(point.y - value.y);
+                    avgDz += Math.abs(point.z - value.z);
+                }
+                avgDx /= value.points.length;
+                avgDy /= value.points.length;
+                avgDz /= value.points.length;
+
+                console.log('hull info', key, value, avgDx, avgDy, avgDz);
+                if (avgDx + avgDy + avgDz > 3) {
+                    continue;
+                }
+
+                let closePoints = value.points.filter(point => {
+                    let dx = Math.abs(point.x - value.x);
+                    let dy = Math.abs(point.y - value.y);
+                    let dz = Math.abs(point.z - value.z);
+                    return dx < avgDx * 2 &&
+                        dy < avgDy * 2 &&
+                        dz < avgDz * 2;
+                });
+
+                let hullGeo = new ConvexGeometry(closePoints.map(p => {
+                    return new THREE.Vector3(
+                        p.x * 1000,
+                        p.y * 1000 - floorOffset,
+                        p.z * 1000,
+                    );
+                }));
+                let hue = (key * 17) % 360;
+                let color = `hsl(${hue}, 100%, 50%)`;
+                let hullMat1 = new THREE.MeshBasicMaterial({
+                    transparent: true,
+                    opacity: 0.3,
+                    color,
+                });
+                let hullMat2 = new THREE.MeshBasicMaterial({
+                    wireframe: true,
+                    color,
+                });
+                realityEditor.gui.threejsScene.addToScene(new THREE.Mesh(hullGeo, hullMat1));
+                realityEditor.gui.threejsScene.addToScene(new THREE.Mesh(hullGeo, hullMat2));
+            }
+
             clearLabels();
             addLabels();
             // console.log(texdata)
