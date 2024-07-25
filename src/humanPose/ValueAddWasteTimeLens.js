@@ -74,4 +74,19 @@ export class ValueAddWasteTimeLens extends MotionStudyLens {
         }
         return MotionStudyColors.fade(colorFromValue(pose.getJoint(JOINTS.HEAD).valueAddWasteTimeValue));
     }
+
+    getTableViewJoints() {
+        return [
+            JOINTS.CHEST
+        ]
+    }
+
+    getTableViewValue(joint) {
+        if (joint.valueAddWasteTimeValue === ValueAddWasteTimeTypes.VALUE_ADD) {
+            return 1;
+        } else if (joint.valueAddWasteTimeValue === ValueAddWasteTimeTypes.WASTE_TIME) {
+            return 0;
+        }
+        return 0;
+    }
 }

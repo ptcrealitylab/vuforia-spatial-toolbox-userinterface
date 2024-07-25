@@ -1,0 +1,41 @@
+.table-view-wrapper {
+    user-select: none;
+}
+.table-view-header {
+    font-weight: bold;
+}
+.table-view-row-header {}
+.table-view-column-header {}
+.table-view-data-modified:after {
+    color: lightsteelblue;
+    content: '*';
+}
+.table-view-wrapper table {
+    border-collapse: collapse;
+    border: 2px solid white;
+    text-wrap: nowrap;
+}
+.table-view-wrapper th, .table-view-wrapper td {
+    border: 1px solid #AAAAAA;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+}
+.table-view-wrapper td:hover {
+    background-color: #4F4F4F;
+}
+.table-view-wrapper td.selected {
+    background-color: #3F3F3F;
+}
+.table-view-wrapper td.selected:hover { 
+    background-color: #6F6F6F;
+}
+.table-view-wrapper td.editing {
+    background-color: darkgreen;
+}
+.table-view-wrapper td.selected.editing {
+    background-color: darkgreen;
+}
+.table-view-wrapper td.selected.editing:hover {
+    background-color: green;
+}

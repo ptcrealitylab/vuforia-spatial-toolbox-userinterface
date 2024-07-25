@@ -66,4 +66,8 @@ export class RebaLens extends MotionStudyLens {
         }
         return pose.getJoint(JOINTS.HEAD).rebaColorOverall;
     }
+
+    getTableViewValue(joint) {
+        return joint.rebaScore;
+    }
 }

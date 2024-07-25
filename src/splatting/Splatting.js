@@ -7,6 +7,7 @@
  */
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
+import { getPendingCapture } from '../gui/sceneCapture.js';
 
 let gsInitialized = false;
 let gsActive = false;
@@ -1271,6 +1272,12 @@ async function main(initialFilePath) {
             gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+
+            let pendingCapture = getPendingCapture('gsCanvas');
+            if (pendingCapture) {
+                pendingCapture.performCapture();
+            }
+
         } else {
             gl.clear(gl.COLOR_BUFFER_BIT);
             document.getElementById("gsSpinner").style.display = "";

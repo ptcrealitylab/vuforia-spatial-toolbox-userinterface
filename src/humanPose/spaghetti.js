@@ -764,3 +764,9 @@ export class Spaghetti extends THREE.Group {
         return this.points[this.points.length - 1].timestamp;
     }
 }
+
+export class MetaSpaghetti extends Spaghetti {
+    isActive() {
+        return true;
+    }
+}

@@ -88,6 +88,11 @@ createNameSpace("realityEditor.avatar");
         realityEditor.worldObjects.onLocalizedWithinWorld(function(worldObjectKey) {
             if (worldObjectKey === realityEditor.worldObjects.getLocalWorldId()) { return; }
 
+            if (!cachedWorldObject) {
+                // ensure we keep a reference to the world object even if no mesh file loads
+                cachedWorldObject = realityEditor.getObject(worldObjectKey);
+            }
+
             // todo: for now, we don't create a new avatar object for each world we see, but in future we may want to
             //       migrate our existing avatar to the server hosting the current world object that we're looking at
             if (myAvatarObject || myAvatarId) { return; }
@@ -427,7 +432,7 @@ createNameSpace("realityEditor.avatar");
         subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
             let endpoint = msgContent.publicData.aiApiKeys.endpoint;
             let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
-            realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false);
+            // realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false); // TODO: bring this back if needed
         }
 
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
@@ -459,12 +464,12 @@ createNameSpace("realityEditor.avatar");
             objectsToCheck.push(cachedOcclusionObject);
         }
 
-        if (cachedWorldObject && objectsToCheck.length > 0) {
+        if (cachedWorldObject) {
             // by default, three.js raycast returns coordinates in the top-level scene coordinate system
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
                 worldIntersectPoint = raycastIntersects[0].scenePoint;
-                
+
             // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
                 let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
