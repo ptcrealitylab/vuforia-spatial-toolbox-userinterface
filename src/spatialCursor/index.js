@@ -655,7 +655,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
                 screenX = window.innerWidth / 2;
                 screenY = window.innerHeight / 2;
             }
-            worldIntersectPoint = await getRaycastCoordinates(screenX, screenY);
+            worldIntersectPoint = await getRaycastCoordinates(screenX, screenY, true, true);
             updateScaleFactor();
             updateOpacityFactor();
             updateInnerRadius();
