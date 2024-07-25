@@ -2362,12 +2362,9 @@ Logic Interface CSS
 }
 
 .tool-title-bar-overlay {
+    /* can add styles here to affect the visual style of the window cover while dragging */
     /*background-color: rgba(255, 0, 0, 0.2);*/
 }
-
-/*.tool-title-bar-dragging {*/
-/*    */
-/*}*/
 
 .tool-title-bar-iframe-background {
     position: fixed;

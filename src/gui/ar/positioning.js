@@ -762,6 +762,14 @@ realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectType
 
 let previousMoveDelays = {};
 
+/**
+ * Iframe APIs can trigger this to transform the tool into a window with a draggable "title bar" above it.
+ * This goes hand-in-hand with a non-fullscreen tool invoking the "full2d" mode, which removes the iframe cover
+ * so that the iframe's contents receive fully native/original pointer, keyboard, scroll, etc., events.
+ * By adding a title bar, we are still able to reposition the tool in the space when it's in this mode.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.addTitleBarToTool = function(objectKey, frameKey) {
     let toolContainer = globalDOMCache[`object${frameKey}`];
     let toolIframe = globalDOMCache[`iframe${frameKey}`];
@@ -806,15 +814,18 @@ realityEditor.gui.ar.positioning.addTitleBarToTool = function(objectKey, frameKe
     toolOverlay.style.height = titleBar.style.height;
     toolOverlay.style.top = titleBar.style.top;
 
-    // TODO: also add a background div that shows the size of the window, in case it's still loading
-
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     cornersContainer.classList.add('corners-title-bar');
 
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
 };
 
-// Adds a draggable bar above the tool, and removes the touchOverlay from the regular tool window
+/**
+ * Can be used to undo the effects of `addTitleBarToTool`
+ * Removes the draggable bar from above the tool, and restores the touchOverlay to cover the regular tool window
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.removeTitleBarFromTool = function(objectKey, frameKey) {
     let toolContainer = globalDOMCache[`object${frameKey}`];
     let toolIframe = globalDOMCache[`iframe${frameKey}`];
@@ -851,6 +862,11 @@ realityEditor.gui.ar.positioning.removeTitleBarFromTool = function(objectKey, fr
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
 };
 
+/**
+ * Adjusts the width and height of the windowed container and title bar, to match the size of the iframe.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.updateTitleBarIfNeeded = function(objectKey, frameKey) {
     let toolContainer = globalDOMCache[`object${frameKey}`];
     let toolIframe = globalDOMCache[`iframe${frameKey}`];
@@ -882,7 +898,11 @@ realityEditor.gui.ar.positioning.updateTitleBarIfNeeded = function(objectKey, fr
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
 }
 
-// Removes the draggable bar from above the tool, and restores the touchOverlay to cover the regular tool window
+/**
+ * Adjusts the width/height of the cyan corners that appear when you drag a tool, so they match the size of the iframe
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.updateMoveabilityCorners = function(objectKey, frameKey) {
     let toolOverlay = globalDOMCache[frameKey];
     if (!toolOverlay) return;
@@ -900,6 +920,11 @@ realityEditor.gui.ar.positioning.updateMoveabilityCorners = function(objectKey, 
     cornersContainer.style.height = `${height + cornerPadding * 2}px`;
 };
 
+/**
+ * Make the corners and overlay cover the entire iframe while dragging
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
     if (!globalDOMCache[frameKey]) return;
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
@@ -915,19 +940,20 @@ realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(obj
     toolOverlay.style.height = toolIframe.style.height;
     toolOverlay.style.top = toolIframe.style.top;
 
-    // const cornerPadding = 24;
-    // cornersContainer.style.width = `${width + cornerPadding * 2}px`;
-    // cornersContainer.style.height = `${height + cornerPadding * 2}px`;
-
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
 };
 
+/**
+ * Reset the corners and overlay to just cover the title bar again
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
 realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
     if (!globalDOMCache[frameKey]) return;
     let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
     if (!cornersContainer.classList.contains('corners-title-bar')) return;
 
-    console.log('reset the corners and overlay to just cover the title bar again');
+    // console.log('reset the corners and overlay to just cover the title bar again');
 
     let toolContainer = globalDOMCache[`object${frameKey}`];
 
@@ -942,18 +968,19 @@ realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded = function(obje
     toolOverlay.style.height = titleBar.style.height;
     toolOverlay.style.top = titleBar.style.top;
 
-    // const cornerPadding = 24;
-    // cornersContainer.style.width = `${width + cornerPadding * 2}px`;
-    // cornersContainer.style.height = `${height + cornerPadding * 2}px`;
-
     realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
-
 };
 
-// smooth the camera controls while there are full2D tools with title bars
+/**
+ * Call this with `true` in order to temporarily cover up all "unprotected" iframes with a div which will prevent
+ * events from reaching the iframe contents. For example, when you begin rotating the camera or activating a pointer
+ * beam, you'll want to cover the iframes so that the subsequent pointermove/pointerup events continue to work even
+ * if your mouse passes over a full2d windowed tool. When the gesture is done, be sure to call this again with `false`
+ * to remove these temporary protector divs so that the full2d windowed tools receive native events again.
+ * @param {boolean} shouldCover
+ */
 realityEditor.gui.ar.positioning.coverFull2DTools = function(shouldCover) {
     realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
-        // var thisFrame = realityEditor.getFrame(objectKey, frameKey);
         if (shouldCover) {
             realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(objectKey, frameKey);
         } else {
