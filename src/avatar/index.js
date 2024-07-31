@@ -486,14 +486,26 @@ createNameSpace("realityEditor.avatar");
             }
 
             if (worldIntersectPoint && worldIntersectPoint.point) {
+                let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
+                let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+
+                // worldIntersectPoint was converted to world coordinates. need to convert back to groundPlane coordinates in this system
+                let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
+                groundPlaneRelativeToWorldThree.invert();
+
+                // convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                // convertedEndPosition.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
+                // convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
+
                 // let point = worldIntersectPoint.point;
                 // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
-                // let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-                let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
-                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, groundPlaneSceneNode.worldMatrix);
+                // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, groundPlaneSceneNode.worldMatrix);
                 // matrix.invert();
-                worldIntersectPoint.point.applyMatrix4(matrix);
+                // worldIntersectPoint.point.applyMatrix4(matrix);
+                worldIntersectPoint.point.applyMatrix4(groundPlaneRelativeToWorldThree);
             }
         }
 
