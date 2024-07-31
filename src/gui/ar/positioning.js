@@ -760,6 +760,235 @@ realityEditor.gui.ar.positioning.getObjectPositionsOfTypes = function(objectType
     return dataToSend;
 };
 
+let previousMoveDelays = {};
+
+/**
+ * Iframe APIs can trigger this to transform the tool into a window with a draggable "title bar" above it.
+ * This goes hand-in-hand with a non-fullscreen tool invoking the "full2d" mode, which removes the iframe cover
+ * so that the iframe's contents receive fully native/original pointer, keyboard, scroll, etc., events.
+ * By adding a title bar, we are still able to reposition the tool in the space when it's in this mode.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.addTitleBarToTool = function(objectKey, frameKey) {
+    let toolContainer = globalDOMCache[`object${frameKey}`];
+    let toolIframe = globalDOMCache[`iframe${frameKey}`];
+    let toolOverlay = globalDOMCache[frameKey];
+    if (!toolContainer || !toolIframe || !toolOverlay) return;
+
+    let existingTitleBar = toolContainer.querySelector('.tool-title-bar');
+    if (existingTitleBar) return;
+
+    let thisTool = realityEditor.getFrame(objectKey, frameKey);
+    previousMoveDelays[frameKey] = thisTool.moveDelay;
+    thisTool.moveDelay = 10;
+
+    // create a new domElement to visually look like the tool title bar
+    let titleBar = document.createElement('div');
+    titleBar.classList.add('tool-title-bar');
+    let titleBarDragHandleIcon = document.createElement('img');
+    titleBarDragHandleIcon.classList.add('tool-title-bar-icon');
+    titleBarDragHandleIcon.src = 'svg/draggable-handle-white.svg';
+    titleBar.appendChild(titleBarDragHandleIcon);
+    titleBar.style.width = toolIframe.style.width;
+    // titleBar.style.height = toolIframe.style.height;
+    titleBar.style.left = toolIframe.style.left;
+    let top = parseInt(toolIframe.style.top)
+    titleBar.style.top = `${(top - 70)}px`;
+    titleBar.style.height = '50px';
+
+    toolContainer.appendChild(titleBar);
+
+    // add a semi-transparent background behind the iframe, in case it takes awhile to load
+    let iframeBackground = document.createElement('div');
+    iframeBackground.classList.add('tool-title-bar-iframe-background');
+    iframeBackground.style.width = toolIframe.style.width;
+    iframeBackground.style.height = toolIframe.style.height;
+    iframeBackground.style.top = toolIframe.style.top;
+    iframeBackground.style.left = toolIframe.style.left;
+    toolContainer.insertBefore(iframeBackground, toolContainer.firstChild); // add in the beginning so it renders behind the iframe
+
+    // reshape the tool overlay to cover the new title bar element, so existing touch events work on title bar
+    toolOverlay.classList.add('tool-title-bar-overlay');
+    // toolOverlay.classList.remove('deactivatedIframeOverlay');
+    toolOverlay.style.height = titleBar.style.height;
+    toolOverlay.style.top = titleBar.style.top;
+
+    let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
+    cornersContainer.classList.add('corners-title-bar');
+
+    realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
+};
+
+/**
+ * Can be used to undo the effects of `addTitleBarToTool`
+ * Removes the draggable bar from above the tool, and restores the touchOverlay to cover the regular tool window
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.removeTitleBarFromTool = function(objectKey, frameKey) {
+    let toolContainer = globalDOMCache[`object${frameKey}`];
+    let toolIframe = globalDOMCache[`iframe${frameKey}`];
+    let toolOverlay = globalDOMCache[frameKey];
+    if (!toolContainer || !toolIframe || !toolOverlay) return;
+    let titleBar = toolContainer.querySelector('.tool-title-bar');
+    if (!titleBar) return;
+
+    let thisTool = realityEditor.getFrame(objectKey, frameKey);
+    if (typeof previousMoveDelays[frameKey] !== 'undefined') {
+        thisTool.moveDelay = previousMoveDelays[frameKey];
+    }
+
+    // remove the title bar
+    toolContainer.removeChild(titleBar);
+
+    // remove the iframe background
+    let iframeBackground = toolContainer.querySelector('.tool-title-bar-iframe-background');
+    if (iframeBackground) {
+        toolContainer.removeChild(iframeBackground);
+    }
+
+    // reshape the tool overlay to cover the iframe again
+    toolOverlay.classList.remove('tool-title-bar-overlay');
+    // toolOverlay.classList.remove('deactivatedIframeOverlay');
+    toolOverlay.style.height = toolIframe.style.height;
+    toolOverlay.style.top = toolIframe.style.top;
+
+    // TODO: also remove the background div that shows the size of the window
+
+    let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
+    cornersContainer.classList.remove('corners-title-bar');
+
+    realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
+};
+
+/**
+ * Adjusts the width and height of the windowed container and title bar, to match the size of the iframe.
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.updateTitleBarIfNeeded = function(objectKey, frameKey) {
+    let toolContainer = globalDOMCache[`object${frameKey}`];
+    let toolIframe = globalDOMCache[`iframe${frameKey}`];
+    let toolOverlay = globalDOMCache[frameKey];
+    if (!toolContainer || !toolIframe || !toolOverlay) return;
+    let titleBar = toolContainer.querySelector('.tool-title-bar');
+    if (!titleBar) return;
+
+    // make sure that the title bar's width and position still matches the iframe after it loaded
+    titleBar.style.width = toolIframe.style.width;
+    // titleBar.style.height = toolIframe.style.height;
+    titleBar.style.left = toolIframe.style.left;
+    let top = parseInt(toolIframe.style.top)
+    titleBar.style.top = `${(top - 70)}px`;
+    titleBar.style.height = '50px';
+
+    toolOverlay.style.height = titleBar.style.height;
+    toolOverlay.style.top = titleBar.style.top;
+
+    // also updates the iframe background
+    let iframeBackground = toolContainer.querySelector('.tool-title-bar-iframe-background');
+    if (iframeBackground) {
+        iframeBackground.style.width = toolIframe.style.width;
+        iframeBackground.style.height = toolIframe.style.height;
+        iframeBackground.style.top = toolIframe.style.top;
+        iframeBackground.style.left = toolIframe.style.left;
+    }
+
+    realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
+}
+
+/**
+ * Adjusts the width/height of the cyan corners that appear when you drag a tool, so they match the size of the iframe
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.updateMoveabilityCorners = function(objectKey, frameKey) {
+    let toolOverlay = globalDOMCache[frameKey];
+    if (!toolOverlay) return;
+
+    let width = parseInt(toolOverlay.style.width);
+    let height = parseInt(toolOverlay.style.height);
+    // console.log('size moveability corners: ' + frameKey, width, height);
+
+    let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
+    // cornersContainer.classList.add('corners-title-bar');
+
+    // adjust move-ability corner UI to match true width and height of frame overlay
+    const cornerPadding = 24;
+    cornersContainer.style.width = `${width + cornerPadding * 2}px`;
+    cornersContainer.style.height = `${height + cornerPadding * 2}px`;
+};
+
+/**
+ * Make the corners and overlay cover the entire iframe while dragging
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
+    if (!globalDOMCache[frameKey]) return;
+    let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
+    if (!cornersContainer.classList.contains('corners-title-bar')) return;
+
+    // console.log('make the corners and overlay cover the entire iframe while dragging');
+
+    let toolIframe = globalDOMCache[`iframe${frameKey}`];
+    let toolOverlay = globalDOMCache[frameKey];
+
+    if (!toolOverlay || !toolIframe) return;
+
+    toolOverlay.style.height = toolIframe.style.height;
+    toolOverlay.style.top = toolIframe.style.top;
+
+    realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
+};
+
+/**
+ * Reset the corners and overlay to just cover the title bar again
+ * @param {string} objectKey
+ * @param {string} frameKey
+ */
+realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded = function(objectKey, frameKey) {
+    if (!globalDOMCache[frameKey]) return;
+    let cornersContainer = globalDOMCache[frameKey].querySelector('.corners');
+    if (!cornersContainer.classList.contains('corners-title-bar')) return;
+
+    // console.log('reset the corners and overlay to just cover the title bar again');
+
+    let toolContainer = globalDOMCache[`object${frameKey}`];
+
+    if (!toolContainer) return;
+
+    let titleBar = toolContainer.querySelector('.tool-title-bar');
+    // let toolIframe = globalDOMCache[`iframe${frameKey}`];
+    let toolOverlay = globalDOMCache[frameKey];
+
+    if (!toolOverlay || !titleBar) return;
+
+    toolOverlay.style.height = titleBar.style.height;
+    toolOverlay.style.top = titleBar.style.top;
+
+    realityEditor.gui.ar.positioning.updateMoveabilityCorners(objectKey, frameKey);
+};
+
+/**
+ * Call this with `true` in order to temporarily cover up all "unprotected" iframes with a div which will prevent
+ * events from reaching the iframe contents. For example, when you begin rotating the camera or activating a pointer
+ * beam, you'll want to cover the iframes so that the subsequent pointermove/pointerup events continue to work even
+ * if your mouse passes over a full2d windowed tool. When the gesture is done, be sure to call this again with `false`
+ * to remove these temporary protector divs so that the full2d windowed tools receive native events again.
+ * @param {boolean} shouldCover
+ */
+realityEditor.gui.ar.positioning.coverFull2DTools = function(shouldCover) {
+    realityEditor.forEachFrameInAllObjects(function(objectKey, frameKey) {
+        if (shouldCover) {
+            realityEditor.gui.ar.positioning.updateCornersForTitleBarIfNeeded(objectKey, frameKey);
+        } else {
+            realityEditor.gui.ar.positioning.resetCornersForTitleBarIfNeeded(objectKey, frameKey);
+        }
+    });
+}
+
 // adjusts the screenZ (modelViewProjection[14]) to give values that correctly determine stacking order based on distance
 // to screen. if you don't do this, CSS-3D tools/icons have opposite stacking order compared to how you might expect.
 realityEditor.gui.ar.positioning.getFinalMatrixScreenZ = function(originalScreenZ, thisIsBeingEdited = false, shouldRenderFramesInNodeView = false) {
