@@ -622,7 +622,8 @@ createNameSpace("realityEditor.avatar");
 
         // before the `await getRaycastCoordinates`, store this down event as a pending beam on,
         // so that after the await, we can check if any beamOff events happened during the async call
-        pendingBeamOnCalls[realityEditor.device.utilities.uuidTimeShort()] = true;
+        let callId = realityEditor.device.utilities.uuidTimeShort();
+        pendingBeamOnCalls[callId] = true;
 
         let touchState = {
             isPointerDown: isPointerDown,
@@ -637,7 +638,7 @@ createNameSpace("realityEditor.avatar");
 
         if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
 
-        if (!pendingBeamOnCalls[id]) {
+        if (!pendingBeamOnCalls[callId]) {
             console.log('cancel pending beam on - we got a beam off after initiating it');
             return;
         }
