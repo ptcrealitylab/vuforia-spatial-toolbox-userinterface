@@ -35,6 +35,8 @@ createNameSpace("realityEditor.avatar");
     };
     let lastBeamOnTimestamp = null;
 
+    let pendingBeamOnCalls = {};
+
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let myUsername = window.localStorage.getItem('manuallyEnteredUsername') || null;
     let myProviderId = '';
@@ -618,6 +620,10 @@ createNameSpace("realityEditor.avatar");
     async function setBeamOn(screenX, screenY) {
         isPointerDown = true;
 
+        // before the `await getRaycastCoordinates`, store this down event as a pending beam on,
+        // so that after the await, we can check if any beamOff events happened during the async call
+        pendingBeamOnCalls[realityEditor.device.utilities.uuidTimeShort()] = true;
+
         let touchState = {
             isPointerDown: isPointerDown,
             screenX: screenX,
@@ -630,6 +636,11 @@ createNameSpace("realityEditor.avatar");
         lastBeamOnTimestamp = Date.now();
 
         if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
+
+        if (!pendingBeamOnCalls[id]) {
+            console.log('cancel pending beam on - we got a beam off after initiating it');
+            return;
+        }
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
@@ -670,6 +681,9 @@ createNameSpace("realityEditor.avatar");
 
         // ensure that on non-desktop devices, the spatial cursor position resets to center of view
         realityEditor.spatialCursor.updatePointerSnapMode(false);
+
+        // prevent any previously pending beamOn calls from triggering after the beamOff call
+        pendingBeamOnCalls = {};
 
         debugDataSent();
     }
