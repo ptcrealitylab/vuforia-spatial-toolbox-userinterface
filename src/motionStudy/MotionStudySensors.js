@@ -150,7 +150,7 @@ export class MotionStudySensors {
             if (!clone.visible) {
                 continue;
             }
-            console.log(scorePose({joints: baselineJoints}, clone.pose));
+            // console.log(scorePose({joints: baselineJoints}, clone.pose));
             for (let sensorFrame of this.getSensorFrames()) {
                 if (this.playbackActivation[sensorFrame]) {
                     continue;
