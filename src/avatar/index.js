@@ -429,10 +429,11 @@ createNameSpace("realityEditor.avatar");
             // realityEditor.ai.pushDialogueFromOtherUser(msgContent.publicData.aiDialogue);
         }
         
-        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (msgContent) => {
-            let endpoint = msgContent.publicData.aiApiKeys.endpoint;
-            let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
-            // realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false); // TODO: bring this back if needed
+        subscriptionCallbacks[utils.PUBLIC_DATA_KEYS.aiApiKeys] = (_msgContent) => {
+            // TODO: bring this back if needed
+            // let endpoint = msgContent.publicData.aiApiKeys.endpoint;
+            // let azureApiKey = msgContent.publicData.aiApiKeys.azureApiKey;
+            // realityEditor.network.postAiApiKeys(endpoint, azureApiKey, false);
         }
 
         network.subscribeToAvatarPublicData(thatAvatarObject, subscriptionCallbacks);
