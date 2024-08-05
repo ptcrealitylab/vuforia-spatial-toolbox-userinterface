@@ -920,6 +920,15 @@ export class RegionCard {
         }
 
         let points = getConvexHullOfPoses(this.poses);
+        let targetJoints = this.poses[0].joints;
+        let targetPose = {};
+        for (let jointName in targetJoints) {
+            targetPose[jointName] = {
+                x: targetJoints[jointName].position.x,
+                y: targetJoints[jointName].position.y,
+                z: targetJoints[jointName].position.z,
+            };
+        }
 
         let addedTool = realityEditor.gui.pocket.createFrame('spatialSensorPolygon', {
             noUserInteraction: true,
@@ -936,6 +945,10 @@ export class RegionCard {
             realityEditor.network.realtime.writePublicData(
                 addedTool.objectId, frameKey, frameKey + 'storage',
                 'points', points
+            );
+            realityEditor.network.realtime.writePublicData(
+                addedTool.objectId, frameKey, frameKey + 'storage',
+                'pose', targetPose
             );
             realityEditor.network.realtime.writePublicData(
                 addedTool.objectId, frameKey, frameKey + 'storage',
