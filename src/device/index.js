@@ -498,6 +498,7 @@ realityEditor.device.postEventIntoIframe = async function(event, frameKey, nodeK
         pointerId: event.pointerId,
         pointerType: event.pointerType,
         button: event.button,
+        buttons: event.buttons,
         x: newCoords.x,
         y: newCoords.y
     }
