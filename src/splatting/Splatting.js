@@ -8,6 +8,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 import { getPendingCapture } from '../gui/sceneCapture.js';
+import { remap } from "../utilities/MathUtils.js";
 
 let gsInitialized = false;
 let gsActive = false;
@@ -889,34 +890,6 @@ async function main(initialFilePath) {
     window.addEventListener("resize", resize);
     resize();
 
-    const clamp = (x, low, high) => {
-        return Math.min(Math.max(x, low), high);
-    }
-
-    const remap01 = (x, low, high) => {
-        return clamp((x - low) / (high - low), 0, 1);
-    }
-
-    const _remap01Curve1 = (x, low, high) => {
-        let r = remap01(x, low, high);
-        let a = 2;
-        return (1 - r) * Math.pow(r, a) + r * (-Math.pow(r - 1, a) + 1);
-    }
-
-    const remap01Curve2 = (x, low, high) => {
-        let r = remap01(x, low, high);
-        let a = 2;
-        return -Math.pow(r - 1, a) + 1;
-    }
-
-    const _remap = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
-    }
-
-    const _remapCurve = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01Curve2(x, lowIn, highIn);
-    }
-
     worker.onmessage = (e) => {
         if (e.data.buffer) {
             splatData = new Uint8Array(e.data.buffer);
@@ -1060,8 +1033,8 @@ async function main(initialFilePath) {
                 const pixelBuffer = new Float32Array(4); // 4 components for RGBA
                 gl.readPixels(Math.floor(uMouseScreen[0]), Math.floor(innerHeight - uMouseScreen[1]), 1, 1, gl.RGBA, gl.FLOAT, pixelBuffer);
                 let camDepth = pixelBuffer[0];
-                let xOffset = _remap(uMouse[0], -1, 1, -camNearWidth / 2, camNearWidth / 2) / camNear * camDepth;
-                let yOffset = _remap(uMouse[1], -1, 1, camNearHeight / 2, -camNearHeight / 2) / camNear * camDepth;
+                let xOffset = remap(uMouse[0], -1, 1, -camNearWidth / 2, camNearWidth / 2) / camNear * camDepth;
+                let yOffset = remap(uMouse[1], -1, 1, camNearHeight / 2, -camNearHeight / 2) / camNear * camDepth;
                 let camSpacePosition = [xOffset, yOffset, camDepth, 1];
                 let worldSpacePosition = multiply4v(resultMatrix_1, camSpacePosition);
                 vWorld.set(worldSpacePosition[0], worldSpacePosition[1], worldSpacePosition[2]);

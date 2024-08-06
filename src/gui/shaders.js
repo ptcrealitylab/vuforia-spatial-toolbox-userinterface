@@ -1,4 +1,5 @@
 import {ShaderChunk} from "../../thirdPartyCode/three/three.module.js";
+import {mathUtilShader} from "../utilities/MathUtils.js";
 
 createNameSpace("realityEditor.gui.shaders");
 
@@ -21,13 +22,7 @@ createNameSpace("realityEditor.gui.shaders");
             return vec3(255.0 * f0, 255.0 * f8, 255.0 * f4) / 255.0;
         }
      
-        float Remap01 (float x, float low, float high) {
-            return clamp((x - low) / (high - low), 0., 1.);
-        }
-    
-        float Remap (float x, float lowIn, float highIn, float lowOut, float highOut) {
-            return lowOut + (highOut - lowOut) * Remap01(x, lowIn, highIn);
-        }
+        ${mathUtilShader}
     `;
     function heightMapVertexShader() {
         // return `
