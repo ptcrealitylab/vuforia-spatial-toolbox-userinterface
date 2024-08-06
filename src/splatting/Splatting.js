@@ -913,7 +913,7 @@ async function main(initialFilePath) {
         return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
     }
 
-    const remapCurve = (x, lowIn, highIn, lowOut, highOut) => {
+    const _remapCurve = (x, lowIn, highIn, lowOut, highOut) => {
         return lowOut + (highOut - lowOut) * remap01Curve2(x, lowIn, highIn);
     }
 
