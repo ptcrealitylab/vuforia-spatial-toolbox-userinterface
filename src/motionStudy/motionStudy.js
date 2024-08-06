@@ -1412,6 +1412,37 @@ export class MotionStudy {
     }
 
     /**
+     * Shows any region card matching the label of
+     * regionCardToMatch
+     * @param {RegionCard} regionCardToMatch
+     * @return {boolean} whether a card was shown
+     */
+    showMatchingRegionCard(regionCardToMatch) {
+        // const idToMatch = regionCardToMatch.step?.id;
+        const labelToMatch = regionCardToMatch.getLabel();
+        if (!labelToMatch) {
+            return false;
+        }
+
+        const matchingRegionCard = this.pinnedRegionCards.find((regionCard) => {
+            const label = regionCard.getLabel();
+            if (!label) {
+                return false;
+            }
+
+            return label === labelToMatch;
+        });
+
+        if (!matchingRegionCard) {
+            return false;
+        }
+
+        matchingRegionCard.show();
+
+        return true;
+    }
+
+    /**
      * @param {RegionCard} timelineRegionCard
      */
     setTimelineRegionCard(timelineRegionCard) {

@@ -15,9 +15,9 @@ const AnimationState = {
  * Time is in ms unless otherwise specified
  */
 export class Animation {
-    constructor(humanPoseAnalyzer, motionStudy, startTime, endTime) {
+    constructor(humanPoseAnalyzer, startTime, endTime) {
         this.humanPoseAnalyzer = humanPoseAnalyzer;
-        this.motionStudy = motionStudy;
+        this.motionStudy = this.humanPoseAnalyzer.motionStudy;
 
         this.startTime = startTime;
         this.endTime = endTime;
@@ -25,6 +25,7 @@ export class Animation {
         this.cursorTime = this.startTime;
         this.lastUpdate = -1;
         this.playing = true;
+        this.looping = true;
 
         this.animationState = AnimationState.noVideo;
 
@@ -59,6 +60,23 @@ export class Animation {
         });
     }
 
+    restart() {
+        this.cursorTime = this.startTime;
+        this.lastUpdate = -1;
+        this.playing = true;
+
+        if (this.isVideoPlayerInControl(this.cursorTime)) {
+            this.startVideoPlayback(this.cursorTime);
+        }
+    }
+
+    pause() {
+        this.playing = false;
+        if (this.videoPlayer) {
+            this.videoPlayer.colorVideo.pause()
+        }
+    }
+
     update(time) {
         if (this.lastUpdate < 0) {
             this.lastUpdate = time;
@@ -74,11 +92,21 @@ export class Animation {
         }
         let offset = this.cursorTime - this.startTime;
         if (offset > duration) {
-            offset = 0;
-            this.cursorTime = this.startTime;
-            // Reset animation state
-            if (this.animationState === AnimationState.video) {
-                this.stopVideoPlayback();
+            if (this.looping) {
+                // Start over at beginning
+                offset = 0;
+                this.cursorTime = this.startTime;
+                // Reset animation state
+                if (this.animationState === AnimationState.video) {
+                    this.stopVideoPlayback();
+                }
+            } else {
+                // Pause at end
+                offset = duration;
+                this.cursorTime = this.endTime;
+                if (this.animationState === AnimationState.video) {
+                    this.stopVideoPlayback();
+                }
             }
         }
 
