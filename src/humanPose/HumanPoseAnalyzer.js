@@ -1069,7 +1069,7 @@ export class HumanPoseAnalyzer {
         if (this.animation) {
             cursorTime = this.animation.cursorTime;
         }
-        this.animation = new Animation(this, this.motionStudy, start, end);
+        this.animation = new Animation(this, start, end);
         if (cursorTime > start && cursorTime < end) {
             this.animation.cursorTime = cursorTime;
         }

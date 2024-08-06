@@ -127,6 +127,7 @@ export class RegionCard {
                 this.displayActive = false;
             } else {
                 this.show();
+                realityEditor.motionStudy.showMatchingRegionCards(this);
                 // this.createPolygonSensor();
             }
             break;
