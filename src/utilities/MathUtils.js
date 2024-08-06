@@ -26,11 +26,11 @@ export function remap(x, lowIn, highIn, lowOut, highOut) {
 
 /**
  * function that generates an s-curve ∈ [0, 1], sort of like:
- * a ∈ [2, 4, 6, 8, 10, ...]. a ↑ --> curve approaches y = x
      __
     /
    |
 __/
+ * a ∈ [2, 4, 6, 8, 10, ...]. a ↑ --> curve approaches y = x
 **/
 export function remap01CurveS(x, low, high, a = 2) {
     let r = remap01(x, low, high);
@@ -40,11 +40,11 @@ export function remap01CurveS(x, low, high, a = 2) {
 
 /**
  * function that generates a curve within [0, 1] that tapers off, sort of like:
- * a ∈ [2, 4, 6, 8, 10, ...]. a ↑ --> curve initial slope becomes bigger
     __
   /
  |
 |
+ * a ∈ [2, 4, 6, 8, 10, ...]. a ↑ --> curve initial slope becomes bigger
 **/
 export function remap01CurveEaseOut(x, low, high, a = 2) {
     let r = remap01(x, low, high);
