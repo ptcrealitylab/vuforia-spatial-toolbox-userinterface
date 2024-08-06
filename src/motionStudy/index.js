@@ -1,8 +1,9 @@
 createNameSpace("realityEditor.motionStudy");
 
-import {MotionStudy} from './motionStudy.js'
-import {MotionStudyMobile} from './MotionStudyMobile.js'
-import {MotionStudySensors} from './MotionStudySensors.js'
+import {MotionStudy} from './motionStudy.js';
+import {MotionStudyMobile} from './MotionStudyMobile.js';
+import {MotionStudySensors} from './MotionStudySensors.js';
+import {StepAnimationManager} from './StepAnimationManager.js';
 
 (function(exports) {
     /**
@@ -21,6 +22,7 @@ import {MotionStudySensors} from './MotionStudySensors.js'
     let activeFrame = '';
     let motionStudyByFrame = {};
     let sensors = new MotionStudySensors();
+    let synchronizationEnabled = true;
     
     function getDefaultMotionStudy() {
         return motionStudyByFrame[noneFrame];
@@ -77,6 +79,43 @@ import {MotionStudySensors} from './MotionStudySensors.js'
             activeFrame = noneFrame;
         }
     }
+
+    /**
+     * For every current motion study, show any region card with
+     * step info matching regionCard
+     * @param {RegionCard} regionCard
+     */
+    function showMatchingRegionCards(regionCard) {
+        if (!synchronizationEnabled) {
+            return;
+        }
+        const animations = [];
+
+        for (const frameKey in motionStudyByFrame) {
+            const motionStudy = motionStudyByFrame[frameKey];
+            let didShow = motionStudy.showMatchingRegionCard(regionCard);
+            if (!didShow) {
+                continue;
+            }
+            animations.push(motionStudy.humanPoseAnalyzer.animation);
+        }
+
+        if (animations.length > 0) {
+            let stepAnimationManager = new StepAnimationManager(animations);
+
+            stepAnimationManager.update();
+        }
+    }
+    exports.showMatchingRegionCards = showMatchingRegionCards;
+
+    /**
+     * Whether to synchronize across motion studies
+     * @param {boolean} enabled
+     */
+    function setSynchronizationEnabled(enabled) {
+        synchronizationEnabled = enabled;
+    }
+    exports.setSynchronizationEnabled = setSynchronizationEnabled;
 
     function initService() {
         activeFrame = noneFrame;
