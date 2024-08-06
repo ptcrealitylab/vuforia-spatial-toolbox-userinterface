@@ -168,10 +168,6 @@ createNameSpace("realityEditor.avatar.network");
     function sendAiDialogue(keys, aiDialogueHTML) {
         realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.aiDialogue, aiDialogueHTML);
     }
-    
-    function sendAiApiKeys(keys, aiApiKeys) {
-        realityEditor.network.realtime.writePublicData(keys.objectKey, keys.frameKey, keys.nodeKey, realityEditor.avatar.utils.PUBLIC_DATA_KEYS.aiApiKeys, aiApiKeys);
-    }
 
     /**
      * Helper function to provide insight into the fps limiter
@@ -261,7 +257,6 @@ createNameSpace("realityEditor.avatar.network");
     exports.sendSpatialCursorState = sendSpatialCursorState;
     exports.sendUserProfile = sendUserProfile;
     exports.sendAiDialogue = sendAiDialogue;
-    exports.sendAiApiKeys = sendAiApiKeys;
     exports.processPendingAvatarInitializations = processPendingAvatarInitializations;
     exports.addPendingAvatarInitialization = addPendingAvatarInitialization;
     exports.subscribeToAvatarPublicData = subscribeToAvatarPublicData;
