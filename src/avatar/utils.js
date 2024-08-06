@@ -13,8 +13,7 @@ createNameSpace("realityEditor.avatar.utils");
         touchState: 'touchState',
         cursorState: 'cursorState',
         userProfile: 'userProfile',
-        aiDialogue: 'aiDialogue',
-        aiApiKeys: 'aiApiKeys'
+        aiDialogue: 'aiDialogue', // TODO: make this work for the global chat channel, but not the private channel
     };
 
     // other modules in the project can use this to reliably check whether an object is an avatar
