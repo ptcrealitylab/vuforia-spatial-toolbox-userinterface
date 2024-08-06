@@ -85,6 +85,15 @@ export class HumanPoseAnalyzerSettingsUi {
                         </div>
                     </div>
                 </div>
+                <div class="hpa-settings-section" id="hpa-table-settings">
+                    <div class="hpa-settings-section-title">Playback Settings</div>
+                    <div class="hpa-settings-section-body">
+                        <div class="hpa-settings-section-row">
+                            <div class="hpa-settings-section-row-label">Auto Synchronize</div>
+                            <input type="checkbox" class="hpa-settings-section-row-checkbox" id="hpa-settings-toggle-sync" checked>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -172,7 +181,11 @@ export class HumanPoseAnalyzerSettingsUi {
                 this.humanPoseAnalyzer.motionStudy.tableViewMenu.hide();
             }
         });
-       
+
+        this.root.querySelector('#hpa-settings-toggle-sync').addEventListener('change', (event) => {
+            realityEditor.motionStudy.setSynchronizationEnabled(event.target.checked);
+        });
+
         /*
         // for debugging purposes
         this.root.querySelector('#hpa-settings-set-joint-confidence').addEventListener('keydown', (event) => {

@@ -15,10 +15,14 @@ import {ValueAddWasteTimeManager} from './ValueAddWasteTimeManager.js';
 import {makeTextInput} from '../utilities/makeTextInput.js';
 import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
+import {ImportStepsButton} from './ImportStepsButton.js';
+import {CreateStepSensorsButton} from './CreateStepSensorsButton.js';
+import {Windchill} from './Windchill.js';
 
 const RecordingState = {
     empty: 'empty',
     recording: 'recording',
+    saving: 'saving',
     done: 'done',
 };
 
@@ -26,9 +30,15 @@ export class MotionStudy {
     /**
      * @param {string} frame - frame id associated with instance of
      * motionStudy
+     * @param {MotionStudySensors} sensors
      */
-    constructor(frame) {
+    constructor(frame, sensors) {
         this.frame = frame;
+        this.sensors = sensors;
+
+        this.windchill = new Windchill();
+
+        this.shown2D = false;
 
         this.container = document.createElement('div');
         this.container.id = 'analytics-container';
@@ -43,7 +53,8 @@ export class MotionStudy {
 
         this.createStepLabelComponent();
 
-        this.onStepFileChange = this.onStepFileChange.bind(this);
+        this.createStepSensorsButton = new CreateStepSensorsButton(this);
+        this.createStepSensorsButton.hide();
 
         this.threejsContainer = new THREE.Group();
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
@@ -54,14 +65,18 @@ export class MotionStudy {
         this.livePlayback = false;
         this.lastDisplayRegion = null;
         this.pinnedRegionCards = [];
+        this.pinnedRegionCardToShow = null;
         this.activeRegionCard = null;
+        this.activeLens = null;
         this.nextStepNumber = 1;
-        this.stepLabels = [];
+        this.steps = [];
         this.pinnedRegionCardsContainer = null;
         this.exportLinkContainer = null;
         this.tableViewMenu = null;
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
+
+        this.pinnedRegionCardsContainer.appendChild(this.createStepSensorsButton.container);
 
         this.videoPlayer = null;
 
@@ -75,12 +90,11 @@ export class MotionStudy {
         this.stepLabelContainer.id = 'analytics-step-label-container';
         // this.stepLabelContainer.style.display = '';
 
-        this.onStepFileChange = this.onStepFileChange.bind(this);
-        this.stepLabel = document.createElement('span');
-        this.stepLabel.classList.add('analytics-step');
-        this.stepLabel.textContent = 'Step 1';
+        this.stepLabel = null;
+        // this.stepLabel.classList.add('analytics-step');
+        // this.stepLabel.textContent = 'Step 1';
 
-        this.stepLabelContainer.appendChild(this.stepLabel);
+        // this.stepLabelContainer.appendChild(this.stepLabel);
 
         this.container.appendChild(this.stepLabelContainer);
     }
@@ -182,25 +196,8 @@ export class MotionStudy {
     }
 
     createStepFileUploadComponent() {
-        this.stepFileUploadContainer = document.createElement('div');
-        this.stepFileUploadContainer.id = 'analytics-step-file-upload-container';
-        this.stepFileUploadContainer.classList.add('analytics-button-container');
-
-        this.stepFileInputLabel = document.createElement('label');
-        // this.stepFileInputLabel.classList.add('analytics-step');
-        this.stepFileInputLabel.setAttribute('for', 'analytics-step-file');
-        this.stepFileInputLabel.textContent = 'Import Step File';
-
-        this.stepFileInput = document.createElement('input');
-        this.stepFileInput.id = 'analytics-step-file';
-        this.stepFileInput.type = 'file';
-        this.stepFileInput.accept = '.xml,text/xml';
-        this.stepFileInput.addEventListener('change', this.onStepFileChange);
-
-        this.stepFileUploadContainer.appendChild(this.stepFileInputLabel);
-        this.stepFileUploadContainer.appendChild(this.stepFileInput);
-
-        this.pinnedRegionCardsContainer.appendChild(this.stepFileUploadContainer);
+        this.importStepsButton = new ImportStepsButton(this, this.windchill);
+        this.pinnedRegionCardsContainer.appendChild(this.importStepsButton.container);
     }
 
     /**
@@ -216,6 +213,7 @@ export class MotionStudy {
      * Shows all 2D UI
      */
     show2D() {
+        this.shown2D = true;
         if (!this.container.parentElement) {
             document.body.appendChild(this.container);
         }
@@ -223,12 +221,18 @@ export class MotionStudy {
             this.humanPoseAnalyzer.settingsUi.show();
         }
         this.updateVideoPlayerShowHideButtonText();
+
+        if (this.pinnedRegionCardToShow) {
+            this.pinnedRegionCardToShow.show();
+            this.pinnedRegionCardToShow = null;
+        }
     }
 
     /**
      * Hides all 2D UI
      */
     hide2D() {
+        this.shown2D = false;
         if (this.container.parentElement) {
             document.body.removeChild(this.container);
         }
@@ -349,9 +353,20 @@ export class MotionStudy {
         this.pinnedRegionCardsContainer.appendChild(this.titleInput);
     }
 
+    getTitle() {
+        return this.titleInput.textContent;
+    }
+
+    setTitle(title) {
+        this.titleInput.textContent = title;
+    }
+
     draw() {
         if (this.container.parentElement) {
             this.timeline.draw();
+            if (this.lastDisplayRegion) {
+                this.updateStepLabel();
+            }
         }
         requestAnimationFrame(this.draw);
     }
@@ -451,6 +466,7 @@ export class MotionStudy {
      */
     async setDisplayRegion(region, fromSpaghetti) {
         if (region.recordingState) {
+            this.recordingState = region.recordingState;
             this.updateStepVisibility(region.recordingState);
         }
 
@@ -500,39 +516,53 @@ export class MotionStudy {
                 this.exportLinkContainer.style.display = '';
                 break;
         }
-        if (recordingState !== RecordingState.empty) {
-            this.stepFileUploadContainer.style.display = 'none';
-            this.stepLabelContainer.classList.add('analytics-step-label-container-active');
+        if (this.plan) {
+            this.importStepsButton.hide();
         } else {
-            this.stepFileUploadContainer.style.display = '';
+            this.importStepsButton.show();
         }
         this.updateStepLabel();
     }
 
-    onStepFileChange() {
-        if (this.stepFileInput.files.length === 0) {
-            return;
+    async setProcessPlan(plan) {
+        this.plan = plan;
+        const operations = await this.windchill.getOperations(plan.id);
+        this.setSteps(operations);
+        this.importStepsButton.hide();
+    }
+
+    setSteps(steps) {
+        this.steps = steps;
+        this.updateStepLabel();
+
+        this.createStepDataList();
+    }
+
+    createStepDataList() {
+        const datalist = document.createElement('datalist');
+        datalist.id = 'analytics-step-names';
+        for (const step of this.steps) {
+            const option = document.createElement('option');
+            option.value = this.windchill.getOperationLabel(step);
+            datalist.appendChild(option);
         }
-        const file = this.stepFileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          let parser = new DOMParser();
-          let doc = parser.parseFromString(e.target.result, 'text/xml');
-          let elts = doc.querySelectorAll('TextAS-KD');
-          this.stepLabels = Array.from(elts).map(elt => elt.textContent);
-          this.updateStepLabel();
-        };
-        reader.onerror = (e) => {
-            console.error(e);
-        };
-        reader.readAsText(file);
+        this.container.appendChild(datalist);
+    }
+
+    getStep() {
+        const i = this.nextStepNumber;
+        if (i <= this.steps.length) {
+            return this.steps[i - 1];
+        }
+        return null;
     }
 
     getStepLabel() {
         const i = this.nextStepNumber;
         let label = 'Step ' + i;
-        if (i <= this.stepLabels.length) {
-            label = this.stepLabels[i - 1];
+        if (i <= this.steps.length) {
+            const step = this.getStep();
+            label = this.windchill.getOperationLabel(step);
         }
         return label;
     }
@@ -543,15 +573,44 @@ export class MotionStudy {
     }
 
     updateStepLabel() {
-        this.stepLabelContainer.style.borderColor = this.getStepColor();
-        this.stepLabel.textContent = this.getStepLabel();
+        let startTime = this.lastDisplayRegion?.startTime || Date.now();
+        if (this.pinnedRegionCards.length > 0) {
+            startTime = this.pinnedRegionCards.at(-1).endTime;
+        }
+        let endTime = Date.now();
+        let poses = this.getPosesInTimeIntervalWithFallback(startTime, endTime);
+        let step = this.getStep();
+        if (!this.stepLabel) {
+            this.stepLabel = new RegionCard(this, this.stepLabelContainer, poses, {
+                startTime,
+                endTime,
+                step,
+            });
+        } else {
+            if (poses.length === 0) {
+                this.stepLabel.startTime = startTime;
+                this.stepLabel.endTime = endTime;
+            }
+            this.stepLabel.setWindchillData(step);
+            this.stepLabel.setPoses(poses);
+        }
+        this.stepLabel.element.classList.remove('minimized');
+        this.stepLabel.setLabel(this.getStepLabel());
+        this.stepLabel.setAccentColor(this.getStepColor());
+        if (this.activeLens) {
+            this.stepLabel.setActiveLens(this.activeLens);
+        }
+        this.stepLabel.updateWindchillSection();
     }
 
     /**
-     * @param {'reba'|'motion'} lens
+     * @param {MotionStudyLens} lens - the lens to set as active
      */
-    setLens(lens) {
-        console.error('setLens unimplemented', lens);
+    setActiveLens(lens) {
+        this.activeLens = lens;
+        for (const regionCard of this.pinnedRegionCards) {
+            regionCard.setActiveLens(lens);
+        }
     }
 
     /**
@@ -592,7 +651,13 @@ export class MotionStudy {
 
         this.lastHydratedData = data;
 
-        if (!this.videoPlayer && data.videoUrls) {
+        const videoUrlsAreValid = data.videoUrls &&
+            data.videoUrls.color &&
+            data.videoUrls.rvl &&
+            data.videoUrls.color.split('/').at(-1).length > '.mp4'.length &&
+            data.videoUrls.rvl.split('/').at(-1).length > '.dat'.length;
+        if (!this.videoPlayer && videoUrlsAreValid) {
+
             this.videoPlayer = new realityEditor.gui.ar.videoPlayback.VideoPlayer('video' + this.frame, data.videoUrls);
             let matches = /\/rec(\d+)/.exec(data.videoUrls.color);
             if (matches && matches[1]) {
@@ -624,7 +689,10 @@ export class MotionStudy {
 
         if (data.valueAddWasteTime) {
             this.valueAddWasteTimeManager.fromJSON(data.valueAddWasteTime);
-            this.humanPoseAnalyzer.reprocessLens(this.humanPoseAnalyzer.valueAddWasteTimeLens);
+            let valueAddWasteTimeLens = this.humanPoseAnalyzer.getLensByName("Value Add/Waste Time");
+            if (valueAddWasteTimeLens) {
+                this.humanPoseAnalyzer.reprocessLens(valueAddWasteTimeLens);
+            }
         }
 
         data.regionCards.sort((rcDescA, rcDescB) => {
@@ -632,7 +700,7 @@ export class MotionStudy {
         });
 
         if (data.title) {
-            this.titleInput.textContent = data.title;
+            this.setTitle(data.title);
         }
 
         for (let pinnedRegionCard of this.pinnedRegionCards) {
@@ -640,22 +708,24 @@ export class MotionStudy {
         }
 
         for (let desc of data.regionCards) {
-            let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
-            if (poses.length === 0) {
-                let defaultMotionStudy = realityEditor.motionStudy.getDefaultMotionStudy();
-                poses = defaultMotionStudy.humanPoseAnalyzer.getPosesInTimeInterval(desc.startTime, desc.endTime);
-            }
+            let poses = this.getPosesInTimeIntervalWithFallback(desc.startTime, desc.endTime);
             let regionCard = new RegionCard(this, this.pinnedRegionCardsContainer, poses, desc);
             regionCard.state = RegionCardState.Pinned;
             if (desc.label) {
                 regionCard.setLabel(desc.label);
             }
+
             if (desc.label.startsWith('Step ') && !isNaN(desc.label.slice(5)) && !isNaN(parseInt(desc.label.slice(5)))) {
                 const stepNumber = parseInt(desc.label.slice(5));
                 if (stepNumber >= this.nextStepNumber) {
                     this.nextStepNumber = stepNumber + 1;
                 }
             }
+
+            if (this.activeLens) {
+                regionCard.setActiveLens(this.activeLens);
+            }
+
             regionCard.removePinAnimation();
             this.addRegionCard(regionCard);
         }
@@ -669,6 +739,26 @@ export class MotionStudy {
         });
 
         this.sortPinnedRegionCards();
+
+        if (data.plan && data.plan !== this.plan?.id) {
+            this.windchill.getProcessPlans('VR_DEMO_PP').then(plans => {
+                this.setProcessPlan(plans[0]);
+            });
+        }
+
+        if (this.pinnedRegionCards.length > 0) {
+            this.createStepSensorsButton.show();
+        }
+        this.updateSummarizedState();
+    }
+
+    getPosesInTimeIntervalWithFallback(startTime, endTime) {
+        let poses = this.humanPoseAnalyzer.getPosesInTimeInterval(startTime, endTime);
+        if (poses.length === 0) {
+            let defaultMotionStudy = realityEditor.motionStudy.getDefaultMotionStudy();
+            poses = defaultMotionStudy.humanPoseAnalyzer.getPosesInTimeInterval(startTime, endTime);
+        }
+        return poses;
     }
 
     createVideoPlayerShowHideButton() {
@@ -732,9 +822,21 @@ export class MotionStudy {
         this.pinnedRegionCards.push(regionCard);
         regionCard.updateValueAddWasteTimeUi(this.valueAddWasteTimeManager);
 
+        regionCard.setWindchillData(this.getStep());
+
+        if (window.location.hash && regionCard.step) {
+            if (window.location.hash.includes(regionCard.step.id)) {
+                if (this.shown2D) {
+                    regionCard.show();
+                } else {
+                    this.pinnedRegionCardToShow = regionCard;
+                }
+            }
+        }
+
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
-            if (this.stepLabels.length > 0) {
+            if (this.steps.length > 0) {
                 if (this.writeMSDataTimeout) {
                     clearTimeout(this.writeMSDataTimeout);
                 }
@@ -817,11 +919,23 @@ export class MotionStudy {
     writeMotionStudyData() {
         // Write region card descriptions to public data of currently active envelope
         let openEnvelopes = realityEditor.envelopeManager.getOpenEnvelopes();
+
+        for (let regionCard of this.pinnedRegionCards) {
+            let operation = this.windchill.getOperationByLabel(regionCard.getLabel());
+            // If ids match or both step descriptions are null
+            if (regionCard.step?.id === operation?.id) {
+                continue;
+            }
+            regionCard.setWindchillData(operation);
+            regionCard.updateWindchillSection();
+        }
+
         let allCards = this.pinnedRegionCards.map(regionCard => {
             return {
                 startTime: regionCard.startTime,
                 endTime: regionCard.endTime,
                 label: regionCard.getLabel(),
+                step: regionCard.step,
             };
         });
 
@@ -839,15 +953,116 @@ export class MotionStudy {
                 {},
                 this.lastHydratedData || {},
                 {
+                    plan: this.plan?.id,
                     regionCards: allCards,
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },
             );
-            if (this.titleInput.textContent) {
-                motionStudyData.title = this.titleInput.textContent;
+            if (this.getTitle()) {
+                motionStudyData.title = this.getTitle();
             }
             realityEditor.network.realtime.writePublicData(objectKey, frameKey, frameKey + 'storage', 'analyticsData', motionStudyData);
+
+            if ((this.recordingState === RecordingState.done ||
+                this.recordingState === RecordingState.saving) &&
+                this.plan) {
+                this.windchill.writeProcessPlanData(this.plan, this.pinnedRegionCards);
+            }
         }
+
+        if (this.pinnedRegionCards.length > 0) {
+            this.createStepSensorsButton.show();
+        }
+
+        this.updateSummarizedState();
+    }
+
+    updateSummarizedState() {
+        let title = this.getTitle();
+        let operationCount = this.pinnedRegionCards.length;
+        let summary = `The process plan's motion study is labeled "${title}" and contains ${operationCount} operations. `;
+        let cardSummaries = this.pinnedRegionCards.map((card, i) => {
+            let cardSummary = `Operation ${i} is "${card.getLabel()}", `;
+            let duration = Math.round((card.endTime - card.startTime) / 1000) + ' seconds';
+            cardSummary += `took ${duration} to complete, `;
+            if (card.step) {
+                let prefix = `was planned in `;
+                if (card.step.laborTimeSeconds > 0.5) { // Interesting non-zero planned time
+                    prefix = `was planned to take ${card.step.laborTimeSeconds} seconds in `;
+                }
+                let stepDesc = prefix + `WindChill operation id "${card.step.id}", `;
+                cardSummary += stepDesc;
+            }
+            let rebaAvg = card.graphSummaryValues?.REBA?.average;
+            if (!rebaAvg) {
+                cardSummary += 'and is missing information on repetitive strain. ';
+            } else {
+                cardSummary += 'and has ';
+                if (rebaAvg < 4) {
+                    cardSummary += 'a safe '
+                } else if (rebaAvg < 8) {
+                    cardSummary += 'a potentially unsafe ';
+                } else {
+                    cardSummary += 'an unsafe ';
+                }
+                cardSummary += 'level of repetitive strain.';
+            }
+            return cardSummary;
+        });
+        summary += cardSummaries.join(' ');
+
+        summary += '\n' + this.getSummarizedTimelineState();
+
+        console.log('summary', summary);
+        if (realityEditor.ai) {
+            realityEditor.ai.updateSummarizedState(this.frame, summary);
+        }
+    }
+
+    getSummarizedTimelineState() {
+        const allPoses = this.getPosesInTimeIntervalWithFallback(
+            this.lastDisplayRegion.startTime,
+            this.lastDisplayRegion.endTime,
+        );
+        if (allPoses.length === 0) {
+            return;
+        }
+
+        let events = [];
+        for (let sensorFrame of this.sensors.getSensorFrames()) {
+             events = events.concat(this.getSensorEvents(sensorFrame, allPoses));
+        }
+        events.sort((a, b) => {
+            return a.time - b.time;
+        });
+        const startTime = this.lastDisplayRegion.startTime;
+        return events.map(event => {
+            let dir = event.enter ? 'entered' : 'left';
+            return ` - ${Math.round((event.time - startTime) / 1000)} seconds: the person ${dir} ${event.sensor}`;
+        }).join('\n');
+    }
+
+    getSensorEvents(sensorFrame, poses) {
+        let lastPoseActive = false; // creates a default 'entered' event if the sensor was already active
+        let events = [];
+        for (const pose of poses) {
+            const poseActive = this.sensors.isSensorActive(sensorFrame, pose);
+            const isSwap = poseActive !== lastPoseActive;
+            if (!isSwap) {
+                lastPoseActive = poseActive;
+                continue;
+            }
+
+            events.push({
+                 enter: poseActive,
+                 time: pose.timestamp,
+                 sensor: sensorFrame,
+            });
+
+            lastPoseActive = poseActive;
+        }
+
+        return events;
     }
 
     pinRegionCard(regionCard) {
@@ -1005,6 +1220,12 @@ export class MotionStudy {
     }
 
     updatePinnedRegionCardsExportLink() {
+        if (this.pinnedRegionCards.length === 0) {
+            this.exportLinkPinnedRegionCards.href = '#';
+            this.exportLinkPinnedRegionCards.classList.add('missing');
+            return;
+        }
+        this.exportLinkPinnedRegionCards.classList.remove('missing');
 
         // compute total stats over all region cards
         // make a pseudo region card
@@ -1102,8 +1323,12 @@ export class MotionStudy {
         const allPoses = this.humanPoseAnalyzer.getPosesInTimeInterval(0, Number.MAX_VALUE);
 
         if (allPoses.length === 0) {
+            this.exportLinkPoseData.href = '#';
+            this.exportLinkPoseData.classList.add('missing');
             return;
         }
+
+        this.exportLinkPoseData.classList.remove('missing');
 
         // Create array manually since we can go over the JSON.stringify and string
         // length limits
@@ -1156,6 +1381,44 @@ export class MotionStudy {
             this.activeRegionCard.updateDisplayActive();
         }
         this.activeRegionCard = activeRegionCard;
+
+        if (!this.activeRegionCard || !this.activeRegionCard.step) {
+            window.location.hash = '';
+        } else {
+            window.location.hash = this.activeRegionCard.step.id;
+        }
+
+    }
+
+    /**
+     * Shows any region card matching the label of
+     * regionCardToMatch
+     * @param {RegionCard} regionCardToMatch
+     * @return {boolean} whether a card was shown
+     */
+    showMatchingRegionCard(regionCardToMatch) {
+        // const idToMatch = regionCardToMatch.step?.id;
+        const labelToMatch = regionCardToMatch.getLabel();
+        if (!labelToMatch) {
+            return false;
+        }
+
+        const matchingRegionCard = this.pinnedRegionCards.find((regionCard) => {
+            const label = regionCard.getLabel();
+            if (!label) {
+                return false;
+            }
+
+            return label === labelToMatch;
+        });
+
+        if (!matchingRegionCard) {
+            return false;
+        }
+
+        matchingRegionCard.show();
+
+        return true;
     }
 
     /**

@@ -1,7 +1,9 @@
 createNameSpace("realityEditor.motionStudy");
 
-import {MotionStudy} from './motionStudy.js'
-import {MotionStudyMobile} from './MotionStudyMobile.js'
+import {MotionStudy} from './motionStudy.js';
+import {MotionStudyMobile} from './MotionStudyMobile.js';
+import {MotionStudySensors} from './MotionStudySensors.js';
+import {StepAnimationManager} from './StepAnimationManager.js';
 
 (function(exports) {
     /**
@@ -10,15 +12,17 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
      */
     function makeMotionStudy(frame) {
         if (realityEditor.device.environment.isDesktop()) {
-            return new MotionStudy(frame);
+            return new MotionStudy(frame, sensors);
         } else {
-            return new MotionStudyMobile(frame);
+            return new MotionStudyMobile(frame, sensors);
         }
     }
 
     const noneFrame = 'none';
     let activeFrame = '';
     let motionStudyByFrame = {};
+    let sensors = new MotionStudySensors();
+    let synchronizationEnabled = true;
     
     function getDefaultMotionStudy() {
         return motionStudyByFrame[noneFrame];
@@ -75,6 +79,43 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
             activeFrame = noneFrame;
         }
     }
+
+    /**
+     * For every current motion study, show any region card with
+     * step info matching regionCard
+     * @param {RegionCard} regionCard
+     */
+    function showMatchingRegionCards(regionCard) {
+        if (!synchronizationEnabled) {
+            return;
+        }
+        const animations = [];
+
+        for (const frameKey in motionStudyByFrame) {
+            const motionStudy = motionStudyByFrame[frameKey];
+            let didShow = motionStudy.showMatchingRegionCard(regionCard);
+            if (!didShow) {
+                continue;
+            }
+            animations.push(motionStudy.humanPoseAnalyzer.animation);
+        }
+
+        if (animations.length > 0) {
+            let stepAnimationManager = new StepAnimationManager(animations);
+
+            stepAnimationManager.update();
+        }
+    }
+    exports.showMatchingRegionCards = showMatchingRegionCards;
+
+    /**
+     * Whether to synchronize across motion studies
+     * @param {boolean} enabled
+     */
+    function setSynchronizationEnabled(enabled) {
+        synchronizationEnabled = enabled;
+    }
+    exports.setSynchronizationEnabled = setSynchronizationEnabled;
 
     function initService() {
         activeFrame = noneFrame;
@@ -143,8 +184,15 @@ import {MotionStudyMobile} from './MotionStudyMobile.js'
             motionStudyByFrame[msgData.frame].hydrateMotionStudy(msgData.analyticsData);
         });
 
+        realityEditor.network.addPostMessageHandler('analyticsSetSensor', (msgData) => {
+            console.log('set sensor', msgData);
+            sensors.setSensor(msgData.frame, msgData.sensor);
+        });
+
         realityEditor.device.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using userinterface
         realityEditor.network.registerCallback('vehicleDeleted', onVehicleDeleted); // deleted using server
+
+        sensors.attachListeners();
     }
     exports.initService = initService;
 }(realityEditor.motionStudy));
