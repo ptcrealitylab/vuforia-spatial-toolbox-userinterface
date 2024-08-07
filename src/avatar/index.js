@@ -451,7 +451,13 @@ createNameSpace("realityEditor.avatar");
         return arUtils.normalize(arUtils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
     }
 
-    // checks where the click intersects with the area target, or the groundplane, and returns {x,y,z} relative to the world object origin 
+    /**
+     * Checks where the pointer position intersects with the area target, tool geometry, or ground plane,
+     * and returns {x,y,z} relative to the world object origin
+     * @param {number} screenX
+     * @param {number} screenY
+     * @return {Promise<THREE.Vector3|null>}
+     */
     async function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
 
@@ -461,44 +467,26 @@ createNameSpace("realityEditor.avatar");
         }
 
         if (cachedWorldObject) {
-            // by default, three.js raycast returns coordinates in the top-level scene coordinate system
+            // 1. first raycast against the scene (mesh model or splat, and also the tools with 3D content)
+            // 2. if no hit yet, then raycast against the ground plane
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
-                // worldIntersectPoint = raycastIntersects[0].scenePoint;
                 worldIntersectPoint = await realityEditor.spatialCursor.getRaycastCoordinates(screenX, screenY, false, false);
-
-                // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
-                // let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-                // raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
-                // groundPlane.updateWorldMatrix(true, false);
-                // if (raycastIntersects.length > 0) {
-                //     worldIntersectPoint = raycastIntersects[0].scenePoint;
-                // }
-
+                // happens afterwards because in AR, invisible ground plane can be above parts of tools or scene mesh, but shouldn't block the pointer
                 worldIntersectPoint = await realityEditor.spatialCursor.getRaycastCoordinates(screenX, screenY, true, false);
             }
 
+            // if we hit something, convert into the world object coordinate system
             if (worldIntersectPoint && worldIntersectPoint.point) {
                 let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
                 let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
 
-                // worldIntersectPoint was converted to world coordinates. need to convert back to groundPlane coordinates in this system
+                // requires inverse ground plane because scene mesh is relative to ground plane
                 let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
                 let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
                 realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
                 groundPlaneRelativeToWorldThree.invert();
-
-                // convertedEndPosition = new THREE.Vector3(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
-                // convertedEndPosition.set(touchState.worldIntersectPoint.x, touchState.worldIntersectPoint.y, touchState.worldIntersectPoint.z);
-                // convertedEndPosition.applyMatrix4(groundPlaneRelativeToWorldThree);
-
-                // let point = worldIntersectPoint.point;
-                // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
-                // let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                // realityEditor.gui.threejsScene.setMatrixFromArray(matrix, groundPlaneSceneNode.worldMatrix);
-                // matrix.invert();
-                // worldIntersectPoint.point.applyMatrix4(matrix);
                 worldIntersectPoint.point.applyMatrix4(groundPlaneRelativeToWorldThree);
             }
         }
