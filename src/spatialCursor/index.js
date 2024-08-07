@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.spatialCursor");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { fract, clamp, remap, mathUtilShader } from "../utilities/MathUtils.js";
 
 (function(exports) {
 
@@ -64,13 +65,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     }
     `;
     const commonShader = `
-        float Remap01 (float x, float low, float high) {
-            return clamp((x - low) / (high - low), 0., 1.);
-        }
-    
-        float Remap (float x, float lowIn, float highIn, float lowOut, float highOut) {
-            return lowOut + (highOut - lowOut) * Remap01(x, lowIn, highIn);
-        }
+        ${mathUtilShader}
     
         vec2 Rot(vec2 uv, float a) {
             return mat2(cos(a), -sin(a), sin(a), cos(a)) * vec2(uv);
@@ -272,22 +267,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
     //     blending: THREE.AdditiveBlending,
     //     side: THREE.DoubleSide,
     // });
-
-    const clamp = (x, low, high) => {
-        return Math.min(Math.max(x, low), high);
-    }
-
-    const remap01 = (x, low, high) => {
-        return clamp((x - low) / (high - low), 0, 1);
-    }
-
-    const remap = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
-    }
-    
-    const fract = (x) => {
-        return x - Math.floor(x);
-    }
 
     async function getMyAvatarColor() {
         let myAvatarColor = await realityEditor.avatar.getMyAvatarColor();
