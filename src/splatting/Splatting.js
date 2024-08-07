@@ -8,6 +8,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 import { getPendingCapture } from '../gui/sceneCapture.js';
+import { remap } from "../utilities/MathUtils.js";
 
 let gsInitialized = false;
 let gsActive = false;
@@ -136,6 +137,15 @@ function multiply4(a, b) {
         b[12] * a[2] + b[13] * a[6] + b[14] * a[10] + b[15] * a[14],
         b[12] * a[3] + b[13] * a[7] + b[14] * a[11] + b[15] * a[15],
     ];
+}
+
+function multiply4v(m, v) {
+    return [
+        v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12],
+        v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13],
+        v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14],
+        v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15]
+    ]
 }
 
 function invert4(a) {
@@ -567,7 +577,6 @@ uniform bool uToggleBoundary;
 uniform float uWorldLowAlpha;
 
 uniform int uCollideIndex;
-uniform vec3 uCollidePosition;
 uniform bool uShouldDraw;
 
 in vec2 position;
@@ -620,19 +629,10 @@ void main () {
     vec2 vCenter = vec2(pos2d) / pos2d.w;
     
     
-    // implement accurate mouse raycasting
-    float majorAxisOffset = dot(uMouse - vCenter, normalize(majorAxis)) / ( abs(position.x) * length(majorAxis / viewport) );
-    float minorAxisOffset = dot(uMouse - vCenter, normalize(minorAxis)) / ( abs(position.y) * length(minorAxis / viewport) );
-    vec4 actualCam = cam;
-    vec4 offset1 = vec4(majorAxisOffset * (abs(position.x) * majorAxis / viewport), 0., 0.);
-    offset1 = inverse(projection) * (offset1 * pos2d.w);
-    vec4 offset2 = vec4(minorAxisOffset * (abs(position.y) * minorAxis / viewport), 0., 0.);
-    offset2 = inverse(projection) * (offset2 * pos2d.w);
-    actualCam = actualCam + offset1 + offset2;
-    vFBOPosColor = inverse(view) * actualCam;
-    vFBOPosColor.a = 1.;
+    // output cam space z depth for accurate mouse raycasting, also output splat index for raycast highlighting --- if want to do it in the future
+    vFBOPosColor = vec4(cam.z, index, 0., 1.);
     
-    if (vFBOPosColor.xyz == uCollidePosition) {
+    if (index == uCollideIndex) {
         vIndex = 1.;
     } else {
         vIndex = 0.;
@@ -775,7 +775,7 @@ async function main(initialFilePath) {
     const u_focal = gl.getUniformLocation(program, "focal");
     const u_view = gl.getUniformLocation(program, "view");
     const u_mouse = gl.getUniformLocation(program, "uMouse");
-    const u_collidePosition = gl.getUniformLocation(program, "uCollidePosition");
+    const u_collideIndex = gl.getUniformLocation(program, "uCollideIndex");
     const u_shouldDraw = gl.getUniformLocation(program, "uShouldDraw");
     const u_uIsGSRaycasting = gl.getUniformLocation(program, "uIsGSRaycasting");
     const u_toggleBoundary = gl.getUniformLocation(program, "uToggleBoundary");
@@ -806,6 +806,7 @@ async function main(initialFilePath) {
     gl.vertexAttribDivisor(a_index, 1);
 
     let projectionMatrix;
+    let camNear, camNearWidth, camNearHeight;
 
     // set up an off-screen frame buffer object texture
     let offscreenTexture = gl.createTexture();
@@ -859,6 +860,10 @@ async function main(initialFilePath) {
 
         // near and far plane defined in mm as in the rest of Toolbox
         projectionMatrix = projectionMatrixFrom(iPhoneVerticalFOV, window.innerWidth / window.innerHeight, 10, 300000);
+
+        camNear = 10 / 1000;
+        camNearHeight = camNear * Math.tan(iPhoneVerticalFOV * (Math.PI / 180) / 2) * 2;
+        camNearWidth = camNearHeight / window.innerHeight * window.innerWidth;
 
         // compute horizontal and vertical focal length in pixels from projection matrix. This is needed in shaders.
         const fx = projectionMatrix[0] * window.innerWidth / 2.0;
@@ -1027,8 +1032,13 @@ async function main(initialFilePath) {
                 // read the texture
                 const pixelBuffer = new Float32Array(4); // 4 components for RGBA
                 gl.readPixels(Math.floor(uMouseScreen[0]), Math.floor(innerHeight - uMouseScreen[1]), 1, 1, gl.RGBA, gl.FLOAT, pixelBuffer);
-                gl.uniform3fv(u_collidePosition, new Float32Array([pixelBuffer[0], pixelBuffer[1], pixelBuffer[2]]));
-                vWorld.set(pixelBuffer[0], pixelBuffer[1], pixelBuffer[2]);
+                let camDepth = pixelBuffer[0];
+                let xOffset = remap(uMouse[0], -1, 1, -camNearWidth / 2, camNearWidth / 2) / camNear * camDepth;
+                let yOffset = remap(uMouse[1], -1, 1, camNearHeight / 2, -camNearHeight / 2) / camNear * camDepth;
+                let camSpacePosition = [xOffset, yOffset, camDepth, 1];
+                let worldSpacePosition = multiply4v(resultMatrix_1, camSpacePosition);
+                vWorld.set(worldSpacePosition[0], worldSpacePosition[1], worldSpacePosition[2]);
+                gl.uniform1i(u_collideIndex, pixelBuffer[1]);
                 vWorld.x = (vWorld.x / scaleF - offset_x) / SCALE;
                 vWorld.y = (vWorld.y / scaleF - offset_y) / SCALE - floorOffset;
                 vWorld.z = (vWorld.z / scaleF - offset_z) / SCALE;

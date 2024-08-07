@@ -1,6 +1,7 @@
 createNameSpace("realityEditor.gui.spatialArrow");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
+import { remap } from "../utilities/MathUtils.js";
 
 (function (exports) {
     
@@ -56,18 +57,6 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
             canvas.width = screenW;
             canvas.height = screenH;
         }
-    }
-
-    const clamp = (x, low, high) => {
-        return Math.min(Math.max(x, low), high);
-    }
-
-    const remap01 = (x, low, high) => {
-        return clamp((x - low) / (high - low), 0, 1);
-    }
-
-    const remap = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
     }
 
     let translateX = 0, translateY = 0;
