@@ -2,6 +2,7 @@ createNameSpace("realityEditor.gui.spatialIndicator");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
+import { remap } from "../utilities/MathUtils.js";
 
 (function (exports) {
     let camera;
@@ -126,18 +127,6 @@ import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometry
         transparent: true,
         side: THREE.DoubleSide,
     });
-
-    const clamp = (x, low, high) => {
-        return Math.min(Math.max(x, low), high);
-    }
-
-    const remap01 = (x, low, high) => {
-        return clamp((x - low) / (high - low), 0, 1);
-    }
-
-    const remap = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
-    }
 
     if (!DISABLE_SPATIAL_INDICATORS) {
         window.addEventListener('pointerdown', (e) => {
