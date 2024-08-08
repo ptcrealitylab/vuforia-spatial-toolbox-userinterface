@@ -98,10 +98,15 @@ createNameSpace('realityEditor.device.layout');
         });
         resizeObserver.observe(document.body);
 
+        const lastUpdatedSize = {
+            width: 0,
+            height: 0
+        };
+
         setInterval(() => {
             // console.log('checking for improper size...');
-            if (window.innerWidth !== globalStates.height ||
-                window.innerHeight !== globalStates.width) {
+            if (window.innerWidth !== lastUpdatedSize.width ||
+                window.innerHeight !== lastUpdatedSize.height) {
                 console.log('detected improper window size, missed from observers', window.innerWidth, window.innerHeight);
                 windowResizeHandler(window.innerWidth, window.innerHeight);
             }
@@ -117,6 +122,10 @@ createNameSpace('realityEditor.device.layout');
             globalStates.height = width;
             // noinspection JSSuspiciousNameCombination
             globalStates.width = height;
+
+            // temporary fix for window resize events
+            lastUpdatedSize.width = width;
+            lastUpdatedSize.height = height;
 
             // reformat pocket tile size/arrangement
             realityEditor.gui.pocket.onWindowResized();
