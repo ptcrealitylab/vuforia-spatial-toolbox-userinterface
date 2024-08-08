@@ -88,12 +88,23 @@ createNameSpace('realityEditor.device.layout');
             toolSubscriptions[fullMessageContent.frame] = true;
         });
 
+        // Instead of using `window.addEventListener('resize', ...)`, we use a ResizeObserver, because the window
+        // `resize` event doesn't trigger under some circumstances when the document suddenly changes size
+        // (for example, if you open Developer Tools panel, or if while on the stage in Teams you open/close the chat)
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                console.log('ResizeObserver resized (draw):', entry.contentRect.width, entry.contentRect.height);
+                windowResizeHandler(entry.contentRect.width, entry.contentRect.height);
+            }
+        });
+        resizeObserver.observe(document.body);
+
         /**
          * This is the main window resize event listener for the project.
          * Other modules should use realityEditor.device.layout.onWindowResized(({width, height})=>{})
          * rather than adding another window.onResize listener, so that code triggers in the right order
          */
-        window.addEventListener('resize', () => {
+        function windowResizeHandler() {
             // noinspection JSSuspiciousNameCombination
             globalStates.height = window.innerWidth;
             // noinspection JSSuspiciousNameCombination
@@ -154,7 +165,7 @@ createNameSpace('realityEditor.device.layout');
                 };
                 iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
             });
-        });
+        }
     }
 
     /**
