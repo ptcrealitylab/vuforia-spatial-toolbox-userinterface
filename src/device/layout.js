@@ -93,7 +93,6 @@ createNameSpace('realityEditor.device.layout');
         // (for example, if you open Developer Tools panel, or if while on the stage in Teams you open/close the chat)
         const resizeObserver = new ResizeObserver(entries => {
             for (let entry of entries) {
-                console.log('ResizeObserver resized (draw):', entry.contentRect.width, entry.contentRect.height);
                 windowResizeHandler(entry.contentRect.width, entry.contentRect.height);
             }
         });
