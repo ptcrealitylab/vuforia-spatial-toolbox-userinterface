@@ -35,6 +35,8 @@ createNameSpace("realityEditor.avatar");
     };
     let lastBeamOnTimestamp = null;
 
+    let pendingBeamOnCalls = {};
+
     // if you set your name, and other clients will see your initials near the endpoint of your laser beam
     let myUsername = window.localStorage.getItem('manuallyEnteredUsername') || null;
     let myProviderId = '';
@@ -449,8 +451,14 @@ createNameSpace("realityEditor.avatar");
         return arUtils.normalize(arUtils.subtract([testPoint.x, testPoint.y, testPoint.z], rayOrigin));
     }
 
-    // checks where the click intersects with the area target, or the groundplane, and returns {x,y,z} relative to the world object origin 
-    function getRaycastCoordinates(screenX, screenY) {
+    /**
+     * Checks where the pointer position intersects with the area target, tool geometry, or ground plane,
+     * and returns {x,y,z} relative to the world object origin
+     * @param {number} screenX
+     * @param {number} screenY
+     * @return {Promise<THREE.Vector3|null>}
+     */
+    async function getRaycastCoordinates(screenX, screenY) {
         let worldIntersectPoint = null;
 
         let objectsToCheck = [];
@@ -459,32 +467,31 @@ createNameSpace("realityEditor.avatar");
         }
 
         if (cachedWorldObject) {
-            // by default, three.js raycast returns coordinates in the top-level scene coordinate system
+            // 1. first raycast against the scene (mesh model or splat, and also the tools with 3D content)
+            // 2. if no hit yet, then raycast against the ground plane
             let raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, objectsToCheck);
             if (raycastIntersects.length > 0) {
-                worldIntersectPoint = raycastIntersects[0].scenePoint;
-
-            // if we don't hit against the area target mesh, try colliding with the ground plane (if mode is enabled)
+                worldIntersectPoint = await realityEditor.spatialCursor.getRaycastCoordinates(screenX, screenY, false, false);
             } else if (RAYCAST_AGAINST_GROUNDPLANE) {
-                let groundPlane = realityEditor.gui.threejsScene.getGroundPlaneCollider();
-                raycastIntersects = realityEditor.gui.threejsScene.getRaycastIntersects(screenX, screenY, [groundPlane.getInternalObject()]);
-                groundPlane.updateWorldMatrix(true, false);
-                if (raycastIntersects.length > 0) {
-                    worldIntersectPoint = raycastIntersects[0].scenePoint;
-                }
+                // happens afterwards because in AR, invisible ground plane can be above parts of tools or scene mesh, but shouldn't block the pointer
+                worldIntersectPoint = await realityEditor.spatialCursor.getRaycastCoordinates(screenX, screenY, true, false);
             }
 
-            if (worldIntersectPoint) {
-                // multiplying the point by the inverse world matrix seems to get it in the right coordinate system
+            // if we hit something, convert into the world object coordinate system
+            if (worldIntersectPoint && worldIntersectPoint.point) {
                 let worldSceneNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.getWorldId());
-                let matrix = new realityEditor.gui.threejsScene.THREE.Matrix4();
-                realityEditor.gui.threejsScene.setMatrixFromArray(matrix, worldSceneNode.worldMatrix);
-                matrix.invert();
-                worldIntersectPoint.applyMatrix4(matrix);
+                let groundPlaneSceneNode = realityEditor.sceneGraph.getGroundPlaneNode();
+
+                // requires inverse ground plane because scene mesh is relative to ground plane
+                let groundPlaneRelativeToWorldToolbox = worldSceneNode.getMatrixRelativeTo(groundPlaneSceneNode);
+                let groundPlaneRelativeToWorldThree = new realityEditor.gui.threejsScene.THREE.Matrix4();
+                realityEditor.gui.threejsScene.setMatrixFromArray(groundPlaneRelativeToWorldThree, groundPlaneRelativeToWorldToolbox);
+                groundPlaneRelativeToWorldThree.invert();
+                worldIntersectPoint.point.applyMatrix4(groundPlaneRelativeToWorldThree);
             }
         }
 
-        return worldIntersectPoint; // these are relative to the world object
+        return worldIntersectPoint ? worldIntersectPoint.point : null; // these are relative to the world object
     }
 
     // add pointer events to turn on and off my own avatar's laser beam (therefore sending my touchState to other users)
@@ -494,10 +501,10 @@ createNameSpace("realityEditor.avatar");
 
         writeUsername(myUsername);
 
-        document.body.addEventListener('pointerdown', (e) => {
+        document.body.addEventListener('pointerdown', async (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
-                setBeamOn(e.pageX, e.pageY);
+                await setBeamOn(e.pageX, e.pageY);
                 lastPointerState.position = {
                     x: e.pageX,
                     y: e.pageY
@@ -519,13 +526,13 @@ createNameSpace("realityEditor.avatar");
             });
         });
 
-        document.body.addEventListener('pointermove', (e) => {
+        document.body.addEventListener('pointermove', async (e) => {
             if (!isPointerDown || realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (network.isTouchStateFpsLimited()) {
                 return;
             }
             // update the beam position even if not hitting background, as long as we started on the background
-            setBeamOn(e.pageX, e.pageY);
+            await setBeamOn(e.pageX, e.pageY);
 
             lastPointerState.position = {
                 x: e.pageX,
@@ -604,14 +611,19 @@ createNameSpace("realityEditor.avatar");
     }
 
     // send touch intersect to other users via the public data node, and show visual feedback on your cursor
-    function setBeamOn(screenX, screenY) {
+    async function setBeamOn(screenX, screenY) {
         isPointerDown = true;
+
+        // before the `await getRaycastCoordinates`, store this down event as a pending beam on,
+        // so that after the await, we can check if any beamOff events happened during the async call
+        let callId = realityEditor.device.utilities.uuidTimeShort();
+        pendingBeamOnCalls[callId] = true;
 
         let touchState = {
             isPointerDown: isPointerDown,
             screenX: screenX,
             screenY: screenY,
-            worldIntersectPoint: getRaycastCoordinates(screenX, screenY),
+            worldIntersectPoint: await getRaycastCoordinates(screenX, screenY),
             rayDirection: getRayDirection(screenX, screenY),
             timestamp: Date.now()
         }
@@ -619,6 +631,11 @@ createNameSpace("realityEditor.avatar");
         lastBeamOnTimestamp = Date.now();
 
         if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
+
+        if (!pendingBeamOnCalls[callId]) {
+            console.log('cancel pending beam on - we got a beam off after initiating it');
+            return;
+        }
 
         let info = utils.getAvatarNodeInfo(myAvatarObject);
         if (info) {
@@ -659,6 +676,9 @@ createNameSpace("realityEditor.avatar");
 
         // ensure that on non-desktop devices, the spatial cursor position resets to center of view
         realityEditor.spatialCursor.updatePointerSnapMode(false);
+
+        // prevent any previously pending beamOn calls from triggering after the beamOff call
+        pendingBeamOnCalls = {};
 
         debugDataSent();
     }
