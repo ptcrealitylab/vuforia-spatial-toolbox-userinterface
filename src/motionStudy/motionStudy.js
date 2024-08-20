@@ -102,12 +102,19 @@ export class MotionStudy {
 
     // TODO: Clear modified data when card durations get changed, maybe save a hash of a card as a key for the data
     updateTableView() {
+        // regionCards.map(step => {
+        //     const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(step.startTime, step.endTime);
+        //     poses.map(pose => pose.)
+        //     this.humanPoseAnalyzer.muriLens.getTableViewValue(joint)
+        // })
+        
         this.tableViewMenu.body.innerHTML = ''; // Remove old table view if it exists
         const lens = this.humanPoseAnalyzer.activeLens;
         const jointNameMap = value => value.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ');
         const jointNames = lens.getTableViewJoints().map(jointNameMap);
         const invertJointNameMap = value => lens.getTableViewJoints().find(name => jointNameMap(name) === value);
         const data = [];
+        const colors = [];
         const regionCards = this.pinnedRegionCards;
         const stepNames = regionCards.map(card => card.getLabel());
         if (regionCards.length === 0) {
@@ -115,26 +122,39 @@ export class MotionStudy {
             return;
         }
         regionCards.forEach(step => {
-            const row = [];
+            let dataRow = [];
+            let colorRow = [];
             const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(step.startTime, step.endTime);
-            poses.forEach((pose, i) => {
-                const jointValues = Object.values(pose.joints);
-                jointNames.forEach((jointName, j) => {
-                    const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
-                    if (i === 0) {
-                        row.push(lens.getTableViewValue(joint));
-                    } else {
-                        row[j] = row[j] + lens.getTableViewValue(joint);
-                    }
+            if (poses.length === 0) {
+                dataRow = Array.from({length: jointNames.length}).map(() => 0);
+                colorRow = Array.from({length: jointNames.length}).map(() => 'magenta');
+            } else {
+                poses.forEach((pose, i) => {
+                    const jointValues = Object.values(pose.joints);
+                    jointNames.forEach((jointName, j) => {
+                        const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
+                        if (i === 0) {
+                            dataRow.push(lens.getTableViewValue(joint));
+                        } else {
+                            dataRow[j] = dataRow[j] + lens.getTableViewValue(joint);
+                        }
+                    });
                 });
-            });
-            row.forEach((val, i) => {
-                row[i] = val / poses.length; // Average the values
-                row[i] = Math.round(row[i] * 10) / 10; // Round to tenth place
-            })
-            data.push(row);
+                // jointNames.forEach((jointName) => {
+                //     const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
+                //     colorRow.push(lens.getTableViewColorForRange(poses, joint.name));
+                // });
+                dataRow.forEach((val, i) => {
+                    dataRow[i] = val / poses.length; // Average the values
+                    dataRow[i] = Math.round(dataRow[i] * 10) / 10; // Round to tenth place
+                    const jointName = invertJointNameMap(jointNames[i]);
+                    colorRow[i] = lens.getTableViewColorForValue(dataRow[i], jointName);
+                })
+            }
+            data.push(dataRow);
+            colors.push(colorRow);
         });
-        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body);
+        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body, {colors: colors, headerImages: lens.getTableViewImages()});
         this.tableView.onSelection(selection => {
             const selectedRows = Array.from(new Set(selection.map(cell => cell.row)));
             const selectedColumns = Array.from(new Set(selection.map(cell => cell.column)));
@@ -179,6 +199,7 @@ export class MotionStudy {
         this.tableViewMenu.on('maximize', () => setInteractable());
         this.tableViewMenu.on('hide', () => setInteractable());
         this.tableViewMenu.on('minimize', () => setInteractable());
+        setInteractable();
     }
 
     createStepFileUploadComponent() {

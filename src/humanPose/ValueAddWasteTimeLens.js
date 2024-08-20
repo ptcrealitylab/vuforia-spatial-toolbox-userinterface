@@ -89,4 +89,10 @@ export class ValueAddWasteTimeLens extends MotionStudyLens {
         }
         return 0;
     }
+
+    getTableViewColorForValue(value, _jointName) {
+        const startColor = MotionStudyColors.red;
+        const endColor = MotionStudyColors.green;
+        return `#${startColor.clone().lerpHSL(endColor, value).getHexString()}`;
+    }
 }
