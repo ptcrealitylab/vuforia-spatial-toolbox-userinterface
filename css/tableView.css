@@ -4,6 +4,12 @@
 .table-view-header {
     font-weight: bold;
 }
+.table-view-header-image {
+    max-width: 80px;
+    max-height: 80px;
+    display: block;
+    margin: 0 auto;
+}
 .table-view-row-header {}
 .table-view-column-header {}
 .table-view-data-modified:after {
@@ -22,13 +28,13 @@
     cursor: pointer;
 }
 .table-view-wrapper td:hover {
-    background-color: #4F4F4F;
+    filter: brightness(85%);
 }
 .table-view-wrapper td.selected {
-    background-color: #3F3F3F;
+    filter: brightness(75%);
 }
-.table-view-wrapper td.selected:hover { 
-    background-color: #6F6F6F;
+.table-view-wrapper td.selected:hover {
+    filter: brightness(55%);
 }
 .table-view-wrapper td.editing {
     background-color: darkgreen;

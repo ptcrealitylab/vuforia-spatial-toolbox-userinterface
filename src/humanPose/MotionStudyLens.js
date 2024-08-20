@@ -23,6 +23,7 @@ export class MotionStudyLens {
     /**
      * Applies the lens to a single pose by adding new properties to the pose object.
      * @param {Pose} _pose The pose to apply the lens to.
+     * @param {boolean} _force Whether or not to overwrite existing data
      * @return {boolean} True if the pose was modified, false otherwise.
      */
     applyLensToPose(_pose, _force = false) {
@@ -32,6 +33,7 @@ export class MotionStudyLens {
     /**
      * Applies the lens to the most recent pose, but reads the pose history as well. Only the minimum number of poses are visited.
      * @param {Pose[]} poseHistory An array of pose objects.
+     * @param {boolean} _force Whether or not to overwrite existing data
      * @return {boolean[]} An array of booleans, one for each pose in the history, indicating whether the pose was modified.
      */
     applyLensToHistoryMinimally(poseHistory, _force = false) {
@@ -41,6 +43,7 @@ export class MotionStudyLens {
     /**
      * Applies the lens to the pose history by adding new properties to the pose objects.
      * @param {Pose[]} poseHistory An array of pose objects.
+     * @param {boolean} _force Whether or not to overwrite existing data
      * @return {boolean[]} An array of booleans, one for each pose in the history, indicating whether the pose was modified.
      */
     applyLensToHistory(poseHistory, _force = false) {
@@ -107,11 +110,27 @@ export class MotionStudyLens {
     }
 
     /**
-     * 
      * @param {Object} _joint The joint to get the table value of
      * @return {number} The value to be displayed in the table
      */
     getTableViewValue(_joint) {
         return NaN;
+    }
+
+    /**
+     * @param {number} _value The value to get the color for
+     * @param {string} _jointName The joint to get the color for
+     * @return {string} A CSS color string
+     */
+    getTableViewColorForValue(_value, _jointName) {
+        return 'magenta';
+    }
+
+    /**
+     * Returns a list of URLs that match up with the joint names from getTableViewJoints
+     * @return {string[]} The list of image URLs
+     */
+    getTableViewImages() {
+        return [];
     }
 }

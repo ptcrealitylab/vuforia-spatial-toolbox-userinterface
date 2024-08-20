@@ -131,4 +131,8 @@ export class PoseObjectIdLens extends MotionStudyLens {
     getTableViewValue(joint) {
         return joint.poseObjectId;
     }
+
+    getTableViewColorForValue(_value, _jointName) {
+        return `white`;
+    }
 }

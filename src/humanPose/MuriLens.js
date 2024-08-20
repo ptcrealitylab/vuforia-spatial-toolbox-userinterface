@@ -108,11 +108,55 @@ export class MuriLens extends MotionStudyLens {
             JOINTS.LEFT_ELBOW,
             JOINTS.RIGHT_ELBOW,
             JOINTS.LEFT_WRIST,
-            JOINTS.RIGHT_WRIST
-        ]
+            JOINTS.RIGHT_WRIST,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP
+        ];
     }
 
     getTableViewValue(joint) {
         return joint.muriScore;
+    }
+
+    getTableViewColorForValue(value, jointName) {
+        switch (jointName) {
+            case JOINTS.HEAD:
+                return `#${this.muriScore.getHeadColor(value).getHexString()}`;
+            case JOINTS.CHEST:
+                return `#${this.muriScore.getTrunkColor(value).getHexString()}`;
+            case JOINTS.LEFT_SHOULDER:
+                return `#${this.muriScore.getLeftUpperArmColor(value).getHexString()}`;
+            case JOINTS.RIGHT_SHOULDER:
+                return `#${this.muriScore.getRightUpperArmColor(value).getHexString()}`;
+            case JOINTS.LEFT_ELBOW:
+                return `#${this.muriScore.getLeftLowerArmColor(value).getHexString()}`;
+            case JOINTS.RIGHT_ELBOW:
+                return `#${this.muriScore.getRightLowerArmColor(value).getHexString()}`;
+            case JOINTS.LEFT_WRIST:
+                return `#${this.muriScore.getLeftHandColor(value).getHexString()}`;
+            case JOINTS.RIGHT_WRIST:
+                return `#${this.muriScore.getRightHandColor(value).getHexString()}`;
+            case JOINTS.LEFT_HIP:
+                return `#${this.muriScore.getLegsColor(value).getHexString()}`;
+            case JOINTS.RIGHT_HIP:
+                return `#${this.muriScore.getLegsColor(value).getHexString()}`;
+            default:
+                return 'magenta';
+        }
+    }
+
+    getTableViewImages() {
+        return [
+            './png/muri/head.png',
+            './png/muri/chest.png',
+            './png/muri/shoulder.png',
+            './png/muri/shoulder.png',
+            './png/muri/elbow.png',
+            './png/muri/elbow.png',
+            './png/muri/wrist.png',
+            './png/muri/wrist.png',
+            './png/muri/hip.png',
+            './png/muri/hip.png',
+        ];
     }
 }
