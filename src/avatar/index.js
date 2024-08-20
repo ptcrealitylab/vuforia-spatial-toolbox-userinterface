@@ -501,7 +501,7 @@ createNameSpace("realityEditor.avatar");
 
         writeUsername(myUsername);
 
-        document.body.addEventListener('pointerdown', async (e) => {
+        document.body.addEventListener('pointerdown', (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
                 setBeamOn(e.pageX, e.pageY);
@@ -526,7 +526,7 @@ createNameSpace("realityEditor.avatar");
             });
         });
 
-        document.body.addEventListener('pointermove', async (e) => {
+        document.body.addEventListener('pointermove', (e) => {
             if (!isPointerDown || realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (network.isTouchStateFpsLimited()) {
                 return;
