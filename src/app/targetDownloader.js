@@ -103,7 +103,12 @@ createNameSpace("realityEditor.app.targetDownloader");
                 i--;
             }
         }
-        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+
+        if (fitsInLocalStorage(navmesh)) {
+            window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+        } else {
+            console.warn(`navmesh for ${objectID} doesn't fit in localStorage; will be recalculated on each page load`);
+        }
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);
@@ -121,6 +126,27 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
+    }
+
+    /**
+     * Check if the jsonObject will fit in the specified percentage of the localStorage capacity
+     * (assuming 5MB localStorage capacity)
+     * @param {*} jsonObject
+     * @param {number} maxAmountUsedForSingleObject
+     * @return {boolean}
+     */
+    function fitsInLocalStorage(jsonObject, maxAmountUsedForSingleObject = 0.2) {
+        // Convert your object to a JSON string
+        const objectString = JSON.stringify(jsonObject);
+
+        // Calculate the size in bytes
+        const sizeInBytes = new Blob([objectString]).size;
+
+        // Define the maximum size for localStorage (in bytes)
+        const maxLocalStorageSize = 5 * 1024 * 1024; // 5MB
+
+        // Check if it exceeds the limit
+        return sizeInBytes <= maxLocalStorageSize * maxAmountUsedForSingleObject
     }
 
     /**
