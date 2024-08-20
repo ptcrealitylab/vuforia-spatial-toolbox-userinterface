@@ -504,7 +504,7 @@ createNameSpace("realityEditor.avatar");
         document.body.addEventListener('pointerdown', async (e) => {
             if (realityEditor.device.isMouseEventCameraControl(e)) { return; }
             if (realityEditor.device.utilities.isEventHittingBackground(e)) {
-                await setBeamOn(e.pageX, e.pageY);
+                setBeamOn(e.pageX, e.pageY);
                 lastPointerState.position = {
                     x: e.pageX,
                     y: e.pageY
@@ -532,7 +532,7 @@ createNameSpace("realityEditor.avatar");
                 return;
             }
             // update the beam position even if not hitting background, as long as we started on the background
-            await setBeamOn(e.pageX, e.pageY);
+            setBeamOn(e.pageX, e.pageY);
 
             lastPointerState.position = {
                 x: e.pageX,
@@ -610,8 +610,12 @@ createNameSpace("realityEditor.avatar");
         }
     }
 
-    // send touch intersect to other users via the public data node, and show visual feedback on your cursor
-    async function setBeamOn(screenX, screenY) {
+    /**
+     * Send touch intersect to other users via the public data node, and show visual feedback on your cursor.
+     * @param {number} screenX
+     * @param {number} screenY
+     */
+    function setBeamOn(screenX, screenY) {
         isPointerDown = true;
 
         // before the `await getRaycastCoordinates`, store this down event as a pending beam on,
@@ -619,37 +623,48 @@ createNameSpace("realityEditor.avatar");
         let callId = realityEditor.device.utilities.uuidTimeShort();
         pendingBeamOnCalls[callId] = true;
 
-        let touchState = {
+        prepareBeamToSend(screenX, screenY).then(touchState => {
+            lastBeamOnTimestamp = Date.now();
+
+            if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
+
+            if (!pendingBeamOnCalls[callId]) {
+                console.log('cancel pending beam on - we got a beam off after initiating it');
+                return;
+            }
+
+            let info = utils.getAvatarNodeInfo(myAvatarObject);
+            if (info) {
+                draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
+                network.sendTouchState(info, touchState, { limitToFps: true });
+
+                // show your own beam, so you can tell what you're pointing at
+                myAvatarTouchState = touchState;
+            }
+
+            // snaps the spatial cursor to the beam endpoint on all devices until you stop the beam
+            realityEditor.spatialCursor.updatePointerSnapMode(true);
+
+            debugDataSent();
+        });
+    }
+
+    /**
+     * This is asynchronous because getting the raycast coordinate needs to send the touch event into each iframe.
+     * @param {number} screenX
+     * @param {number} screenY
+     * @return {Promise<{isPointerDown: boolean, screenX: number, screenY: number, rayDirection: number[],
+     *                   worldIntersectPoint: (Vector3|null), timestamp: number}>}
+     */
+    async function prepareBeamToSend(screenX, screenY) {
+        return {
             isPointerDown: isPointerDown,
             screenX: screenX,
             screenY: screenY,
             worldIntersectPoint: await getRaycastCoordinates(screenX, screenY),
             rayDirection: getRayDirection(screenX, screenY),
             timestamp: Date.now()
-        }
-
-        lastBeamOnTimestamp = Date.now();
-
-        if (touchState.isPointerDown && !(touchState.worldIntersectPoint || touchState.rayDirection)) { return; } // don't send if click on nothing
-
-        if (!pendingBeamOnCalls[callId]) {
-            console.log('cancel pending beam on - we got a beam off after initiating it');
-            return;
-        }
-
-        let info = utils.getAvatarNodeInfo(myAvatarObject);
-        if (info) {
-            draw.renderCursorOverlay(true, screenX, screenY, utils.getColor(myAvatarObject));
-            network.sendTouchState(info, touchState, { limitToFps: true });
-
-            // show your own beam, so you can tell what you're pointing at
-            myAvatarTouchState = touchState;
-        }
-
-        // snaps the spatial cursor to the beam endpoint on all devices until you stop the beam
-        realityEditor.spatialCursor.updatePointerSnapMode(true);
-
-        debugDataSent();
+        };
     }
 
     // send touchState: {isPointerDown: false} to other users, so they'll stop showing this avatar's laser beam
