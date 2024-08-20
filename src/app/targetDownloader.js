@@ -105,7 +105,16 @@ createNameSpace("realityEditor.app.targetDownloader");
         }
 
         if (fitsInLocalStorage(navmesh)) {
-            window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+            // save to localStorage, and delete old thumbnails from other worlds from localStorage if there are too many
+            try {
+                window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    console.error('Local storage quota exceeded. Cannot store navmesh.');
+                } else {
+                    console.error('Error storing navmesh in local storage:', e);
+                }
+            }
         } else {
             console.warn(`navmesh for ${objectID} doesn't fit in localStorage; will be recalculated on each page load`);
         }
