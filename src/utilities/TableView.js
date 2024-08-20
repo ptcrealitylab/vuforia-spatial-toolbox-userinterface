@@ -112,7 +112,7 @@ export class TableView {
             }
             const cellIndex = cell.cellIndex;
             const rowIndex = cell.parentNode.rowIndex;
-            
+
             if (cell.tagName === 'TH' || cell.tagName === 'TD') {
                 const originalSelectedElements = Array.from(this.table.querySelectorAll('.selected'));
                 const editingCell = this.getEditingCell();
