@@ -103,7 +103,21 @@ createNameSpace("realityEditor.app.targetDownloader");
                 i--;
             }
         }
-        window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+
+        // save the navmesh into localStorage if it's small enough, otherwise recalculate it each time
+        if (fitsInLocalStorage(navmesh)) {
+            try {
+                window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    console.error('Local storage quota exceeded. Cannot store navmesh.');
+                } else {
+                    console.error('Error storing navmesh in local storage:', e);
+                }
+            }
+        } else {
+            console.warn(`navmesh for ${objectID} doesn't fit in localStorage; will be recalculated on each page load`);
+        }
 
         if (realityEditor.device.environment.variables.addOcclusionGltf) {
             let object = realityEditor.getObject(objectID);
@@ -121,6 +135,27 @@ createNameSpace("realityEditor.app.targetDownloader");
     }
     navmeshWorker.onerror = function(error) {
         console.error(`navmeshWorker: '${error.message}' on line ${error.lineno}`);
+    }
+
+    /**
+     * Check if the jsonObject will fit in the specified percentage of the localStorage capacity
+     * (assuming 5MB localStorage capacity)
+     * @param {*} jsonObject
+     * @param {number} maxAmountUsedForSingleObject
+     * @return {boolean}
+     */
+    function fitsInLocalStorage(jsonObject, maxAmountUsedForSingleObject = 0.2) {
+        // Convert your object to a JSON string
+        const objectString = JSON.stringify(jsonObject);
+
+        // Calculate the size in bytes
+        const sizeInBytes = new Blob([objectString]).size;
+
+        // Define the maximum size for localStorage (in bytes)
+        const maxLocalStorageSize = 5 * 1024 * 1024; // 5MB
+
+        // Check if it exceeds the limit
+        return sizeInBytes <= maxLocalStorageSize * maxAmountUsedForSingleObject
     }
 
     /**
