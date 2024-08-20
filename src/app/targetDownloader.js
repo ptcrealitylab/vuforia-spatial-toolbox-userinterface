@@ -104,8 +104,8 @@ createNameSpace("realityEditor.app.targetDownloader");
             }
         }
 
+        // save the navmesh into localStorage if it's small enough, otherwise recalculate it each time
         if (fitsInLocalStorage(navmesh)) {
-            // save to localStorage, and delete old thumbnails from other worlds from localStorage if there are too many
             try {
                 window.localStorage.setItem(`realityEditor.navmesh.${objectID}`, JSON.stringify(navmesh));
             } catch (e) {
