@@ -165,11 +165,11 @@ createNameSpace("realityEditor.avatar");
 
             try {
                 // rate limit your avatar updates when you are following someone else, so as not to congest the network
+                let myAvatarFPS = 10;
                 if (connectedAvatarUserProfiles[myAvatarId] && connectedAvatarUserProfiles[myAvatarId].lockOnMode) {
-                    updateMyAvatar({ broadcastFps: 1});
-                } else {
-                    updateMyAvatar({ broadcastFps: 10});
+                    myAvatarFPS = 1;
                 }
+                updateMyAvatar({ broadcastFps: myAvatarFPS });
 
                 sendMySpatialCursorPosition();
 
