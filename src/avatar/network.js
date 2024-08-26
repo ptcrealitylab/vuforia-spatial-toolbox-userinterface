@@ -127,7 +127,7 @@ createNameSpace("realityEditor.avatar.network");
     }
 
     // if the object has moved at all, and enough time has passed (FPS_LIMIT), realtime broadcast the new avatar matrix
-    function realtimeSendAvatarPosition(avatarObject, matrix) {
+    function realtimeSendAvatarPosition(avatarObject, matrix, broadcastRateLimitFps = DATA_SEND_FPS_LIMIT) {
         // only send a data update if the matrix has changed since last time
         if (avatarObject.matrix.length !== 16) { avatarObject.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
         let totalDifference = realityEditor.avatar.utils.sumOfElementDifferences(avatarObject.matrix, matrix);
@@ -138,11 +138,14 @@ createNameSpace("realityEditor.avatar.network");
         // already gets uploaded to server but isn't set locally yet
         avatarObject.matrix = matrix;
 
+        // rate limit can be lowered below DATA_SEND_FPS_LIMIT by providing a broadcastRateLimitFps
+        let rateLimitFps = Math.min(DATA_SEND_FPS_LIMIT, broadcastRateLimitFps);
         // sceneGraph uploads object position to server every 1 second via REST, but we can stream updates in realtime here
-        if (Date.now() - lastBroadcastPositionTimestamp < (1000 / DATA_SEND_FPS_LIMIT)) {
+        if (Date.now() - lastBroadcastPositionTimestamp < (1000 / rateLimitFps)) {
             return;
         }
         realityEditor.network.realtime.broadcastUpdate(avatarObject.objectId, null, null, 'matrix', matrix);
+        // console.log('broadcast avatar position');
         lastBroadcastPositionTimestamp = Date.now();
     }
 

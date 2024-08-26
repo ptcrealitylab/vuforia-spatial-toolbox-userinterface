@@ -164,7 +164,12 @@ createNameSpace("realityEditor.avatar");
             if (!myAvatarObject || globalStates.freezeButtonState) { return; }
 
             try {
-                updateMyAvatar();
+                // rate limit your avatar updates when you are following someone else, so as not to congest the network
+                let myAvatarFPS = 10;
+                if (connectedAvatarUserProfiles[myAvatarId] && connectedAvatarUserProfiles[myAvatarId].lockOnMode) {
+                    myAvatarFPS = 1;
+                }
+                updateMyAvatar({ broadcastFps: myAvatarFPS });
 
                 sendMySpatialCursorPosition();
 
@@ -343,7 +348,7 @@ createNameSpace("realityEditor.avatar");
     }
 
     // update the avatar object to match the camera position each frame (if it exists), and realtime broadcast to others
-    function updateMyAvatar() {
+    function updateMyAvatar(options = { broadcastFps: 10 }) {
         let avatarSceneNode = realityEditor.sceneGraph.getSceneNodeById(myAvatarId);
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.CAMERA);
         if (!avatarSceneNode || !cameraNode) { return; }
@@ -356,7 +361,7 @@ createNameSpace("realityEditor.avatar");
         let worldNode = realityEditor.sceneGraph.getSceneNodeById(worldObjectId);
         let relativeMatrix = avatarSceneNode.getMatrixRelativeTo(worldNode);
 
-        network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix);
+        network.realtimeSendAvatarPosition(myAvatarObject, relativeMatrix, options.broadcastFps);
     }
     
     function sendMySpatialCursorPosition() {
