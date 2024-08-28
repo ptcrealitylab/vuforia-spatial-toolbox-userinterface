@@ -23,8 +23,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
         EditName: 'Edit Name',
         AllFollowMe: 'All Follow Me',
         FollowThem: 'Follow',
-        FollowMe: 'Follow Me',
-        AllStopFollowingMe: 'All Stop Following Me',
+        FollowMe: 'Follow Me'
     });
 
     function initService() {
@@ -156,17 +155,14 @@ createNameSpace("realityEditor.avatar.iconMenu");
             leaderContainer.id = 'avatarLeaderContainer';
             document.body.appendChild(leaderContainer);
 
-            leaderContainer.addEventListener('pointerup', (_e) => {
-                callbacks.onMenuItemClicked.forEach((cb) => {
-                    cb({
-                        buttonText: MENU_ITEMS.AllStopFollowingMe,
-                        // avatarObjectId: myId,
-                        // avatarProfile: connectedAvatars[myId],
-                        // userInitials: userInitials,
-                        // isMyIcon: true,
-                        // pointerEvent: e
-                    });
-                });
+            leaderContainer.addEventListener('pointerup', () => {
+                for (let objectKey in connectedAvatars) {
+                    if (objectKey === myId) continue; // skip yourself
+                    let profile = connectedAvatars[objectKey];
+                    if (profile && profile.lockOnMode === myId) {
+                        realityEditor.avatar.writeLockOnToMe(objectKey, false); // false means stop
+                    }
+                }
             });
         }
 
