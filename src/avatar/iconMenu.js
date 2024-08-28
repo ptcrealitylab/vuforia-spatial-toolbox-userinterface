@@ -23,7 +23,8 @@ createNameSpace("realityEditor.avatar.iconMenu");
         EditName: 'Edit Name',
         AllFollowMe: 'All Follow Me',
         FollowThem: 'Follow',
-        FollowMe: 'Follow Me'
+        FollowMe: 'Follow Me',
+        AllStopFollowingMe: 'All Stop Following Me',
     });
 
     function initService() {
@@ -67,6 +68,9 @@ createNameSpace("realityEditor.avatar.iconMenu");
         while (iconContainer.hasChildNodes()) {
             iconContainer.removeChild(iconContainer.lastChild);
         }
+
+        // render extra controls if anyone is following you
+        renderLeaderUI(connectedAvatars);
 
         if (Object.keys(connectedAvatars).length < 1) {
             return; // don't show unless there is at least one avatar
@@ -136,6 +140,45 @@ createNameSpace("realityEditor.avatar.iconMenu");
 
         let iconsWidth = Math.min(MAX_ICONS, sortedKeys.length) * (ICON_WIDTH + ICON_GAP) + ICON_GAP;
         iconContainer.style.width = iconsWidth + 'px';
+    }
+    /**
+     * The "leader" UI shows up when someone is following you.
+     * Currently shows how many are following you, and a way to make them stop following.
+     * In future, could provide more tools for leader, such as a button to share tool focus.
+     * @param {Object.<string, UserProfile>} connectedAvatars
+     */
+    function renderLeaderUI(connectedAvatars) {
+        let myId = realityEditor.avatar.getMyAvatarId();
+
+        let leaderContainer = document.getElementById('avatarLeaderContainer');
+        if (!leaderContainer) {
+            leaderContainer = document.createElement('div');
+            leaderContainer.id = 'avatarLeaderContainer';
+            document.body.appendChild(leaderContainer);
+
+            leaderContainer.addEventListener('pointerup', (_e) => {
+                callbacks.onMenuItemClicked.forEach((cb) => {
+                    cb({
+                        buttonText: MENU_ITEMS.AllStopFollowingMe,
+                        // avatarObjectId: myId,
+                        // avatarProfile: connectedAvatars[myId],
+                        // userInitials: userInitials,
+                        // isMyIcon: true,
+                        // pointerEvent: e
+                    });
+                });
+            });
+        }
+
+        let usersFollowingMe = realityEditor.avatar.utils.getUsersFollowingUser(myId, connectedAvatars);
+
+        if (usersFollowingMe.length > 0) {
+            let plural = usersFollowingMe.length > 1;
+            leaderContainer.textContent = `${usersFollowingMe.length} ${plural ? 'users are' : 'user is'} following your perspective. Click here to stop sharing.`;
+            leaderContainer.style.display = '';
+        } else {
+            leaderContainer.style.display = 'none';
+        }
     }
     /**
      * Shows or hides the dropdown corresponding to the avatar icon for the given avatar objectId
