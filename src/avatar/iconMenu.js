@@ -147,7 +147,6 @@ createNameSpace("realityEditor.avatar.iconMenu");
      * @param {Object.<string, UserProfile>} connectedAvatars
      */
     function renderLeaderUI(connectedAvatars) {
-        let myId = realityEditor.avatar.getMyAvatarId();
 
         let leaderContainer = document.getElementById('avatarLeaderContainer');
         if (!leaderContainer) {
@@ -156,6 +155,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
             document.body.appendChild(leaderContainer);
 
             leaderContainer.addEventListener('pointerup', () => {
+                let myId = realityEditor.avatar.getMyAvatarId(); // define in callback scope so it doesn't store outdated value
                 for (let objectKey in connectedAvatars) {
                     if (objectKey === myId) continue; // skip yourself
                     let profile = connectedAvatars[objectKey];
@@ -166,6 +166,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
             });
         }
 
+        let myId = realityEditor.avatar.getMyAvatarId();
         let usersFollowingMe = realityEditor.avatar.utils.getUsersFollowingUser(myId, connectedAvatars);
 
         if (usersFollowingMe.length > 0) {
