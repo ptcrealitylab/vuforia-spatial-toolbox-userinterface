@@ -589,10 +589,15 @@ createNameSpace("realityEditor.avatar");
     /**
      * Sends a message to otherAvatarId telling them that they are now following myAvatarId (via lockOnMode in publicData)
      * @param {string} otherAvatarId
+     * @param {boolean} doLockOn - true to lock on, false to stop that user from locking on to you
      */
-    function writeLockOnToMe(otherAvatarId) {
+    function writeLockOnToMe(otherAvatarId, doLockOn = true) {
         if (!myAvatarId) { return; }
-        writeLockOnMode(otherAvatarId, myAvatarId);
+        if (doLockOn) {
+            writeLockOnMode(otherAvatarId, myAvatarId);
+        } else {
+            writeLockOnMode(otherAvatarId, null);
+        }
     }
 
     /**
