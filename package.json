@@ -6,7 +6,7 @@
     "@vitest/coverage-v8": "^2.0.5",
     "eslint": "^8.57.0",
     "jsdoc": "^4.0.3",
-    "vite": "^5.3.5",
+    "vite": "^5.4.2",
     "vitest": "^2.0.1"
   },
   "scripts": {
@@ -25,6 +25,6 @@
   },
   "homepage": "https://github.com/PTCInc/RE-userinterface#readme",
   "dependencies": {
-    "@microsoft/teams-js": "^2.22.0"
+    "@microsoft/teams-js": "^2.27.0"
   }
 }

@@ -74,6 +74,16 @@ const REBA_CONFIG_CUSTOM1 = Object.freeze({
 /** Modifiable configuration of thresholds for REBA calculation. */
 const REBA_CONFIG = Object.assign({}, REBA_CONFIG_DEFAULT);
 
+export function getNeckColor(neckScore) {
+    if (neckScore < REBA_CONFIG.neckScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (neckScore < REBA_CONFIG.neckScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
+}
+
 /**
  * Sets the score and color for the neck reba.
  * Starting with score=1
@@ -122,13 +132,7 @@ function neckReba(data) {
         
         neckScore = clamp(neckScore, 1, REBA_CONFIG.neckScoreLevels[2] - 1);
 
-        if (neckScore < REBA_CONFIG.neckScoreLevels[0]) {
-            neckColor = MotionStudyColors.green;
-        } else if (neckScore < REBA_CONFIG.neckScoreLevels[1]) {
-            neckColor = MotionStudyColors.yellow;
-        } else {
-            neckColor = MotionStudyColors.red;
-        }
+        neckColor = getNeckColor(neckScore);
     }
     
     [JOINTS.NECK,
@@ -154,6 +158,16 @@ function neckReba(data) {
         data.boneColors[getBoneName(bone)] = neckColor;
     });
     
+}
+
+export function getTrunkColor(trunkScore) {
+    if (trunkScore < REBA_CONFIG.trunkScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (trunkScore < REBA_CONFIG.trunkScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
 }
 
 /**
@@ -206,13 +220,7 @@ function trunkReba(data) {
         
         trunkScore = clamp(trunkScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
 
-        if (trunkScore < REBA_CONFIG.trunkScoreLevels[0]) {
-            trunkColor = MotionStudyColors.green;
-        } else if (trunkScore < REBA_CONFIG.trunkScoreLevels[1]) {
-            trunkColor = MotionStudyColors.yellow;
-        } else {
-            trunkColor = MotionStudyColors.red;
-        }
+        trunkColor = getTrunkColor(trunkScore);
     }
     
     [JOINTS.CHEST,
@@ -236,6 +244,26 @@ function trunkReba(data) {
     });
 }
 
+export function getLeftLegColor(leftLegScore) {
+    if (leftLegScore < REBA_CONFIG.legScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (leftLegScore < REBA_CONFIG.legScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
+}
+
+export function getRightLegColor(rightLegScore) {
+    if (rightLegScore < REBA_CONFIG.legScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (rightLegScore < REBA_CONFIG.legScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
+}
+
 /**
  * Sets the score and color for the arms reba.
  * Starting with score=1
@@ -251,16 +279,16 @@ function legsReba(data) {
     let rightLegColor = MotionStudyColors.undefined;
 
     // Check for unilateral bearing of the body weight
-    let _onelegged = false;
+    // let _oneLegged = false;
     if(data.offsets.hasOwnProperty(ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT)) {
         const footHeightDifference = Math.abs(data.offsets[ERGO_OFFSETS.LEFT_TO_RIGHT_FOOT].y);
         // Height difference for leg raise is not specified in REBA standard
         if (footHeightDifference > REBA_CONFIG.footHeightDifferenceThresholds[0]) {
             leftLegScore++;  // this raises score of both legs, so max() works correctly in neckLegTrunkScore()
             rightLegScore++;
-            _onelegged = true;
+            // _oneLegged = true;
         }
-        //console.log(`Legs: footHeightDifference: ${footHeightDifference.toFixed(0)}mm; onelegged=${_onelegged}`);        
+        //console.log(`Legs: footHeightDifference: ${footHeightDifference.toFixed(0)}mm; onelegged=${_oneLegged}`);        
     }
 
     /* left leg */
@@ -276,13 +304,7 @@ function legsReba(data) {
         //console.log(`Left lower leg: bendAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_LEG_BEND].toFixed(0)}; leftLegScore=${leftLegScore}`);        
         
         leftLegScore = clamp(leftLegScore, 1, REBA_CONFIG.trunkScoreLevels[2] - 1);
-        if (leftLegScore < REBA_CONFIG.legScoreLevels[0]) {
-            leftLegColor = MotionStudyColors.green;
-        } else if (leftLegScore < REBA_CONFIG.legScoreLevels[1]) {
-            leftLegColor = MotionStudyColors.yellow;
-        } else {
-            leftLegColor = MotionStudyColors.red;
-        }
+        leftLegColor = getLeftLegColor(leftLegScore);
     }
 
     /* right leg */
@@ -298,13 +320,7 @@ function legsReba(data) {
         //console.log(`Right lower leg: bendAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_LEG_BEND].toFixed(0)}; rightLegScore=${rightLegScore}`); 
 
         rightLegScore = clamp(rightLegScore, 1, REBA_CONFIG.legScoreLevels[2] - 1);
-        if (rightLegScore < REBA_CONFIG.legScoreLevels[0]) {
-            rightLegColor = MotionStudyColors.green;
-        } else if (rightLegScore < REBA_CONFIG.legScoreLevels[1]) {
-            rightLegColor = MotionStudyColors.yellow;
-        } else {
-            rightLegColor = MotionStudyColors.red;
-        }
+        rightLegColor = getRightLegColor(rightLegScore);
     }
     
     [JOINTS.LEFT_HIP,
@@ -336,6 +352,26 @@ function legsReba(data) {
         data.boneScores[getBoneName(bone)] = rightLegScore;
         data.boneColors[getBoneName(bone)] = rightLegColor;
     });
+}
+
+export function getLeftUpperArmColor(leftArmScore) {
+    if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
+}
+
+export function getRightUpperArmColor(rightArmScore) {
+    if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
 }
 
 /**
@@ -393,22 +429,16 @@ function upperArmReba(data) {
         }
         
         // Check for shoulder raising
-        let _raise = false;
+        // let _raise = false;
         if (data.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE] < REBA_CONFIG.shoulderRaiseAngleThresholds[0]) {
             leftArmScore++; // +1 for shoulder raised (less than 80 degress from trunk up)
-            _raise = true;
+            // _raise = true;
         }
 
         //console.log(`Left upper arm: armRaiseAngle=${data.angles[ERGO_ANGLES.LEFT_UPPER_ARM_RAISE].toFixed(0)}; shoulderRaiseAngle: ${data.angles[ERGO_ANGLES.LEFT_SHOULDER_RAISE].toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; leftArmScore=${leftArmScore}`);
 
         leftArmScore = clamp(leftArmScore, 1, REBA_CONFIG.upperArmScoreLevels[2] - 1);
-        if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
-            leftArmColor = MotionStudyColors.green;
-        } else if (leftArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
-            leftArmColor = MotionStudyColors.yellow;
-        } else {
-            leftArmColor = MotionStudyColors.red;
-        }
+        leftArmColor = getLeftUpperArmColor(leftArmScore);
     }
 
     /* right uppper arm */
@@ -446,22 +476,16 @@ function upperArmReba(data) {
             }
         }
 
-        let _raise = false;
+        // let _raise = false;
         if (data.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE] < REBA_CONFIG.shoulderRaiseAngleThresholds[0]) {
             rightArmScore++; // +1 for shoulder raised (less than 80 degress from trunk up)
-            _raise = true;
+            // _raise = true;
         }
 
-        //console.log(`Right upper arm: armRaiseAngle=${data.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE].toFixed(0)}; shoulderRaiseAngle: ${data.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE].toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; rightArmScore=${rightArmScore}`);
+        // console.log(`Right upper arm: armRaiseAngle=${data.angles[ERGO_ANGLES.RIGHT_UPPER_ARM_RAISE].toFixed(0)}; shoulderRaiseAngle: ${data.angles[ERGO_ANGLES.RIGHT_SHOULDER_RAISE].toFixed(0)}; raise=${_raise}; abduction=${abduction}; gravityAlign=${gravityAlign}; rightArmScore=${rightArmScore}`);
 
         rightArmScore = clamp(rightArmScore, 1, REBA_CONFIG.upperArmScoreLevels[2] - 1);
-        if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[0]) {
-            rightArmColor = MotionStudyColors.green;
-        } else if (rightArmScore < REBA_CONFIG.upperArmScoreLevels[1]) {
-            rightArmColor = MotionStudyColors.yellow;
-        } else {
-            rightArmColor = MotionStudyColors.red;
-        }
+        rightArmColor = getRightUpperArmColor(rightArmScore);
     }
     
     data.jointScores[JOINTS.LEFT_SHOULDER] = leftArmScore;
@@ -473,6 +497,22 @@ function upperArmReba(data) {
     data.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowLeft)] = leftArmColor;
     data.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmScore;
     data.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightArmColor;
+}
+
+export function getLeftLowerArmColor(leftArmScore) {
+    if (leftArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else {
+        return MotionStudyColors.yellow;
+    }
+}
+
+export function getRightLowerArmColor(rightArmScore) {
+    if (rightArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else {
+        return MotionStudyColors.yellow;
+    }
 }
 
 /**
@@ -497,11 +537,7 @@ function lowerArmReba(data) {
         //console.log(`Left lower arm: bendAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_BEND].toFixed(0)}; leftArmScore=${leftArmScore}`);
     
         leftArmScore = clamp(leftArmScore, 1, REBA_CONFIG.lowerArmScoreLevels[1] - 1);
-        if (leftArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
-            leftArmColor = MotionStudyColors.green;
-        } else {
-            leftArmColor = MotionStudyColors.yellow;
-        }
+        leftArmColor = getLeftLowerArmColor(leftArmScore);
     }
     
     /* right lower arm */
@@ -515,11 +551,7 @@ function lowerArmReba(data) {
         //console.log(`Right lower arm: bendAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_BEND].toFixed(0)}; rightArmScore=${rightArmScore}`);
 
         rightArmScore = clamp(rightArmScore, 1, REBA_CONFIG.lowerArmScoreLevels[1] - 1);
-        if (rightArmScore < REBA_CONFIG.lowerArmScoreLevels[0]) {
-            rightArmColor = MotionStudyColors.green;
-        } else {
-            rightArmColor = MotionStudyColors.yellow;
-        }
+        rightArmColor = getRightLowerArmColor(rightArmScore);
     }
     
     data.jointScores[JOINTS.LEFT_ELBOW] = leftArmScore;
@@ -531,6 +563,26 @@ function lowerArmReba(data) {
     data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftArmColor;
     data.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmScore;
     data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightArmColor;
+}
+
+export function getLeftWristColor(leftWristScore) {
+    if (leftWristScore < REBA_CONFIG.wristScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (leftWristScore < REBA_CONFIG.wristScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
+}
+
+export function getRightWristColor(rightWristScore) {
+    if (rightWristScore < REBA_CONFIG.wristScoreLevels[0]) {
+        return MotionStudyColors.green;
+    } else if (rightWristScore < REBA_CONFIG.wristScoreLevels[1]) {
+        return MotionStudyColors.yellow;
+    } else {
+        return MotionStudyColors.red;
+    }
 }
 
 /**
@@ -574,14 +626,7 @@ function wristReba(data) {
         //console.log(`Left wrist: frontBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_FRONT_BEND].toFixed(0)};  sideBendAngle=${data.angles[ERGO_ANGLES.LEFT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.LEFT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; leftWristScore=${leftWristScore}`);
 
         leftWristScore = clamp(leftWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
-
-        if (leftWristScore < REBA_CONFIG.wristScoreLevels[0]) {
-            leftWristColor = MotionStudyColors.green;
-        } else if (leftWristScore < REBA_CONFIG.wristScoreLevels[1]) {
-            leftWristColor = MotionStudyColors.yellow;
-        } else {
-            leftWristColor = MotionStudyColors.red;
-        }
+        leftWristColor = getLeftWristColor(leftWristScore);
     }
         
     /* right wrist */
@@ -610,14 +655,7 @@ function wristReba(data) {
         //console.log(`Right wrist: frontBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_FRONT_BEND].toFixed(0)}; sideBendAngle=${data.angles[ERGO_ANGLES.RIGHT_HAND_SIDE_BEND].toFixed(0)}; twistAngle=${data.angles[ERGO_ANGLES.RIGHT_LOWER_ARM_TWIST].toFixed(0)} deg; sideBend=${sideBend}; twist=${twist}; rightWristScore=${rightWristScore}`);
 
         rightWristScore = clamp(rightWristScore, 1, REBA_CONFIG.wristScoreLevels[2] - 1);
-
-        if (rightWristScore < REBA_CONFIG.wristScoreLevels[0]) {
-            rightWristColor = MotionStudyColors.green;
-        } else if (rightWristScore < REBA_CONFIG.wristScoreLevels[1]) {
-            rightWristColor = MotionStudyColors.yellow;
-        } else {
-            rightWristColor = MotionStudyColors.red;
-        }
+        rightWristColor = getRightWristColor(rightWristScore);
     }
 
     /* set score and color to hand joints and bones */
@@ -666,10 +704,10 @@ function wristReba(data) {
     
 }
 
-const startColor = MotionStudyColors.fade(MotionStudyColors.green);
-const endColor = MotionStudyColors.fade(MotionStudyColors.red);
+const startColor = MotionStudyColors.green;
+const endColor = MotionStudyColors.red;
 
-function getOverallRebaColor(rebaScore) {
+export function getOverallRebaColor(rebaScore) {
     const lowCutoff = REBA_CONFIG.overallScoreLevels[0];
     const highCutoff = REBA_CONFIG.overallScoreLevels[1];
     // console.log(`Overall Reba Score: ${rebaScore}\nlowCutoff: ${lowCutoff}\nhighCutoff: ${highCutoff}`); // TODO: experiment with cutoffs
@@ -837,7 +875,7 @@ function calculateReba(data) {
     wristReba(data);
 
     data.overallScore = overallRebaCalculation(data);
-    data.overallColor = getOverallRebaColor(data.overallScore);
+    data.overallColor = MotionStudyColors.fade(getOverallRebaColor(data.overallScore));
 }
 
 /**

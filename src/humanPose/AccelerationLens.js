@@ -155,4 +155,8 @@ export class AccelerationLens extends MotionStudyLens {
     getTableViewValue(joint) {
         return joint.accelerationMagnitude;
     }
+    
+    getTableViewColorForValue(value, _jointName) {
+        return `#${this.getColorForAcceleration(value).getHexString()}`;
+    }
 }

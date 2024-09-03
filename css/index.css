@@ -1802,6 +1802,19 @@ Logic Interface CSS
     z-index: 1000;
 }
 
+#avatarLeaderContainer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateZ(1000px);
+    text-align: center;
+    bottom: 15px;
+    background-color: rgba(0,0,0,0.5);
+    padding: 8px 16px;
+    border-radius: 15px;
+    z-index: 1000;
+    cursor: pointer;
+}
+
 .avatarListIcon {
     position: absolute;
     width: 30px;

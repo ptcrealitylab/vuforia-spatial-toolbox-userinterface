@@ -67,7 +67,49 @@ export class RebaLens extends MotionStudyLens {
         return pose.getJoint(JOINTS.HEAD).rebaColorOverall;
     }
 
+    getTableViewJoints() {
+        return [
+            JOINTS.HEAD,
+            JOINTS.CHEST,
+            JOINTS.LEFT_SHOULDER,
+            JOINTS.RIGHT_SHOULDER,
+            JOINTS.LEFT_ELBOW,
+            JOINTS.RIGHT_ELBOW,
+            JOINTS.LEFT_WRIST,
+            JOINTS.RIGHT_WRIST,
+            JOINTS.LEFT_HIP,
+            JOINTS.RIGHT_HIP
+        ]
+    }
+
     getTableViewValue(joint) {
         return joint.rebaScore;
+    }
+
+    getTableViewColorForValue(value, jointName) {
+        switch (jointName) {
+            case JOINTS.HEAD:
+                return `#${Reba.getNeckColor(value).getHexString()}`;
+            case JOINTS.CHEST:
+                return `#${Reba.getTrunkColor(value).getHexString()}`;
+            case JOINTS.LEFT_SHOULDER:
+                return `#${Reba.getLeftUpperArmColor(value).getHexString()}`;
+            case JOINTS.RIGHT_SHOULDER:
+                return `#${Reba.getRightUpperArmColor(value).getHexString()}`;
+            case JOINTS.LEFT_ELBOW:
+                return `#${Reba.getLeftLowerArmColor(value).getHexString()}`;
+            case JOINTS.RIGHT_ELBOW:
+                return `#${Reba.getRightLowerArmColor(value).getHexString()}`;
+            case JOINTS.LEFT_WRIST:
+                return `#${Reba.getLeftWristColor(value).getHexString()}`;
+            case JOINTS.RIGHT_WRIST:
+                return `#${Reba.getRightWristColor(value).getHexString()}`;
+            case JOINTS.LEFT_HIP:
+                return `#${Reba.getLeftLegColor(value).getHexString()}`;
+            case JOINTS.RIGHT_HIP:
+                return `#${Reba.getRightLegColor(value).getHexString()}`;
+            default:
+                return 'magenta';
+        }
     }
 }

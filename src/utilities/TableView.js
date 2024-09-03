@@ -1,5 +1,5 @@
 export class TableView {
-    constructor(rowNames, columnNames, data, container) {
+    constructor(rowNames, columnNames, data, container, options) {
         this.rowNames = rowNames;
         this.columnNames = columnNames;
 
@@ -8,6 +8,12 @@ export class TableView {
             // Must convert data to strings to do proper comparison with contents
             return row.map(cell => `${cell}`);
         });
+        if (options.colors) {
+            this.colors = options.colors;
+        } else {
+            this.colors = Array.from({length: rowNames.length}).map(() => Array.from({length: columnNames.length}).map(() => 'white'));
+        }
+        this.headerImages = options.headerImages || []; // Array of image URLs
         this.container = container;
         this.table = this.createTable();
         this.loadData(this.originalData);
@@ -35,6 +41,14 @@ export class TableView {
                     cell.classList.add('table-view-header');
                     cell.classList.add('table-view-column-header');
                     cell.x = j;
+                    // Add image if available
+                    if (this.headerImages[j-1]) {
+                        const img = document.createElement('img');
+                        img.src = this.headerImages[j-1];
+                        img.alt = this.columnNames[j-1]; // Use column name as alt text
+                        img.classList.add('table-view-header-image');
+                        cell.appendChild(img);
+                    }
                 } else if (j === 0) {
                     const cell = row.insertCell();
                     cell.textContent = this.rowNames[i-1];
@@ -68,6 +82,8 @@ export class TableView {
                     return;
                 }
                 cell.textContent = data[j-1][i-1];
+                cell.style.backgroundColor = `color-mix(in srgb, ${this.colors[j-1][i-1]}, transparent 80%)`;
+                cell.style.color = 'white';
                 this.checkModified(cell);
             });
         });
@@ -90,7 +106,10 @@ export class TableView {
             if (!this.isInteractable) {
                 return;
             }
-            const cell = e.target;
+            let cell = e.target;
+            if (cell.tagName === 'IMG') { // Handle clicks on header images
+                cell = cell.parentNode;
+            }
             const cellIndex = cell.cellIndex;
             const rowIndex = cell.parentNode.rowIndex;
 

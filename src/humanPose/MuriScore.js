@@ -131,6 +131,16 @@ export class MuriScore {
             this.muriScores[scoreName] = null;
         });
     }
+    
+    getTrunkColor(trunkScore) {
+        if (trunkScore < MURI_CONFIG.trunkScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (trunkScore < MURI_CONFIG.trunkScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
 
     scoreTrunk() {
         let trunkScore = 0; 
@@ -185,13 +195,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.TRUNK_FRONT_BEND] != null || this.muriScores[MURI_SCORES.TRUNK_SIDE_BEND] != null || this.muriScores[MURI_SCORES.TRUNK_TWIST] != null) {
-            if (trunkScore < MURI_CONFIG.trunkScoreLevels[0]) {
-                trunkColor = MotionStudyColors.green;
-            } else if (trunkScore < MURI_CONFIG.trunkScoreLevels[1]) {
-                trunkColor = MotionStudyColors.yellow;
-            } else {
-                trunkColor = MotionStudyColors.red;
-            }
+            trunkColor = this.getTrunkColor(trunkScore);
         }
 
         // set the aggregated score and color to all joints and bones of the body part
@@ -214,6 +218,16 @@ export class MuriScore {
             this.data.boneScores[getBoneName(bone)] = trunkScore;
             this.data.boneColors[getBoneName(bone)] = trunkColor;
         });
+    }
+    
+    getHeadColor(headScore) {
+        if (headScore < MURI_CONFIG.headScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (headScore < MURI_CONFIG.headScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
     }
 
     scoreHead() {
@@ -269,13 +283,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.HEAD_FRONT_BEND] != null || this.muriScores[MURI_SCORES.HEAD_SIDE_BEND] != null || this.muriScores[MURI_SCORES.HEAD_TWIST] != null) {
-            if (headScore < MURI_CONFIG.headScoreLevels[0]) {
-                headColor = MotionStudyColors.green;
-            } else if (headScore < MURI_CONFIG.headScoreLevels[1]) {
-                headColor = MotionStudyColors.yellow;
-            } else {
-                headColor = MotionStudyColors.red;
-            }
+            headColor = this.getHeadColor(headScore);
         }
 
         // set the aggregated score and color to all joints and bones of the body part  
@@ -302,14 +310,34 @@ export class MuriScore {
             this.data.boneColors[getBoneName(bone)] = headColor;
         });
     }
+    
+    getLeftUpperArmColor(leftUpperArmScore) {
+        if (leftUpperArmScore < MURI_CONFIG.upperArmScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (leftUpperArmScore < MURI_CONFIG.upperArmScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
+    
+    getRightUpperArmColor(rightUpperArmScore) {
+        if (rightUpperArmScore < MURI_CONFIG.upperArmScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (rightUpperArmScore < MURI_CONFIG.upperArmScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
 
     scoreUpperArms() {
-        let leftUpperArmScore = 0;
+        let leftUpperArmScore;
         let leftUpperArmColor = MotionStudyColors.undefined;
-        let rightUpperArmScore = 0;
+        let rightUpperArmScore;
         let rightUpperArmColor = MotionStudyColors.undefined;
 
-        /* left uppper arm */
+        /* left upper arm */
 
         // check for front/back arm raise (for now thresholds are used symmetrically for the front and the back)
         // TODO future: reevaluate symmetrical use of thresholds based on customer feedback
@@ -350,16 +378,10 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.LEFT_UPPER_ARM_FRONT_RAISE] != null || this.muriScores[MURI_SCORES.LEFT_UPPER_ARM_SIDE_RAISE] != null) {
-            if (leftUpperArmScore < MURI_CONFIG.upperArmScoreLevels[0]) {
-                leftUpperArmColor = MotionStudyColors.green;
-            } else if (leftUpperArmScore < MURI_CONFIG.upperArmScoreLevels[1]) {
-                leftUpperArmColor = MotionStudyColors.yellow;
-            } else {
-                leftUpperArmColor = MotionStudyColors.red;
-            }
+            leftUpperArmColor = this.getLeftUpperArmColor(leftUpperArmScore);
         }
 
-        /* right uppper arm */
+        /* right upper arm */
 
         // check for front/back arm raise (for now thresholds are used symmetrically for the front and the back)
         // TODO future: reevaluate symmetrical use of thresholds
@@ -400,13 +422,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.RIGHT_UPPER_ARM_FRONT_RAISE] != null || this.muriScores[MURI_SCORES.RIGHT_UPPER_ARM_SIDE_RAISE] != null) {
-            if (rightUpperArmScore < MURI_CONFIG.upperArmScoreLevels[0]) {
-                rightUpperArmColor = MotionStudyColors.green;
-            } else if (rightUpperArmScore < MURI_CONFIG.upperArmScoreLevels[1]) {
-                rightUpperArmColor = MotionStudyColors.yellow;
-            } else {
-                rightUpperArmColor = MotionStudyColors.red;
-            }
+            rightUpperArmColor = this.getRightUpperArmColor(rightUpperArmScore);
         }
         
 
@@ -421,11 +437,31 @@ export class MuriScore {
         this.data.boneScores[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightUpperArmScore;
         this.data.boneColors[getBoneName(JOINT_CONNECTIONS.shoulderElbowRight)] = rightUpperArmColor;
     }
+    
+    getLeftLowerArmColor(leftLowerArmScore) {
+        if (leftLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (leftLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
+    
+    getRightLowerArmColor(rightLowerArmScore) {
+        if (rightLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (rightLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
 
     scoreLowerArms() {
-        let leftLowerArmScore = 0;
+        let leftLowerArmScore;
         let leftLowerArmColor = MotionStudyColors.undefined;
-        let rightLowerArmScore = 0;
+        let rightLowerArmScore;
         let rightLowerArmColor = MotionStudyColors.undefined;
 
         /* left lower arm */
@@ -461,13 +497,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.LEFT_LOWER_ARM_BEND] != null || this.muriScores[MURI_SCORES.LEFT_LOWER_ARM_TWIST] != null) {
-            if (leftLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[0]) {
-                leftLowerArmColor = MotionStudyColors.green;
-            } else if (leftLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[1]) {
-                leftLowerArmColor = MotionStudyColors.yellow;
-            } else {
-                leftLowerArmColor = MotionStudyColors.red;
-            }
+            leftLowerArmColor = this.getLeftLowerArmColor(leftLowerArmScore);
         }
 
         /* right lower arm */
@@ -503,13 +533,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.RIGHT_LOWER_ARM_BEND] != null || this.muriScores[MURI_SCORES.RIGHT_LOWER_ARM_TWIST] != null) {
-            if (rightLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[0]) {
-                rightLowerArmColor = MotionStudyColors.green;
-            } else if (rightLowerArmScore < MURI_CONFIG.lowerArmScoreLevels[1]) {
-                rightLowerArmColor = MotionStudyColors.yellow;
-            } else {
-                rightLowerArmColor = MotionStudyColors.red;
-            }
+            rightLowerArmColor = this.getRightLowerArmColor(rightLowerArmScore);
         }
 
         // set the aggregated score and color to all joints and bones of the body parts
@@ -522,6 +546,26 @@ export class MuriScore {
         this.data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristLeft)] = leftLowerArmColor;
         this.data.boneScores[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightLowerArmScore;
         this.data.boneColors[getBoneName(JOINT_CONNECTIONS.elbowWristRight)] = rightLowerArmColor;
+    }
+    
+    getLeftHandColor(leftHandScore) {
+        if (leftHandScore < MURI_CONFIG.handScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (leftHandScore < MURI_CONFIG.handScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
+    }
+    
+    getRightHandColor(rightHandScore) {
+        if (rightHandScore < MURI_CONFIG.handScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else if (rightHandScore < MURI_CONFIG.handScoreLevels[1]) {
+            return MotionStudyColors.yellow;
+        } else {
+            return MotionStudyColors.red;
+        }
     }
 
     scoreHands() {
@@ -572,13 +616,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.LEFT_HAND_FRONT_BEND] != null || this.muriScores[MURI_SCORES.LEFT_HAND_REACH] != null) {
-            if (leftHandScore < MURI_CONFIG.handScoreLevels[0]) {
-                leftHandColor = MotionStudyColors.green;
-            } else if (leftHandScore < MURI_CONFIG.handScoreLevels[1]) {
-                leftHandColor = MotionStudyColors.yellow;
-            } else {
-                leftHandColor = MotionStudyColors.red;
-            }
+            leftHandColor = this.getLeftHandColor(leftHandScore);
         }
 
         /* right hand */
@@ -623,13 +661,7 @@ export class MuriScore {
 
         // select color for the score of the highest strain (if any of strains is calculated)
         if (this.muriScores[MURI_SCORES.RIGHT_HAND_FRONT_BEND] != null || this.muriScores[MURI_SCORES.RIGHT_HAND_REACH] != null) {
-            if (rightHandScore < MURI_CONFIG.handScoreLevels[0]) {
-                rightHandColor = MotionStudyColors.green;
-            } else if (rightHandScore < MURI_CONFIG.handScoreLevels[1]) {
-                rightHandColor = MotionStudyColors.yellow;
-            } else {
-                rightHandColor = MotionStudyColors.red;
-            }
+            rightHandColor = this.getRightHandColor(rightHandScore);
         }
 
         // set the aggregated score and color to all joints and bones of the body parts
@@ -675,6 +707,14 @@ export class MuriScore {
             this.data.boneColors[getBoneName(bone)] = rightHandColor;
         });
 
+    }
+    
+    getLegsColor(legsScore) {
+        if (legsScore < MURI_CONFIG.legScoreLevels[0]) {
+            return MotionStudyColors.green;
+        } else {
+            return MotionStudyColors.red;
+        }
     }
 
     scoreLegs() {
@@ -730,11 +770,7 @@ export class MuriScore {
         if (this.muriScores[MURI_SCORES.LEGS] != null) {
             legsScore = this.muriScores[MURI_SCORES.LEGS];
 
-            if (legsScore < MURI_CONFIG.legScoreLevels[0]) {
-                legsColor = MotionStudyColors.green;
-            } else {
-                legsColor = MotionStudyColors.black;
-            }
+            legsColor = this.getLegsColor(legsScore);
         }
         
         // set the aggregated score and color to all joints and bones of the body part
@@ -768,6 +804,13 @@ export class MuriScore {
             this.data.boneColors[getBoneName(bone)] = legsColor;
         });
     }
+    
+    getOverallColor(overallScore) {
+        const lowCutoff = MURI_CONFIG.overallScoreLevels[0];
+        const highCutoff = MURI_CONFIG.overallScoreLevels[1] - 1;
+        const fraction = (clamp(overallScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
+        return MURI_COLOR_START.clone().lerpHSL(MURI_COLOR_END, fraction);
+    }
 
     /**
      * Calculates MURI scores and derived visualisation colors. 
@@ -799,10 +842,7 @@ export class MuriScore {
             this.data.overallColor = MotionStudyColors.undefined;
         }
         else {
-            const lowCutoff = MURI_CONFIG.overallScoreLevels[0];
-            const highCutoff = MURI_CONFIG.overallScoreLevels[1] - 1;
-            const fraction = (clamp(this.data.overallScore, lowCutoff, highCutoff) - lowCutoff) / (highCutoff - lowCutoff);
-            this.data.overallColor = MURI_COLOR_START.clone().lerpHSL(MURI_COLOR_END, fraction);
+            this.data.overallColor = this.getOverallColor(this.data.overallScore);
         }
         
     }

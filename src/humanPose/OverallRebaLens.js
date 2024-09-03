@@ -70,4 +70,8 @@ export class OverallRebaLens extends MotionStudyLens {
     getTableViewValue(joint) {
         return joint.overallRebaScore;
     }
+
+    getTableViewColorForValue(value, _jointName) {
+        return `#${Reba.getOverallRebaColor(value).getHexString()}`;
+    }
 }

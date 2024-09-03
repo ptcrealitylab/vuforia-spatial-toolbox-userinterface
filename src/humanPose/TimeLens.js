@@ -42,23 +42,25 @@ class TimeLens extends MotionStudyLens {
             return this.applyLensToPose(pose);
         });
     }
+    
+    getColorFromFrac(frac) {
+        const startColor = MotionStudyColors.red;
+        const endColor = MotionStudyColors.blue;
+        return startColor.clone().lerpHSL(endColor, frac);
+    }
 
     getColorForJoint(joint) {
         if (typeof joint.timeFrac === "undefined") {
             return MotionStudyColors.undefined;
         }
-        const startColor = MotionStudyColors.red;
-        const endColor = MotionStudyColors.blue;
-        return startColor.clone().lerpHSL(endColor, joint.timeFrac);
+        return this.getColorFromFrac(joint.timeFrac);
     }
 
     getColorForBone(bone) {
         if (typeof bone.timeFrac === "undefined") {
             return MotionStudyColors.undefined;
         }
-        const startColor = MotionStudyColors.red;
-        const endColor = MotionStudyColors.blue;
-        return startColor.clone().lerpHSL(endColor, bone.timeFrac);
+        return this.getColorFromFrac(bone.timeFrac);
     }
     
     getColorForPose(pose) {
@@ -76,6 +78,10 @@ class TimeLens extends MotionStudyLens {
 
     getTableViewValue(joint) {
         return joint.timeFrac;
+    }
+
+    getTableViewColorForValue(value, _jointName) {
+        return `#${this.getColorFromFrac(value).getHexString()}`;
     }
 }
 
