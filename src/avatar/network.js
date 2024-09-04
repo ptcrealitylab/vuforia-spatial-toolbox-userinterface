@@ -139,7 +139,7 @@ createNameSpace("realityEditor.avatar.network");
         avatarObject.matrix = matrix;
 
         // rate limit can be lowered below DATA_SEND_FPS_LIMIT by providing a broadcastRateLimitFps
-        let rateLimitFps = Math.min(DATA_SEND_FPS_LIMIT, broadcastRateLimitFps);
+        let rateLimitFps = Math.min(getDynamicFPSLimit(), broadcastRateLimitFps);
         // sceneGraph uploads object position to server every 1 second via REST, but we can stream updates in realtime here
         if (Date.now() - lastBroadcastPositionTimestamp < (1000 / rateLimitFps)) {
             return;
@@ -177,12 +177,12 @@ createNameSpace("realityEditor.avatar.network");
      * @return {boolean}
      */
     function isTouchStateFpsLimited() {
-        return Date.now() - lastWritePublicDataTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
+        return Date.now() - lastWritePublicDataTimestamp < (1000 / getDynamicFPSLimit());
     }
 
     // same as isTouchStateFpsLimited, but to limit the FPS of the spatial cursor data sending
     function isCursorStateFpsLimited() {
-        return Date.now() - lastWriteSpatialCursorTimestamp < (1000 / DATA_SEND_FPS_LIMIT);
+        return Date.now() - lastWriteSpatialCursorTimestamp < (1000 / getDynamicFPSLimit());
     }
 
     /**
@@ -248,6 +248,27 @@ createNameSpace("realityEditor.avatar.network");
     // signal the server that this avatar object is still active and shouldn't be deleted
     function keepObjectAlive(objectKey) {
         realityEditor.app.sendUDPMessage({action: {type: 'keepObjectAlive', objectKey: objectKey}});
+    }
+
+    /**
+     * Potentially reduces the DATA_SEND_FPS_LIMIT based on the number of clients or server congestion
+     * @todo: incorporate the clientRTT from the /status check in MainARView.js to slow this down when server busy
+     * @return {number}
+     */
+    function getDynamicFPSLimit() {
+        // decrease the FPS that you send your avatar data based on the number of other connected avatars
+        const connectedAvatars = realityEditor.avatar.getConnectedAvatarList();
+        const numConnectedAvatars = Object.keys(connectedAvatars).length;
+
+        // I've tried a few functions (lerping, piecewise, etc – but a sigmoid seems like a good idea)
+        // it doesn't drop much from 30fps until 10ish users are present, then drops fast, then levels off close to 1 fps
+        const maxFPS = DATA_SEND_FPS_LIMIT;
+        const minFPS = 1;
+        const avatarMidPoint = 15;  // Controls the point where the steepest drop occurs
+        const steepness = 0.3; // Controls how sharp the transition is
+        const dynamicLimit = minFPS + (maxFPS - minFPS) / (1 + Math.exp(steepness * (numConnectedAvatars - avatarMidPoint)));
+
+        return Math.min(DATA_SEND_FPS_LIMIT, dynamicLimit);
     }
 
     exports.addAvatarObject = addAvatarObject;
