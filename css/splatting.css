@@ -75,6 +75,7 @@
 
 @keyframes gsCubeRotation {
     0% {
+        display: none;
         transform: rotateX(45deg) rotateY(0) rotateZ(45deg);
         animation-timing-function: cubic-bezier(
                 0.17,
@@ -93,6 +94,7 @@
         );
     }
     100% {
+        display: none;
         transform: rotateX(45deg) rotateY(0) rotateZ(405deg);
         animation-timing-function: cubic-bezier(
                 0.17,
@@ -175,7 +177,13 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: fit-content;
+    width: 30px;
+    height: 30px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 
     color: white;
     transition: color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -185,34 +193,126 @@
     color: cyan;
 }
 
-.cluster-label-number {
+.cluster-label-dot {
+    pointer-events: none;
+    touch-action: none;
+}
+
+.cluster-label-info {
+    background-color: rgba(0, 0, 0, 0.6);
     color: white;
     font-size: 1rem;
     pointer-events: none;
+    touch-action: none;
     
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 50%;
-    width: fit-content;
+    padding: 10px;
+    border-radius: 5px;
+    width: max-content;
+    max-width: 50vw;
+    height: max-content;
+    display: flex;
+    gap: 1px;
+    flex-direction: column;
     
     opacity: 0;
+    /*opacity: 1;*/
     transform: translate(-50%, 0);
-    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /*transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);*/
 }
 
-.cluster-label:hover .cluster-label-number {
+.cluster-label:hover .cluster-label-info {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -100%);
 }
 
 #label-container {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 9999;
+    z-index: 2900;
 
     /*width: 100vw;*/
     /*height: 100vh;*/
     
     /*pointer-events: none;*/
+}
+
+#info-container-current {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 20px;
+    border-radius: 10px;
+    
+    /*background-color: rgba(0, 0, 0, 0.6);*/
+    color: white;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 180px;
+    height: max-content;
+    
+    z-index: 2901;
+}
+
+#custom-text-container-current {
+    /*display: inline-block;*/
+}
+
+.info-add {
+    display: inline-block;
+    color: white;
+    background-color: rgb(25, 25, 25);
+    margin: 1px 5px 5px 0;
+    padding: 1px 8px 3px 8px;
+    border: 1px solid white;
+    border-radius: 10px;
+
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    &:hover {
+         background-color: rgb(50, 50, 50);
+         cursor: pointer;
+     }
+}
+
+.info-current {
+    display: inline-block;
+    color: white;
+    background-color: rgb(25, 25, 25);
+    margin: 0 5px 5px 0;
+    padding: 5px;
+    border: 1px solid white;
+    border-radius: 10px;
+}
+
+.info-text {
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    &:hover {
+         color: rgb(200, 200, 200);
+         cursor: pointer;
+     }
+}
+
+.info-delete {
+    display: inline-block;
+    border-radius: 5px;
+    border: 1px solid white;
+    padding: 0 8px 3px 8px;
+    margin: 0 0 0 5px;
+    
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    &:hover {
+         background-color: rgb(50, 50, 50);
+         cursor: pointer;
+     }
+}
+
+#gs-dummy-mesh-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
 }

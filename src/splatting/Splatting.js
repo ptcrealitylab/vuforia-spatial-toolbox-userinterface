@@ -8,7 +8,7 @@
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 import { getPendingCapture } from '../gui/sceneCapture.js';
-import { remap } from "../utilities/MathUtils.js";
+import { remap, remapCurveEaseOut } from "../utilities/MathUtils.js";
 
 let gsInitialized = false;
 let gsActive = false;
@@ -16,7 +16,14 @@ let gsContainer;
 let gsSettingsPanel;
 let isGSRaycasting = false;
 
-let labelInitialized = false;
+import SplatManager from './SplatManager.js';
+let splatData = null;
+let splatCount = null;
+let downsample = null;
+let worker = null; // splat worker
+let vertexCount = null, lastVertexCount = null;
+let gl = null, program = null;
+let splatRegionCount = null;
 
 /** iPhoneVerticalFOV, projectionMatrixFrom(), makePerspective() come from desktopAdapter in remote operator addon. */
 
@@ -143,10 +150,31 @@ function multiply4(a, b) {
 
 function multiply4v(m, v) {
     return [
-        v[0] * m[0] + v[1] * m[4] + v[2] * m[8] + v[3] * m[12],
-        v[0] * m[1] + v[1] * m[5] + v[2] * m[9] + v[3] * m[13],
-        v[0] * m[2] + v[1] * m[6] + v[2] * m[10] + v[3] * m[14],
-        v[0] * m[3] + v[1] * m[7] + v[2] * m[11] + v[3] * m[15]
+        m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
+        m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
+        m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14]* v[3],
+        m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3]
+    ]
+}
+
+function multiply3v(m, v) {
+    return [
+        m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
+        m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
+        m[2] * v[0] + m[5] * v[1] + m[8] * v[2]
+    ]
+}
+
+function quaternionToRotationMatrix(q) {
+    let l = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    let x = -q[0] / l; // same as shader, need conjugate to work properly
+    let y = -q[1] / l;
+    let z = -q[2] / l;
+    let w = q[3] / l;
+    return [
+        1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
+        2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
+        2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
     ]
 }
 
@@ -210,13 +238,17 @@ function createWorker(self) {
     let buffer;
     let vertexCount = 0;
     let doneLoading = false;
+    let vertexCountArray = null;
+    let regionIdArray = null;
+    let splatRegionInfos = {};
+    let forceSort = false;
     let viewProj;
-    // 6*4 + 4 + 4 = 8*4
-    // XYZ - Position (Float32)
-    // XYZ - Scale (Float32)
-    // RGBA - colors (uint8)
-    // IJKL - quaternion/rot (uint8)
-    // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
+    // XYZ - Position (Float32), 4 x 3 (size * count) = 12
+    // XYZ - Scale (Float32), 4 x 3 = 12
+    // RGBA - colors (uint8), 1 x 4 = 4
+    // Label & empty slots - labels (uint8), 1 x 1 = 1, empty slots (uint8), 1 x 3 = 3, total = 4
+    // IJKL - quaternion/rot (uint8), 1 x 4 = 4
+    // total row length - 12 + 12 + 4 + 4 + 4 = 36
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
     let lastProj = [];
     let depthIndex = new Uint32Array();
@@ -258,18 +290,41 @@ function createWorker(self) {
         return (floatToHalf(x) | (floatToHalf(y) << 16)) >>> 0;
     }
 
+    function multiply3v_worker(m, v) {
+        return [
+            m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
+            m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
+            m[2] * v[0] + m[5] * v[1] + m[8] * v[2]
+        ]
+    }
+
+    function quaternionToRotationMatrix_worker(q) {
+        let l = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+        let x = -q[0] / l; // same as shader, need conjugate to work properly
+        let y = -q[1] / l;
+        let z = -q[2] / l;
+        let w = q[3] / l;
+        return [
+            1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
+            2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
+            2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
+        ]
+    }
+
+    var texdata;
+    var texwidth;
+    var texheight;
     function generateTexture() {
         if (!buffer) return;
         const f_buffer = new Float32Array(buffer);
         const u_buffer = new Uint8Array(buffer);
 
-        var texwidth = 1024 * 2; // Set to your desired width
-        var texheight = Math.ceil((2 * vertexCount) / texwidth); // Set to your desired height
-        var texdata = new Uint32Array(texwidth * texheight * 4); // 4 components per pixel (RGBA)
+        texwidth = 1024 * 2; // Set to your desired width
+        texheight = Math.ceil((2 * vertexCount) / texwidth); // Set to your desired height
+        texdata = new Uint32Array(texwidth * texheight * 4); // 4 components per pixel (RGBA)
         var texdata_c = new Uint8Array(texdata.buffer);
         var texdata_f = new Float32Array(texdata.buffer);
 
-        let center_map = new Map();
         // console.log(vertexCount);
 
         // Here we convert from a .splat file buffer into a texture
@@ -288,34 +343,11 @@ function createWorker(self) {
             texdata_c[4 * (8 * i + 7) + 2] = u_buffer[36 * i + 24 + 2];
             texdata_c[4 * (8 * i + 7) + 3] = u_buffer[36 * i + 24 + 3];
 
-            // cx, cy, cz, label (cluster center (x, y, z) and splat label/category)
-            // todo Steve: cx, cy, cz is read as Uint8 , therefore not accurate, need to find a way to read / parse & store them as actual Float32 values, just like x, y, z.
-            //  need a way to make up the missing digits and convert Uint8 back to Float32 in the shader, or find a way to smartly pack them to Half16 / Uint8 and restore them in shader, just like rot and scale
-            texdata_c[4 * (8 * i + 3) + 0] = u_buffer[36 * i + 28 + 0]; // cx
-            texdata_c[4 * (8 * i + 3) + 1] = u_buffer[36 * i + 28 + 1]; // cy
-            texdata_c[4 * (8 * i + 3) + 2] = u_buffer[36 * i + 28 + 2]; // cz
-            texdata_c[4 * (8 * i + 3) + 3] = u_buffer[36 * i + 28 + 3]; // label
-
-            if (doneLoading) {
-                let label = u_buffer[36 * i + 28 + 3];
-                if (!center_map.has(label)) {
-                    center_map.set(
-                        label,
-                        {
-                            x: f_buffer[9 * i + 0],
-                            y: f_buffer[9 * i + 1],
-                            z: f_buffer[9 * i + 2],
-                            count: 1,
-                        }
-                    )
-                } else {
-                    let info = center_map.get(label);
-                    info.x += f_buffer[9 * i + 0];
-                    info.y += f_buffer[9 * i + 1];
-                    info.z += f_buffer[9 * i + 2];
-                    info.count++;
-                }
-            }
+            // 0, 0, regionId, label (cluster center (x, y, z) and splat label/category)
+            // texdata_c[4 * (8 * i + 3) + 0] = 0;
+            // texdata_c[4 * (8 * i + 3) + 1] = 0;
+            // texdata_c[4 * (8 * i + 3) + 2] = regionId; // region id
+            // texdata_c[4 * (8 * i + 3) + 3] = u_buffer[36 * i + 28 + 3]; // label
 
             // quaternions
             let scale = [
@@ -360,13 +392,134 @@ function createWorker(self) {
         }
 
         if (doneLoading) {
+            console.log('generate texture called with doneLoading === true');
+            generateRegionAndLabels(texdata_c, u_buffer, f_buffer);
+            // todo Steve: if have it, then only generate region and labels ONCE, looks correct but regionId and label would be 0
+            //  if not have it, then will generate region and labels twice, don't know what negative impact will have yet
+            // doneLoading = false;
+        }
+
+        // self.postMessage({ texdata, texwidth, texheight }, [texdata.buffer]);
+        self.postMessage({ texdata, texwidth, texheight });
+    }
+    
+    function updateEditedSplatTexture(hiddenSplatIndexSet) {
+        let texdata_c = new Uint8Array(texdata.buffer);
+        let hiddenSplatIndexArr = Array.from(hiddenSplatIndexSet);
+        for (let i = 0; i < hiddenSplatIndexArr.length; i++) { // todo Steve: maybe the indexing is wrong
+            let index = hiddenSplatIndexArr[i];
+            texdata_c[4 * (8 * index + 3) + 1] = 0; // display or hidden, cen.w >> 8
+        }
+        self.postMessage({ texdata, texwidth, texheight });
+    }
+
+    function generateRegionAndLabels(texdata_c, u_buffer, f_buffer) {
+        let center_maps = new Map(); // a map storing info pairs [regionId, center_map_for_this_splat_region]
+        let boundary_maps = new Map(); // a map storing info pairs [regionId, boundary_for_this_splat_region]
+        let vertexCountAccumulatedArray = [];
+        let vertexCountAccumulated = 0;
+        for (let i = 0; i < vertexCountArray.length; i++) {
+            vertexCountAccumulated += vertexCountArray[i];
+            vertexCountAccumulatedArray.push(vertexCountAccumulated);
+        }
+        let regionIdArrayCopy = [...regionIdArray];
+
+        // add 1st center_map for 1st region in the regionIdArrayCopy
+        let center_map = new Map(); // a map storing info about splat center for each splat region
+        center_maps.set(regionIdArrayCopy[0], center_map);
+        
+        let minX = Infinity, minY = Infinity, minZ = Infinity;
+        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        // let centerX = 0, centerY = 0, centerZ = 0;
+        
+        // iterate through all the vertices, and add to their corresponding region's center_map
+        for (let i = 0; i < vertexCount; i++) {
+            if (i >= vertexCountAccumulatedArray[0]) { // finish up this splat region & continue to process the next splat region
+                vertexCountAccumulatedArray.shift();
+                let lastRegionId = regionIdArrayCopy.shift();
+                
+                center_map = new Map();
+                center_maps.set(regionIdArrayCopy[0], center_map);
+
+                boundary_maps.set(
+                    lastRegionId,
+                    {
+                        min: [minX, minY, minZ],
+                        max: [maxX, maxY, maxZ],
+                        // center: [centerX, centerY, centerZ]
+                    }
+                );
+                minX = Infinity; minY = Infinity; minZ = Infinity;
+                maxX = -Infinity; maxY = -Infinity; maxZ = -Infinity;
+                // centerX = 0; centerY = 0; centerZ = 0;
+            }
+            // get position, regionId, and label info
+            let x = f_buffer[9 * i + 0];
+            let y = f_buffer[9 * i + 1];
+            let z = f_buffer[9 * i + 2];
+            let regionId = regionIdArrayCopy[0];
+            let label = u_buffer[36 * i + 28 + 3];
+            
+            // assign regionId and label info to WebGL texture
+            texdata_c[4 * (8 * i + 3) + 1] = 1; // splat displayed ( 1 ) or hidden ( 0 )
+            texdata_c[4 * (8 * i + 3) + 2] = regionId; // region id, cen.w >> 16
+            texdata_c[4 * (8 * i + 3) + 3] = label; // label, cen.w >> 24
+            
+            // update center_map and min/max boundary for this splat region
+            if (!center_map.has(label)) {
+                center_map.set(
+                    label,
+                    {
+                        x: x,
+                        y: y,
+                        z: z,
+                        points: [{x, y, z}],
+                        count: 1,
+                        userData: [],
+                    }
+                )
+            } else {
+                let info = center_map.get(label);
+                info.x += x;
+                info.y += y;
+                info.z += z;
+                if (info.count % 50 === 0 && info.count < 20000) {
+                    info.points.push({x, y, z});
+                }
+                info.count++;
+            }
+            
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (z < minZ) minZ = z;
+            if (z > maxZ) maxZ = z;
+            // centerX += x / vertexCountAccumulatedArray[0];
+            // centerY += y / vertexCountAccumulatedArray[0];
+            // centerZ += z / vertexCountAccumulatedArray[0];
+        }
+        
+        center_maps.forEach((center_map) => {
             center_map.forEach(info => {
                 info.x /= info.count;
                 info.y /= info.count;
                 info.z /= info.count;
-            })
-        }
-        self.postMessage({ texdata, texwidth, texheight, center_map }, [texdata.buffer]);
+            });
+        });
+
+        // add in the boundary map for last region in the regionIdArrayCopy
+        let lastRegionId = regionIdArrayCopy.shift();
+        boundary_maps.set(
+            lastRegionId,
+            {
+                min: [minX, minY, minZ],
+                max: [maxX, maxY, maxZ],
+                // center: [centerX, centerY, centerZ]
+            }
+        );
+        
+        self.postMessage({center_maps, boundary_maps});
     }
 
     function runSort(viewProj) {
@@ -377,25 +530,55 @@ function createWorker(self) {
                 lastProj[2] * viewProj[2] +
                 lastProj[6] * viewProj[6] +
                 lastProj[10] * viewProj[10];
-            if (Math.abs(dot - 1) < 0.01) {
+            if (Math.abs(dot - 1) < 0.01 && !forceSort) {
                 return;
             }
         } else {
             generateTexture();
             lastVertexCount = vertexCount;
         }
+        
+        forceSort = false;
+        if (vertexCountArray === null) return;
+        let vertexCountAccumulatedArray = [];
+        let vertexCountAccumulated = 0;
+        for (let i = 0; i < vertexCountArray.length; i++) {
+            vertexCountAccumulated += vertexCountArray[i];
+            vertexCountAccumulatedArray.push(vertexCountAccumulated);
+        }
+        let regionIdArrayCopy = [...regionIdArray];
 
         // console.time("sort");
+        let behindCameraAmount = 0;
+        let outOfBoundaryAmount = 0;
         let maxDepth = -Infinity;
         let minDepth = Infinity;
-        let sizeList = new Int32Array(vertexCount);
+        let sizeList = new Int32Array(vertexCount); // z depth of all the splats in clip space
         for (let i = 0; i < vertexCount; i++) {
-            let depth =
-                ((viewProj[2] * f_buffer[9 * i + 0] +
-                        viewProj[6] * f_buffer[9 * i + 1] +
-                        viewProj[10] * f_buffer[9 * i + 2]) *
-                    4096) |
-                0;
+            if (i >= vertexCountAccumulatedArray[0]) {
+                vertexCountAccumulatedArray.shift();
+                regionIdArrayCopy.shift();
+            }
+            // check if each splat local position is within splat region boundary
+            let pos = [f_buffer[9 * i + 0], f_buffer[9 * i + 1], f_buffer[9 * i + 2]];
+            let bMin = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [-Infinity, -Infinity, -Infinity] : splatRegionInfos[`${regionIdArrayCopy[0]}`].boundaryMin;
+            let bMax = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [Infinity, Infinity, Infinity] : splatRegionInfos[`${regionIdArrayCopy[0]}`].boundaryMax;
+            if (pos[0] < bMin[0] || pos[1] < bMin[1] || pos[2] < bMin[2] || pos[0] > bMax[0] || pos[1] > bMax[1] || pos[2] > bMax[2]) { // out of boundary
+                outOfBoundaryAmount++;
+                sizeList[i] = -Infinity; // send it to the very back of camera
+                continue;
+            }
+            // compute each splat world position, when applied splat region trasform, and compute un-normalized clip-space depth
+            let posOffset = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [0, 0, 0] : splatRegionInfos[`${regionIdArrayCopy[0]}`].positionOffset;
+            let q = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [0, 0, 0, 1] : splatRegionInfos[`${regionIdArrayCopy[0]}`].quaternion;
+            pos = multiply3v_worker(quaternionToRotationMatrix_worker(q), pos);
+            pos[0] += posOffset[0];
+            pos[1] += posOffset[1];
+            pos[2] += posOffset[2];
+            // un-normalized depth in clip space, +z pointing into the screen, so that the furthest splat in front of camera gets maxDepth, the furthest splat behind the camera gets minDepth
+            let depth = viewProj[2] * pos[0] + viewProj[6] * pos[1] + viewProj[10] * pos[2] + viewProj[14] * 1;
+            if (depth < 0) behindCameraAmount++;
+            depth = depth * 4096 | 0;
             sizeList[i] = depth;
             if (depth > maxDepth) maxDepth = depth;
             if (depth < minDepth) minDepth = depth;
@@ -405,20 +588,22 @@ function createWorker(self) {
         let depthInv = (256 * 256) / (maxDepth - minDepth);
         let counts0 = new Uint32Array(256 * 256);
         for (let i = 0; i < vertexCount; i++) {
-            sizeList[i] = ((sizeList[i] - minDepth) * depthInv) | 0;
+            // remap sizeList depth from arbitrary range to [65536, 0], so that the furthest splat in front of camera gets 0, the furthest splat behind the camera gets 65536. To prepare for Painter's algorithm
+            if (sizeList[i] === -Infinity) sizeList[i] = 0;
+            else sizeList[i] = 65536 - ((sizeList[i] - minDepth) * depthInv) | 0; 
             counts0[sizeList[i]]++;
         }
         let starts0 = new Uint32Array(256 * 256);
         for (let i = 1; i < 256 * 256; i++)
             starts0[i] = starts0[i - 1] + counts0[i - 1];
-        depthIndex = new Uint32Array(vertexCount);
+        depthIndex = new Uint32Array(vertexCount); // indices of all the splats in the sizeList array, ordered from smallest (0) to biggest (65536)
         for (let i = 0; i < vertexCount; i++)
             depthIndex[starts0[sizeList[i]]++] = i;
 
         // console.timeEnd("sort");
 
         lastProj = viewProj;
-        self.postMessage({ depthIndex, viewProj, vertexCount }, [
+        self.postMessage({ depthIndex, viewProj, vertexCount, behindCameraAmount, outOfBoundaryAmount }, [
             depthIndex.buffer,
         ]);
     }
@@ -494,11 +679,12 @@ function createWorker(self) {
         sizeIndex.sort((b, a) => sizeList[a] - sizeList[b]);
         // console.timeEnd("sort");
 
-        // 6*4 + 4 + 4 = 8*4
-        // XYZ - Position (Float32)
-        // XYZ - Scale (Float32)
-        // RGBA - colors (uint8)
-        // IJKL - quaternion/rot (uint8)
+        // XYZ - Position (Float32), 4 x 3 (size * count) = 12
+        // XYZ - Scale (Float32), 4 x 3 = 12
+        // RGBA - colors (uint8), 1 x 4 = 4
+        // Label & empty slots - labels (uint8), 1 x 1 = 1, empty slots (uint8), 1 x 3 = 3, total = 4. The 3 empty slots are to keep the data a multiple of 4, easy to access with Uint8Array later when reading the .splat file to generate texture
+        // IJKL - quaternion/rot (uint8), 1 x 4 = 4
+        // total row length - 12 + 12 + 4 + 4 + 4 = 36
 
         // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
         const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
@@ -515,7 +701,7 @@ function createWorker(self) {
                 j * rowLength + 4 * 3 + 4 * 3,
                 4,
             );
-            const f_rgba = new Uint8ClampedArray(
+            const labelAndEmpties = new Uint8ClampedArray(
                 buffer,
                 j * rowLength + 4 * 3 + 4 * 3 + 4,
                 4,
@@ -568,18 +754,15 @@ function createWorker(self) {
                 rgba[1] = (0.5 + SH_C0 * attrs.g) * 255;
                 rgba[2] = (0.5 + SH_C0 * attrs.b) * 255;
 
-                f_rgba[0] = attrs.cx;
-                f_rgba[1] = attrs.cy;
-                f_rgba[2] = attrs.cz;
+                labelAndEmpties[0] = attrs.e1;
+                labelAndEmpties[1] = attrs.e2;
+                labelAndEmpties[2] = attrs.e3;
+                labelAndEmpties[3] = attrs.label;
             }
             if (types["opacity"]) {
                 rgba[3] = (1 / (1 + Math.exp(-attrs.opacity))) * 255;
-
-                f_rgba[3] = attrs.label;
             } else {
                 rgba[3] = 255;
-
-                f_rgba[3] = attrs.label;
             }
         }
         console.timeEnd("build buffer");
@@ -601,6 +784,7 @@ function createWorker(self) {
     };
 
     let sortRunning;
+    let forceSortTimeoutId = null;
     self.onmessage = (e) => {
         if (e.data.ply) {
             vertexCount = 0;
@@ -610,6 +794,13 @@ function createWorker(self) {
             vertexCount = Math.floor(buffer.byteLength / rowLength);
             doneLoading = true;
             postMessage({ buffer: buffer });
+        } else if (e.data.doneLoading) {
+            doneLoading = e.data.doneLoading;
+            vertexCountArray = e.data.vertexCountArray;
+            regionIdArray = e.data.regionIdArray;
+            vertexCount = e.data.vertexCount;
+            buffer = e.data.buffer;
+            generateTexture();
         } else if (e.data.buffer) {
             buffer = e.data.buffer;
             vertexCount = e.data.vertexCount;
@@ -618,13 +809,31 @@ function createWorker(self) {
         } else if (e.data.view) {
             viewProj = e.data.view;
             throttledSort();
-        } else if (e.data.doneLoading) {
-            doneLoading = e.data.doneLoading;
+        } else if (e.data.splatRegionInfo) {
+            splatRegionInfos[`${e.data.regionId}`] = e.data.splatRegionInfo;
+            if (forceSortTimeoutId !== null) {
+                clearTimeout(forceSortTimeoutId);
+            }
+            forceSortTimeoutId = setTimeout(() => {
+                forceSort = true;
+                runSort(viewProj);
+            }, 0);
+        } else if (e.data.isSplatEdited) {
+            updateEditedSplatTexture(e.data.hiddenSplatIndexSet);
         }
     };
 }
 
-const vertexShaderSource = `
+/** 
+ * todo Steve: define some variable values & their dummy value:
+ * region id: 0, 1, 2, ..., region count; -1
+ * label id: 0, 1, 2, ..., label count; -1
+ * collide index: 0, 1, 2, ..., vertex count; -1
+ * pending hidden splat indices: [0, 1, 2, ..., vertex count]; [-1]
+ **/
+
+const PENDING_SPLATS_MAX_SIZE = 200;
+function vertexShaderSource() { return `
 #version 300 es
 precision highp float;
 precision highp int;
@@ -639,11 +848,25 @@ uniform vec2 uMouse;
 uniform bool uToggleBoundary;
 uniform float uWorldLowAlpha;
 
+struct SplatRegionInfo {
+    float regionId;
+    vec3 positionOffset;
+    vec4 quaternion;
+    vec3 boundaryMin;
+    vec3 boundaryMax;
+};
+uniform SplatRegionInfo splatRegionInfos[${splatRegionCount}];
+
 uniform int uCollideIndex;
 uniform bool uShouldDraw;
 
 uniform float mode;
 uniform float uLabel;
+uniform float uRegion;
+
+// editing gaussian splatting, highlight, delete, revert
+uniform bool uEdit;
+uniform int pendingHiddenSplatIndices[${PENDING_SPLATS_MAX_SIZE}]; // dirty fix: a smaller fixed-size array
 
 in vec2 position;
 in int index;
@@ -662,15 +885,43 @@ vec3 randomNoiseVec3(float seed) {
     return vec3(x, y, z);
 }
 
+mat3 quaternionToRotationMatrix(vec4 q) {
+        float l = length(q);
+        float x = -q.x / l; // need conjugate of this quaternion in the shader to work
+        float y = -q.y / l;
+        float z = -q.z / l;
+        float w = q.w / l;
+        return mat3(
+            1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
+            2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
+            2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
+        );
+    }
+
 void main () {
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
-    vec4 cam = view * vec4(uintBitsToFloat(cen.xyz), 1);
+    int displayOrHidden = int((cen.w >> 8) & 0xffu);
+    if (displayOrHidden == 0) {
+        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+        return;
+    }
+    int regionId = int((cen.w >> 16) & 0xffu);
+    vec3 pos = uintBitsToFloat(cen.xyz);
+    vec3 bMin = splatRegionInfos[regionId].boundaryMin;
+    vec3 bMax = splatRegionInfos[regionId].boundaryMax;
+    if (pos.x < bMin.x || pos.y < bMin.y || pos.z < bMin.z || pos.x > bMax.x || pos.y > bMax.y || pos.z > bMax.z) { // out of boundary
+        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+        return;
+    }
+    mat3 rot = quaternionToRotationMatrix(splatRegionInfos[regionId].quaternion);
+    pos = rot * pos;
+    pos += splatRegionInfos[regionId].positionOffset;
+    vec4 cam = view * vec4(pos, 1);
     vec4 pos2d = projection * cam;
 
     float clip = 1.2 * pos2d.w;
     if (pos2d.z < -clip || pos2d.x < -clip || pos2d.x > clip || pos2d.y < -clip || pos2d.y > clip) {
         gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-        vShouldDisplay = 0.;
         return;
     }
 
@@ -684,7 +935,7 @@ void main () {
         0., 0., 0.
     );
 
-    mat3 T = transpose(mat3(view)) * J;
+    mat3 T = transpose(mat3(view) * rot) * J;
     mat3 cov2d = transpose(T) * Vrk * T;
 
     float mid = (cov2d[0][0] + cov2d[1][1]) / 2.0;
@@ -698,7 +949,9 @@ void main () {
 
     // vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu, (cov.w >> 24) & 0xffu) / 255.0;
     float label = float((cen.w >> 24) & 0xffu);
-    bool dont_render = (uLabel != -1.) && (uLabel != label);
+    // (uLabel == -1.) && (uRegion == -1.) ---> render everything
+    // (uLabel != -1.) && (uRegion != -1.) && 
+    bool dont_render = (uLabel != -1.) && (uRegion != -1.) && !( (uLabel == label) && (uRegion == float(regionId)) );
     // dont_render = false;
     if (mode == 0.) { // normal color mode
         vec3 color = vec3((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu) / 255.0;
@@ -724,18 +977,28 @@ void main () {
     
     
     // output cam space z depth for accurate mouse raycasting, also output splat index for raycast highlighting --- if want to do it in the future
-    vFBOPosColor = vec4(cam.z, index, 0., 1.);
+    // MUST output alpha value to 1., otherwise the rendering won't work b/c of the painter's algorithm !!!!!!
+    float regionAndLabel = float(regionId << 16) + label;
+    vFBOPosColor = vec4(cam.z, index, regionAndLabel, 1.);
     
     if (index == uCollideIndex) {
         vIndex = 1.;
     } else {
         vIndex = 0.;
     }
+    if (uEdit) {
+        for (int i = 0; i < ${PENDING_SPLATS_MAX_SIZE}; i++) {
+            if (index == pendingHiddenSplatIndices[i]) {
+                vIndex = 1.;
+                break;
+            }
+        }
+    }
     
     bool isOutOfAlpha = uToggleBoundary ? vColor.a < uWorldLowAlpha : false;
     vShouldDisplay = 1.;
     if (!isOutOfAlpha) {
-        vShouldDisplay = 1.;
+        // vShouldDisplay = 1.;
     } else {
         vShouldDisplay = 0.;
     }
@@ -745,15 +1008,19 @@ void main () {
         + position.x * majorAxis / viewport
         + position.y * minorAxis / viewport, (vShouldDisplay == 1. ? 0. : 2.), 1.0);
 }
-`.trim();
+`.trim()
+}
 
-const fragmentShaderSource = `
+function fragmentShaderSource() {
+    return `
 #version 300 es
 precision highp float;
 
 uniform bool uShouldDraw;
 
 uniform bool uIsGSRaycasting;
+
+uniform bool uEdit;
 
 in vec4 vColor;
 in vec4 vFBOPosColor;
@@ -766,7 +1033,7 @@ out vec4 fragColor;
 void main () {
     
     if (uIsGSRaycasting) {
-        fragColor = vFBOPosColor; // correct color w/o index
+        fragColor = vFBOPosColor;
         return;
     }
     
@@ -780,6 +1047,10 @@ void main () {
     
     vec3 col = vShouldDisplay > 0.5 ? B * vColor.rgb : vec3(0.); // original color
     float a = vShouldDisplay > 0.5 ? B : 0.; // original alpha
+    // col = vColor.rgb;
+    // a = 1.;
+    // col = vFBOPosColor.xyz;
+    // a = 1.;
     
     bool isMouseCollided = vIndex > 0.5 ? true : false;
     
@@ -787,37 +1058,48 @@ void main () {
         // disable splat highlighting for now
         // col = vec3(1.);
         // a = 1.;
+        if ( uEdit ) {
+            col = vec3(1.);
+            a = 1.;
+        }
     }
     
     fragColor = vec4(col, a);
-    // fragColor = vFBOPosColor;
     return;
 }
 
-`.trim();
+`.trim()
+}
 
 async function main(initialFilePath) {
 
     // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target.splat');
-    const url = new URL(initialFilePath);
-    const req = await fetch(url, {
-        mode: "cors", // no-cors, *cors, same-origin
-        credentials: "omit", // include, *same-origin, omit
-    });
-    if (req.status != 200) {
-        throw new Error(req.status + " Unable to load " + req.url);
+    console.log(initialFilePath);
+    splatRegionCount = initialFilePath.length;
+    let totalByteLength = 0;
+    for (let i = 0; i < splatRegionCount; i++) {
+        const url = new URL([initialFilePath[i]]);
+        const req = await fetch(url, {
+            mode: "cors", // no-cors, *cors, same-origin
+            credentials: "omit", // include, *same-origin, omit
+        });
+        if (req.status != 200) {
+            throw new Error(req.status + " Unable to load " + req.url);
+        }
+        let length = parseInt(req.headers.get("content-length"));
+        console.log(`Processed ${length} bytes.`);
+        totalByteLength += length;
     }
-
-    const reader = req.body.getReader();
+    console.log(`Processed ${totalByteLength} bytes in total.`);
+    
     // calculate number of splats in the scene 
     // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
     const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
-    let splatData = new Uint8Array(req.headers.get("content-length"));
-    let splatCount = splatData.length / rowLength
+    splatData = new Uint8Array(totalByteLength);
+    splatCount = splatData.length / rowLength
+    downsample = splatCount > 500000 ? 1 : 1 / window.devicePixelRatio;
 
-    let downsample = splatCount > 500000 ? 1 : 1 / window.devicePixelRatio;
-
-    const worker = new Worker(
+    worker = new Worker(
         URL.createObjectURL(
             new Blob(["(", createWorker.toString(), ")(self)"], {
                 type: "application/javascript",
@@ -826,25 +1108,25 @@ async function main(initialFilePath) {
     );
 
     const fps = document.getElementById("gsFps");
-    const canvas = document.getElementById("gsCanvas");
+    const gsCanvas = document.getElementById("gsCanvas");
 
-    const gl = canvas.getContext("webgl2", {
+    gl = gsCanvas.getContext("webgl2", {
         antialias: false,
     });
 
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.shaderSource(vertexShader, vertexShaderSource());
     gl.compileShader(vertexShader);
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
         console.error(gl.getShaderInfoLog(vertexShader));
 
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragmentShader, fragmentShaderSource);
+    gl.shaderSource(fragmentShader, fragmentShaderSource());
     gl.compileShader(fragmentShader);
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))
         console.error(gl.getShaderInfoLog(fragmentShader));
 
-    const program = gl.createProgram();
+    program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
@@ -857,11 +1139,11 @@ async function main(initialFilePath) {
 
     // Enable blending
     gl.enable(gl.BLEND);
-    gl.blendFuncSeparate(
-        gl.ONE_MINUS_DST_ALPHA,
+    gl.blendFuncSeparate( // Painter's algorithm, sorted from back to front
         gl.ONE,
-        gl.ONE_MINUS_DST_ALPHA,
+        gl.ONE_MINUS_SRC_ALPHA,
         gl.ONE,
+        gl.ONE_MINUS_SRC_ALPHA,
     );
 
     gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
@@ -881,33 +1163,72 @@ async function main(initialFilePath) {
     const u_mode = gl.getUniformLocation(program, "mode");
     gl.uniform1f(u_mode, uMode);
 
+    let uEdit = 1;
+    const u_edit = gl.getUniformLocation(program, "uEdit");
+    gl.uniform1i(u_edit, uEdit);
+
+    let pendingHiddenSplatIndexSet = new Set();
+    window.splatSet = pendingHiddenSplatIndexSet;
+    const u_pendingSplatIndices = gl.getUniformLocation(program, "pendingHiddenSplatIndices");
+    gl.uniform1iv(u_pendingSplatIndices, Array.from(pendingHiddenSplatIndexSet));
+
     window.addEventListener("keydown", (e) => {
         if (e.key === 'j' || e.key === 'J') {
             uMode = uMode === 1 ? 0 : 1;
             gl.uniform1f(u_mode, uMode);
+        } else if (e.key === 'y' || e.key === 'Y') {
+            uEdit = uEdit === 1 ? 0 : 1;
+            gl.uniform1i(u_edit, uEdit);
+            if (uEdit === 0) {
+                pendingHiddenSplatIndexSet.clear();
+                gl.uniform1iv(u_pendingSplatIndices, [-1]); // -1 is dummy value, b/c min index is 0
+            }
+        } else if (e.key === 'Backspace') {
+            console.log(pendingHiddenSplatIndexSet);
+            // todo Steve: change the texture for the edited splats
+            worker.postMessage({
+                isSplatEdited: true,
+                hiddenSplatIndexSet: pendingHiddenSplatIndexSet,
+            });
+            pendingHiddenSplatIndexSet.clear();
+            gl.uniform1iv(u_pendingSplatIndices, [-1]);
         }
     });
 
+    let isEditDragging = false;
+    window.addEventListener('pointerdown', (e) => {
+        if (!realityEditor.spatialCursor.isGSActive()) return;
+        if (e.button !== 0) return;
+        if (uEdit === 0) return;
+        isEditDragging = true;
+        if (vCollideIndex === -1) return;
+        pendingHiddenSplatIndexSet.add(vCollideIndex);
+        gl.uniform1iv(u_pendingSplatIndices, Array.from(pendingHiddenSplatIndexSet));
+    })
+
+    window.addEventListener('pointerup', (e) => {
+        if (!realityEditor.spatialCursor.isGSActive()) return;
+        if (e.button !== 0) return;
+        if (uEdit === 0) return;
+        isEditDragging = false;
+    })
+
+    window.addEventListener('pointermove', (e) => {
+        if (!realityEditor.spatialCursor.isGSActive()) return;
+        if (uEdit === 0) return;
+        if (!isEditDragging) return;
+        if (vCollideIndex === -1) return;
+        pendingHiddenSplatIndexSet.add(vCollideIndex);
+        gl.uniform1iv(u_pendingSplatIndices, Array.from(pendingHiddenSplatIndexSet));
+    })
+
+    let uRegion = -1;
+    const u_region = gl.getUniformLocation(program, "uRegion");
+    gl.uniform1f(u_region, uRegion);
+    
     let uLabel = -1;
     const u_label = gl.getUniformLocation(program, "uLabel");
     gl.uniform1f(u_label, uLabel);
-
-    let labelContainer = document.createElement('div');
-    labelContainer.id = 'label-container';
-    document.body.append(labelContainer);
-    
-    window.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return;
-        if (e.target.id.includes('label_')) {
-            uLabel = parseFloat(e.target.id.slice(6));
-            gl.uniform1f(u_label, uLabel);
-        } else {
-            uLabel = -1;
-            gl.uniform1f(u_label, uLabel);
-        }
-    })
-
-    let center_map_from_worker;
 
     // positions
     const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -1000,10 +1321,9 @@ async function main(initialFilePath) {
 
         gl.uniform2fv(u_focal, new Float32Array([fx, fy]));
 
-        gl.uniform2fv(u_viewport, new Float32Array([window.innerWidth, window.innerHeight]));
-
         gl.canvas.width = Math.round(window.innerWidth / downsample);
         gl.canvas.height = Math.round(window.innerHeight / downsample);
+        gl.uniform2fv(u_viewport, new Float32Array([gl.canvas.width, gl.canvas.height]));
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
@@ -1019,91 +1339,280 @@ async function main(initialFilePath) {
     window.addEventListener("resize", resize);
     resize();
 
-    const clamp = (x, low, high) => {
-        return Math.min(Math.max(x, low), high);
-    }
+    let labelContainer = document.createElement('div');
+    labelContainer.id = 'label-container';
+    document.body.append(labelContainer);
+    let currentInfoContainer, currentRegionId, currentLabelId, currentAddInfoButton, currentCustomTextContainer;
+    let center_maps_from_worker;
 
-    const remap01 = (x, low, high) => {
-        return clamp((x - low) / (high - low), 0, 1);
-    }
-    
-    const _remap01Curve1 = (x, low, high) => {
-        let r = remap01(x, low, high);
-        let a = 2;
-        return (1 - r) * Math.pow(r, a) + r * (-Math.pow(r - 1, a) + 1);
-    }
+    // todo Steve: figure out how to make it labelContainer.addEventListener(......)
+    window.addEventListener('pointerdown', (e) => {
+        if (!realityEditor.spatialCursor.isGSActive()) return;
+        if (e.button !== 0) return;
+        if (e.target.id.includes('label_')) {
+            uRegion = parseFloat(e.target.id.split('_')[1]);
+            uLabel = parseFloat(e.target.id.split('_')[2]);
 
-    const remap01Curve2 = (x, low, high) => {
-        let r = remap01(x, low, high);
-        let a = 2;
-        return -Math.pow(r - 1, a) + 1;
-    }
+            currentRegionId.innerHTML = `Region: ${uRegion}`;
+            currentLabelId.innerHTML = `Label: ${uLabel}`;
+            // todo Steve: clear & re-add the label information based on center_map_from_worker's most up-to-date user-added labels
+            while (currentCustomTextContainer.children.length > 1) { // removes all child custom info text except the "+" button
+                currentCustomTextContainer.removeChild(currentCustomTextContainer.firstElementChild);
+            }
+            let customTexts = center_maps_from_worker.get(uRegion).get(uLabel).userData;
+            for (let i = 0; i < customTexts.length; i++) {
+                addInfo(customTexts[i], i)
+            }
 
-    const _remap = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01(x, lowIn, highIn);
-    }
+            currentInfoContainer.style.visibility = 'visible';
 
-    const remapCurve = (x, lowIn, highIn, lowOut, highOut) => {
-        return lowOut + (highOut - lowOut) * remap01Curve2(x, lowIn, highIn);
-    }
+            gl.uniform1f(u_region, uRegion);
+            gl.uniform1f(u_label, uLabel);
+        } else {
+            uRegion = -1;
+            uLabel = -1;
+
+            currentRegionId.innerHTML = `Region: ${uRegion}`;
+            currentLabelId.innerHTML = `Label: ${uLabel}`;
+            while (currentCustomTextContainer.children.length > 1) { // removes all child custom info text except the "+" button
+                currentCustomTextContainer.removeChild(currentCustomTextContainer.firstElementChild);
+            }
+
+            currentInfoContainer.style.visibility = 'hidden';
+
+            gl.uniform1f(u_region, uRegion);
+            gl.uniform1f(u_label, uLabel);
+            
+            loopThroughLabels();
+        }
+    })
 
     function loopThroughLabels() {
-        let minCount = Infinity, maxCount = 0;
-        for (let value of center_map_from_worker.values()) {
-            if (value.count < minCount) minCount = value.count;
-            if (value.count > maxCount) maxCount = value.count;
-        }
-        for (let [key, value] of center_map_from_worker.entries()) {
-            let label = document.getElementById(`label_${key}`);
-            if (label === null) {
-                label = document.createElement('div');
-                label.classList.add('cluster-label');
-                label.innerHTML = `.`;
-                label.id = `label_${key}`;
-                let scaleFactor = remapCurve(value.count, minCount, maxCount, 1, 8);
-                label.style.fontSize = `${scaleFactor}rem`;
-                
-                let label_number = document.createElement('div')
-                label_number.classList.add('cluster-label-number');
-                label_number.innerHTML = `${key}`;
-                label.append(label_number);
-                
-                labelContainer.append(label);
+        // console.time('label'); // todo Steve: sometimes label rendering takes up to > 3 ms, which is def impacting performance. Need to 
+        if (isGSRaycasting && !isFlying) return; 
+        for (let [regionId, center_map] of center_maps_from_worker.entries()) {
+            let minCount = Infinity, maxCount = 0;
+            for (let info of center_map.values()) {
+                if (info.count < minCount) minCount = info.count;
+                if (info.count > maxCount) maxCount = info.count;
             }
-            let pos = [value.x, value.y, value.z, 1];
-            let pos2d = multiply4v(multiply4(projectionMatrix, actualViewMatrix), pos);
-            let clip = 1.2 * pos2d[3];
-            if (uLabel !== -1) {
-                if (uLabel !== key) {
+            for (let [labelId, info] of center_map.entries()) {
+                let label = document.getElementById(`label_${regionId}_${labelId}`);
+                if (label === null) {
+                    let scaleFactor = remapCurveEaseOut(info.count, minCount, maxCount, 1, 8);
+                    
+                    label = document.createElement('div');
+                    label.classList.add('cluster-label');
+                    label.id = `label_${regionId}_${labelId}`;
+                    label.style.width = `${scaleFactor * 6}px`;
+                    label.style.height = `${scaleFactor * 6}px`;
+                    
+                    let labelDot = document.createElement('div');
+                    labelDot.classList.add('cluster-label-dot');
+                    labelDot.innerHTML = `&centerdot;`;
+                    labelDot.style.fontSize = `${scaleFactor}rem`;
+                    label.appendChild(labelDot);
+
+                    let label_info = document.createElement('div');
+                    label_info.classList.add('cluster-label-info');
+                    let label_info_regionId = document.createElement('div');
+                    label_info_regionId.innerHTML = `Region: ${regionId}`;
+                    label_info.appendChild(label_info_regionId);
+                    let label_info_labelId = document.createElement('div');
+                    label_info_labelId.innerHTML = `Label: ${labelId}`;
+                    label_info.appendChild(label_info_labelId);
+                    
+                    // display the user-added labels
+                    let label_info_userData = document.createElement('div');
+                    label_info_userData.classList.add('cluster-label-user-data');
+                    let userDataString = '';
+                    for (let i = 0; i < info.userData.length; i++) {
+                        if (i === info.userData.length - 1) userDataString += `${info.userData[i]}`;
+                        else userDataString += `${info.userData[i]}, `;
+                    }
+                    label_info_userData.innerHTML = `User Data: ${userDataString}`;
+                    label_info.appendChild(label_info_userData);
+                    
+                    label.append(label_info);
+
+                    labelContainer.append(label);
+                }
+                // early return, hide labels
+                if (!realityEditor.spatialCursor.isGSActive()) {
                     label.style.visibility = 'hidden';
                     continue;
                 }
-            }
-            if (pos2d[2] < -clip || pos2d[0] < -clip || pos2d[0] > clip || pos2d[1] < -clip || pos2d[1] > clip) {
-                label.style.visibility = 'hidden';
-            } else {
-                label.style.visibility = 'visible';
-                let ndcXY = [pos2d[0] / pos2d[3], pos2d[1] / pos2d[3]];
-                let screenXY = [(ndcXY[0] + 1) / 2 * innerWidth, (-ndcXY[1] + 1) / 2 * innerHeight];
-                label.style.transform = `translate(-50%, -50%) translate(${screenXY[0]}px, ${screenXY[1]}px)`;
+                let dont_render = (uLabel !== -1) && (uRegion !== -1) && !( (uLabel === labelId) && (uRegion === regionId) );
+                if (dont_render) {
+                    label.style.visibility = 'hidden';
+                    continue;
+                }
+                // compute label screen-space position
+                let splatRegion = SplatManager.getSplatRegions().get(regionId);
+                let pos = [info.x, info.y, info.z];
+                let bMin = splatRegion.getBoundaryMin();
+                let bMax = splatRegion.getBoundaryMax();
+                if (pos[0] < bMin[0] || pos[1] < bMin[1] || pos[2] < bMin[2] || pos[0] > bMax[0] || pos[1] > bMax[1] || pos[2] > bMax[2]) { // out of boundary
+                    label.style.visibility = 'hidden';
+                    continue;
+                }
+                let posOffset = splatRegion.getPositionOffset(); // mm --> m
+                let q = splatRegion.getQuaternion();
+                pos = multiply3v(quaternionToRotationMatrix(q), pos);
+                pos[0] += posOffset[0];
+                pos[1] += posOffset[1];
+                pos[2] += posOffset[2];
+                let pos2d = multiply4v(multiply4(projectionMatrix, actualViewMatrix), [...pos, 1]);
+                let clip = 1.2 * pos2d[3];
+                if (pos2d[2] < -clip || pos2d[0] < -clip || pos2d[0] > clip || pos2d[1] < -clip || pos2d[1] > clip) {
+                    label.style.visibility = 'hidden';
+                } else {
+                    label.style.visibility = 'visible';
+                    let ndcXY = [pos2d[0] / pos2d[3], pos2d[1] / pos2d[3]];
+                    let screenXY = [(ndcXY[0] + 1) / 2 * innerWidth, (-ndcXY[1] + 1) / 2 * innerHeight];
+                    label.style.transform = `translate(-50%, -50%) translate(${screenXY[0]}px, ${screenXY[1]}px)`;
+                }
+                
+                // display up-to-date user-added labels
+                let label_info_userData = label.getElementsByClassName('cluster-label-user-data')[0];
+                if (info.userData.length === 0) {
+                    label_info_userData.innerHTML = 'User data: ';
+                    continue;
+                }
+                let userDataString = '';
+                for (let i = 0; i < info.userData.length; i++) {
+                    if (i === info.userData.length - 1) userDataString += `${info.userData[i]}`;
+                    else userDataString += `${info.userData[i]}, `;
+                }
+                label_info_userData.innerHTML = `User Data: ${userDataString}`;
             }
         }
+        // console.timeEnd('label');
     }
 
+    function selectAllTextInNode(node) {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    function addInfo(newInfoString, newInfoIndex) { // todo Steve: if already have new info string & index, then don't append the center_map_from_worker userData, b/c it already exists
+        if (uRegion === -1 || uLabel === -1) return;
+        let activeString = newInfoString !== undefined ? `${newInfoString}` : 'new info';
+        let activeIdx = newInfoIndex !== undefined ? newInfoIndex : center_maps_from_worker.get(uRegion).get(uLabel).userData.length;
+        if (newInfoString === undefined) center_maps_from_worker.get(uRegion).get(uLabel).userData.push(activeString);
+        
+        let newInfo = document.createElement('span');
+        newInfo.classList.add('info-current');
+        currentCustomTextContainer.insertBefore(newInfo, currentCustomTextContainer.lastChild);
+        newInfo.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+        })
+        
+        let newInfoText = document.createElement('span');
+        newInfoText.classList.add('info-text');
+        newInfoText.innerHTML = activeString;
+        newInfoText.contentEditable = 'true';
+        newInfo.appendChild(newInfoText);
+
+        // https://stackoverflow.com/questions/3805852/select-all-text-in-contenteditable-div-when-it-focus-click
+        // not sure if the content editable property makes everything slower by a fraction of a second, but editing / selecting all needs an extra delay to work, see below
+        setTimeout(() => {
+            selectAllTextInNode(newInfoText);
+        }, 0);
+        
+        newInfoText.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            setTimeout(() => {
+                selectAllTextInNode(newInfoText);
+            }, 0);
+            let p = newInfoText.parentElement; // newInfo
+            let gp = newInfoText.parentElement.parentElement; // currentCustomTextContainer
+            activeIdx = Array.from(gp.children).indexOf(p);
+        })
+        
+        newInfoText.addEventListener('keydown', (e) => {
+            if (realityEditor.device.keyboardEvents.isKeyboardActive()) return;
+            e.stopPropagation();
+            if (uRegion === -1 || uLabel === -1) return;
+            
+            setTimeout(() => {
+                center_maps_from_worker.get(uRegion).get(uLabel).userData[activeIdx] = newInfoText.innerText;
+            }, 0);
+        })
+        
+        let newInfoDelete = document.createElement('span');
+        newInfoDelete.classList.add('info-delete');
+        newInfoDelete.innerHTML = 'x';
+        newInfo.appendChild(newInfoDelete);
+        
+        newInfoDelete.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            if (uRegion === -1 || uLabel === -1) return;
+            
+            let p = newInfoText.parentElement; // newInfo
+            let gp = newInfoText.parentElement.parentElement; // currentCustomTextContainer
+            activeIdx = Array.from(gp.children).indexOf(p);
+            setTimeout(() => {
+                center_maps_from_worker.get(uRegion).get(uLabel).userData.splice(activeIdx, 1);
+                console.log(center_maps_from_worker.get(uRegion).get(uLabel).userData);
+            }, 0)
+            gp.removeChild(p);
+        })
+    }
+    
+    function initLabelCurrent() {
+        currentInfoContainer = document.createElement('div');
+        currentInfoContainer.id = 'info-container-current';
+        const navbar = document.querySelector('.desktopMenuBar');
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        currentInfoContainer.style.top = `${navbarHeight}px`;
+        labelContainer.appendChild(currentInfoContainer);
+        currentRegionId = document.createElement('div');
+        currentRegionId.style.fontSize = '1.5rem';
+        currentRegionId.innerHTML = `Region: ${uRegion}`;
+        currentInfoContainer.appendChild(currentRegionId);
+        currentLabelId = document.createElement('div');
+        currentLabelId.style.fontSize = '1.3rem';
+        currentLabelId.innerHTML = `Label: ${uLabel}`;
+        currentInfoContainer.appendChild(currentLabelId);
+        
+        // add info container
+        currentCustomTextContainer = document.createElement('div');
+        currentCustomTextContainer.id = 'custom-text-container-current';
+        currentInfoContainer.appendChild(currentCustomTextContainer);
+        
+        currentAddInfoButton = document.createElement('span');
+        currentAddInfoButton.classList.add('info-add');
+        currentAddInfoButton.innerHTML = `+`;
+        currentAddInfoButton.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            addInfo();
+        })
+        currentCustomTextContainer.appendChild(currentAddInfoButton);
+
+        // todo Steve: comment this out for debug display style purposes, uncomment this later
+        currentInfoContainer.style.visibility = 'hidden';
+    }
+    
     function clearLabels() {
         labelContainer.innerHTML = '';
     }
-
-    function addLabels() {
-        if (center_map_from_worker.size === 0 || labelInitialized) return; // todo Steve: figure out why there is ONLY 256 instead of 265 clusters
-        labelInitialized = true;
-        loopThroughLabels();
-        renderLabels();
+    
+    function initLabels() {
+        if (center_maps_from_worker.size === 0) return; // todo Steve: figure out why there is ONLY 245 instead of 265 clusters
+        initLabelCurrent();
+        realityEditor.gui.threejsScene.onAnimationFrame(loopThroughLabels);
     }
-
-    function renderLabels() {
-        requestAnimationFrame(renderLabels);
-        loopThroughLabels();
+    
+    function clearSensors() {
+        console.log('clear sensors');
+    }
+    
+    function initSensors() {
+        
     }
 
     worker.onmessage = (e) => {
@@ -1121,10 +1630,6 @@ async function main(initialFilePath) {
             link.remove();
         } else if (e.data.texdata) {
             const { texdata, texwidth, texheight } = e.data;
-            labelInitialized = false;
-            center_map_from_worker = e.data.center_map;
-            clearLabels();
-            addLabels();
             // console.log(texdata)
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -1158,10 +1663,29 @@ async function main(initialFilePath) {
             gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, depthIndex, gl.DYNAMIC_DRAW);
             vertexCount = e.data.vertexCount;
+            behindCameraAmount = e.data.behindCameraAmount;
+            outOfBoundaryAmount = e.data.outOfBoundaryAmount;
+            // console.log(behindCameraAmount, outOfBoundaryAmount, vertexCount, (vertexCount - behindCameraAmount - outOfBoundaryAmount) / vertexCount * 100);
+        } else if (e.data.center_maps) {
+            center_maps_from_worker = e.data.center_maps;
+            clearLabels();
+            initLabels();
+            clearSensors();
+            initSensors();
+            SplatManager.setRegionBoundaryFromWorker(e.data.boundary_maps);
         }
     };
 
-    let vertexCount = 0;
+    // region + label
+    function extractCollideRegionAndLabel(x) {
+        let collideRegionId = x >> 16;
+        let collideLabelId = x - collideRegionId;
+        return {collideRegionId, collideLabelId};
+    }
+
+    vertexCount = 0;
+    let behindCameraAmount = 0;
+    let outOfBoundaryAmount = 0;
     let lastFrame = 0;
     let avgFps = 0;
     // let start = 0;
@@ -1177,6 +1701,9 @@ async function main(initialFilePath) {
             isLowFPS = false;
         }, 500);
     }
+
+    let vWorld = new THREE.Vector3();
+    let vCollideIndex = -1;
 
     const frame = (now) => {
 
@@ -1228,7 +1755,9 @@ async function main(initialFilePath) {
         const currentFps = 1000 / (now - lastFrame) || 0;
         avgFps = avgFps * 0.9 + currentFps * 0.1;
 
-        if (vertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
+        let renderVertexCount = vertexCount - behindCameraAmount - outOfBoundaryAmount;
+
+        if (renderVertexCount > 0 && realityEditor.spatialCursor.isGSActive()) {
             document.getElementById("gsSpinner").style.display = "none";
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.uniform2fv(u_mouse, new Float32Array(uMouse));
@@ -1238,41 +1767,53 @@ async function main(initialFilePath) {
                 // if average FPS is lower than 40, then switch back to default ray-casting method
                 if (avgFps < 30) {
                     // console.warn('Low FPS, stop gs raycasting for now.');
-                    lowFPSMode();
-                    realityEditor.spatialCursor.gsToggleRaycast(false);
-                    break FBORendering;
+                    // lowFPSMode();
+                    // realityEditor.spatialCursor.gsToggleRaycast(false);
+                    // break FBORendering;
                 }
                 realityEditor.spatialCursor.gsToggleRaycast(true);
                 // render to frame buffer object texture
                 gl.uniform1i(u_uIsGSRaycasting, 1);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-                gl.viewport(0, 0, innerWidth, innerHeight);
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
                 gl.clear(gl.COLOR_BUFFER_BIT);
-                gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+                // todo Steve: 1. see if this outOfBoundaryAmount and shader checking out of boundary is repetitive
+                //  2. figure out why FBO rendering mode is NOT rendering every splat position info when a label is selected
+                gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, renderVertexCount);
                 // read the texture
                 const pixelBuffer = new Float32Array(4); // 4 components for RGBA
                 gl.readPixels(Math.floor(uMouseScreen[0]), Math.floor(innerHeight - uMouseScreen[1]), 1, 1, gl.RGBA, gl.FLOAT, pixelBuffer);
-                let camDepth = pixelBuffer[0];
-                let xOffset = remap(uMouse[0], -1, 1, -camNearWidth / 2, camNearWidth / 2) / camNear * camDepth;
-                let yOffset = remap(uMouse[1], -1, 1, camNearHeight / 2, -camNearHeight / 2) / camNear * camDepth;
-                let camSpacePosition = [xOffset, yOffset, camDepth, 1];
-                let worldSpacePosition = multiply4v(resultMatrix_1, camSpacePosition);
-                vWorld.set(worldSpacePosition[0], worldSpacePosition[1], worldSpacePosition[2]);
-                gl.uniform1i(u_collideIndex, pixelBuffer[1]);
-                vWorld.x = (vWorld.x / scaleF - offset_x) / SCALE;
-                vWorld.y = (vWorld.y / scaleF - offset_y) / SCALE - floorOffset;
-                vWorld.z = (vWorld.z / scaleF - offset_z) / SCALE;
-                if (pixelBuffer[3] !== 0) {
+                if (pixelBuffer[3] !== 0) { // todo Steve: this is the reason why FBO rendering mode is NOT rendering every splat position info when a label is selected !!!!
+                    // set world collide position
+                    let camDepth = pixelBuffer[0];
+                    let xOffset = remap(uMouse[0], -1, 1, -camNearWidth / 2, camNearWidth / 2) / camNear * camDepth;
+                    let yOffset = remap(uMouse[1], -1, 1, camNearHeight / 2, -camNearHeight / 2) / camNear * camDepth;
+                    let camSpacePosition = [xOffset, yOffset, camDepth, 1];
+                    let worldSpacePosition = multiply4v(resultMatrix_1, camSpacePosition);
+                    vWorld.set(worldSpacePosition[0], worldSpacePosition[1], worldSpacePosition[2]);
+                    vWorld.x = (vWorld.x / scaleF - offset_x) / SCALE;
+                    vWorld.y = (vWorld.y / scaleF - offset_y) / SCALE - floorOffset;
+                    vWorld.z = (vWorld.z / scaleF - offset_z) / SCALE;
                     realityEditor.spatialCursor.gsSetPosition(vWorld);
+                    // set collide index
+                    gl.uniform1i(u_collideIndex, pixelBuffer[1]);
+                    vCollideIndex = pixelBuffer[1];
+                    // // get collide region id & label
+                    // let {collideRegionId, collideLabelId} = extractCollideRegionAndLabel(pixelBuffer[2]);
+                    // console.log(collideRegionId, collideLabelId);
+                } else {
+                    gl.uniform1i(u_collideIndex, -1);
+                    vCollideIndex = -1;
                 }
             }
             // render to screen
             gl.uniform1i(u_uIsGSRaycasting, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.viewport(0, 0, innerWidth, innerHeight);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
             gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+            // gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+            gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, renderVertexCount);
 
             let pendingCapture = getPendingCapture('gsCanvas');
             if (pendingCapture) {
@@ -1324,7 +1865,6 @@ async function main(initialFilePath) {
     let uMouseScreen = [0, 0];
     let uLastMouse = [0, 0];
     let uLastMouseScreen = [0, 0];
-    let vWorld = new THREE.Vector3();
     window.addEventListener("pointermove", (e) => {
         if (isFlying) return;
         // uMouseScreen = [e.clientX, e.clientY];
@@ -1387,35 +1927,25 @@ async function main(initialFilePath) {
         selectFile(e.dataTransfer.files[0]);
     }); */
 
-    let bytesRead = 0;
-    let lastVertexCount = -1;
+    lastVertexCount = -1;
     let stopLoading = false;
 
     // eslint-disable-next-line no-constant-condition
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done || stopLoading) {
-            worker.postMessage({
-                doneLoading: true,
-            })
-            break;
-        }
-
-        splatData.set(value, bytesRead);
-        bytesRead += value.length;
-
-        if (vertexCount > lastVertexCount) {
-            worker.postMessage({
-                buffer: splatData.buffer,
-                vertexCount: Math.floor(bytesRead / rowLength),
-            });
-            lastVertexCount = vertexCount;
-        }
+    SplatManager.initService();
+    for (let i = 0; i < splatRegionCount; i++) {
+    // for (let i = 0; i < splatRegionCount - 1; i++) {
+        let region = new SplatManager.SplatRegion(initialFilePath[i], i);
+        await region.load();
     }
     if (!stopLoading) {
+        // console.log(splatData.buffer.byteLength / rowLength, splatData);
+        console.log('main thread post doneLoading to worker');
         worker.postMessage({
+            doneLoading: true,
+            vertexCountArray: SplatManager.getVertexCountArray(),
+            regionIdArray: SplatManager.getRegionIdArray(),
             buffer: splatData.buffer,
-            vertexCount: Math.floor(bytesRead / rowLength),
+            vertexCount: Math.floor(SplatManager.getTotalBytesRead() / rowLength),
         });
     }
 }
@@ -1461,6 +1991,7 @@ function showSplatRenderer(filePath, options = { broadcastToOthers: false }) {
     }
     gsContainer.classList.remove('hidden');
     gsActive = true;
+    SplatManager.showSplatRegions();
     // tell the mainThreejsScene to hide the mesh model
     realityEditor.gui.threejsScene.enableExternalSceneRendering(options.broadcastToOthers);
 }
@@ -1472,9 +2003,18 @@ function hideSplatRenderer(options = { broadcastToOthers: false }) {
     if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
+    SplatManager.hideSplatRegions();
     // tell the mainThreejsScene to show the mesh model
     realityEditor.gui.threejsScene.disableExternalSceneRendering(options.broadcastToOthers);
 }
+
+function getGL() { return gl; }
+function getProgram() { return program; }
+function getWorker() { return worker; }
+function getSplatData() { return splatData; }
+function getVertexCount() { return vertexCount; }
+function getLastVertexCount() { return lastVertexCount; }
+function setLastVertexCount(count) { lastVertexCount = count; }
 
 let callbacks = {
     onSplatShown: [],
@@ -1482,6 +2022,12 @@ let callbacks = {
 }
 
 export default {
+    getGL,
+    getProgram,
+    getWorker,
+    getSplatData,
+    getVertexCount,
+    getLastVertexCount, setLastVertexCount,
     hideSplatRenderer,
     showSplatRenderer,
     onSplatShown(callback) {
