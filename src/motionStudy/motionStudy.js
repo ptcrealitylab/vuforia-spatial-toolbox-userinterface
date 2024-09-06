@@ -67,7 +67,7 @@ export class MotionStudy {
         this.pinnedRegionCards = [];
         this.pinnedRegionCardToShow = null;
         this.activeRegionCard = null;
-        this.activeLens = null;
+        this.activeLens = this.humanPoseAnalyzer.activeLens;
         this.nextStepNumber = 1;
         this.steps = [];
         this.pinnedRegionCardsContainer = null;
