@@ -98,16 +98,34 @@ createNameSpace('realityEditor.device.layout');
         });
         resizeObserver.observe(document.body);
 
+        const lastUpdatedSize = {
+            width: 0,
+            height: 0
+        };
+
+        setInterval(() => {
+            // console.log('checking for improper size...');
+            if (window.innerWidth !== lastUpdatedSize.width ||
+                window.innerHeight !== lastUpdatedSize.height) {
+                console.log('detected improper window size, missed from observers', window.innerWidth, window.innerHeight);
+                windowResizeHandler(window.innerWidth, window.innerHeight);
+            }
+        }, 1000);
+
         /**
          * This is the main window resize event listener for the project.
          * Other modules should use realityEditor.device.layout.onWindowResized(({width, height})=>{})
          * rather than adding another window.onResize listener, so that code triggers in the right order
          */
-        function windowResizeHandler() {
+        function windowResizeHandler(width, height) {
             // noinspection JSSuspiciousNameCombination
-            globalStates.height = window.innerWidth;
+            globalStates.height = width;
             // noinspection JSSuspiciousNameCombination
-            globalStates.width = window.innerHeight;
+            globalStates.width = height;
+
+            // temporary fix for window resize events
+            lastUpdatedSize.width = width;
+            lastUpdatedSize.height = height;
 
             // reformat pocket tile size/arrangement
             realityEditor.gui.pocket.onWindowResized();
@@ -115,8 +133,8 @@ createNameSpace('realityEditor.device.layout');
             // Resize the canvas used for drawing node links
             let nodeConnectionCanvas = document.querySelector('.canvas-node-connections');
             if (nodeConnectionCanvas) {
-                nodeConnectionCanvas.width = window.innerWidth;
-                nodeConnectionCanvas.height = window.innerHeight;
+                nodeConnectionCanvas.width = width;
+                nodeConnectionCanvas.height = height;
                 nodeConnectionCanvas.style.width = nodeConnectionCanvas.width + 'px';
                 nodeConnectionCanvas.style.height = nodeConnectionCanvas.height + 'px';
             }
@@ -130,16 +148,16 @@ createNameSpace('realityEditor.device.layout');
                 let cover = globalDOMCache[frameKey];
                 // this is essential for rendering
                 if (container) {
-                    container.style.width = `${window.innerWidth}px`;
-                    container.style.height = `${window.innerHeight}px`;
+                    container.style.width = `${width}px`;
+                    container.style.height = `${height}px`;
                 }
                 // this adjusts the fullscreen iframes to continue to be fullscreen
                 if (iframe && iframe.classList.contains('webGlFrame')) {
-                    iframe.style.width = `${window.innerWidth}px`;
-                    iframe.style.height = `${window.innerHeight}px`;
+                    iframe.style.width = `${width}px`;
+                    iframe.style.height = `${height}px`;
                     if (cover) {
-                        cover.style.width = `${window.innerWidth}px`;
-                        cover.style.height = `${window.innerHeight}px`;
+                        cover.style.width = `${width}px`;
+                        cover.style.height = `${height}px`;
                     }
                 }
             });
@@ -147,8 +165,8 @@ createNameSpace('realityEditor.device.layout');
             // trigger other modules that have subscribed using realityEditor.device.layout.onWindowResized(...)
             callbacks.onWindowResized.forEach(callback => {
                 callback({
-                    width: window.innerWidth,
-                    height: window.innerHeight
+                    width,
+                    height,
                 });
             });
 
@@ -158,8 +176,8 @@ createNameSpace('realityEditor.device.layout');
                 if (!iframe) return;
                 let eventData = {
                     onWindowResized: {
-                        width: window.innerWidth,
-                        height: window.innerHeight
+                        width,
+                        height,
                     }
                 };
                 iframe.contentWindow.postMessage(JSON.stringify(eventData), '*');
