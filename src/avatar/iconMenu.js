@@ -169,7 +169,7 @@ createNameSpace("realityEditor.avatar.iconMenu");
         let myId = realityEditor.avatar.getMyAvatarId();
         let usersFollowingMe = realityEditor.avatar.utils.getUsersFollowingUser(myId, connectedAvatars);
 
-        if (usersFollowingMe.length > 0) {
+        if (myId && usersFollowingMe.length > 0) {
             let plural = usersFollowingMe.length > 1;
             leaderContainer.textContent = `${usersFollowingMe.length} ${plural ? 'users are' : 'user is'} following your perspective. Click here to stop sharing.`;
             leaderContainer.style.display = '';
