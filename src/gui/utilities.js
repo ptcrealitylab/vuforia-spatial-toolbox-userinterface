@@ -174,7 +174,7 @@ realityEditor.gui.utilities.checkBetween = function (e1, e2, p) {
  * @param {Array.<string>} array
  */
 realityEditor.gui.utilities.preload = function(array) {
-    var args = realityEditor.gui.utilities.preload.arguments;
+    var args = Array.from(arguments);
     for (var i = 0; i < arguments.length - 1; i++) {
         array[i] = new Image();
         array[i].src = args[i + 1];
