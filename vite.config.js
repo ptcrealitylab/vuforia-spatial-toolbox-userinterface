@@ -30,6 +30,9 @@ export default defineConfig({
     },
   },
   test: {
-    exclude: [...configDefaults.exclude, "**/thirdPartyCode/**"]
+    exclude: [...configDefaults.exclude, "**/thirdPartyCode/**"],
+    coverage: {
+        exclude: [...configDefaults.exclude, "**/thirdPartyCode/**"],
+    }
   }
 });
