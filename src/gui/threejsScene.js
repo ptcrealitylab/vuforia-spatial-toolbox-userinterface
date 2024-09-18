@@ -2,7 +2,6 @@ createNameSpace("realityEditor.gui.threejsScene");
 
 import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import { CSS2DRenderer } from '../../thirdPartyCode/three/CSS2DRenderer.js';
-import { FBXLoader } from '../../thirdPartyCode/three/FBXLoader.js';
 import { GLTFLoader } from '../../thirdPartyCode/three/GLTFLoader.module.js';
 import { mergeBufferGeometries } from '../../thirdPartyCode/three/BufferGeometryUtils.module.js';
 import { MeshBVH } from '../../thirdPartyCode/three-mesh-bvh.module.js';
@@ -1280,7 +1279,6 @@ import { getPendingCapture } from './sceneCapture.js';
     exports.updateGradientMapThreshold = updateGradientMapThreshold;
     exports.setMatrixFromArray = setMatrixFromArray;
     exports.THREE = THREE;
-    exports.FBXLoader = FBXLoader;
     exports.GLTFLoader = GLTFLoader;
     exports.onGltfDownloadProgress = (cb) => {
         callbacks.onGltfDownloadProgress.push(cb);
