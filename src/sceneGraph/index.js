@@ -134,7 +134,11 @@ createNameSpace("realityEditor.sceneGraph");
 
     function setCameraPosition(cameraMatrix) {
         if (!cameraNode) { return; }
-        cameraNode.setLocalMatrix(cameraMatrix);
+        if (typeof cameraMatrix.matrix !== 'undefined') {
+            cameraNode.setLocalMatrix(cameraMatrix.matrix);
+        } else {
+            cameraNode.setLocalMatrix(cameraMatrix);
+        }
     }
 
     function setGroundPlanePosition(groundPlaneMatrix) {

@@ -1337,7 +1337,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             tempThisObject.fullScreen = true;
             console.log("fullscreen: " + tempThisObject.fullScreen);
             
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
             
             document.getElementById("object" + msgContent.frame).style.transform =
                 'matrix3d(1, 0, 0, 0,' +
@@ -1390,7 +1390,7 @@ realityEditor.network.onInternalPostMessage = function (e) {
             tempThisObject.fullScreen = "sticky";
             console.log("sticky fullscreen: " + tempThisObject.fullScreen);
 
-            let zIndex = tempThisObject.fullscreenZPosition || -5000; // defaults to background
+            let zIndex = tempThisObject.fullscreenZPosition || globalStates.defaultFullscreenFrameZ; // defaults to background
 
             if (typeof msgContent.fullScreenAnimated !== 'undefined') {
 
