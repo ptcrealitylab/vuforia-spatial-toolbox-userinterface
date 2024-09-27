@@ -1,6 +1,8 @@
 /*
  *  MIT License
  *  Copyright (c) 2023 Kevin Kwok
+ * 
+ *  Modified by Steve KX 2023, 2024
  *
  *  Use of the original version of this source code is governed by a license
  *  that can be found in the LICENSE_splat file in the thirdPartyCode directory.
@@ -9,6 +11,7 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 import GUI from '../../thirdPartyCode/lil-gui.esm.js';
 import { getPendingCapture } from '../gui/sceneCapture.js';
 import { remap, remapCurveEaseOut } from "../utilities/MathUtils.js";
+import { iPhoneVerticalFOV, projectionMatrixFrom, multiply4, multiply4v, multiply3v, quaternionToRotationMatrix, invert4 } from "./math.js";
 
 let gsInitialized = false;
 let gsActive = false;
@@ -16,1066 +19,29 @@ let gsContainer;
 let gsSettingsPanel;
 let isGSRaycasting = false;
 
+import { vertexShaderSource, fragmentShaderSource } from "./shader.js";
 import SplatManager from './SplatManager.js';
 let splatData = null;
-let splatCount = null;
+let maxSplatCount = null;
 let downsample = null;
 let worker = null; // splat worker
 let vertexCount = null, lastVertexCount = null;
 let gl = null, program = null;
 let splatRegionCount = null;
 
-/** iPhoneVerticalFOV, projectionMatrixFrom(), makePerspective() come from desktopAdapter in remote operator addon. */
-
-const iPhoneVerticalFOV = 41.22673; // https://discussions.apple.com/thread/250970597
-
-let USE_MANUAL_ALIGNMENT_FOR_ALL = false;
-let USE_MANUAL_ALIGNMENT_FOR_SPECIFIED = true;
-let HARDCODED_SPLAT_COUNTS_ALIGNMENTS = {};
-
-// NOTE: this is a somewhat-fragile method included to support manually aligning particular splats.
-// How to hard-code a splat's alignment:
-// 1. console.log the splatCount after adding a splat to toolbox
-// 2. add an entry to HARDCODED_SPLAT_COUNTS_ALIGNMENTS with the matrix that corresponds with that splat
-// 3. turn on USE_MANUAL_ALIGNMENT_FOR_ALL to apply manualAlignmentMatrix to everything, or
-//    USE_MANUAL_ALIGNMENT_FOR_SPECIFIED to pick the matrix from the SPLAT_COUNT_ALIGNMENTS
-// This assumes/hopes that multiple splat files don't by coincidence have the same number of splats
-const manualAlignmentMatrix =
-    [   -0.061740851923088896,  -1.605035129459561,     0.11744258386357077,    0,
-        -1.3163664239481947,    -0.01724431166120183,   -0.9276985133744583,    0,
-        0.9258023359257972,     -0.13155731456696773,   -1.3112304022856882,    0,
-        0.7588661310195932,     -0.3383481348010016,    0.697548483268128,      1];
-
-const manualAlignmentMatrix_ptcFurniture1 = manualAlignmentMatrix;
-HARDCODED_SPLAT_COUNTS_ALIGNMENTS[1682141] = manualAlignmentMatrix_ptcFurniture1;
-
-/**
- * Builds a projection matrix from field of view, aspect ratio, and near and far planes
- */
-function projectionMatrixFrom(vFOV, aspect, near, far) {
-    var top = near * Math.tan((Math.PI / 180) * 0.5 * vFOV );
-    var height = 2 * top;
-    var width = aspect * height;
-    var left = -0.5 * width;
-    // return makePerspective( left, left + width, top, top - height, near, far );
-
-    // conversion to the convention used in GS rendering here
-    let mat = makePerspective( left, left + width, top, top - height, near, far );
-
-    // flip y and z axes
-    mat[4] *= -1; mat[5] *= -1; mat[6] *= -1; mat[7] *= -1;
-    mat[8] *= -1; mat[9] *= -1; mat[10] *= -1; mat[11] *= -1;
-    // mm to meter units
-    mat[14] *= 0.001;
-
-    return mat;
-}
-
-/**
- * Helper function for creating a projection matrix
- */
-function makePerspective ( left, right, top, bottom, near, far ) {
-
-    var te = [];
-    var x = 2 * near / ( right - left );
-    var y = 2 * near / ( top - bottom );
-
-    var a = ( right + left ) / ( right - left );
-    var b = ( top + bottom ) / ( top - bottom );
-    var c = - ( far + near ) / ( far - near );
-    var d = - 2 * far * near / ( far - near );
-
-    te[ 0 ] = x;    te[ 4 ] = 0;    te[ 8 ] = a;    te[ 12 ] = 0;
-    te[ 1 ] = 0;    te[ 5 ] = y;    te[ 9 ] = b;    te[ 13] = 0;
-    te[ 2 ] = 0;    te[ 6 ] = 0;    te[ 10 ] = c;   te[ 14 ] = d;
-    te[ 3 ] = 0;    te[ 7 ] = 0;    te[ 11 ] = - 1; te[ 15 ] = 0;
-
-    return te;
-
-}
-
-/** Original calculation of projection and view matrices (left for reference) */
-/* 
-function getProjectionMatrix(fx, fy, width, height) {
-    const znear = 0.2;
-    const zfar = 200;
-    return [
-        [(2 * fx) / width, 0, 0, 0],
-        [0, -(2 * fy) / height, 0, 0],
-        [0, 0, zfar / (zfar - znear), 1],
-        [0, 0, -(zfar * znear) / (zfar - znear), 0],
-    ].flat();
-}
-
-function getViewMatrix(camera) {
-    const R = camera.rotation.flat();
-    const t = camera.position;
-    const camToWorld = [
-        [R[0], R[1], R[2], 0],
-        [R[3], R[4], R[5], 0],
-        [R[6], R[7], R[8], 0],
-        [
-            -t[0] * R[0] - t[1] * R[3] - t[2] * R[6],
-            -t[0] * R[1] - t[1] * R[4] - t[2] * R[7],
-            -t[0] * R[2] - t[1] * R[5] - t[2] * R[8],
-            1,
-        ],
-    ].flat();
-    return camToWorld;
-}
-*/
-
-
-/** Multiplication (a * b) of matrices stored column-by-column */
-function multiply4(a, b) {
-    return [
-        b[0] * a[0] + b[1] * a[4] + b[2] * a[8] + b[3] * a[12],
-        b[0] * a[1] + b[1] * a[5] + b[2] * a[9] + b[3] * a[13],
-        b[0] * a[2] + b[1] * a[6] + b[2] * a[10] + b[3] * a[14],
-        b[0] * a[3] + b[1] * a[7] + b[2] * a[11] + b[3] * a[15],
-        b[4] * a[0] + b[5] * a[4] + b[6] * a[8] + b[7] * a[12],
-        b[4] * a[1] + b[5] * a[5] + b[6] * a[9] + b[7] * a[13],
-        b[4] * a[2] + b[5] * a[6] + b[6] * a[10] + b[7] * a[14],
-        b[4] * a[3] + b[5] * a[7] + b[6] * a[11] + b[7] * a[15],
-        b[8] * a[0] + b[9] * a[4] + b[10] * a[8] + b[11] * a[12],
-        b[8] * a[1] + b[9] * a[5] + b[10] * a[9] + b[11] * a[13],
-        b[8] * a[2] + b[9] * a[6] + b[10] * a[10] + b[11] * a[14],
-        b[8] * a[3] + b[9] * a[7] + b[10] * a[11] + b[11] * a[15],
-        b[12] * a[0] + b[13] * a[4] + b[14] * a[8] + b[15] * a[12],
-        b[12] * a[1] + b[13] * a[5] + b[14] * a[9] + b[15] * a[13],
-        b[12] * a[2] + b[13] * a[6] + b[14] * a[10] + b[15] * a[14],
-        b[12] * a[3] + b[13] * a[7] + b[14] * a[11] + b[15] * a[15],
-    ];
-}
-
-function multiply4v(m, v) {
-    return [
-        m[0] * v[0] + m[4] * v[1] + m[8] * v[2] + m[12] * v[3],
-        m[1] * v[0] + m[5] * v[1] + m[9] * v[2] + m[13] * v[3],
-        m[2] * v[0] + m[6] * v[1] + m[10] * v[2] + m[14]* v[3],
-        m[3] * v[0] + m[7] * v[1] + m[11] * v[2] + m[15] * v[3]
-    ]
-}
-
-function multiply3v(m, v) {
-    return [
-        m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
-        m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
-        m[2] * v[0] + m[5] * v[1] + m[8] * v[2]
-    ]
-}
-
-function quaternionToRotationMatrix(q) {
-    let l = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-    let x = -q[0] / l; // same as shader, need conjugate to work properly
-    let y = -q[1] / l;
-    let z = -q[2] / l;
-    let w = q[3] / l;
-    return [
-        1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
-        2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
-        2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
-    ]
-}
-
-function invert4(a) {
-    let b00 = a[0] * a[5] - a[1] * a[4];
-    let b01 = a[0] * a[6] - a[2] * a[4];
-    let b02 = a[0] * a[7] - a[3] * a[4];
-    let b03 = a[1] * a[6] - a[2] * a[5];
-    let b04 = a[1] * a[7] - a[3] * a[5];
-    let b05 = a[2] * a[7] - a[3] * a[6];
-    let b06 = a[8] * a[13] - a[9] * a[12];
-    let b07 = a[8] * a[14] - a[10] * a[12];
-    let b08 = a[8] * a[15] - a[11] * a[12];
-    let b09 = a[9] * a[14] - a[10] * a[13];
-    let b10 = a[9] * a[15] - a[11] * a[13];
-    let b11 = a[10] * a[15] - a[11] * a[14];
-    let det =
-        b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-    if (!det) return null;
-    return [
-        (a[5] * b11 - a[6] * b10 + a[7] * b09) / det,
-        (a[2] * b10 - a[1] * b11 - a[3] * b09) / det,
-        (a[13] * b05 - a[14] * b04 + a[15] * b03) / det,
-        (a[10] * b04 - a[9] * b05 - a[11] * b03) / det,
-        (a[6] * b08 - a[4] * b11 - a[7] * b07) / det,
-        (a[0] * b11 - a[2] * b08 + a[3] * b07) / det,
-        (a[14] * b02 - a[12] * b05 - a[15] * b01) / det,
-        (a[8] * b05 - a[10] * b02 + a[11] * b01) / det,
-        (a[4] * b10 - a[5] * b08 + a[7] * b06) / det,
-        (a[1] * b08 - a[0] * b10 - a[3] * b06) / det,
-        (a[12] * b04 - a[13] * b02 + a[15] * b00) / det,
-        (a[9] * b02 - a[8] * b04 - a[11] * b00) / det,
-        (a[5] * b07 - a[4] * b09 - a[6] * b06) / det,
-        (a[0] * b09 - a[1] * b07 + a[2] * b06) / det,
-        (a[13] * b01 - a[12] * b03 - a[14] * b00) / det,
-        (a[8] * b03 - a[9] * b01 + a[10] * b00) / det,
-    ];
-}
-
-function ApplyTransMatrix(sourceMatrix, transMatrix, scaleF)
-{
-    let resultMatrix = new Array(16).fill(0);
-
-    for(let row = 0; row < 4; row++) {
-        for(let col = 0; col < 4; col++) {
-            let sum = 0; // Initialize sum for each element
-            for(let k = 0; k < 4; k++) {
-                sum += sourceMatrix[row * 4 + k] * transMatrix[k * 4 + col];
-            }
-            resultMatrix[row * 4 + col] = sum; // Assign the calculated value
-        }
-    }
-    resultMatrix[12] = resultMatrix[12] * scaleF;
-    resultMatrix[13] = resultMatrix[13] * scaleF;
-    resultMatrix[14] = resultMatrix[14] * scaleF;
-
-    return resultMatrix
-}
-
-function createWorker(self) {
-    let buffer;
-    let vertexCount = 0;
-    let doneLoading = false;
-    let vertexCountArray = null;
-    let regionIdArray = null;
-    let splatRegionInfos = {};
-    let forceSort = false;
-    let viewProj;
-    // XYZ - Position (Float32), 4 x 3 (size * count) = 12
-    // XYZ - Scale (Float32), 4 x 3 = 12
-    // RGBA - colors (uint8), 1 x 4 = 4
-    // Label & empty slots - labels (uint8), 1 x 1 = 1, empty slots (uint8), 1 x 3 = 3, total = 4
-    // IJKL - quaternion/rot (uint8), 1 x 4 = 4
-    // total row length - 12 + 12 + 4 + 4 + 4 = 36
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
-    let lastProj = [];
-    let depthIndex = new Uint32Array();
-    let lastVertexCount = 0;
-
-    var _floatView = new Float32Array(1);
-    var _int32View = new Int32Array(_floatView.buffer);
-
-    function floatToHalf(float) {
-        _floatView[0] = float;
-        var f = _int32View[0];
-
-        var sign = (f >> 31) & 0x0001;
-        var exp = (f >> 23) & 0x00ff;
-        var frac = f & 0x007fffff;
-
-        var newExp;
-        if (exp == 0) {
-            newExp = 0;
-        } else if (exp < 113) {
-            newExp = 0;
-            frac |= 0x00800000;
-            frac = frac >> (113 - exp);
-            if (frac & 0x01000000) {
-                newExp = 1;
-                frac = 0;
-            }
-        } else if (exp < 142) {
-            newExp = exp - 112;
-        } else {
-            newExp = 31;
-            frac = 0;
-        }
-
-        return (sign << 15) | (newExp << 10) | (frac >> 13);
-    }
-
-    function packHalf2x16(x, y) {
-        return (floatToHalf(x) | (floatToHalf(y) << 16)) >>> 0;
-    }
-
-    function multiply3v_worker(m, v) {
-        return [
-            m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
-            m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
-            m[2] * v[0] + m[5] * v[1] + m[8] * v[2]
-        ]
-    }
-
-    function quaternionToRotationMatrix_worker(q) {
-        let l = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-        let x = -q[0] / l; // same as shader, need conjugate to work properly
-        let y = -q[1] / l;
-        let z = -q[2] / l;
-        let w = q[3] / l;
-        return [
-            1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
-            2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
-            2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
-        ]
-    }
-
-    var texdata;
-    var texwidth;
-    var texheight;
-    function generateTexture() {
-        if (!buffer) return;
-        const f_buffer = new Float32Array(buffer);
-        const u_buffer = new Uint8Array(buffer);
-
-        texwidth = 1024 * 2; // Set to your desired width
-        texheight = Math.ceil((2 * vertexCount) / texwidth); // Set to your desired height
-        texdata = new Uint32Array(texwidth * texheight * 4); // 4 components per pixel (RGBA)
-        var texdata_c = new Uint8Array(texdata.buffer);
-        var texdata_f = new Float32Array(texdata.buffer);
-
-        // console.log(vertexCount);
-
-        // Here we convert from a .splat file buffer into a texture
-        // With a little bit more foresight perhaps this texture file
-        // should have been the native format as it'd be very easy to
-        // load it into webgl.
-        for (let i = 0; i < vertexCount; i++) {
-            // x, y, z
-            texdata_f[8 * i + 0] = f_buffer[9 * i + 0];
-            texdata_f[8 * i + 1] = f_buffer[9 * i + 1];
-            texdata_f[8 * i + 2] = f_buffer[9 * i + 2];
-
-            // r, g, b, a
-            texdata_c[4 * (8 * i + 7) + 0] = u_buffer[36 * i + 24 + 0];
-            texdata_c[4 * (8 * i + 7) + 1] = u_buffer[36 * i + 24 + 1];
-            texdata_c[4 * (8 * i + 7) + 2] = u_buffer[36 * i + 24 + 2];
-            texdata_c[4 * (8 * i + 7) + 3] = u_buffer[36 * i + 24 + 3];
-
-            // 0, 0, regionId, label (cluster center (x, y, z) and splat label/category)
-            // texdata_c[4 * (8 * i + 3) + 0] = 0;
-            // texdata_c[4 * (8 * i + 3) + 1] = 0;
-            // texdata_c[4 * (8 * i + 3) + 2] = regionId; // region id
-            // texdata_c[4 * (8 * i + 3) + 3] = u_buffer[36 * i + 28 + 3]; // label
-
-            // quaternions
-            let scale = [
-                f_buffer[9 * i + 3 + 0],
-                f_buffer[9 * i + 3 + 1],
-                f_buffer[9 * i + 3 + 2],
-            ];
-            let rot = [
-                (u_buffer[36 * i + 32 + 0] - 128) / 128,
-                (u_buffer[36 * i + 32 + 1] - 128) / 128,
-                (u_buffer[36 * i + 32 + 2] - 128) / 128,
-                (u_buffer[36 * i + 32 + 3] - 128) / 128,
-            ];
-
-            // Compute the matrix product of S and R (M = S * R)
-            const M = [
-                1.0 - 2.0 * (rot[2] * rot[2] + rot[3] * rot[3]),
-                2.0 * (rot[1] * rot[2] + rot[0] * rot[3]),
-                2.0 * (rot[1] * rot[3] - rot[0] * rot[2]),
-
-                2.0 * (rot[1] * rot[2] - rot[0] * rot[3]),
-                1.0 - 2.0 * (rot[1] * rot[1] + rot[3] * rot[3]),
-                2.0 * (rot[2] * rot[3] + rot[0] * rot[1]),
-
-                2.0 * (rot[1] * rot[3] + rot[0] * rot[2]),
-                2.0 * (rot[2] * rot[3] - rot[0] * rot[1]),
-                1.0 - 2.0 * (rot[1] * rot[1] + rot[2] * rot[2]),
-            ].map((k, i) => k * scale[Math.floor(i / 3)]);
-
-            const sigma = [
-                M[0] * M[0] + M[3] * M[3] + M[6] * M[6],
-                M[0] * M[1] + M[3] * M[4] + M[6] * M[7],
-                M[0] * M[2] + M[3] * M[5] + M[6] * M[8],
-                M[1] * M[1] + M[4] * M[4] + M[7] * M[7],
-                M[1] * M[2] + M[4] * M[5] + M[7] * M[8],
-                M[2] * M[2] + M[5] * M[5] + M[8] * M[8],
-            ];
-
-            texdata[8 * i + 4] = packHalf2x16(4 * sigma[0], 4 * sigma[1]);
-            texdata[8 * i + 5] = packHalf2x16(4 * sigma[2], 4 * sigma[3]);
-            texdata[8 * i + 6] = packHalf2x16(4 * sigma[4], 4 * sigma[5]);
-        }
-
-        if (doneLoading) {
-            console.log('generate texture called with doneLoading === true');
-            generateRegionAndLabels(texdata_c, u_buffer, f_buffer);
-            // todo Steve: if have it, then only generate region and labels ONCE, looks correct but regionId and label would be 0
-            //  if not have it, then will generate region and labels twice, don't know what negative impact will have yet
-            // doneLoading = false;
-        }
-
-        // self.postMessage({ texdata, texwidth, texheight }, [texdata.buffer]);
-        self.postMessage({ texdata, texwidth, texheight });
-    }
-    
-    function updateEditedSplatTexture(hiddenSplatIndexSet) {
-        let texdata_c = new Uint8Array(texdata.buffer);
-        let hiddenSplatIndexArr = Array.from(hiddenSplatIndexSet);
-        for (let i = 0; i < hiddenSplatIndexArr.length; i++) { // todo Steve: maybe the indexing is wrong
-            let index = hiddenSplatIndexArr[i];
-            texdata_c[4 * (8 * index + 3) + 1] = 0; // display or hidden, cen.w >> 8
-        }
-        self.postMessage({ texdata, texwidth, texheight });
-    }
-
-    function generateRegionAndLabels(texdata_c, u_buffer, f_buffer) {
-        let center_maps = new Map(); // a map storing info pairs [regionId, center_map_for_this_splat_region]
-        let boundary_maps = new Map(); // a map storing info pairs [regionId, boundary_for_this_splat_region]
-        let vertexCountAccumulatedArray = [];
-        let vertexCountAccumulated = 0;
-        for (let i = 0; i < vertexCountArray.length; i++) {
-            vertexCountAccumulated += vertexCountArray[i];
-            vertexCountAccumulatedArray.push(vertexCountAccumulated);
-        }
-        let regionIdArrayCopy = [...regionIdArray];
-
-        // add 1st center_map for 1st region in the regionIdArrayCopy
-        let center_map = new Map(); // a map storing info about splat center for each splat region
-        center_maps.set(regionIdArrayCopy[0], center_map);
-        
-        let minX = Infinity, minY = Infinity, minZ = Infinity;
-        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
-        // let centerX = 0, centerY = 0, centerZ = 0;
-        
-        // iterate through all the vertices, and add to their corresponding region's center_map
-        for (let i = 0; i < vertexCount; i++) {
-            if (i >= vertexCountAccumulatedArray[0]) { // finish up this splat region & continue to process the next splat region
-                vertexCountAccumulatedArray.shift();
-                let lastRegionId = regionIdArrayCopy.shift();
-                
-                center_map = new Map();
-                center_maps.set(regionIdArrayCopy[0], center_map);
-
-                boundary_maps.set(
-                    lastRegionId,
-                    {
-                        min: [minX, minY, minZ],
-                        max: [maxX, maxY, maxZ],
-                        // center: [centerX, centerY, centerZ]
-                    }
-                );
-                minX = Infinity; minY = Infinity; minZ = Infinity;
-                maxX = -Infinity; maxY = -Infinity; maxZ = -Infinity;
-                // centerX = 0; centerY = 0; centerZ = 0;
-            }
-            // get position, regionId, and label info
-            let x = f_buffer[9 * i + 0];
-            let y = f_buffer[9 * i + 1];
-            let z = f_buffer[9 * i + 2];
-            let regionId = regionIdArrayCopy[0];
-            let label = u_buffer[36 * i + 28 + 3];
-            
-            // assign regionId and label info to WebGL texture
-            texdata_c[4 * (8 * i + 3) + 1] = 1; // splat displayed ( 1 ) or hidden ( 0 )
-            texdata_c[4 * (8 * i + 3) + 2] = regionId; // region id, cen.w >> 16
-            texdata_c[4 * (8 * i + 3) + 3] = label; // label, cen.w >> 24
-            
-            // update center_map and min/max boundary for this splat region
-            if (!center_map.has(label)) {
-                center_map.set(
-                    label,
-                    {
-                        x: x,
-                        y: y,
-                        z: z,
-                        points: [{x, y, z}],
-                        count: 1,
-                        userData: [],
-                    }
-                )
-            } else {
-                let info = center_map.get(label);
-                info.x += x;
-                info.y += y;
-                info.z += z;
-                if (info.count % 50 === 0 && info.count < 20000) {
-                    info.points.push({x, y, z});
-                }
-                info.count++;
-            }
-            
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-            if (z < minZ) minZ = z;
-            if (z > maxZ) maxZ = z;
-            // centerX += x / vertexCountAccumulatedArray[0];
-            // centerY += y / vertexCountAccumulatedArray[0];
-            // centerZ += z / vertexCountAccumulatedArray[0];
-        }
-        
-        center_maps.forEach((center_map) => {
-            center_map.forEach(info => {
-                info.x /= info.count;
-                info.y /= info.count;
-                info.z /= info.count;
-            });
-        });
-
-        // add in the boundary map for last region in the regionIdArrayCopy
-        let lastRegionId = regionIdArrayCopy.shift();
-        boundary_maps.set(
-            lastRegionId,
-            {
-                min: [minX, minY, minZ],
-                max: [maxX, maxY, maxZ],
-                // center: [centerX, centerY, centerZ]
-            }
-        );
-        
-        self.postMessage({center_maps, boundary_maps});
-    }
-
-    function runSort(viewProj) {
-        if (!buffer) return;
-        const f_buffer = new Float32Array(buffer);
-        if (lastVertexCount === vertexCount) {
-            let dot =
-                lastProj[2] * viewProj[2] +
-                lastProj[6] * viewProj[6] +
-                lastProj[10] * viewProj[10];
-            if (Math.abs(dot - 1) < 0.01 && !forceSort) {
-                return;
-            }
-        } else {
-            generateTexture();
-            lastVertexCount = vertexCount;
-        }
-        
-        forceSort = false;
-        if (vertexCountArray === null) return;
-        let vertexCountAccumulatedArray = [];
-        let vertexCountAccumulated = 0;
-        for (let i = 0; i < vertexCountArray.length; i++) {
-            vertexCountAccumulated += vertexCountArray[i];
-            vertexCountAccumulatedArray.push(vertexCountAccumulated);
-        }
-        let regionIdArrayCopy = [...regionIdArray];
-
-        // console.time("sort");
-        let behindCameraAmount = 0;
-        let outOfBoundaryAmount = 0;
-        let maxDepth = -Infinity;
-        let minDepth = Infinity;
-        let sizeList = new Int32Array(vertexCount); // z depth of all the splats in clip space
-        for (let i = 0; i < vertexCount; i++) {
-            if (i >= vertexCountAccumulatedArray[0]) {
-                vertexCountAccumulatedArray.shift();
-                regionIdArrayCopy.shift();
-            }
-            // check if each splat local position is within splat region boundary
-            let pos = [f_buffer[9 * i + 0], f_buffer[9 * i + 1], f_buffer[9 * i + 2]];
-            let bMin = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [-Infinity, -Infinity, -Infinity] : splatRegionInfos[`${regionIdArrayCopy[0]}`].boundaryMin;
-            let bMax = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [Infinity, Infinity, Infinity] : splatRegionInfos[`${regionIdArrayCopy[0]}`].boundaryMax;
-            if (pos[0] < bMin[0] || pos[1] < bMin[1] || pos[2] < bMin[2] || pos[0] > bMax[0] || pos[1] > bMax[1] || pos[2] > bMax[2]) { // out of boundary
-                outOfBoundaryAmount++;
-                sizeList[i] = -Infinity; // send it to the very back of camera
-                continue;
-            }
-            // compute each splat world position, when applied splat region trasform, and compute un-normalized clip-space depth
-            let posOffset = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [0, 0, 0] : splatRegionInfos[`${regionIdArrayCopy[0]}`].positionOffset;
-            let q = splatRegionInfos[`${regionIdArrayCopy[0]}`] === undefined ? [0, 0, 0, 1] : splatRegionInfos[`${regionIdArrayCopy[0]}`].quaternion;
-            pos = multiply3v_worker(quaternionToRotationMatrix_worker(q), pos);
-            pos[0] += posOffset[0];
-            pos[1] += posOffset[1];
-            pos[2] += posOffset[2];
-            // un-normalized depth in clip space, +z pointing into the screen, so that the furthest splat in front of camera gets maxDepth, the furthest splat behind the camera gets minDepth
-            let depth = viewProj[2] * pos[0] + viewProj[6] * pos[1] + viewProj[10] * pos[2] + viewProj[14] * 1;
-            if (depth < 0) behindCameraAmount++;
-            depth = depth * 4096 | 0;
-            sizeList[i] = depth;
-            if (depth > maxDepth) maxDepth = depth;
-            if (depth < minDepth) minDepth = depth;
-        }
-
-        // This is a 16 bit single-pass counting sort
-        let depthInv = (256 * 256) / (maxDepth - minDepth);
-        let counts0 = new Uint32Array(256 * 256);
-        for (let i = 0; i < vertexCount; i++) {
-            // remap sizeList depth from arbitrary range to [65536, 0], so that the furthest splat in front of camera gets 0, the furthest splat behind the camera gets 65536. To prepare for Painter's algorithm
-            if (sizeList[i] === -Infinity) sizeList[i] = 0;
-            else sizeList[i] = 65536 - ((sizeList[i] - minDepth) * depthInv) | 0; 
-            counts0[sizeList[i]]++;
-        }
-        let starts0 = new Uint32Array(256 * 256);
-        for (let i = 1; i < 256 * 256; i++)
-            starts0[i] = starts0[i - 1] + counts0[i - 1];
-        depthIndex = new Uint32Array(vertexCount); // indices of all the splats in the sizeList array, ordered from smallest (0) to biggest (65536)
-        for (let i = 0; i < vertexCount; i++)
-            depthIndex[starts0[sizeList[i]]++] = i;
-
-        // console.timeEnd("sort");
-
-        lastProj = viewProj;
-        self.postMessage({ depthIndex, viewProj, vertexCount, behindCameraAmount, outOfBoundaryAmount }, [
-            depthIndex.buffer,
-        ]);
-    }
-
-    function processPlyBuffer(inputBuffer) {
-        const ubuf = new Uint8Array(inputBuffer);
-        // 10KB ought to be enough for a header...
-        const header = new TextDecoder().decode(ubuf.slice(0, 1024 * 10));
-        const header_end = "end_header\n";
-        const header_end_index = header.indexOf(header_end);
-        if (header_end_index < 0)
-            throw new Error("Unable to read .ply file header");
-        const vertexCount = parseInt(/element vertex (\d+)\n/.exec(header)[1]);
-        console.log("Vertex Count", vertexCount);
-        let row_offset = 0,
-            offsets = {},
-            types = {};
-        const TYPE_MAP = {
-            double: "getFloat64",
-            int: "getInt32",
-            uint: "getUint32",
-            float: "getFloat32",
-            short: "getInt16",
-            ushort: "getUint16",
-            uchar: "getUint8",
-        };
-        for (let prop of header
-            .slice(0, header_end_index)
-            .split("\n")
-            .filter((k) => k.startsWith("property "))) {
-            const [_p, type, name] = prop.split(" ");
-            const arrayType = TYPE_MAP[type] || "getInt8";
-            types[name] = arrayType;
-            offsets[name] = row_offset;
-            row_offset += parseInt(arrayType.replace(/[^\d]/g, "")) / 8;
-        }
-        console.log("Bytes per row", row_offset, types, offsets);
-
-        let dataView = new DataView(
-            inputBuffer,
-            header_end_index + header_end.length,
-        );
-        let row = 0;
-        const attrs = new Proxy(
-            {},
-            {
-                get(target, prop) {
-                    if (!types[prop]) throw new Error(prop + " not found");
-                    return dataView[types[prop]](
-                        row * row_offset + offsets[prop],
-                        true,
-                    );
-                },
-            },
-        );
-
-        console.time("calculate importance");
-        let sizeList = new Float32Array(vertexCount);
-        let sizeIndex = new Uint32Array(vertexCount);
-        for (row = 0; row < vertexCount; row++) {
-            sizeIndex[row] = row;
-            if (!types["scale_0"]) continue;
-            const size =
-                Math.exp(attrs.scale_0) *
-                Math.exp(attrs.scale_1) *
-                Math.exp(attrs.scale_2);
-            const opacity = 1 / (1 + Math.exp(-attrs.opacity));
-            sizeList[row] = size * opacity;
-        }
-        console.timeEnd("calculate importance");
-
-        // console.time("sort");
-        sizeIndex.sort((b, a) => sizeList[a] - sizeList[b]);
-        // console.timeEnd("sort");
-
-        // XYZ - Position (Float32), 4 x 3 (size * count) = 12
-        // XYZ - Scale (Float32), 4 x 3 = 12
-        // RGBA - colors (uint8), 1 x 4 = 4
-        // Label & empty slots - labels (uint8), 1 x 1 = 1, empty slots (uint8), 1 x 3 = 3, total = 4. The 3 empty slots are to keep the data a multiple of 4, easy to access with Uint8Array later when reading the .splat file to generate texture
-        // IJKL - quaternion/rot (uint8), 1 x 4 = 4
-        // total row length - 12 + 12 + 4 + 4 + 4 = 36
-
-        // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
-        const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
-        const buffer = new ArrayBuffer(rowLength * vertexCount);
-
-        console.time("build buffer");
-        for (let j = 0; j < vertexCount; j++) {
-            row = sizeIndex[j];
-
-            const position = new Float32Array(buffer, j * rowLength, 3);
-            const scales = new Float32Array(buffer, j * rowLength + 4 * 3, 3);
-            const rgba = new Uint8ClampedArray(
-                buffer,
-                j * rowLength + 4 * 3 + 4 * 3,
-                4,
-            );
-            const labelAndEmpties = new Uint8ClampedArray(
-                buffer,
-                j * rowLength + 4 * 3 + 4 * 3 + 4,
-                4,
-            );
-            const rot = new Uint8ClampedArray(
-                buffer,
-                j * rowLength + 4 * 3 + 4 * 3 + 4 + 4,
-                4,
-            );
-
-            if (types["scale_0"]) {
-                const qlen = Math.sqrt(
-                    attrs.rot_0 ** 2 +
-                    attrs.rot_1 ** 2 +
-                    attrs.rot_2 ** 2 +
-                    attrs.rot_3 ** 2,
-                );
-
-                rot[0] = (attrs.rot_0 / qlen) * 128 + 128;
-                rot[1] = (attrs.rot_1 / qlen) * 128 + 128;
-                rot[2] = (attrs.rot_2 / qlen) * 128 + 128;
-                rot[3] = (attrs.rot_3 / qlen) * 128 + 128;
-
-                scales[0] = Math.exp(attrs.scale_0);
-                scales[1] = Math.exp(attrs.scale_1);
-                scales[2] = Math.exp(attrs.scale_2);
-            } else {
-                scales[0] = 0.01;
-                scales[1] = 0.01;
-                scales[2] = 0.01;
-
-                rot[0] = 255;
-                rot[1] = 0;
-                rot[2] = 0;
-                rot[3] = 0;
-            }
-
-            position[0] = attrs.x;
-            position[1] = attrs.y;
-            position[2] = attrs.z;
-
-            if (types["f_dc_0"]) {
-                const SH_C0 = 0.28209479177387814;
-                rgba[0] = (0.5 + SH_C0 * attrs.f_dc_0) * 255;
-                rgba[1] = (0.5 + SH_C0 * attrs.f_dc_1) * 255;
-                rgba[2] = (0.5 + SH_C0 * attrs.f_dc_2) * 255;
-            } else {
-                const SH_C0 = 0.28209479177387814;
-                rgba[0] = (0.5 + SH_C0 * attrs.r) * 255;
-                rgba[1] = (0.5 + SH_C0 * attrs.g) * 255;
-                rgba[2] = (0.5 + SH_C0 * attrs.b) * 255;
-
-                labelAndEmpties[0] = attrs.e1;
-                labelAndEmpties[1] = attrs.e2;
-                labelAndEmpties[2] = attrs.e3;
-                labelAndEmpties[3] = attrs.label;
-            }
-            if (types["opacity"]) {
-                rgba[3] = (1 / (1 + Math.exp(-attrs.opacity))) * 255;
-            } else {
-                rgba[3] = 255;
-            }
-        }
-        console.timeEnd("build buffer");
-        return buffer;
-    }
-
-    const throttledSort = () => {
-        if (!sortRunning) {
-            sortRunning = true;
-            let lastView = viewProj;
-            runSort(lastView);
-            setTimeout(() => {
-                sortRunning = false;
-                if (lastView !== viewProj) {
-                    throttledSort();
-                }
-            }, 0);
-        }
-    };
-
-    let sortRunning;
-    let forceSortTimeoutId = null;
-    self.onmessage = (e) => {
-        if (e.data.ply) {
-            vertexCount = 0;
-            doneLoading = false;
-            runSort(viewProj);
-            buffer = processPlyBuffer(e.data.ply);
-            vertexCount = Math.floor(buffer.byteLength / rowLength);
-            doneLoading = true;
-            postMessage({ buffer: buffer });
-        } else if (e.data.doneLoading) {
-            doneLoading = e.data.doneLoading;
-            vertexCountArray = e.data.vertexCountArray;
-            regionIdArray = e.data.regionIdArray;
-            vertexCount = e.data.vertexCount;
-            buffer = e.data.buffer;
-            generateTexture();
-        } else if (e.data.buffer) {
-            buffer = e.data.buffer;
-            vertexCount = e.data.vertexCount;
-        } else if (e.data.vertexCount) {
-            vertexCount = e.data.vertexCount;
-        } else if (e.data.view) {
-            viewProj = e.data.view;
-            throttledSort();
-        } else if (e.data.splatRegionInfo) {
-            splatRegionInfos[`${e.data.regionId}`] = e.data.splatRegionInfo;
-            if (forceSortTimeoutId !== null) {
-                clearTimeout(forceSortTimeoutId);
-            }
-            forceSortTimeoutId = setTimeout(() => {
-                forceSort = true;
-                runSort(viewProj);
-            }, 0);
-        } else if (e.data.isSplatEdited) {
-            updateEditedSplatTexture(e.data.hiddenSplatIndexSet);
-        }
-    };
-}
-
-/** 
- * todo Steve: define some variable values & their dummy value:
- * region id: 0, 1, 2, ..., region count; -1
- * label id: 0, 1, 2, ..., label count; -1
- * collide index: 0, 1, 2, ..., vertex count; -1
- * pending hidden splat indices: [0, 1, 2, ..., vertex count]; [-1]
- **/
-
-const PENDING_SPLATS_MAX_SIZE = 200;
-function vertexShaderSource() { return `
-#version 300 es
-precision highp float;
-precision highp int;
-
-uniform highp usampler2D u_texture;
-uniform mat4 projection, view;
-uniform vec2 focal;
-uniform vec2 viewport;
-uniform vec2 uMouse;
-
-// visibility settings
-uniform bool uToggleBoundary;
-uniform float uWorldLowAlpha;
-
-struct SplatRegionInfo {
-    float regionId;
-    vec3 positionOffset;
-    vec4 quaternion;
-    vec3 boundaryMin;
-    vec3 boundaryMax;
-};
-uniform SplatRegionInfo splatRegionInfos[${splatRegionCount}];
-
-uniform int uCollideIndex;
-uniform bool uShouldDraw;
-
-uniform float mode;
-uniform float uLabel;
-uniform float uRegion;
-
-// editing gaussian splatting, highlight, delete, revert
-uniform bool uEdit;
-uniform int pendingHiddenSplatIndices[${PENDING_SPLATS_MAX_SIZE}]; // dirty fix: a smaller fixed-size array
-
-in vec2 position;
-in int index;
-
-out vec4 vColor;
-out vec4 vFBOPosColor;
-out vec2 vPosition;
-out vec4 vDebug2;
-out float vShouldDisplay;
-out float vIndex;
-
-vec3 randomNoiseVec3(float seed) {
-    float x = fract(sin(seed * 34.678 + 23.458) * 41.89);
-    float y = fract(cos(sin(seed + seed * seed * seed) * 56.743 + 18.794) * 93.37);
-    float z = fract(sin(cos(seed * 89.32 + seed * seed) * 23.167 + 28.842) * 84.273);
-    return vec3(x, y, z);
-}
-
-mat3 quaternionToRotationMatrix(vec4 q) {
-        float l = length(q);
-        float x = -q.x / l; // need conjugate of this quaternion in the shader to work
-        float y = -q.y / l;
-        float z = -q.z / l;
-        float w = q.w / l;
-        return mat3(
-            1. - 2.*y*y - 2.*z*z, 2.*x*y - 2.*w*z, 2.*x*z + 2.*w*y,
-            2.*x*y + 2.*w*z, 1. - 2.*x*x - 2.*z*z, 2.*y*z - 2.*w*x,
-            2.*x*z - 2.*w*y, 2.*y*z + 2.*w*x, 1. - 2.*x*x - 2.*y*y
-        );
-    }
-
-void main () {
-    uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
-    int displayOrHidden = int((cen.w >> 8) & 0xffu);
-    if (displayOrHidden == 0) {
-        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-        return;
-    }
-    int regionId = int((cen.w >> 16) & 0xffu);
-    vec3 pos = uintBitsToFloat(cen.xyz);
-    vec3 bMin = splatRegionInfos[regionId].boundaryMin;
-    vec3 bMax = splatRegionInfos[regionId].boundaryMax;
-    if (pos.x < bMin.x || pos.y < bMin.y || pos.z < bMin.z || pos.x > bMax.x || pos.y > bMax.y || pos.z > bMax.z) { // out of boundary
-        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-        return;
-    }
-    mat3 rot = quaternionToRotationMatrix(splatRegionInfos[regionId].quaternion);
-    pos = rot * pos;
-    pos += splatRegionInfos[regionId].positionOffset;
-    vec4 cam = view * vec4(pos, 1);
-    vec4 pos2d = projection * cam;
-
-    float clip = 1.2 * pos2d.w;
-    if (pos2d.z < -clip || pos2d.x < -clip || pos2d.x > clip || pos2d.y < -clip || pos2d.y > clip) {
-        gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-        return;
-    }
-
-    uvec4 cov = texelFetch(u_texture, ivec2(((uint(index) & 0x3ffu) << 1) | 1u, uint(index) >> 10), 0);
-    vec2 u1 = unpackHalf2x16(cov.x), u2 = unpackHalf2x16(cov.y), u3 = unpackHalf2x16(cov.z);
-    mat3 Vrk = mat3(u1.x, u1.y, u2.x, u1.y, u2.y, u3.x, u2.x, u3.x, u3.y);
-
-    mat3 J = mat3(
-        focal.x / cam.z, 0., -(focal.x * cam.x) / (cam.z * cam.z),
-        0., -focal.y / cam.z, (focal.y * cam.y) / (cam.z * cam.z),
-        0., 0., 0.
-    );
-
-    mat3 T = transpose(mat3(view) * rot) * J;
-    mat3 cov2d = transpose(T) * Vrk * T;
-
-    float mid = (cov2d[0][0] + cov2d[1][1]) / 2.0;
-    float radius = length(vec2((cov2d[0][0] - cov2d[1][1]) / 2.0, cov2d[0][1]));
-    float lambda1 = mid + radius, lambda2 = mid - radius;
-
-    if(lambda2 < 0.0) return;
-    vec2 diagonalVector = normalize(vec2(cov2d[0][1], lambda1 - cov2d[0][0]));
-    vec2 majorAxis = min(sqrt(2.0 * lambda1), 1024.0) * diagonalVector;
-    vec2 minorAxis = min(sqrt(2.0 * lambda2), 1024.0) * vec2(diagonalVector.y, -diagonalVector.x);
-
-    // vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu, (cov.w >> 24) & 0xffu) / 255.0;
-    float label = float((cen.w >> 24) & 0xffu);
-    // (uLabel == -1.) && (uRegion == -1.) ---> render everything
-    // (uLabel != -1.) && (uRegion != -1.) && 
-    bool dont_render = (uLabel != -1.) && (uRegion != -1.) && !( (uLabel == label) && (uRegion == float(regionId)) );
-    // dont_render = false;
-    if (mode == 0.) { // normal color mode
-        vec3 color = vec3((cov.w) & 0xffu, (cov.w >> 8) & 0xffu, (cov.w >> 16) & 0xffu) / 255.0;
-        float opacity = float((cov.w >> 24) & 0xffu) / 255.0;
-        if (dont_render) {
-            color = vec3(0.);
-            opacity = 0.;
-        }
-        vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4(color, opacity);
-    } else if (mode == 1.) { // label color mode
-        // vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4((cen.w) & 0xffu, (cen.w >> 8) & 0xffu, (cen.w >> 16) & 0xffu, (cen.w >> 24) & 0xffu) / 255.0;
-        vec3 color = randomNoiseVec3(label);
-        float opacity = float((cov.w >> 24) & 0xffu) / 255.0;
-        if (dont_render) {
-            color = vec3(0.);
-            opacity = 0.;
-        }
-        vColor = clamp(pos2d.z/pos2d.w+1.0, 0.0, 1.0) * vec4(color, opacity);
-    }
-    vPosition = position;
-
-    vec2 vCenter = vec2(pos2d) / pos2d.w;
-    
-    
-    // output cam space z depth for accurate mouse raycasting, also output splat index for raycast highlighting --- if want to do it in the future
-    // MUST output alpha value to 1., otherwise the rendering won't work b/c of the painter's algorithm !!!!!!
-    float regionAndLabel = float(regionId << 16) + label;
-    vFBOPosColor = vec4(cam.z, index, regionAndLabel, 1.);
-    
-    if (index == uCollideIndex) {
-        vIndex = 1.;
-    } else {
-        vIndex = 0.;
-    }
-    if (uEdit) {
-        for (int i = 0; i < ${PENDING_SPLATS_MAX_SIZE}; i++) {
-            if (index == pendingHiddenSplatIndices[i]) {
-                vIndex = 1.;
-                break;
-            }
-        }
-    }
-    
-    bool isOutOfAlpha = uToggleBoundary ? vColor.a < uWorldLowAlpha : false;
-    vShouldDisplay = 1.;
-    if (!isOutOfAlpha) {
-        // vShouldDisplay = 1.;
-    } else {
-        vShouldDisplay = 0.;
-    }
-    
-    gl_Position = vec4(
-        vCenter
-        + position.x * majorAxis / viewport
-        + position.y * minorAxis / viewport, (vShouldDisplay == 1. ? 0. : 2.), 1.0);
-}
-`.trim()
-}
-
-function fragmentShaderSource() {
-    return `
-#version 300 es
-precision highp float;
-
-uniform bool uShouldDraw;
-
-uniform bool uIsGSRaycasting;
-
-uniform bool uEdit;
-
-in vec4 vColor;
-in vec4 vFBOPosColor;
-in vec2 vPosition;
-in float vShouldDisplay;
-in float vIndex;
-
-out vec4 fragColor;
-
-void main () {
-    
-    if (uIsGSRaycasting) {
-        fragColor = vFBOPosColor;
-        return;
-    }
-    
-    if (!uShouldDraw) {
-        discard;
-    }
-    
-    float A = -dot(vPosition, vPosition);
-    if (A < -4.0) discard;
-    float B = exp(A) * vColor.a;
-    
-    vec3 col = vShouldDisplay > 0.5 ? B * vColor.rgb : vec3(0.); // original color
-    float a = vShouldDisplay > 0.5 ? B : 0.; // original alpha
-    // col = vColor.rgb;
-    // a = 1.;
-    // col = vFBOPosColor.xyz;
-    // a = 1.;
-    
-    bool isMouseCollided = vIndex > 0.5 ? true : false;
-    
-    if ( isMouseCollided && (vShouldDisplay > 0.5) ) {
-        // disable splat highlighting for now
-        // col = vec3(1.);
-        // a = 1.;
-        if ( uEdit ) {
-            col = vec3(1.);
-            a = 1.;
-        }
-    }
-    
-    fragColor = vec4(col, a);
-    return;
-}
-
-`.trim()
-}
-
 async function main(initialFilePath) {
 
-    // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target.splat');
+    // const url = new URL('http://192.168.0.12:8080/obj/_WORLD_test/target/target_splats/target.splat');
     console.log(initialFilePath);
     splatRegionCount = initialFilePath.length;
+    // todo Steve: 
+    //  1. this still needs to read full byte length in advance, and generate a fixed-length array
+    //  cannot support dynamically loading splat files, as new .splat files are generated
+    //  need to instanciate a worker, dedicated to expanding the array & copying old data over !!!!!
+    //  2. when delete / add another splat region async, need to recompile the vertex shader source, b/c splat region count changes
+    //  3. when delete / add another splat region async, need to re-compute maxSplatCount and downsample
+    //   and then manually perform resize() function, b/c downsample affects canvas & gl context size
+    let byteLengths = [];
     let totalByteLength = 0;
     for (let i = 0; i < splatRegionCount; i++) {
         const url = new URL([initialFilePath[i]]);
@@ -1087,25 +53,22 @@ async function main(initialFilePath) {
             throw new Error(req.status + " Unable to load " + req.url);
         }
         let length = parseInt(req.headers.get("content-length"));
-        console.log(`Processed ${length} bytes.`);
+        let splatFileName = initialFilePath[i].split('/');
+        splatFileName = splatFileName[splatFileName.length - 2] + '/' + splatFileName[splatFileName.length - 1];
+        console.log(`${splatFileName} has ${length} bytes.`);
+        byteLengths.push(length);
         totalByteLength += length;
     }
-    console.log(`Processed ${totalByteLength} bytes in total.`);
-    
-    // calculate number of splats in the scene 
-    // const rowLength = 3 * 4 + 3 * 4 + 4 + 4;
-    const rowLength = 3 * 4 + 3 * 4 + 4 + 4 + 4;
-    splatData = new Uint8Array(totalByteLength);
-    splatCount = splatData.length / rowLength
-    downsample = splatCount > 500000 ? 1 : 1 / window.devicePixelRatio;
+    console.log(`All ${splatRegionCount} splat files have ${totalByteLength} bytes in total.`);
 
-    worker = new Worker(
-        URL.createObjectURL(
-            new Blob(["(", createWorker.toString(), ")(self)"], {
-                type: "application/javascript",
-            }),
-        ),
-    );
+    splatData = new Uint8Array(totalByteLength);
+    const minRowLength = 32;
+    maxSplatCount = splatData.length / minRowLength;
+    downsample = maxSplatCount > 500000 ? 1 : 1 / window.devicePixelRatio;
+
+    worker = new Worker(new URL('./worker.js', import.meta.url), {
+        type: 'module',
+    })
 
     const fps = document.getElementById("gsFps");
     const gsCanvas = document.getElementById("gsCanvas");
@@ -1115,7 +78,7 @@ async function main(initialFilePath) {
     });
 
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, vertexShaderSource());
+    gl.shaderSource(vertexShader, vertexShaderSource(splatRegionCount));
     gl.compileShader(vertexShader);
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
         console.error(gl.getShaderInfoLog(vertexShader));
@@ -1154,7 +117,6 @@ async function main(initialFilePath) {
     const u_view = gl.getUniformLocation(program, "view");
     const u_mouse = gl.getUniformLocation(program, "uMouse");
     const u_collideIndex = gl.getUniformLocation(program, "uCollideIndex");
-    const u_shouldDraw = gl.getUniformLocation(program, "uShouldDraw");
     const u_uIsGSRaycasting = gl.getUniformLocation(program, "uIsGSRaycasting");
     const u_toggleBoundary = gl.getUniformLocation(program, "uToggleBoundary");
     const u_worldLowAlpha = gl.getUniformLocation(program, "uWorldLowAlpha");
@@ -1163,7 +125,7 @@ async function main(initialFilePath) {
     const u_mode = gl.getUniformLocation(program, "mode");
     gl.uniform1f(u_mode, uMode);
 
-    let uEdit = 1;
+    let uEdit = 0;
     const u_edit = gl.getUniformLocation(program, "uEdit");
     gl.uniform1i(u_edit, uEdit);
 
@@ -1213,7 +175,7 @@ async function main(initialFilePath) {
         isEditDragging = false;
     })
 
-    window.addEventListener('pointermove', (e) => {
+    window.addEventListener('pointermove', () => {
         if (!realityEditor.spatialCursor.isGSActive()) return;
         if (uEdit === 0) return;
         if (!isEditDragging) return;
@@ -1388,7 +350,8 @@ async function main(initialFilePath) {
     })
 
     function loopThroughLabels() {
-        // console.time('label'); // todo Steve: sometimes label rendering takes up to > 3 ms, which is def impacting performance. Need to 
+        // todo Steve: the entire looping through label is very slow. Definitely need to get rid of all the labels and replace them with either WebGL stuff, or something else
+        return;
         if (isGSRaycasting && !isFlying) return; 
         for (let [regionId, center_map] of center_maps_from_worker.entries()) {
             let minCount = Infinity, maxCount = 0;
@@ -1411,10 +374,12 @@ async function main(initialFilePath) {
                     labelDot.classList.add('cluster-label-dot');
                     labelDot.innerHTML = `&centerdot;`;
                     labelDot.style.fontSize = `${scaleFactor}rem`;
+                    // labelDot.style.visibility = 'hidden';
                     label.appendChild(labelDot);
 
                     let label_info = document.createElement('div');
                     label_info.classList.add('cluster-label-info');
+                    // label_info.style.visibility = 'hidden';
                     let label_info_regionId = document.createElement('div');
                     label_info_regionId.innerHTML = `Region: ${regionId}`;
                     label_info.appendChild(label_info_regionId);
@@ -1476,6 +441,7 @@ async function main(initialFilePath) {
                 // display up-to-date user-added labels
                 let label_info_userData = label.getElementsByClassName('cluster-label-user-data')[0];
                 if (info.userData.length === 0) {
+                    // todo Steve: updating this every frame is VERY performance consuming, need to update it only when corresponding user data changes
                     label_info_userData.innerHTML = 'User data: ';
                     continue;
                 }
@@ -1604,7 +570,8 @@ async function main(initialFilePath) {
     function initLabels() {
         if (center_maps_from_worker.size === 0) return; // todo Steve: figure out why there is ONLY 245 instead of 265 clusters
         initLabelCurrent();
-        realityEditor.gui.threejsScene.onAnimationFrame(loopThroughLabels);
+        // realityEditor.gui.threejsScene.onAnimationFrame(loopThroughLabels);
+        SplatManager.createLabels(center_maps_from_worker);
     }
     
     function clearSensors() {
@@ -1646,6 +613,7 @@ async function main(initialFilePath) {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
+            // console.log('%c update texture in main thread', 'color: green');
             gl.texImage2D(
                 gl.TEXTURE_2D,
                 0,
@@ -1663,16 +631,23 @@ async function main(initialFilePath) {
             gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, depthIndex, gl.DYNAMIC_DRAW);
             vertexCount = e.data.vertexCount;
+            // console.log(`In e.data.depthIndex, update main thread vertex count: ${vertexCount}`);
             behindCameraAmount = e.data.behindCameraAmount;
             outOfBoundaryAmount = e.data.outOfBoundaryAmount;
+            // console.log(depthIndex.length, vertexCount, behindCameraAmount, outOfBoundaryAmount);
             // console.log(behindCameraAmount, outOfBoundaryAmount, vertexCount, (vertexCount - behindCameraAmount - outOfBoundaryAmount) / vertexCount * 100);
+            let forceSortDone = e.data.forceSortDone;
+            if (forceSortDone) {
+                toggleGSRaycast(true);
+                // console.log('%c force sort done, toggle gs raycast on for a sec.', 'color: cyan');
+            }
         } else if (e.data.center_maps) {
             center_maps_from_worker = e.data.center_maps;
             clearLabels();
             initLabels();
             clearSensors();
             initSensors();
-            SplatManager.setRegionBoundaryFromWorker(e.data.boundary_maps);
+            SplatManager.setRegionBoundaryFromStorageOrWorker(e.data.boundary_maps);
         }
     };
 
@@ -1707,6 +682,9 @@ async function main(initialFilePath) {
 
     const frame = (now) => {
 
+        window.requestAnimationFrame(frame);
+        if (!realityEditor.spatialCursor.isGSActive()) return;
+
         // obtain camera pose from Toolbox scene graph 
         let cameraNode = realityEditor.sceneGraph.getSceneNodeById('CAMERA');
         let gpNode = realityEditor.sceneGraph.getSceneNodeById(realityEditor.sceneGraph.NAMES.GROUNDPLANE + realityEditor.sceneGraph.TAGS.ROTATE_X);
@@ -1739,16 +717,6 @@ async function main(initialFilePath) {
         // inversion is needed
         actualViewMatrix = invert4(resultMatrix_1);
 
-        let useManualAlignment = USE_MANUAL_ALIGNMENT_FOR_ALL ||
-            (USE_MANUAL_ALIGNMENT_FOR_SPECIFIED && typeof HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] !== 'undefined');
-        if (useManualAlignment) {
-            // let resultMatrix_manualAlign = multiply4(resultMatrix_1, manualAlignmentMatrix);
-            // actualViewMatrix = invert4(resultMatrix_manualAlign);
-            let alignmentMatrix = HARDCODED_SPLAT_COUNTS_ALIGNMENTS[splatCount] || manualAlignmentMatrix;
-            let resultMatrix_manualAlign = ApplyTransMatrix(resultMatrix_1, alignmentMatrix, scaleF);
-            actualViewMatrix = invert4(resultMatrix_manualAlign);
-        }
-
         const viewProj = multiply4(projectionMatrix, actualViewMatrix);
         worker.postMessage({ view: viewProj });
 
@@ -1762,7 +730,6 @@ async function main(initialFilePath) {
             gl.uniformMatrix4fv(u_view, false, actualViewMatrix);
             gl.uniform2fv(u_mouse, new Float32Array(uMouse));
             gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.uniform1i(u_shouldDraw, 0);
             FBORendering: if (isGSRaycasting && !isLowFPS) {
                 // if average FPS is lower than 40, then switch back to default ray-casting method
                 if (avgFps < 30) {
@@ -1810,9 +777,9 @@ async function main(initialFilePath) {
             gl.uniform1i(u_uIsGSRaycasting, 0);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-            gl.uniform1i(u_shouldDraw, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
             // gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
+            // console.log(renderVertexCount);
             gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, renderVertexCount);
 
             let pendingCapture = getPendingCapture('gsCanvas');
@@ -1825,7 +792,7 @@ async function main(initialFilePath) {
             document.getElementById("gsSpinner").style.display = "";
             // start = Date.now() + 2000;
         }
-        const progress = (100 * vertexCount) / splatCount;
+        const progress = (100 * SplatManager.getTotalBytesRead()) / totalByteLength;
         if (progress < 100) {
             document.getElementById("gsProgress").style.width = progress + "%";
         } else {
@@ -1833,33 +800,10 @@ async function main(initialFilePath) {
         }
         fps.innerText = Math.round(avgFps) + " fps";
         lastFrame = now;
-        window.requestAnimationFrame(frame);
+        // window.requestAnimationFrame(frame);
     };
 
     frame();
-
-    /** Loads GS file dropped into the window. */
-    /*
-    const selectFile = (file) => {
-        const fr = new FileReader();
-        stopLoading = true;
-        fr.onload = () => {
-            splatData = new Uint8Array(fr.result);
-            console.log("Loaded", Math.floor(splatCount));
-        
-            if (splatData[0] === 112 && splatData[1] === 108 && splatData[2] === 121 && splatData[3] === 10) {
-                // ply file magic header means it should be handled differently
-                worker.postMessage({ ply: splatData.buffer });
-            } else {
-                worker.postMessage({
-                    buffer: splatData.buffer,
-                    vertexCount: Math.floor(splatCount),
-                });
-            }
-        };
-        fr.readAsArrayBuffer(file);
-    };
-    */
 
     let uMouse = [0, 0];
     let uMouseScreen = [0, 0];
@@ -1932,22 +876,38 @@ async function main(initialFilePath) {
 
     // eslint-disable-next-line no-constant-condition
     SplatManager.initService();
-    for (let i = 0; i < splatRegionCount; i++) {
-    // for (let i = 0; i < splatRegionCount - 1; i++) {
-        let region = new SplatManager.SplatRegion(initialFilePath[i], i);
+    // return;
+    // for (let i = 0; i < splatRegionCount; i++) {
+    for (let i = 0; i < splatRegionCount - 1; i++) {
+        let region = new SplatManager.SplatRegion(initialFilePath[i], byteLengths[i], i);
         await region.load();
     }
     if (!stopLoading) {
-        // console.log(splatData.buffer.byteLength / rowLength, splatData);
         console.log('main thread post doneLoading to worker');
         worker.postMessage({
             doneLoading: true,
+            buffer: splatData.buffer,
+            vertexCount: SplatManager.getTotalVertexRead(),
             vertexCountArray: SplatManager.getVertexCountArray(),
             regionIdArray: SplatManager.getRegionIdArray(),
-            buffer: splatData.buffer,
-            vertexCount: Math.floor(SplatManager.getTotalBytesRead() / rowLength),
+            rowLengthArray: SplatManager.getRowLengthArray(),
         });
     }
+    setTimeout(async () => {
+        // console.log(`%c Done loading all splat regions. vertex count: ${vertexCount} last vertex count: ${lastVertexCount}.`, 'color: red');
+        console.log(`%c Loading last region...`, 'color: red');
+        let newRegion = new SplatManager.SplatRegion(initialFilePath[splatRegionCount - 1], byteLengths[splatRegionCount - 1], splatRegionCount - 1);
+        await newRegion.load();
+
+        worker.postMessage({
+            doneLoading: true,
+            buffer: splatData.buffer,
+            vertexCount: SplatManager.getTotalVertexRead(),
+            vertexCountArray: SplatManager.getVertexCountArray(),
+            regionIdArray: SplatManager.getRegionIdArray(),
+            rowLengthArray: SplatManager.getRowLengthArray(),
+        });
+    }, 2000);
 }
 
 // The comma key can be used to toggle the splat rendering visibility after it's been loaded at least once
@@ -1986,11 +946,13 @@ function showSplatRenderer(filePath, options = { broadcastToOthers: false }) {
         gsContainer = document.querySelector('#gsContainer');
         main(filePath).catch((err) => {
             document.getElementById("gsSpinner").style.display = "none";
-            document.getElementById("gsMessage").innerText = err.toString();
+            // document.getElementById("gsMessage").innerText = err.toString();
+            console.error(err);
         });
     }
     gsContainer.classList.remove('hidden');
     gsActive = true;
+    realityEditor.spatialCursor.gsToggleActive(true);
     SplatManager.showSplatRegions();
     // tell the mainThreejsScene to hide the mesh model
     realityEditor.gui.threejsScene.enableExternalSceneRendering(options.broadcastToOthers);
@@ -2003,6 +965,7 @@ function hideSplatRenderer(options = { broadcastToOthers: false }) {
     if (!gsContainer) return;
     gsContainer.classList.add('hidden');
     gsActive = false;
+    realityEditor.spatialCursor.gsToggleActive(false);
     SplatManager.hideSplatRegions();
     // tell the mainThreejsScene to show the mesh model
     realityEditor.gui.threejsScene.disableExternalSceneRendering(options.broadcastToOthers);
@@ -2015,6 +978,16 @@ function getSplatData() { return splatData; }
 function getVertexCount() { return vertexCount; }
 function getLastVertexCount() { return lastVertexCount; }
 function setLastVertexCount(count) { lastVertexCount = count; }
+function toggleGSRaycast(flag) {
+    isGSRaycasting = flag;
+}
+function toggleForceSort() {
+    // after zooming,
+    // 1. after zooming, force resort splats. This is needed after zooming out, b/c otherwise camera direction won't change, won't trigger auto resort, user will be looking at previously sorted splats, but previously hidden splats should be displayed again
+    // 2. after resort, then force toggle gs raycast to update spatial cursor position. This is needed when zooming in, b/c otherwise even the splats close to camera are hidden by shader, spatial cursor position is not updated, and the camera cannot zoom past a position in front of 
+    if (!realityEditor.spatialCursor.isGSActive()) return;
+    worker.postMessage({ forceSort: true });
+}
 
 let callbacks = {
     onSplatShown: [],
@@ -2028,6 +1001,8 @@ export default {
     getSplatData,
     getVertexCount,
     getLastVertexCount, setLastVertexCount,
+    toggleForceSort,
+    toggleGSRaycast,
     hideSplatRenderer,
     showSplatRenderer,
     onSplatShown(callback) {
@@ -2035,9 +1010,6 @@ export default {
     },
     onSplatHidden(callback) {
         callbacks.onSplatHidden.push(callback);
-    },
-    toggleGSRaycast(flag) {
-        isGSRaycasting = flag;
     },
     showGSSettingsPanel() {
         gsSettingsPanel.domElement.style.display = 'flex';
