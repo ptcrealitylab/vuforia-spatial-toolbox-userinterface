@@ -134,6 +134,25 @@ createNameSpace('realityEditor.device.layout');
         realityEditor.gui.crafting.menuBarWidth = CRAFTING_MENU_BAR_WIDTH + rightEdgeOffset;
     }
 
+    function getDeviceInfo(knownDeviceName) {
+        try {
+            const regex = /^iPhone(\d+),(\d+)$/;
+            const match = knownDeviceName.match(regex);
+    
+            if (match) {
+                const majorVersion = parseInt(match[1], 10); // Get the first capture group
+                const minorVersion = parseInt(match[2], 10); // Get the second capture group
+    
+                return { majorVersion, minorVersion };
+            }
+    
+            return null;
+        } catch (error) {
+            console.error('An error occurred:', error);
+            return null;
+        }
+    }
+
     /**
      * Use either the device identifier, or the screen size as a proxy to determine the margin on the right edge
      * These need to be hard-coded / updated whenever a new device is released with a unique screen size and edge-offset
@@ -153,6 +172,10 @@ createNameSpace('realityEditor.device.layout');
                 return 74;
             } else if (knownDeviceName === 'iPhone11,2' || knownDeviceName === 'iPhone11,4' || knownDeviceName === 'iPhone11,6' || knownDeviceName === 'iPhone12,1' || knownDeviceName === 'iPhone12,3' || knownDeviceName === 'iPhone12,5') {
                 return 37;
+            }
+            let deviceInfo = getDeviceInfo(knownDeviceName);
+            if (knownDeviceName.includes('iPhone') && deviceInfo && deviceInfo.majorVersion >= 13) {
+                return 50; // approximate offset for notch or dynamic island on newer phones
             }
             return 0;
 
