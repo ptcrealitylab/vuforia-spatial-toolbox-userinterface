@@ -696,6 +696,7 @@ export class MotionStudy {
             const isPortrait = parseInt(data.orientation) === 1;
             if (isPortrait) {
                 colorVideo.classList.add('analytics-video-portrait');
+                colorVideo.controls = false;
             }
             this.pinnedRegionCardsContainer.classList.add('analytics-has-video');
 
