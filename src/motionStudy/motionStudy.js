@@ -1035,7 +1035,6 @@ export class MotionStudy {
 
         summary += '\n' + this.getSummarizedTimelineState();
 
-        console.log('summary', summary);
         if (realityEditor.ai) {
             realityEditor.ai.updateSummarizedState(this.frame, summary);
         }

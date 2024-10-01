@@ -36,7 +36,6 @@ export class MotionStudySensors {
 
             defaultLensProvider.addLensCreateFunction(lensCreateFunction);
         }
-        console.log('setSensor', data);
         this.sensors[frame].position = data.position;
         this.sensors[frame].points = data.points;
     }
@@ -58,7 +57,6 @@ export class MotionStudySensors {
     }
 
     setSensorColor(frame, color) {
-        console.log('setSensorColor', frame, color);
         this.sensors[frame].color = color;
         realityEditor.network.postMessageIntoFrame(frame, {
             analyticsSetSensorColor: {
@@ -150,7 +148,6 @@ export class MotionStudySensors {
             if (!clone.visible) {
                 continue;
             }
-            // console.log(scorePose({joints: baselineJoints}, clone.pose));
             for (let sensorFrame of this.getSensorFrames()) {
                 if (this.playbackActivation[sensorFrame]) {
                     continue;
