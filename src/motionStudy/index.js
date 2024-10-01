@@ -185,7 +185,6 @@ import {StepAnimationManager} from './StepAnimationManager.js';
         });
 
         realityEditor.network.addPostMessageHandler('analyticsSetSensor', (msgData) => {
-            console.log('set sensor', msgData);
             sensors.setSensor(msgData.frame, msgData.sensor);
         });
 
