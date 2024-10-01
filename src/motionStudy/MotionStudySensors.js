@@ -1,8 +1,8 @@
 import {SensorActiveLens} from '../humanPose/SensorActiveLens.js';
 import {defaultLensProvider} from '../humanPose/LensProvider.js';
 import {isPointInsideWalls} from './isPointInsideWalls.js';
-import {scorePose} from './utils.js';
-import {baselineJoints} from './baselinePose.js';
+// import {scorePose} from './utils.js';
+// import {baselineJoints} from './baselinePose.js';
 
 export class MotionStudySensors {
     constructor() {
