@@ -762,8 +762,8 @@ export class MotionStudy {
 
         this.sortPinnedRegionCards();
 
-        if (data.plan && data.plan !== this.plan?.id) {
-            this.windchill.getProcessPlans('VR_DEMO_PP').then(plans => {
+        if (data.plan && data.plan.id !== this.plan?.id) {
+            this.windchill.getProcessPlans(data.plan.name).then(plans => {
                 this.setProcessPlan(plans[0]);
             });
         }
@@ -975,7 +975,10 @@ export class MotionStudy {
                 {},
                 this.lastHydratedData || {},
                 {
-                    plan: this.plan?.id,
+                    plan: this.plan && {
+                        id: this.plan.id,
+                        name: this.plan.name,
+                    },
                     regionCards: allCards,
                     valueAddWasteTime: this.valueAddWasteTimeManager.toJSON()
                 },

@@ -32,7 +32,7 @@ export class ImportStepsButton {
     }
 
     async onImportClick() {
-        let plans = await this.windchill.getProcessPlans('VR_DEMO_PP');
+        let plans = await this.windchill.getProcessPlans(this.motionStudy.titleInput.textContent || 'VR_DEMO_PP');
         console.log('found process plans', plans);
         let plan = plans[0];
         this.motionStudy.setProcessPlan(plan);
