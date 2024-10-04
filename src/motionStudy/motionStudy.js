@@ -611,12 +611,18 @@ export class MotionStudy {
                 step,
             });
         } else {
+            this.stepLabel.setWindchillData(step);
             if (poses.length === 0) {
                 this.stepLabel.startTime = startTime;
                 this.stepLabel.endTime = endTime;
+            } else {
+                let newPosesStartTime = poses[0].timestamp;
+                let newPosesEndTime = poses.at(-1).timestamp;
+                if (Math.abs(this.stepLabel.startTime - newPosesStartTime) > 200 ||
+                    Math.abs(this.stepLabel.endTime - newPosesEndTime) > 200) {
+                    this.stepLabel.setPoses(poses);
+                }
             }
-            this.stepLabel.setWindchillData(step);
-            this.stepLabel.setPoses(poses);
         }
         this.stepLabel.element.classList.remove('minimized');
         this.stepLabel.setLabel(this.getStepLabel());
