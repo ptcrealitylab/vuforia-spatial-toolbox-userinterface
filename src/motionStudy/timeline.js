@@ -636,12 +636,18 @@ export class Timeline {
     }
 
     drawSensors() {
+        let sensorFrames = this.motionStudy.sensors.getSensorFrames();
+        if (sensorFrames.length === 0) {
+            return;
+        }
+
+        // TODO(hobinjk): use lens annotation for sensor activation to deduplicate work
         let allPoses = getPosesInTimeInterval(this.timeMin, this.timeMin + this.widthMs);
         if (allPoses.length === 0) {
             return;
         }
 
-        for (let sensorFrame of this.motionStudy.sensors.getSensorFrames()) {
+        for (let sensorFrame of sensorFrames) {
             this.drawSensor(sensorFrame, allPoses);
         }
     }
