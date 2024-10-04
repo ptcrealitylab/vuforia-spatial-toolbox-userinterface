@@ -746,7 +746,10 @@ export class MotionStudy {
                 regionCard.setLabel(desc.label);
             }
 
-            if (desc.label.startsWith('Step ') && !isNaN(desc.label.slice(5)) && !isNaN(parseInt(desc.label.slice(5)))) {
+            if (desc.label &&
+                desc.label.startsWith('Step ') &&
+                !isNaN(desc.label.slice(5)) &&
+                !isNaN(parseInt(desc.label.slice(5)))) {
                 const stepNumber = parseInt(desc.label.slice(5));
                 if (stepNumber >= this.nextStepNumber) {
                     this.nextStepNumber = stepNumber + 1;
@@ -1138,6 +1141,11 @@ export class MotionStudy {
         if (regionCards.length === 0) {
             return {};
         }
+        if (!regionCards[0].hasOwnProperty('graphSummaryValues') ||
+            !regionCards[0].graphSummaryValues.hasOwnProperty('REBA')) {
+            console.error('first region card missing summary values');
+            return {};
+        }
 
         // initialize the object with aggregated stats
         let result = {
@@ -1304,7 +1312,9 @@ export class MotionStudy {
 
         let lines = [header];
         for (let regionCard of regionCards) {
-            if (regionCard.poses.length === 0) {
+            if (regionCard.poses.length < 2) {
+                // 0: no poses
+                // 1: insufficient poses for analytics (avoiding weird bug too)
                 continue;
             }
 
