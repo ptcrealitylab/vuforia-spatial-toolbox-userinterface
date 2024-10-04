@@ -36,6 +36,6 @@ export class ImportStepsButton {
         console.log('found process plans', plans);
         let plan = plans[0];
         this.motionStudy.setProcessPlan(plan);
-        this.motionStudy.titleInput.textContent = plan.name;
+        this.motionStudy.setTitle(plan.name);
     }
 }
