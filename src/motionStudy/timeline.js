@@ -41,6 +41,29 @@ const Colors = {
     valueAddFill: '#008800',
 };
 
+/**
+ * Convert an rgba color array to a css color string
+ * @param {number[4]} rgba
+ * @return {string}
+ */
+function rgbaToString(rgba) {
+    return `rgba(${Math.round(rgba[0])}, ${Math.round(rgba[1])}, ${Math.round(rgba[2])}, ${Math.round(rgba[3])})`;
+}
+
+/**
+ * Approximate equality between two rgba color arrays
+ * @param {number[4]} rgba1
+ * @param {number[4]} rgba2
+ * @return boolean
+ */
+function rgbaEquals(rgba1, rgba2) {
+  // >> 0 is the fastest to-int method on Chrome
+  return (rgba1[0] >> 0) === (rgba2[0] >> 0) &&
+    (rgba1[1] >> 0) === (rgba2[1] >> 0) &&
+    (rgba1[2] >> 0) === (rgba2[2] >> 0) &&
+    (rgba1[3] >> 0) === (rgba2[3] >> 0);
+}
+
 export class Timeline {
     /**
      * @param {MotionStudy} motionStudy - parent MotionStudy instance of this timeline
@@ -368,30 +391,6 @@ export class Timeline {
     }
 
     /**
-     * Convert an rgba color array to a css color string
-     * @param {number[4]} rgba
-     * @return {string}
-     */
-    rgbaToString(rgba) {
-        return `rgba(${Math.round(rgba[0])}, ${Math.round(rgba[1])}, ${Math.round(rgba[2])}, ${Math.round(rgba[3])})`;
-    }
-
-    /**
-     * Approximate equality between two rgba color arrays
-     * @param {number[4]} rgba1
-     * @param {number[4]} rgba2
-     * @return boolean
-     */
-    rgbaEquals(rgba1, rgba2) {
-        for (let i = 0; i < 4; i++) {
-            if (Math.round(rgba1[i]) !== Math.round(rgba2[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
      * Dim, brighten, or keep an rgba color array the same based on whether
      * `time` is highlighted
      * @param {number} time
@@ -443,13 +442,13 @@ export class Timeline {
             const isGap = pose.timestamp - lastPoseTime > maxPoseDelayLenience;
             const poseColor = this.recolorPoseForHighlight(pose.timestamp, pose.originalColor);
             const lastPoseColor = this.recolorPoseForHighlight(lastPose.timestamp, lastPose.originalColor);
-            const isColorSwap = !this.rgbaEquals(poseColor, lastPoseColor);
+            const isColorSwap = !rgbaEquals(poseColor, lastPoseColor);
             if (!isGap && !isColorSwap) {
                 lastPose = pose;
                 lastPoseTime = lastPose.timestamp;
                 continue;
             }
-            this.gfx.fillStyle = this.rgbaToString(lastPoseColor);
+            this.gfx.fillStyle = rgbaToString(lastPoseColor);
             // When swapping highlight allow the pose section to clip on the
             // right side at the highlight region border
             if (isColorSwap && !isGap && this.highlightRegion) {
@@ -490,7 +489,7 @@ export class Timeline {
         }
 
         const lastPoseColor = this.recolorPoseForHighlight(lastPose.timestamp, lastPose.originalColor);
-        this.gfx.fillStyle = this.rgbaToString(lastPoseColor);
+        this.gfx.fillStyle = rgbaToString(lastPoseColor);
         const startX = this.timeToX(startSectionTime);
         const endX = this.timeToX(lastPoseTime);
         this.gfx.fillRect(
