@@ -379,6 +379,9 @@ export class MotionStudy {
     }
 
     setTitle(title) {
+        if (this.titleInput.textContent === title) {
+            return;
+        }
         this.titleInput.textContent = title;
     }
 
