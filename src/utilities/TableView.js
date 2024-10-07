@@ -8,15 +8,22 @@ export class TableView {
             // Must convert data to strings to do proper comparison with contents
             return row.map(cell => `${cell}`);
         });
-        if (options.colors) {
-            this.colors = options.colors;
+        if (options.colorFunction) {
+            this.colorFunction = options.colorFunction;
         } else {
-            this.colors = Array.from({length: rowNames.length}).map(() => Array.from({length: columnNames.length}).map(() => 'white'));
+            this.colorFunction = () => 'magenta';
         }
         this.headerImages = options.headerImages || []; // Array of image URLs
         this.container = container;
         this.table = this.createTable();
         this.loadData(this.originalData);
+        if (options.persistId) {
+            this.persistId = options.persistId;
+            this.loadEdits();
+        } else {
+            this.persistId = null;
+        }
+
         this.initEventListeners();
         this.selectionCallbacks = [];
         this.editCallbacks = [];
@@ -81,8 +88,10 @@ export class TableView {
                 if (j-1 < 0 || j-1 >= data.length || i-1 < 0 || i-1 >= data[j-1].length) {
                     return;
                 }
-                cell.textContent = data[j-1][i-1];
-                cell.style.backgroundColor = `color-mix(in srgb, ${this.colors[j-1][i-1]}, transparent 80%)`;
+                const value = data[j-1][i-1];
+                const columnName = this.columnNames[i-1];
+                cell.textContent = value;
+                cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(value, columnName)}, transparent 80%)`;
                 cell.style.color = 'white';
                 this.checkModified(cell);
             });
@@ -167,12 +176,14 @@ export class TableView {
             if (!['0','1','2','3','4','5','6','7','8','9','.','Backspace','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.key)) {
                 return;
             }
+            e.preventDefault(); // Prevents view from jumping around from arrow keys
             e.stopPropagation();
             if (e.key === 'ArrowUp') {
                 if (cell.parentNode.rowIndex - 1 > 0) {
                     this.selectCell(cell.parentNode.rowIndex - 1, cell.cellIndex);
                     const currentSelectedData = this.getSelectedData();
                     this.selectionCallbacks.forEach(cb => cb(currentSelectedData));
+                    this.table.rows[cell.parentNode.rowIndex - 1].cells[cell.cellIndex].scrollIntoView({ behavior: "smooth"});
                 }
                 this.commitCellEdits(cell);
                 return;
@@ -182,6 +193,7 @@ export class TableView {
                     this.selectCell(cell.parentNode.rowIndex + 1, cell.cellIndex);
                     const currentSelectedData = this.getSelectedData();
                     this.selectionCallbacks.forEach(cb => cb(currentSelectedData));
+                    this.table.rows[cell.parentNode.rowIndex + 1].cells[cell.cellIndex].scrollIntoView({ behavior: "smooth"});
                 }
                 this.commitCellEdits(cell);
                 return;
@@ -191,6 +203,7 @@ export class TableView {
                     this.selectCell(cell.parentNode.rowIndex, cell.cellIndex - 1);
                     const currentSelectedData = this.getSelectedData();
                     this.selectionCallbacks.forEach(cb => cb(currentSelectedData));
+                    this.table.rows[cell.parentNode.rowIndex].cells[cell.cellIndex - 1].scrollIntoView({ behavior: "smooth"});
                 }
                 this.commitCellEdits(cell);
                 return;
@@ -200,6 +213,7 @@ export class TableView {
                     this.selectCell(cell.parentNode.rowIndex, cell.cellIndex + 1);
                     const currentSelectedData = this.getSelectedData();
                     this.selectionCallbacks.forEach(cb => cb(currentSelectedData));
+                    this.table.rows[cell.parentNode.rowIndex].cells[cell.cellIndex + 1].scrollIntoView({ behavior: "smooth"});
                 }
                 this.commitCellEdits(cell);
                 return;
@@ -220,7 +234,12 @@ export class TableView {
                 cell.textContent = cell.textContent.slice(0, -1);
             }
             this.checkModified(cell);
-        });
+            const value = Number.parseFloat(cell.textContent);
+            if (!Number.isNaN(value)) {
+                const columnName = this.columnNames[cell.cellIndex - 1];
+                cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(value, columnName)}, transparent 80%)`;
+            }
+        }, {capture: true});
     }
 
     getEditingCell() {
@@ -241,12 +260,67 @@ export class TableView {
         if (cell.textContent.length === 0) {
             cell.textContent = this.originalData[cell.parentNode.rowIndex-1][cell.cellIndex-1];
         }
+
+        const value = Number.parseFloat(cell.textContent);
+        if (!Number.isNaN(value)) {
+            const columnName = this.columnNames[cell.cellIndex - 1];
+            cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(value, columnName)}, transparent 80%)`;
+        }
+
         this.checkModified(cell);
         this.editCallbacks.forEach(cb => cb({
             row: this.rowNames[cell.y - 1],
             column: this.columnNames[cell.x - 1],
             value: cell.textContent
         }));
+
+        this.persistEdits();
+    }
+
+    persistEdits() {
+        if (!this.persistId) {
+            return;
+        }
+        const edits = [];
+        Array.from(this.table.rows).forEach((row, j) => {
+            if (j === 0) {
+                return;
+            }
+            Array.from(row.cells).forEach((cell, i) => {
+                if (i === 0) {
+                    return;
+                }
+                if (cell.textContent !== this.originalData[j-1][i-1]) {
+                    edits.push({
+                        row: j,
+                        column: i,
+                        value: cell.textContent
+                    });
+                }
+            });
+        });
+        window.localStorage.setItem(`TableView-${this.persistId}`, JSON.stringify(edits));
+    }
+
+    loadEdits() {
+        if (!this.persistId) {
+            return;
+        }
+        const editsString = window.localStorage.getItem(`TableView-${this.persistId}`);
+        if (!editsString) {
+            return;
+        }
+        const edits = JSON.parse(editsString);
+        edits.forEach(edit => {
+            if (edit.row >= this.table.rows.length) {
+                return;
+            }
+            const cell = this.table.rows[edit.row].cells[edit.column];
+            cell.textContent = edit.value;
+            cell.classList.add('table-view-data-modified');
+            const columnName = this.columnNames[edit.column-1];
+            cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(edit.value, columnName)}, transparent 80%)`;
+        });
     }
 
     getSelectedData() {
