@@ -239,7 +239,7 @@ export class TableView {
                 const columnName = this.columnNames[cell.cellIndex - 1];
                 cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(value, columnName)}, transparent 80%)`;
             }
-        });
+        }, {capture: true});
     }
 
     getEditingCell() {
@@ -260,6 +260,13 @@ export class TableView {
         if (cell.textContent.length === 0) {
             cell.textContent = this.originalData[cell.parentNode.rowIndex-1][cell.cellIndex-1];
         }
+
+        const value = Number.parseFloat(cell.textContent);
+        if (!Number.isNaN(value)) {
+            const columnName = this.columnNames[cell.cellIndex - 1];
+            cell.style.backgroundColor = `color-mix(in srgb, ${this.colorFunction(value, columnName)}, transparent 80%)`;
+        }
+
         this.checkModified(cell);
         this.editCallbacks.forEach(cb => cb({
             row: this.rowNames[cell.y - 1],

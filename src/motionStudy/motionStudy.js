@@ -198,43 +198,15 @@ export class MotionStudy {
                 const endTime = regionCards.reduce((prev, curr) => Math.max(prev, curr.endTime), Number.MIN_VALUE);
                 this.setHighlightRegion({startTime, endTime}, false);
             }
-
-            if (realityEditor.device.blockKeyboardListenerInput) {
-                if (selection.length === 1) {
-                    realityEditor.device.blockKeyboardListenerInput();
-                } else {
-                    realityEditor.device.unblockKeyboardListenerInput();
-                }
-            }
         });
 
         const setInteractable = () => {
             this.tableView.setInteractable(this.tableViewMenu.showing && this.tableViewMenu.maximized)
         }
-        this.tableViewMenu.on('show', () => {
-            if (realityEditor.device.blockKeyboardListenerInput && this.tableView.getSelectedData().length === 1) {
-                realityEditor.device.blockKeyboardListenerInput();
-            }
-            setInteractable();
-        });
-        this.tableViewMenu.on('maximize', () => {
-            if (realityEditor.device.blockKeyboardListenerInput && this.tableView.getSelectedData().length === 1) {
-                realityEditor.device.blockKeyboardListenerInput();
-            }
-            setInteractable();
-        });
-        this.tableViewMenu.on('hide', () => {
-            if (realityEditor.device.unblockKeyboardListenerInput) {
-                realityEditor.device.unblockKeyboardListenerInput();
-            }
-            setInteractable();
-        });
-        this.tableViewMenu.on('minimize', () => {
-            if (realityEditor.device.unblockKeyboardListenerInput) {
-                realityEditor.device.unblockKeyboardListenerInput();
-            }
-            setInteractable();
-        });
+        this.tableViewMenu.on('show', () => setInteractable());
+        this.tableViewMenu.on('maximize', () => setInteractable());
+        this.tableViewMenu.on('hide', () => setInteractable());
+        this.tableViewMenu.on('minimize', () => setInteractable());
         setInteractable();
     }
 
