@@ -128,7 +128,6 @@ export class MotionStudy {
         const jointNames = lens.getTableViewJoints().map(jointNameMap);
         const invertJointNameMap = value => lens.getTableViewJoints().find(name => jointNameMap(name) === value);
         const data = [];
-        const colors = [];
         const regionCards = this.pinnedRegionCards;
         const stepNames = regionCards.map(card => card.getLabel());
         if (regionCards.length === 0) {
@@ -137,11 +136,9 @@ export class MotionStudy {
         }
         regionCards.forEach(step => {
             let dataRow = [];
-            let colorRow = [];
             const poses = this.humanPoseAnalyzer.getPosesInTimeInterval(step.startTime, step.endTime);
             if (poses.length === 0) {
                 dataRow = Array.from({length: jointNames.length}).map(() => 0);
-                colorRow = Array.from({length: jointNames.length}).map(() => 'magenta');
             } else {
                 poses.forEach((pose, i) => {
                     const jointValues = Object.values(pose.joints);
@@ -154,21 +151,20 @@ export class MotionStudy {
                         }
                     });
                 });
-                // jointNames.forEach((jointName) => {
-                //     const joint = jointValues.find(joint => jointNameMap(joint.name) === jointName);
-                //     colorRow.push(lens.getTableViewColorForRange(poses, joint.name));
-                // });
                 dataRow.forEach((val, i) => {
                     dataRow[i] = val / poses.length; // Average the values
                     dataRow[i] = Math.round(dataRow[i] * 10) / 10; // Round to tenth place
-                    const jointName = invertJointNameMap(jointNames[i]);
-                    colorRow[i] = lens.getTableViewColorForValue(dataRow[i], jointName);
                 })
             }
             data.push(dataRow);
-            colors.push(colorRow);
         });
-        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body, {colors: colors, headerImages: lens.getTableViewImages()});
+        this.tableView = new TableView(stepNames, jointNames, data, this.tableViewMenu.body, {
+            colorFunction: (value, columnName) => {
+                return lens.getTableViewColorForValue(value, invertJointNameMap(columnName));
+            },
+            headerImages: lens.getTableViewImages(),
+            persistId: `${this.frame}-${lens.name}`
+        });
         this.tableView.onSelection(selection => {
             const selectedRows = Array.from(new Set(selection.map(cell => cell.row)));
             const selectedColumns = Array.from(new Set(selection.map(cell => cell.column)));
@@ -203,16 +199,42 @@ export class MotionStudy {
                 this.setHighlightRegion({startTime, endTime}, false);
             }
 
-            // TODO: disable camera shortcuts while only one item is selected
+            if (realityEditor.device.blockKeyboardListenerInput) {
+                if (selection.length === 1) {
+                    realityEditor.device.blockKeyboardListenerInput();
+                } else {
+                    realityEditor.device.unblockKeyboardListenerInput();
+                }
+            }
         });
 
         const setInteractable = () => {
             this.tableView.setInteractable(this.tableViewMenu.showing && this.tableViewMenu.maximized)
         }
-        this.tableViewMenu.on('show', () => setInteractable());
-        this.tableViewMenu.on('maximize', () => setInteractable());
-        this.tableViewMenu.on('hide', () => setInteractable());
-        this.tableViewMenu.on('minimize', () => setInteractable());
+        this.tableViewMenu.on('show', () => {
+            if (realityEditor.device.blockKeyboardListenerInput && this.tableView.getSelectedData().length === 1) {
+                realityEditor.device.blockKeyboardListenerInput();
+            }
+            setInteractable();
+        });
+        this.tableViewMenu.on('maximize', () => {
+            if (realityEditor.device.blockKeyboardListenerInput && this.tableView.getSelectedData().length === 1) {
+                realityEditor.device.blockKeyboardListenerInput();
+            }
+            setInteractable();
+        });
+        this.tableViewMenu.on('hide', () => {
+            if (realityEditor.device.unblockKeyboardListenerInput) {
+                realityEditor.device.unblockKeyboardListenerInput();
+            }
+            setInteractable();
+        });
+        this.tableViewMenu.on('minimize', () => {
+            if (realityEditor.device.unblockKeyboardListenerInput) {
+                realityEditor.device.unblockKeyboardListenerInput();
+            }
+            setInteractable();
+        });
         setInteractable();
     }
 
