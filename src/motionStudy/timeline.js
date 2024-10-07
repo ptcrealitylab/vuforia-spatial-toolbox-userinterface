@@ -636,6 +636,10 @@ export class Timeline {
     }
 
     drawSensors() {
+        if (!this.motionStudy || !this.motionStudy.sensors) {
+            return;
+        }
+
         let sensorFrames = this.motionStudy.sensors.getSensorFrames();
         if (sensorFrames.length === 0) {
             return;
