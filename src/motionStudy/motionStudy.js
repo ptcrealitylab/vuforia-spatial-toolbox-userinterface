@@ -1009,6 +1009,10 @@ export class MotionStudy {
     }
 
     updateSummarizedState() {
+        if (!realityEditor?.ai?.updateSummarizedState) {
+            return;
+        }
+
         let title = this.getTitle();
         let operationCount = this.pinnedRegionCards.length;
         let summary = `The process plan's motion study is labeled "${title}" and contains ${operationCount} operations. `;
@@ -1044,9 +1048,7 @@ export class MotionStudy {
 
         summary += '\n' + this.getSummarizedTimelineState();
 
-        if (realityEditor.ai) {
-            realityEditor.ai.updateSummarizedState(this.frame, summary);
-        }
+        realityEditor.ai.updateSummarizedState(this.frame, summary);
     }
 
     getSummarizedTimelineState() {
