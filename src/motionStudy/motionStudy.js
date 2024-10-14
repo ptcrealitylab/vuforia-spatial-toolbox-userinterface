@@ -1326,7 +1326,8 @@ export class MotionStudy {
             }
 
             let values = [
-                regionCard.getLabel(),
+                // Label has to be csv-safe
+                `"${regionCard.getLabel().replace(/"/g, '')}"`,
                 new Date(regionCard.startTime).toISOString(),
                 new Date(regionCard.endTime).toISOString(),
                 regionCard.durationMs / 1000,
