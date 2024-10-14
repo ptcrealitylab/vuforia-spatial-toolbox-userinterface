@@ -1358,6 +1358,13 @@ export class MotionStudy {
                 values.push(...selectedValuesForKey);
             });
 
+            values = values.map(v => {
+                if (typeof v === 'number') {
+                    return v.toFixed(3);
+                }
+                return v;
+            });
+
             lines.push(values);
         }
 
