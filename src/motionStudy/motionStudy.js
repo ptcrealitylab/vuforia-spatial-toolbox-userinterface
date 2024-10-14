@@ -1279,8 +1279,9 @@ export class MotionStudy {
             'start', 'end', 'duration seconds', 'distance meters',
             'accel avg', 'accel min', 'accel max',
             'reba avg', 'reba min', 'reba max', 'reba sum', 'reba count',
-            'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count'
-        ];
+            'muri avg', 'muri min', 'muri max', 'muri sum', 'muri count',
+            'value time seconds', 'waste time seconds', 'other time seconds',
+        ]
 
         let sortedScoreWeights = MURI_CONFIG.scoreWeights.toSorted((a, b) => a - b);
 
@@ -1314,6 +1315,16 @@ export class MotionStudy {
                 continue;
             }
 
+            const vawtValues = [0, 0, regionCard.durationMs / 1000];
+            const vawtSummary = regionCard.getValueAddWasteTimeSummary();
+            if (vawtSummary) {
+                vawtValues[0] = vawtSummary.valueTimeMs / 1000,
+                vawtValues[1] = vawtSummary.wasteTimeMs / 1000,
+                vawtValues[2] = (regionCard.durationMs
+                    - vawtSummary.valueTimeMs
+                    - vawtSummary.wasteTimeMs) / 1000;
+            }
+
             let values = [
                 regionCard.getLabel(),
                 new Date(regionCard.startTime).toISOString(),
@@ -1333,6 +1344,7 @@ export class MotionStudy {
                 regionCard.graphSummaryValues['MURI'].maximum,
                 regionCard.graphSummaryValues['MURI'].sum,
                 regionCard.graphSummaryValues['MURI'].count,
+                ...vawtValues,
             ];
 
             Object.values(MURI_SCORES).forEach(scoreName => {
