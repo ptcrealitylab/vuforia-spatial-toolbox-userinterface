@@ -925,7 +925,7 @@ export class MotionStudy {
             let insertBeforeThisIndex = 0;
             for (let j = i - 1; j >= 0; j--) {
                 const card = this.pinnedRegionCards[j];
-                if (card.startTime < bubblingCard.startTime) {
+                if (card.startTime <= bubblingCard.startTime) {
                     // Sorted
                     break;
                 }
