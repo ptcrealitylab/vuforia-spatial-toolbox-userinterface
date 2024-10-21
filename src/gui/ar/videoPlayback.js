@@ -30,15 +30,11 @@ const callbacks = {
 
 realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
-        const videoPlayer = new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey);
-        videoPlayers.push(videoPlayer);
-        callbacks.onVideoCreated.forEach(cb => { cb(videoPlayer); });
+        const _videoPlayer = new VideoPlayer(msgData.id, msgData.urls, msgData.frameKey);
     });
     realityEditor.network.addPostMessageHandler('disposeVideoPlayback', (msgData) => {
         const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
         videoPlayer.dispose();
-        videoPlayers.splice(videoPlayers.indexOf(videoPlayer), 1);
-        callbacks.onVideoDisposed.forEach(cb => { cb(msgData.id); });
     });
     realityEditor.network.addPostMessageHandler('setVideoPlaybackCurrentTime', (msgData) => {
         videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id).currentTime = msgData.currentTime;
@@ -46,17 +42,18 @@ realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('playVideoPlayback', (msgData) => {
         const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
         videoPlayer.play();
-        callbacks.onVideoPlayed.forEach(cb => { cb(videoPlayer); });
     });
     realityEditor.network.addPostMessageHandler('pauseVideoPlayback', (msgData) => {
         const videoPlayer = videoPlayers.find(videoPlayer => videoPlayer.id === msgData.id);
         videoPlayer.pause();
-        callbacks.onVideoPlayed.forEach(cb => { cb(videoPlayer); });
     });
 }.bind(realityEditor.gui.ar.videoPlayback);
 
 realityEditor.gui.ar.videoPlayback.onVideoCreated = (cb) => {
     callbacks.onVideoCreated.push(cb);
+    if (videoPlayers.length > 0) {
+        videoPlayers.forEach(videoPlayer => cb(videoPlayer));
+    }
 };
 realityEditor.gui.ar.videoPlayback.onVideoDisposed = (cb) => {
     callbacks.onVideoDisposed.push(cb);
@@ -268,6 +265,9 @@ class VideoPlayer extends Followable {
 
         this.onAnimationFrame = () => this.render();
         realityEditor.gui.threejsScene.onAnimationFrame(this.onAnimationFrame);
+
+        videoPlayers.push(this);
+        callbacks.onVideoCreated.forEach(cb => { cb(this); });
     }
 
     /**
@@ -323,6 +323,9 @@ class VideoPlayer extends Followable {
         this.colorVideo.load();
         this.rvl = null;
         realityEditor.gui.threejsScene.removeAnimationCallback(this.onAnimationFrame);
+
+        videoPlayers.splice(videoPlayers.indexOf(this), 1);
+        callbacks.onVideoDisposed.forEach(cb => { cb(this.id); });
     }
     
     get currentTime() {
@@ -346,6 +349,8 @@ class VideoPlayer extends Followable {
             this.visible = true;
         }
         this.colorVideo.play().then(() => {/** Empty then() callback to silence warning **/});
+
+        callbacks.onVideoPlayed.forEach(cb => { cb(this); });
     }
     
     pause() {
@@ -354,6 +359,8 @@ class VideoPlayer extends Followable {
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
         }
         this.colorVideo.pause();
+
+        callbacks.onVideoPaused.forEach(cb => { cb(this); });
     }
 
     isShown() {
