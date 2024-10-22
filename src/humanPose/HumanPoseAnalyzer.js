@@ -1041,7 +1041,6 @@ export class HumanPoseAnalyzer {
         case AnimationMode.region:
             // Fully reset the animation when changing
             this.hideLastDisplayedClones();
-            this.lastDisplayedClones = [];
             break;
         case AnimationMode.regionAll: {
             this.hideAllClones();
@@ -1168,6 +1167,7 @@ export class HumanPoseAnalyzer {
             clone.setVisible(false);
             clone.renderer.markMatrixNeedsUpdate();
         });
+        this.lastDisplayedClones = [];
     }
 
     /**
@@ -1186,7 +1186,6 @@ export class HumanPoseAnalyzer {
         const bestClones = this.getClonesByTimestamp(timestamp);
         if (bestClones.length === 0) {
             this.hideLastDisplayedClones();
-            this.lastDisplayedClones = [];
             return;
         }
 
