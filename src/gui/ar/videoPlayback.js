@@ -129,6 +129,7 @@ class VideoPlayer extends Followable {
         this.phoneParent.rotateX(Math.PI / 2);
         // this.phoneParent.position.y = this.floorOffset;
         this.firstPersonMode = false;
+        this.didOverrideModelVisibility = false;
 
         // add a visual element to show the position of the camera that recorded the video
         // note: we use the same visual style as the remote operator CameraVis 
@@ -396,6 +397,14 @@ class VideoPlayer extends Followable {
         if (this.shaderMode === ShaderMode.SOLID) {
             this.setShaderMode(ShaderMode.FIRST_PERSON);
         }
+
+        if (realityEditor.gui.ar.desktopRenderer?.setModelVisibility) {
+            const visibility = realityEditor.gui.ar.desktopRenderer.getModelVisibility();
+            if (visibility) {
+                this.didOverrideModelVisibility = true;
+                realityEditor.gui.ar.desktopRenderer.setModelVisibility(false);
+            }
+        }
     }
 
     // switch back the shader mode when not fully zoomed in
@@ -403,6 +412,12 @@ class VideoPlayer extends Followable {
         this.firstPersonMode = false;
         if (this.shaderMode === ShaderMode.FIRST_PERSON) {
             this.setShaderMode(ShaderMode.SOLID);
+        }
+        if (realityEditor.gui.ar.desktopRenderer?.setModelVisibility) {
+            if (this.didOverrideModelVisibility) {
+                realityEditor.gui.ar.desktopRenderer.setModelVisibility(true);
+                this.didOverrideModelVisibility = false;
+            }
         }
     }
 
