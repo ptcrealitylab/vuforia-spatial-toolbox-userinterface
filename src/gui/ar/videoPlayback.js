@@ -18,6 +18,15 @@ createNameSpace("realityEditor.gui.ar.videoPlayback");
 import * as THREE from '../../../thirdPartyCode/three/three.module.js';
 import RVLParser from '../../../thirdPartyCode/rvl/RVLParser.js';
 import {Followable} from './Followable.js';
+import {
+    createPointCloud,
+    createPointCloudMaterial,
+    DEPTH_WIDTH,
+    DEPTH_HEIGHT,
+    ShaderMode,
+    width,
+    height,
+} from '../../spatialCapture/Shaders.js';
 
 const videoPlayers = [];
 
@@ -26,7 +35,7 @@ const callbacks = {
     onVideoDisposed: [],
     onVideoPlayed: [],
     onVideoPaused: [],
-}
+};
 
 realityEditor.gui.ar.videoPlayback.initService = function() {
     realityEditor.network.addPostMessageHandler('createVideoPlayback', (msgData) => {
@@ -65,98 +74,10 @@ realityEditor.gui.ar.videoPlayback.onVideoPaused = (cb) => {
     callbacks.onVideoPaused.push(cb);
 };
 
-const POINT_CLOUD_VERTEX_SHADER = `
-uniform sampler2D map;
-uniform sampler2D mapDepth;
-uniform float width;
-uniform float height;
-uniform float depthScale;
-uniform float glPosScale;
-uniform float pointSize;
-const float pointSizeBase = 0.0;
-varying vec2 vUv;
-varying vec2 vDepthUv;
-varying vec4 pos;
-const float XtoZ = 1920.0 / 1448.24976; // width over focal length
-const float YtoZ = 1080.0 / 1448.24976;
-void main() {
-  vUv = vec2(position.x / width, position.y / height);
-  vDepthUv = vec2((width - position.x) / width, (height - position.y) / height);
-  vec4 color = texture2D(mapDepth, vDepthUv);
-  float depth = 5000.0 * (color.r + color.g / 255.0 + color.b / (255.0 * 255.0));
-  float z = depth - 0.05;
-  pos = vec4(
-    (position.x / width - 0.5) * z * XtoZ,
-    (position.y / height - 0.5) * z * YtoZ,
-    -z,
-    1.0);
-  gl_Position = projectionMatrix * modelViewMatrix * pos;
-  // gl_PointSize = pointSizeBase + pointSize * depth * depthScale;
-  gl_PointSize = pointSizeBase + pointSize * depth * depthScale + glPosScale / gl_Position.w;
-}`;
-
-const POINT_CLOUD_FRAGMENT_SHADER = `
-// color texture
-uniform sampler2D map;
-
-// uv (0.0-1.0) texture coordinates
-varying vec2 vUv;
-varying vec2 vDepthUv;
-// Position of this pixel relative to the camera in proper (millimeter) coordinates
-varying vec4 pos;
-
-void main() {
-  // Depth in millimeters
-  float depth = -pos.z;
-
-  // Fade out beginning at 4.5 meters and be gone after 5.0
-  float alphaDepth = clamp(2.0 * (5.0 - depth / 1000.0), 0.0, 1.0);
-
-  // Normal vector of the depth mesh based on pos
-  // Necessary to calculate manually since we're messing with gl_Position in the vertex shader
-  vec3 normal = normalize(cross(dFdx(pos.xyz), dFdy(pos.xyz)));
-
-  // pos.xyz is the ray looking out from the camera to this pixel
-  // dot of pos.xyz and the normal is to what extent this pixel is flat
-  // relative to the camera (alternatively, how much it's pointing at the
-  // camera)
-  // alphaDepth is thrown in here to incorporate the depth-based fade
-  float alpha = abs(dot(normalize(pos.xyz), normal)) * alphaDepth;
-
-  // Sample the proper color for this pixel from the color image
-  vec4 color = texture2D(map, vUv);
-
-  gl_FragColor = vec4(color.rgb, alpha);
-  // gl_FragColor = vec4(color.rgb, 1.0);
-}`;
-
-// TODO: move shaders out of remote-operator-addon ./Shaders.js
-//  into jointly accessible location, rather than duplicate code
-const FIRST_PERSON_FRAGMENT_SHADER = `
-// color texture
-uniform sampler2D map;
-
-// uv (0.0-1.0) texture coordinates
-varying vec2 vUv;
-// Position of this pixel relative to the camera in proper (millimeter) coordinates
-varying vec4 pos;
-
-void main() {
-// Sample the proper color for this pixel from the color image
-vec4 color = texture2D(map, vUv);
-
-gl_FragColor = vec4(color.rgb, 1.0);
-}`;
-
 const VideoPlayerStates = {
     LOADING: 'LOADING', // Loading the recording
     PAUSED: 'PAUSED', // Video paused, initial state after loading
     PLAYING: 'PLAYING', // Playing video
-};
-
-const ShaderMode = {
-    SOLID: 'SOLID',
-    FIRST_PERSON: 'FIRST_PERSON',
 };
 
 class VideoPlayer extends Followable {
@@ -218,11 +139,11 @@ class VideoPlayer extends Followable {
         this.videoLength = 0;
 
         this.depthCanvas = document.createElement('canvas');
-        this.depthCanvas.width = 256;
-        this.depthCanvas.height = 144;
+        this.depthCanvas.width = DEPTH_WIDTH;
+        this.depthCanvas.height = DEPTH_HEIGHT;
         this.depthCanvas.style.backgroundColor = '#FFFFFF';
         this.depthCanvas.style.display = 'none';
-        this.depthCanvas.imageData = this.depthCanvas.getContext('2d').createImageData(256, 144);
+        this.depthCanvas.imageData = this.depthCanvas.getContext('2d').createImageData(DEPTH_WIDTH, DEPTH_HEIGHT);
 
         this.colorVideo = document.createElement('video');
         this.colorVideo.loop = true;
@@ -243,6 +164,11 @@ class VideoPlayer extends Followable {
             }
         };
 
+        this.textures = {
+            color: new THREE.VideoTexture(this.colorVideo),
+            depth: new THREE.CanvasTexture(this.depthCanvas)
+        };
+
         this.shaderMode = ShaderMode.SOLID; // default to the non-first-person shader
 
         this.manuallyHidden = false;
@@ -252,7 +178,10 @@ class VideoPlayer extends Followable {
         // this.debugBox = new THREE.Mesh(new THREE.BoxGeometry(40, 40, 40), new THREE.MeshNormalMaterial());
         // this.phone.add(this.debugBox);
 
-        fetch(urls.rvl).then(res => res.arrayBuffer()).then(buf => {
+        this.rvl = null;
+        fetch(urls.rvl).then(res => {
+            return res.arrayBuffer();
+        }).then(buf => {
             this.rvl = new RVLParser(buf);
             if (this.colorVideo.loadSuccessful) {
                 this.pause();
@@ -261,6 +190,8 @@ class VideoPlayer extends Followable {
             if (this.frameKey) {
                 realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoMetadata: {videoLength: this.rvl.getDuration()}, id: this.id});
             }
+        }).catch(e => {
+            console.error('VideoPlayer unable to load rvl dat file', e);
         });
 
         this.onAnimationFrame = () => this.render();
@@ -409,7 +340,7 @@ class VideoPlayer extends Followable {
             this.loadPointCloud();
         } else {
             this.textures.depth.needsUpdate = true;
-            this.pointCloudMaterial.uniforms.time = window.performance.now();
+            this.pointCloud.material.uniforms.time = window.performance.now();
         }
     }
 
@@ -417,76 +348,18 @@ class VideoPlayer extends Followable {
      * Loads the point cloud into the scene.
      */
     loadPointCloud() {
-        const width = 640;
-        const height = 360;
+        const mesh = createPointCloud(this.textures.color, this.textures.depth, this.shaderMode, null);
 
-        const geometry = new THREE.PlaneGeometry(width, height, width / 5, height / 5);
-        geometry.translate(width / 2, height / 2, 0);
-        const material = this.createPointCloudMaterial(this.shaderMode);
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.scale.set(-1, 1, -1);
-        mesh.rotateZ(Math.PI);
-        mesh.frustumCulled = false;
         this.pointCloud = mesh;
         this.pointCloud.visible = false; // Make visible once video starts playing to prevent black-screen from load
         this.phone.add(this.pointCloud);
-    }
-
-    /**
-     * Creates the material used by the point cloud.
-     * @return {*}
-     */
-    createPointCloudMaterial(shaderMode) {
-        const width = 640;
-        const height = 360;
-
-        this.textures = {
-            color: new THREE.VideoTexture(this.colorVideo),
-            depth: new THREE.CanvasTexture(this.depthCanvas)
-        };
-
-        // this.textures.color.center = new THREE.Vector2(0.5, 0.5);
-        // this.textures.color.rotation = Math.PI;
-        // this.textures.color.flipY = false;
-
-        this.textures.color.minFilter = THREE.LinearFilter;
-        this.textures.color.magFilter = THREE.LinearFilter;
-        this.textures.color.generateMipmaps = false;
-        this.textures.depth.minFilter = THREE.LinearFilter;
-        this.textures.depth.magFilter = THREE.LinearFilter;
-        this.textures.depth.generateMipmaps = false;
-
-        this.textures.depth.isVideoTexture = true;
-        this.textures.depth.update = function() {
-        };
-
-        let fragmentShader = shaderMode === ShaderMode.SOLID ? POINT_CLOUD_FRAGMENT_SHADER : FIRST_PERSON_FRAGMENT_SHADER;
-
-        this.pointCloudMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                time: {value: window.performance.now()},
-                map: {value: this.textures.color},
-                mapDepth: {value: this.textures.depth},
-                width: {value: width},
-                height: {value: height},
-                depthScale: {value: 0.15 / 256}, // roughly 1 / 1920
-                glPosScale: {value: 20000}, // 0.15 / 256}, // roughly 1 / 1920
-                pointSize: { value: 2 * 0.666 },
-            },
-            vertexShader: POINT_CLOUD_VERTEX_SHADER,
-            fragmentShader: fragmentShader,
-            depthTest: true,
-            transparent: true
-        });
-        return this.pointCloudMaterial;
     }
 
     // a simplified copy of setShaderMode from remote operator CameraVis.js
     setShaderMode(shaderMode) {
         if (shaderMode !== this.shaderMode) {
             this.shaderMode = shaderMode;
-            this.pointCloudMaterial = this.createPointCloudMaterial(this.shaderMode);
-            this.pointCloud.material = this.pointCloudMaterial;
+            this.pointCloud.material = createPointCloudMaterial(this.textures.color, this.textures.depth, shaderMode, null);
         }
     }
 

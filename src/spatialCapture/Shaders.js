@@ -2,6 +2,8 @@ import * as THREE from '../../thirdPartyCode/three/three.module.js';
 
 export const DEPTH_WIDTH = 256;
 export const DEPTH_HEIGHT = 144;
+export const width = 640;
+export const height = 360;
 
 export const ShaderMode = {
     SOLID: 'SOLID',
@@ -225,14 +227,12 @@ varying vec4 pos;
 
 void main() {
 // Sample the proper color for this pixel from the color image
-vec4 color = texture2D(map, vUv);
+vec4 color = texture2D(map, vec2(1.0, 1.0) - vUv);
 
 gl_FragColor = vec4(color.rgb, 1.0);
 }`;
 
 export function createPointCloud(texture, textureDepth, shaderMode, borderColor) {
-    const width = 640, height = 360;
-
     let geometry;
     if (shaderMode !== ShaderMode.POINT) {
         geometry = new THREE.PlaneBufferGeometry(width, height, DEPTH_WIDTH / 2, DEPTH_HEIGHT / 2);
@@ -265,8 +265,6 @@ export function createPointCloud(texture, textureDepth, shaderMode, borderColor)
 }
 
 export function createPointCloudMaterial(texture, textureDepth, shaderMode, borderColor) {
-    const width = 640, height = 360;
-
     let borderEnabled = 1;
     if (!borderColor) {
         borderColor = new THREE.Color(0.0, 1.0, 0.0);
