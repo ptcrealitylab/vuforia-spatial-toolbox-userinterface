@@ -796,8 +796,10 @@ export class MotionStudy {
         this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
         this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
             if (this.videoPlayer.isShown()) {
+                this.humanPoseAnalyzer.setDepthTestEnabled(true);
                 this.videoPlayer.hide();
             } else {
+                this.humanPoseAnalyzer.setDepthTestEnabled(false);
                 this.videoPlayer.show();
             }
             this.updateVideoPlayerShowHideButtonText();
