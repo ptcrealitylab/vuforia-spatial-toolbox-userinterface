@@ -475,6 +475,14 @@ class VideoPlayer extends Followable {
             matrix.lookAt(eye, target, new THREE.Vector3(0, 1, 0));
             realityEditor.sceneGraph.setCameraPosition(matrix.elements);
         }
+
+        if (this.pointCloud?.material) {
+            this.pointCloud.material.uniforms.focalLength.value.x = matrices.focalLength[0] / 1920 * width;
+            this.pointCloud.material.uniforms.focalLength.value.y = matrices.focalLength[1] / 1080 * height;
+
+            this.pointCloud.material.uniforms.principalPoint.value.x = matrices.principalPoint[0] / 1920 * width;
+            this.pointCloud.material.uniforms.principalPoint.value.y = (1080 - matrices.principalPoint[1]) / 1080 * height;
+        }
     }
 
     getSceneNodeMatrix() {
