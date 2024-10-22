@@ -357,6 +357,7 @@ class VideoPlayer extends Followable {
         const mesh = createPointCloud(this.textures.color, this.textures.depth, this.shaderMode, null);
 
         this.pointCloud = mesh;
+        this.pointCloud.renderOrder = realityEditor.gui.threejsScene.RENDER_ORDER_DEPTH_REPLACEMENT;
         this.pointCloud.visible = false; // Make visible once video starts playing to prevent black-screen from load
         this.phone.add(this.pointCloud);
     }

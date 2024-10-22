@@ -187,6 +187,9 @@ export class HumanPoseAnalyzer {
             opacity: POSE_OPACITY_BASE,
         }), MAX_POSE_INSTANCES);
         poseRendererHistorical.addToScene(this.historicalContainer);
+        if (!this.opaquePoseRenderer.material.depthTest) {
+            poseRendererHistorical.material.depthTest = false;
+        }
         this.historicalPoseRenderers.push(poseRendererHistorical);
         return poseRendererHistorical;
     }
@@ -1271,5 +1274,17 @@ export class HumanPoseAnalyzer {
             }
         }
         return bestData.map(bestDatum => bestDatum.clone);
+    }
+
+    /**
+     * Set whether each pose renderer's depthTest is enabled, useful for
+     * drawing on top of spatial video
+     * @param {boolean} depthTestEnabled
+     */
+    setDepthTestEnabled(depthTestEnabled) {
+        this.opaquePoseRenderer.material.depthTest = depthTestEnabled;
+        this.historicalPoseRenderers.forEach(renderer => {
+            renderer.material.depthTest = depthTestEnabled;
+        });
     }
 }
