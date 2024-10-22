@@ -272,6 +272,9 @@ class VideoPlayer extends Followable {
     }
     
     play() {
+        if (this.state === VideoPlayerStates.PLAYING && !this.colorVideo.paused) {
+            return;
+        }
         this.state = VideoPlayerStates.PLAYING;
         if (this.frameKey) {
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
@@ -285,6 +288,9 @@ class VideoPlayer extends Followable {
     }
     
     pause() {
+        if (this.state === VideoPlayerStates.PAUSED && this.colorVideo.paused) {
+            return;
+        }
         this.state = VideoPlayerStates.PAUSED;
         if (this.frameKey) {
             realityEditor.network.postMessageIntoFrame(this.frameKey, {onVideoStateChange: this.state, id: this.id, currentTime: this.currentTime});
