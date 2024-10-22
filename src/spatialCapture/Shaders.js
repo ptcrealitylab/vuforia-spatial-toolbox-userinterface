@@ -227,7 +227,7 @@ varying vec4 pos;
 
 void main() {
 // Sample the proper color for this pixel from the color image
-vec4 color = texture2D(map, vec2(1.0, 1.0) - vUv);
+vec4 color = texture2D(map, vUv);
 
 gl_FragColor = vec4(color.rgb, 1.0);
 }`;
