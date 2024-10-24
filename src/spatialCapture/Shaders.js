@@ -32,6 +32,7 @@ uniform vec2 principalPoint;
 const float pointSizeBase = 0.0;
 
 uniform bool useFarDepth;
+uniform bool inverted;
 
 varying vec2 vUv;
 varying vec4 pos;
@@ -89,6 +90,11 @@ if (useFarDepth) {
 }
 // gl_PointSize = pointSizeBase + pointSize * depth * depthScale;
 gl_PointSize = pointSizeBase + pointSize * depth * depthScale + glPosScale / gl_Position.w;
+
+if (inverted) {
+    vUv = vec2(1.0, 1.0) - vUv;
+}
+
 }`;
 
 export const pointFragmentShader = `
@@ -314,7 +320,8 @@ export function createPointCloudMaterial(texture, textureDepth, shaderMode, bord
             viewAngleSimilarity: { value: 0.0 },
             viewPositionSimilarity: { value: 0.0 },
 			// used to erase depth in the pre render
-            useFarDepth: {value: false}
+            useFarDepth: {value: false},
+            inverted: {value: false}
         },
         vertexShader,
         fragmentShader,

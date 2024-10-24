@@ -360,6 +360,7 @@ class VideoPlayer extends Followable {
         this.pointCloud = mesh;
         this.pointCloud.renderOrder = realityEditor.gui.threejsScene.RENDER_ORDER_DEPTH_REPLACEMENT;
         this.pointCloud.visible = false; // Make visible once video starts playing to prevent black-screen from load
+        this.pointCloud.material.uniforms.inverted.value = true;
         this.phone.add(this.pointCloud);
     }
 
@@ -368,6 +369,7 @@ class VideoPlayer extends Followable {
         if (shaderMode !== this.shaderMode) {
             this.shaderMode = shaderMode;
             this.pointCloud.material = createPointCloudMaterial(this.textures.color, this.textures.depth, shaderMode, null);
+            this.pointCloud.material.uniforms.inverted.value = true;
         }
     }
 
