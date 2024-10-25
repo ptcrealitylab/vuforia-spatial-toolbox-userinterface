@@ -16,7 +16,7 @@ import {makeTextInput} from '../utilities/makeTextInput.js';
 import {MURI_SCORES, MURI_CONFIG} from '../humanPose/MuriScore.js';
 import {HUMAN_TRACKING_FPS} from '../humanPose/constants.js';
 import {ImportStepsButton} from './ImportStepsButton.js';
-import {CreateStepSensorsButton} from './CreateStepSensorsButton.js';
+// import {CreateStepSensorsButton} from './CreateStepSensorsButton.js';
 import {Windchill} from './Windchill.js';
 
 const RecordingState = {
@@ -53,8 +53,8 @@ export class MotionStudy {
 
         this.createStepLabelComponent();
 
-        this.createStepSensorsButton = new CreateStepSensorsButton(this);
-        this.createStepSensorsButton.hide();
+        // this.createStepSensorsButton = new CreateStepSensorsButton(this);
+        // this.createStepSensorsButton.hide();
 
         this.threejsContainer = new THREE.Group();
         this.humanPoseAnalyzer = new HumanPoseAnalyzer(this, this.threejsContainer);
@@ -76,7 +76,7 @@ export class MotionStudy {
         this.createNewPinnedRegionCardsContainer();
         this.valueAddWasteTimeManager = new ValueAddWasteTimeManager();
 
-        this.pinnedRegionCardsContainer.appendChild(this.createStepSensorsButton.container);
+        // this.pinnedRegionCardsContainer.appendChild(this.createStepSensorsButton.container);
 
         this.videoPlayer = null;
 
@@ -774,9 +774,9 @@ export class MotionStudy {
             });
         }
 
-        if (this.pinnedRegionCards.length > 0) {
-            this.createStepSensorsButton.show();
-        }
+        // if (this.pinnedRegionCards.length > 0) {
+        //     this.createStepSensorsButton.show();
+        // }
         this.updateSummarizedState();
     }
 
@@ -1003,9 +1003,9 @@ export class MotionStudy {
             }
         }
 
-        if (this.pinnedRegionCards.length > 0) {
-            this.createStepSensorsButton.show();
-        }
+        // if (this.pinnedRegionCards.length > 0) {
+        //     this.createStepSensorsButton.show();
+        // }
 
         this.updateSummarizedState();
     }
