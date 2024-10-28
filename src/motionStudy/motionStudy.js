@@ -820,15 +820,9 @@ export class MotionStudy {
     }
 
     addRegionCard(regionCard) {
-        // Allow for a small amount of inaccuracy in timestamps, e.g. when
-        // switching from live to historical clone source
-        const tolerance = 500;
         for (let pinnedRegionCard of this.pinnedRegionCards) {
-            const sameTimes = (Math.abs(pinnedRegionCard.startTime - regionCard.startTime) < tolerance) &&
-               (Math.abs(pinnedRegionCard.endTime - regionCard.endTime) < tolerance);
-            const sameLabel = pinnedRegionCard.getLabel() &&
-                (pinnedRegionCard.getLabel() === regionCard.getLabel());
-            if (sameTimes || sameLabel) {
+            const sameTimes = pinnedRegionCard.equalTimes(regionCard);
+            if (sameTimes) {
                 // New region card already exists in the list, remove it but
                 // harvest it for data
                 regionCard.remove()
@@ -1465,12 +1459,13 @@ export class MotionStudy {
         }
 
         const matchingRegionCard = this.pinnedRegionCards.find((regionCard) => {
+            const sameTimes = regionCard.equalTimes(regionCardToMatch);
             const label = regionCard.getLabel();
             if (!label) {
                 return false;
             }
 
-            return label === labelToMatch;
+            return label === labelToMatch && sameTimes;
         });
 
         if (!matchingRegionCard) {

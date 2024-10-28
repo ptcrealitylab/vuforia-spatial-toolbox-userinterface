@@ -967,4 +967,19 @@ export class RegionCard {
 
         return addedTool.uuid;
     }
+
+    /**
+     * Compare startTime and endTime with other region card within toleranceMs
+     *
+     * Tolerance allows for a small amount of inaccuracy in timestamps, e.g.
+     * when switching from live to historical clone source
+     *
+     * @param {RegionCard} otherRegionCard
+     * @param {number} toleranceMs
+     * @return {boolean}
+     */
+    equalTimes(otherRegionCard, toleranceMs = 500) {
+        return (Math.abs(otherRegionCard.startTime - this.startTime) < toleranceMs) &&
+           (Math.abs(otherRegionCard.endTime - this.endTime) < toleranceMs);
+    }
 }
