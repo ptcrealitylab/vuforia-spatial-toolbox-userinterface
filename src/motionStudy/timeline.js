@@ -1166,8 +1166,14 @@ export class Timeline {
         this.updatePointer(event);
     }
 
-    onPointerOut(_event) {
-        this.motionStudy.setCursorTime(-1);
+    onPointerOut(event) {
+        // Cancel ongoing drag
+        if (this.dragMode === DragMode.SELECT) {
+            this.onPointerUp(event);
+        } else {
+            this.dragMode = DragMode.NONE;
+            this.motionStudy.setCursorTime(-1);
+        }
     }
 
     onWheel(event) {
