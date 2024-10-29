@@ -149,6 +149,16 @@ export class Timeline {
         this.canvas.addEventListener('pointerup', this.onPointerUp);
         this.canvas.addEventListener('pointerover', this.onPointerOver);
         this.canvas.addEventListener('pointerout', this.onPointerOut);
+
+        function stopPropagation(e) {
+            e.stopPropagation();
+        }
+        this.canvas.addEventListener('mousedown', stopPropagation);
+        this.canvas.addEventListener('mousemove', stopPropagation);
+        this.canvas.addEventListener('mouseup', stopPropagation);
+        this.canvas.addEventListener('touchstart', stopPropagation);
+        this.canvas.addEventListener('touchend', stopPropagation);
+
         this.canvas.addEventListener('wheel', this.onWheel);
 
         this.controlsCanvas.addEventListener('pointerdown', this.onControlsPointerDown);
