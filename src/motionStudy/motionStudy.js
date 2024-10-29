@@ -614,7 +614,7 @@ export class MotionStudy {
                 let newPosesEndTime = poses.at(-1).timestamp;
                 if (Math.abs(this.stepLabel.startTime - newPosesStartTime) > 200 ||
                     Math.abs(this.stepLabel.endTime - newPosesEndTime) > 200) {
-                    this.stepLabel.setPoses(poses);
+                    this.stepLabel.setPoses(poses, startTime, endTime);
                 }
             }
         }
@@ -831,7 +831,7 @@ export class MotionStudy {
 
                 // pinned was created earlier and missed data
                 if (pinnedRegionCard.poses.length <= regionCard.poses.length) {
-                    pinnedRegionCard.setPoses(regionCard.poses);
+                    pinnedRegionCard.copyPosesAndTime(regionCard);
                 }
 
                 // Removed region card may have an updated label
@@ -861,13 +861,7 @@ export class MotionStudy {
         if (regionCard.getLabel().length === 0) {
             regionCard.setLabel(this.getStepLabel());
             if (this.steps.length > 0) {
-                if (this.writeMSDataTimeout) {
-                    clearTimeout(this.writeMSDataTimeout);
-                }
-                this.writeMSDataTimeout = setTimeout(() => {
-                    this.writeMotionStudyData();
-                    this.writeMSDataTimeout = null;
-                }, 1000);
+                this.scheduleWriteMotionStudyData();
             }
         }
 
@@ -1002,6 +996,18 @@ export class MotionStudy {
         // }
 
         this.updateSummarizedState();
+    }
+
+    scheduleWriteMotionStudyData() {
+        if (this.writeMSDataTimeout) {
+            clearTimeout(this.writeMSDataTimeout);
+            this.writeMSDataTimeout = null;
+        }
+
+        this.writeMSDataTimeout = setTimeout(() => {
+            this.writeMSDataTimeout = null;
+            this.writeMotionStudyData();
+        }, 500);
     }
 
     updateSummarizedState() {
@@ -1482,7 +1488,8 @@ export class MotionStudy {
      */
     setTimelineRegionCard(timelineRegionCard) {
         if (this.activeRegionCard) {
-            this.activeRegionCard.setPoses(timelineRegionCard.poses);
+            this.activeRegionCard.copyPosesAndTime(timelineRegionCard);
+            this.scheduleWriteMotionStudyData();
         }
     }
     

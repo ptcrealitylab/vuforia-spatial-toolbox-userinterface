@@ -345,13 +345,16 @@ export class Timeline {
         }
         this.lastRegionCardCacheKey = cacheKey;
 
-        if (this.regionCard) {
-            if (this.regionCard.state !== RegionCardState.Pinned) {
-                this.regionCard.remove();
-            }
+        // regionCard was pinned (moved outside of timeline)
+        if (this.regionCard && this.regionCard.state === RegionCardState.Pinned) {
             this.regionCard = null;
         }
-        this.regionCard = new RegionCard(this.motionStudy, this.container, getPosesInTimeInterval(leftTime, rightTime));
+
+        if (!this.regionCard) {
+            this.regionCard = new RegionCard(this.motionStudy, this.container, getPosesInTimeInterval(leftTime, rightTime), {startTime: leftTime, endTime: rightTime});
+        } else {
+            this.regionCard.setPoses(getPosesInTimeInterval(leftTime, rightTime), leftTime, rightTime);
+        }
 
         this.regionCard.moveTo(midX, this.height + labelPad);
 

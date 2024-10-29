@@ -64,11 +64,13 @@ export class RegionCard {
         this.onClickShow = this.onClickShow.bind(this);
 
         this.createCard();
+        this.startTime = -1;
+        this.endTime = -1;
+        this.setPoses(poses);
         if (desc) {
             this.startTime = desc.startTime;
             this.endTime = desc.endTime;
         }
-        this.setPoses(poses);
         this.updateValueAddWasteTimeUi();
         this.updateWindchillSection();
 
@@ -328,7 +330,7 @@ export class RegionCard {
         this.updateDisplayActive();
     }
 
-    setPoses(poses) {
+    setPoses(poses, startTime = null, endTime = null) {
         this.poses = poses;
 
         // Getting times from poses is more accurate to the local data
@@ -347,8 +349,15 @@ export class RegionCard {
             }
             this.poses = filteredPoses;
 
-            this.startTime = this.poses[0].timestamp;
-            this.endTime = this.poses[this.poses.length - 1].timestamp;
+            this.startTime = startTime ?? this.poses[0].timestamp;
+            this.endTime = endTime ?? this.poses[this.poses.length - 1].timestamp;
+        }
+
+        if (typeof startTime === 'number') {
+            this.startTime = startTime;
+        }
+        if (typeof endTime === 'number') {
+            this.endTime = endTime;
         }
 
         try {
@@ -370,6 +379,14 @@ export class RegionCard {
 
         this.graphSummaryValues = {};
         this.updateLensStatistics();
+    }
+
+    /**
+     * Copy over poses and (start|end)time from another region card
+     * @param {RegionCard} otherRegionCard
+     */
+    copyPosesAndTime(otherRegionCard) {
+        this.setPoses(otherRegionCard.poses, otherRegionCard.startTime, otherRegionCard.endTime);
     }
 
     getMotionSummaryText() {
