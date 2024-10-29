@@ -924,12 +924,57 @@ export class Timeline {
         return Math.abs(this.mouseX - endX) < width / 2;
     }
 
+    /**
+     * @return {boolean}
+     */
+    isPointerOnRegionCard() {
+        return !!this.getRegionCardUnderPointer();
+    }
+
+    /**
+     * @return {RegionCard}
+     */
+    getRegionCardUnderPointer() {
+        if (this.motionStudy.pinnedRegionCards.length === 0) {
+            return null;
+        }
+
+        // PRCs are in row 1
+        const cardRowStart = this.rowIndexToRowY(1);
+        const cardRowEnd = this.rowIndexToRowY(2);
+        if (this.mouseY < cardRowStart || this.mouseY > cardRowEnd) {
+            return null;
+        }
+
+        for (const prc of this.motionStudy.pinnedRegionCards) {
+            if (!prc.accentColor) {
+                continue;
+            }
+
+            const startX = this.timeToX(prc.startTime);
+            const endX = this.timeToX(prc.endTime);
+
+            if (this.mouseX < startX) {
+                continue;
+            }
+            if (this.mouseX > endX) {
+                continue;
+            }
+
+            return prc;
+        }
+
+        return null;
+    }
+
     onPointerDown(event) {
         if (realityEditor.device.isMouseEventCameraControl(event)) return;
 
         this.updatePointer(event);
 
-        if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
+        if (this.isPointerOnRegionCard()) {
+            this.dragMode = DragMode.NONE;
+        } else if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
             if (this.isPointerOnStartNeedle()) {
                 this.highlightStartTime = this.highlightRegion.endTime;
@@ -969,6 +1014,8 @@ export class Timeline {
         let cursor = 'default';
         if (this.isPointerOnNeedle()) {
             cursor = 'grab';
+        } else if (this.isPointerOnRegionCard()) {
+            cursor = 'pointer';
         } else if (this.isPointerOnRow()) {
             cursor = 'col-resize';
         } else if (this.isPointerOnBoard()) {
@@ -1092,7 +1139,15 @@ export class Timeline {
 
         this.updatePointer(event);
 
-        if (this.dragMode === DragMode.SELECT &&
+        const regionCard = this.getRegionCardUnderPointer();
+        if (regionCard) {
+            if (regionCard.displayActive) {
+                regionCard.hide();
+            } else {
+                regionCard.show();
+                realityEditor.motionStudy.showMatchingRegionCards(regionCard);
+            }
+        } else if (this.dragMode === DragMode.SELECT &&
             Math.abs(this.timeToX(this.highlightStartTime) - this.mouseX) < 3) {
             this.motionStudy.setHighlightRegion(null);
         } else {

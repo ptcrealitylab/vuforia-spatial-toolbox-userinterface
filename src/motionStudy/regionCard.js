@@ -122,11 +122,7 @@ export class RegionCard {
             break;
         case RegionCardState.Pinned:
             if (this.displayActive) {
-                this.motionStudy.setActiveRegionCard(null);
-                this.motionStudy.setHighlightRegion(null);
-                this.motionStudy.setCursorTime(-1);
-                this.motionStudy.tableView.clearSelection();
-                this.displayActive = false;
+                this.hide();
             } else {
                 this.show();
                 realityEditor.motionStudy.showMatchingRegionCards(this);
@@ -163,6 +159,16 @@ export class RegionCard {
         this.displayActive = true;
         this.updateDisplayActive();
     }
+
+    hide() {
+        this.motionStudy.setActiveRegionCard(null);
+        this.motionStudy.setHighlightRegion(null);
+        this.motionStudy.setCursorTime(-1);
+        this.motionStudy.tableView.clearSelection();
+        this.displayActive = false;
+        this.updateDisplayActive();
+    }
+
 
     save() {
         let addedTool = realityEditor.spatialCursor.addToolAtScreenCenter('spatialAnalytics');
