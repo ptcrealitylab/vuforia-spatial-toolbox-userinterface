@@ -998,6 +998,11 @@ export class MotionStudy {
         this.updateSummarizedState();
     }
 
+    /**
+     * Schedule a pending call to writeMotionStudyData. Used to rate-limit the
+     * number of writes in cases like dragging to edit a card on the timeline
+     * (would otherwise write 60 times per second)
+     */
     scheduleWriteMotionStudyData() {
         if (this.writeMSDataTimeout) {
             clearTimeout(this.writeMSDataTimeout);
