@@ -972,7 +972,9 @@ export class Timeline {
 
         this.updatePointer(event);
 
-        if (this.isPointerOnRegionCard()) {
+        // Needle is on top of everything followed by region card, row, then
+        // finally the board (movement)
+        if (this.isPointerOnRegionCard() && !this.isPointerOnNeedle()) {
             this.dragMode = DragMode.NONE;
         } else if (this.isPointerOnRow() || this.isPointerOnNeedle()) {
             this.dragMode = DragMode.SELECT;
