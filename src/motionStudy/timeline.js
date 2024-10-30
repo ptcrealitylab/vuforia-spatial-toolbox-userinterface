@@ -1140,7 +1140,7 @@ export class Timeline {
         this.updatePointer(event);
 
         const regionCard = this.getRegionCardUnderPointer();
-        if (regionCard) {
+        if (regionCard && this.dragMode === DragMode.NONE) {
             if (regionCard.displayActive) {
                 regionCard.hide();
             } else {
