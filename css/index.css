@@ -2073,13 +2073,13 @@ Logic Interface CSS
 
 
 .analytics-pinned-region-cards-container.analytics-has-video {
-    bottom: calc(320px + 91px); /* guess at video top */
+    bottom: calc(48px + 151px + 4px * 2 + 50px); /* guess at video button top */
 }
 
 .analytics-video, .analytics-video-background {
     position: absolute;
     left: 35px;
-    bottom: calc(320px - 66px - 66px + 14px);
+    bottom: 48px;
     width: calc(15rem + 2 * 14px);
     height: 151px;
 
@@ -2101,7 +2101,8 @@ Logic Interface CSS
 .analytics-video-toggle {
     position: absolute;
     left: 35px;
-    bottom: calc(320px + 37px);
+    bottom: calc(48px + 151px);
+    margin-bottom: 4px;
 
     z-index: 2900;
     transform: translateZ(2900px);
