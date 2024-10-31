@@ -864,7 +864,7 @@ export class Timeline {
     }
 
     drawControls() {
-        this.controlsGfx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        this.controlsGfx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         let dpr = window.devicePixelRatio;
         this.controlsGfx.scale(dpr, dpr);
         this.controlsGfx.clearRect(0, boardStart + rowPad, rowHeight, rowHeight);
