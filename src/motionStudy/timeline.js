@@ -12,11 +12,11 @@ const needleWidth = 3;
 const needleDragWidth = 12;
 
 const rowPad = 4;
-const rowHeight = 16;
+const rowHeight = 24;
 const boardHeight = 4 * (rowPad + rowHeight) + rowPad;
 const boardStart = needlePad + needleTopPad;
-const minimapHeight = rowHeight;
-const minimapStart = boardStart + boardHeight + minimapHeight;
+const minimapHeight = 16;
+const minimapStart = boardStart + boardHeight + rowPad;
 
 const labelPad = 4;
 
@@ -86,7 +86,7 @@ export class Timeline {
 
         this.width = -1;
         this.displayRegion = null;
-        this.height = boardHeight + boardStart + needlePad + minimapHeight;
+        this.height = minimapStart + minimapHeight;
         this.highlightRegion = null;
         this.highlightStartTime = -1;
         this.regionCard = null;
@@ -366,7 +366,7 @@ export class Timeline {
             this.regionCard.setPoses(getPosesInTimeInterval(leftTime, rightTime), leftTime, rightTime);
         }
 
-        this.regionCard.moveTo(midX, this.height + labelPad);
+        this.regionCard.moveTo(midX, this.height + labelPad + needleTopPad);
 
         this.motionStudy.setTimelineRegionCard(this.regionCard);
     }
