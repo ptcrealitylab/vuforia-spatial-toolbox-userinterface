@@ -523,6 +523,13 @@ export class Timeline {
 
         const timeMax = this.timeMin + this.widthMs;
 
+        let anyActive = false;
+        for (const prc of this.motionStudy.pinnedRegionCards) {
+            if (prc.displayActive) {
+                anyActive = true;
+            }
+        }
+
         for (const prc of this.motionStudy.pinnedRegionCards) {
             if (!prc.accentColor) {
                 continue;
@@ -548,10 +555,21 @@ export class Timeline {
                 endX - startX,
                 rowHeight
             );
+            if (anyActive && !prc.displayActive) {
+                this.gfx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                this.gfx.fillRect(
+                    startX,
+                    rowY,
+                    endX - startX,
+                    rowHeight
+                );
+            }
+
             if (prc.displayActive) {
-                let offset = (Date.now() / 500) % 8;
+                let offset = (Date.now() / 100) % 8;
                 let dashes = [4, 4];
                 this.gfx.lineDashOffset = offset;
+                this.gfx.lineWidth = 3;
                 this.gfx.setLineDash(dashes);
                 this.gfx.strokeStyle = Colors.pinnedRegionCardActiveStroke;
                 this.gfx.strokeRect(
@@ -561,6 +579,7 @@ export class Timeline {
                     rowHeight
                 );
                 this.gfx.setLineDash([]);
+                this.gfx.lineWidth = 1;
             }
         }
     }
