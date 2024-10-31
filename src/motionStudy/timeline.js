@@ -18,6 +18,9 @@ const boardStart = needlePad + needleTopPad;
 const minimapHeight = 16;
 const minimapStart = boardStart + boardHeight + rowPad;
 
+const ROW_REGION_CARDS = 1;
+const N_INTERACTABLE_ROWS = 3;
+
 const labelPad = 4;
 
 const DEFAULT_MAX_WIDTH_MS = 1024 / 0.00004;
@@ -672,34 +675,33 @@ export class Timeline {
             return;
         }
 
-        let sensorFrames = this.motionStudy.sensors.getSensorFrames();
+        const sensorFrames = this.motionStudy.sensors.getSensorFrames();
         if (sensorFrames.length === 0) {
             return;
         }
 
         // TODO(hobinjk): use lens annotation for sensor activation to deduplicate work
-        let allPoses = getPosesInTimeInterval(this.timeMin, this.timeMin + this.widthMs);
-        if (allPoses.length === 0) {
+        const poses = getPosesInTimeInterval(this.timeMin, this.timeMin + this.widthMs);
+        if (poses.length === 0) {
             return;
         }
 
-        for (let sensorFrame of sensorFrames) {
-            this.drawSensor(sensorFrame, allPoses);
-        }
-    }
-
-    drawSensor(sensorFrame, poses) {
         const sensors = this.motionStudy.sensors;
-        const sensorColor = sensors.getSensorColor(sensorFrame);
         let lastPose = poses[0];
         let lastPoseTime = lastPose.timestamp;
-        let lastPoseActive = sensors.isSensorActive(sensorFrame, lastPose);
+        const lastPoseActives = sensorFrames.map(sensorFrame => {
+            return sensors.isSensorActive(sensorFrame, lastPose);
+        });
+        const poseActives = [].concat(lastPoseActives);
+
         let startSectionTime = lastPoseTime;
         const maxPoseDelayLenience = 500;
 
-        const rowY = this.rowIndexToRowY(this.rowIndex);
-
         const timeMax = this.timeMin + this.widthMs;
+
+        const sensorColors = sensorFrames.map(sensorFrame => {
+            return sensors.getSensorColor(sensorFrame);
+        });
 
         for (const pose of poses) {
             if (pose.timestamp < this.timeMin) {
@@ -712,8 +714,15 @@ export class Timeline {
                 break;
             }
             const isGap = pose.timestamp - lastPoseTime > maxPoseDelayLenience;
-            const poseActive = sensors.isSensorActive(sensorFrame, pose);
-            const isSwap = poseActive !== lastPoseActive;
+            let isSwap = false;
+            for (let i = 0; i < sensorFrames.length; i++) {
+                const sensorFrame = sensorFrames[i];
+                poseActives[i] = sensors.isSensorActive(sensorFrame, pose);
+                if (lastPoseActives[i] !== poseActives[i]) {
+                    isSwap = true;
+                }
+            }
+
             if (!isGap && !isSwap) {
                 lastPose = pose;
                 lastPoseTime = lastPose.timestamp;
@@ -735,17 +744,7 @@ export class Timeline {
                 }
             }
 
-            if (lastPoseActive) {
-                this.gfx.fillStyle = sensorColor;
-                const startX = this.timeToX(startSectionTime);
-                const endX = this.timeToX(lastPoseTime);
-                this.gfx.fillRect(
-                    startX,
-                    rowY,
-                    endX - startX,
-                    rowHeight
-                );
-            }
+            this.drawSensorBars(lastPoseActives, sensorColors, startSectionTime, lastPoseTime);
 
             if (isSwap && !isGap) {
                 // When swapping color extend the pose section
@@ -756,26 +755,51 @@ export class Timeline {
             }
             lastPose = pose;
             lastPoseTime = pose.timestamp;
-            lastPoseActive = poseActive;
+
+            for (let i = 0; i < sensorFrames.length; i++) {
+                lastPoseActives[i] = poseActives[i];
+            }
         }
 
         if (timeMax - lastPoseTime < maxPoseDelayLenience) {
             lastPoseTime = timeMax;
         }
 
-        if (lastPoseActive) {
-            this.gfx.fillStyle = sensorColor;
-            const startX = this.timeToX(startSectionTime);
-            const endX = this.timeToX(lastPoseTime);
-            this.gfx.fillRect(
-                startX,
-                rowY,
-                endX - startX,
-                rowHeight
-            );
+        this.drawSensorBars(lastPoseActives, sensorColors, startSectionTime, lastPoseTime);
+        this.rowIndex += 1;
+    }
+
+    drawSensorBars(poseActives, sensorColors, startTime, endTime) {
+        const startX = this.timeToX(startTime);
+        const endX = this.timeToX(endTime);
+        const rowY = this.rowIndexToRowY(this.rowIndex);
+
+        let nActiveSensors = 0;
+        for (let i = 0; i < poseActives.length; i++) {
+            if (poseActives[i]) {
+                nActiveSensors += 1;
+            }
+        }
+        if (nActiveSensors === 0) {
+            return;
         }
 
-        this.rowIndex += 1;
+        let sensorsDrawn = 0;
+        for (let i = 0; i < poseActives.length; i++) {
+            if (!poseActives[i]) {
+                continue;
+            }
+            this.gfx.fillStyle = sensorColors[i];
+
+            this.gfx.fillRect(
+                startX,
+                rowY + (rowHeight / nActiveSensors) * sensorsDrawn,
+                endX - startX,
+                rowHeight / nActiveSensors
+            );
+
+            sensorsDrawn += 1;
+        }
     }
 
     calculateAndDrawTicks() {
@@ -902,7 +926,7 @@ export class Timeline {
 
     isPointerOnRow() {
         return this.mouseY > boardStart &&
-            this.mouseY < this.rowIndexToRowY(this.rowIndex) - rowPad;
+            this.mouseY < this.rowIndexToRowY(N_INTERACTABLE_ROWS) - rowPad;
     }
 
     isPointerOnBoard() {
@@ -959,8 +983,8 @@ export class Timeline {
         }
 
         // PRCs are in row 1
-        const cardRowStart = this.rowIndexToRowY(1);
-        const cardRowEnd = this.rowIndexToRowY(2);
+        const cardRowStart = this.rowIndexToRowY(ROW_REGION_CARDS);
+        const cardRowEnd = this.rowIndexToRowY(ROW_REGION_CARDS + 1);
         if (this.mouseY < cardRowStart || this.mouseY > cardRowEnd) {
             return null;
         }
