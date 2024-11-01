@@ -180,7 +180,7 @@ class VideoPlayer extends Followable {
         // this.phone.add(this.debugBox);
 
         this.rvl = null;
-        fetch(urls.rvl).then(res => {
+        this.rvlLoadPromise = fetch(urls.rvl).then(res => {
             return res.arrayBuffer();
         }).then(buf => {
             this.rvl = new RVLParser(buf);

@@ -791,10 +791,20 @@ export class MotionStudy {
 
     createVideoPlayerShowHideButton() {
         this.videoPlayerShowHideButton = document.createElement('div');
-        this.videoPlayerShowHideButton.classList.add('analytics-video-toggle');
+        this.videoPlayerShowHideButton.classList.add('analytics-video-toggle', 'analytics-video-toggle-loading');
         this.videoPlayerShowHideButton.classList.add('analytics-button-container');
-        this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+        this.videoPlayerShowHideButton.textContent = 'Loading Spatial Video';
+
+        this.videoPlayer.rvlLoadPromise.then(() => {
+            this.videoPlayerShowHideButton.textContent = 'Show Spatial Video';
+            this.videoPlayerShowHideButton.classList.remove('analytics-video-toggle-loading');
+        });
+
         this.videoPlayerShowHideButton.addEventListener('pointerup', () => {
+            if (this.videoPlayerShowHideButton.classList.contains('analytics-video-toggle-loading')) {
+                return;
+            }
+
             if (this.videoPlayer.isShown()) {
                 this.humanPoseAnalyzer.setDepthTestEnabled(true);
                 this.videoPlayer.hide();
@@ -809,6 +819,9 @@ export class MotionStudy {
 
     updateVideoPlayerShowHideButtonText() {
         if (!this.videoPlayerShowHideButton || !this.videoPlayer) {
+            return;
+        }
+        if (this.videoPlayerShowHideButton.classList.contains('analytics-video-toggle-loading')) {
             return;
         }
 

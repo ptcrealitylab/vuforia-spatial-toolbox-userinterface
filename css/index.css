@@ -2110,7 +2110,11 @@ Logic Interface CSS
     cursor: pointer;
 
     pointer-events: all;
+}
 
+.analytics-video-toggle.analytics-video-toggle-loading {
+    color: #777;
+    cursor: progress;
 }
 
 .analytics-export-link-container {
