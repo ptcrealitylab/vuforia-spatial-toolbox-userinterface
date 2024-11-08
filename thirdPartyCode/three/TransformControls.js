@@ -212,6 +212,8 @@ class TransformControls extends Object3D {
             });
         }
         setLayer(10);
+
+        this.handlesHighlighted = false;
 	}
 
 	// updateMatrixWorld  updates key transformation variables
@@ -1171,6 +1173,8 @@ class TransformControlsGizmo extends Object3D {
 		this.picker[ 'rotate' ].visible = false;
 		this.picker[ 'scale' ].visible = false;
 
+        this.handlesHighlightFlag = false;
+
 	}
 
 	// updateMatrixWorld will update transformations and appearance of individual handles
@@ -1196,6 +1200,8 @@ class TransformControlsGizmo extends Object3D {
 		handles = handles.concat( this.picker[ this.mode ].children );
 		handles = handles.concat( this.gizmo[ this.mode ].children );
 		handles = handles.concat( this.helper[ this.mode ].children );
+        
+        let handlesHighlightFlag = false;
 
 		for ( let i = 0; i < handles.length; i ++ ) {
 
@@ -1470,6 +1476,7 @@ class TransformControlsGizmo extends Object3D {
 
 					handle.material.color.setHex( 0xffff00 );
 					handle.material.opacity = 1.0;
+                    handlesHighlightFlag = true;
 
 				} else if ( this.axis.split( '' ).some( function ( a ) {
 
@@ -1479,12 +1486,16 @@ class TransformControlsGizmo extends Object3D {
 
 					handle.material.color.setHex( 0xffff00 );
 					handle.material.opacity = 1.0;
+                    handlesHighlightFlag = true;
 
 				}
 
 			}
 
 		}
+        
+        this.handlesHighlighted = handlesHighlightFlag;
+        // console.log(this.handlesHighlighted);
 
 		super.updateMatrixWorld( force );
 
