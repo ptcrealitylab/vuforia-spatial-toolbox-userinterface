@@ -7,7 +7,7 @@
     "eslint": "^8.57.0",
     "jsdoc": "^4.0.4",
     "vite": "^5.4.10",
-    "vitest": "^2.0.1"
+    "vitest": "^2.1.8"
   },
   "scripts": {
     "pre-test-setup": "cp src/motionStudy/config.js.template src/motionStudy/config.js",
